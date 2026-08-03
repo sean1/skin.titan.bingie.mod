@@ -294,10 +294,6 @@ msgctxt "#31523"
 msgid "Trailer"
 msgstr ""
 
-msgctxt "#31534"
-msgid "My List"
-msgstr ""
-
 msgctxt "#31535"
 msgid "Continue Watching"
 msgstr ""

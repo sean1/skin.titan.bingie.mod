@@ -3853,7 +3853,6 @@
 	<variable name="HubNames">
         <value condition="Window.IsActive(1110)">$LOCALIZE[320011]</value>
         <value condition="Window.IsActive(1111)">$LOCALIZE[342]</value>
-		<value condition="Window.IsActive(1114)">$LOCALIZE[31534]</value>
     </variable>
 
 	<!-- View 527 SxxExx format -->

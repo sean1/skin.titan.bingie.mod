@@ -497,7 +497,6 @@
                 <include condition="Window.IsActive(1110)">bingie_items_tvshows</include>
                 <include condition="Window.IsActive(1111)">bingie_items_movies</include>
                 <include condition="Window.IsActive(1112)">bingie_items_new</include>
-                <include condition="Window.IsActive(1114)">bingie_items_mylist</include>
             </control>
             <include>SpotlightDummyLandscapeWidget</include>
 
@@ -517,9 +516,9 @@
 
 			<!--Netflix Diffuse Logo-->
 			<control type="image">
-					<visible>Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1114)</visible>
+					<visible>Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112)</visible>
 <description>diffuse behind Netflix logo</description>
-				<animation effect="slide" end="-66" time="0" condition="Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1114)">Conditional</animation>
+				<animation effect="slide" end="-66" time="0" condition="Window.IsActive(1110) | Window.IsActive(1111)">Conditional</animation>
 				<right>470</right>
 				<bottom>0</bottom>
 				<width>0</width>
@@ -531,7 +530,7 @@
 			</control>
 			<!--Netflix Logo-->
 			<control type="image">
-					<visible>!Window.IsActive(1110) + !Window.IsActive(1111) + !Window.IsActive(1114)</visible>
+					<visible>!Window.IsActive(1110) + !Window.IsActive(1111)</visible>
 				<description>Netflix logo</description>
 				<right>325</right>
 				<bottom>10</bottom>
@@ -543,7 +542,7 @@
 			</control>
 
 			<control type="grouplist">
-				<visible>Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1114)</visible>
+				<visible>Window.IsActive(1110) | Window.IsActive(1111)</visible>
 				<orientation>horizontal</orientation>
 				<height>56</height>
 				<width>300</width>

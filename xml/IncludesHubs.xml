@@ -164,24 +164,6 @@
         </include>
     </include>
 
-	<!-- MyList -->
-    <include name="bingie_items_mylist">
-        <include content="Custom_Container_Empty_Label_Mylist">
-            <param name="label" value="Your POV Trakt watchlist is empty." />
-        </include>
-        <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1510" />
-            <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="My List: Movies" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist" />
-        </include>
-        <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1520" />
-            <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="My List: TV Shows" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist" />
-        </include>
-    </include>
     <include name="Hub_Widget_Label">
         <control type="textbox">
             <visible>$PARAM[visibility]</visible>
@@ -197,31 +179,6 @@
         </control>
     </include>
 
-
-	<include name="Custom_Container_Empty_Label_Mylist">
-        <param name="id" default="1501" />
-        <param name="containerid" default="1510" />
-        <definition>
-            <control type="button" id="$PARAM[id]">
-                <visible>Integer.IsEqual(Container($PARAM[containerid]).NumItems,0) + !Container($PARAM[containerid]).IsUpdating</visible>
-                <align>left</align>
-                <include content="textoffsetx">
-                    <param name="textoffsetx" value="25" />
-                </include>
-                <textoffsetx>0</textoffsetx>
-                <texturenofocus/>
-                <texturefocus/>
-				<left>125</left>
-                <height>80</height>
-                <width>99%</width>
-                <font>Bold31</font>
-                <textcolor>ffffffff</textcolor>
-                <focusedcolor>ffffffff</focusedcolor>
-                <shadowcolor>None</shadowcolor>
-                <label>$PARAM[label]</label>
-            </control>
-        </definition>
-    </include>
 
     <include name="Empty_Hub_Alt_Buttons">
         <control type="textbox" id="1501">

@@ -43,9 +43,9 @@
     <constant name="episodes_thumb_width">466</constant>
 
     <!-- expressions -->
-    <expression name="IsBingieViewsActive">Window.IsActive(Home) | Window.IsActive(1119) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1114) | Window.IsActive(1118)</expression>
+    <expression name="IsBingieViewsActive">Window.IsActive(Home) | Window.IsActive(1119) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1118)</expression>
 
-    <expression name="IsBingieHubsActive">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1114) | Window.IsActive(1118)</expression>
+    <expression name="IsBingieHubsActive">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1118)</expression>
 
 	<expression name="IsBingieListsActive">false</expression>
 
@@ -83,18 +83,16 @@
 	<expression name="MenuPathTV">String.IsEqual(ListItem.Property(path), ActivateWindow(1110,return))</expression>
 	<expression name="MenuPathMovies">String.IsEqual(ListItem.Property(path), ActivateWindow(1111,return))</expression>
 	<expression name="MenuPathNew">String.IsEqual(ListItem.Property(path), ActivateWindow(1112,return))</expression>
-	<expression name="MenuPathMyList">String.IsEqual(ListItem.Property(path), ActivateWindow(1114,return))</expression>
 	<expression name="MenuPathGenres">String.IsEqual(ListItem.Property(path), ActivateWindow(1119,return))</expression>
 
 	<expression name="MenuActiveHome">Window.IsActive(Home) + $EXP[MenuPathHome]</expression>
 	<expression name="MenuActiveTV">Window.IsActive(1110) + $EXP[MenuPathTV]</expression>
 	<expression name="MenuActiveMovies">Window.IsActive(1111) + $EXP[MenuPathMovies]</expression>
 	<expression name="MenuActiveNew">Window.IsActive(1112) + $EXP[MenuPathNew]</expression>
-	<expression name="MenuActiveMyList">Window.IsActive(1114) + $EXP[MenuPathMyList]</expression>
 	<expression name="MenuActiveGenres">Window.IsActive(1119) + $EXP[MenuPathGenres]</expression>
 
-	<expression name="IsMenuEntryActive">$EXP[MenuActiveHome] | $EXP[MenuActiveTV] | $EXP[MenuActiveMovies] | $EXP[MenuActiveNew] | $EXP[MenuActiveMyList] | $EXP[MenuActiveGenres]</expression>
-	<expression name="IsKnownMenuEntryPath">$EXP[MenuPathHome] | $EXP[MenuPathTV] | $EXP[MenuPathMovies] | $EXP[MenuPathNew] | $EXP[MenuPathMyList] | $EXP[MenuPathGenres]</expression>
+	<expression name="IsMenuEntryActive">$EXP[MenuActiveHome] | $EXP[MenuActiveTV] | $EXP[MenuActiveMovies] | $EXP[MenuActiveNew] | $EXP[MenuActiveGenres]</expression>
+	<expression name="IsKnownMenuEntryPath">$EXP[MenuPathHome] | $EXP[MenuPathTV] | $EXP[MenuPathMovies] | $EXP[MenuPathNew] | $EXP[MenuPathGenres]</expression>
 
 
     <expression name="IsActualKeyboardActive">Window.IsActive(virtualkeyboard) + String.IsEmpty(Window(Home).Property(SpaceSearchTerm)) + String.IsEmpty(Window(Home).Property(BackspaceSearchTerm))</expression>

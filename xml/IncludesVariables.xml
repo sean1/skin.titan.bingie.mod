@@ -538,17 +538,14 @@
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(favorite.9.image))">$INFO[Window(Home).Property(favorite.9.image.Title)]</value>
 
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.generic.image))">$INFO[Window(Home).Property(netflix.generic.image.Title)]</value>
-        <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.generic.mylist.image))">$INFO[Window(Home).Property(netflix.generic.mylist.image.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.generic.suggestions.image))">$INFO[Window(Home).Property(netflix.generic.suggestions.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.generic.inprogress.image))">$INFO[Window(Home).Property(netflix.generic.inprogress.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.generic.recent.image))">$INFO[Window(Home).Property(netflix.generic.recent.Title)]</value>
 
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.movies.image))">$INFO[Window(Home).Property(netflix.movies.image.Title)]</value>
-        <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.movies.mylist.image))">$INFO[Window(Home).Property(netflix.movies.mylist.image.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.movies.suggestions.image))">$INFO[Window(Home).Property(netflix.movies.suggestions.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.movies.recent.image))">$INFO[Window(Home).Property(netflix.movies.recent.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.tvshows.image))">$INFO[Window(Home).Property(netflix.tvshows.image.Title)]</value>
-        <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.tvshows.mylist.image))">$INFO[Window(Home).Property(netflix.tvshows.mylist.image.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.tvshows.suggestions.image))">$INFO[Window(Home).Property(netflix.tvshows.suggestions.Title)]</value>
         <value condition="String.IsEqual(Control.GetLabel(99004),Window(Home).Property(netflix.tvshows.recent.image))">$INFO[Window(Home).Property(netflix.tvshows.recent.Title)]</value>
 

@@ -38,16 +38,6 @@
 			<property name="widgetType.5">tvshows</property>
 			<property name="widgetPath.5">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
 			<property name="widgetName.5">Popular TV Shows</property>
-			<property name="widget.6">pov-my-list-movies</property>
-			<property name="widgetTarget.6">videos</property>
-			<property name="widgetType.6">movies</property>
-			<property name="widgetPath.6">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist</property>
-			<property name="widgetName.6">My List Movies</property>
-			<property name="widget.7">pov-my-list-tv</property>
-			<property name="widgetTarget.7">videos</property>
-			<property name="widgetType.7">tvshows</property>
-			<property name="widgetPath.7">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist</property>
-			<property name="widgetName.7">My List TV Shows</property>
 			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(home,return)</onclick>
 			<property name="path">ActivateWindow(home,return)</property>
@@ -158,25 +148,6 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">False</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
-			<label>$LOCALIZE[31534]</label>
-			<label2>My List</label2>
-			<icon>shortcuts/mylist.png</icon>
-			<thumb />
-			<property name="labelID">31534</property>
-			<property name="defaultID">31534</property>
-			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
-			<onclick>ActivateWindow(1114,return)</onclick>
-			<property name="path">ActivateWindow(1114,return)</property>
-			<property name="list">1114</property>
-			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
-			<property name="submenuVisibility">num-31534</property>
-			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">False</property>
-		</item>
 	</include>
 	<include name="StaticSubmenu">
 		<item id="1">
@@ -255,22 +226,6 @@
 			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=tvshow,return)</onclick>
 			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=tvshow,return)</property>
 			<property name="list">plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=tvshow</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
-			<property name="mainmenuid">4</property>
-			<label>My List</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">my-list</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist,return)</property>
-			<property name="list">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -367,22 +322,6 @@
 			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
 			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=movie,return)</property>
 			<property name="list">plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=movie</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
-			<property name="mainmenuid">5</property>
-			<label>My List</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">my-list</property>
-			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist,return)</property>
-			<property name="list">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
@@ -696,48 +635,6 @@
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
 			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
-			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
-			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="30" />
-			<param name="widgetInfoPanel" value="top" />
-			<param name="visibility" value="true" />
-		</include>
-		<include content="widget_header_multi">
-			<param name="widgetid" value="2570" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="My List Movies" />
-		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
-			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2570" />
-			<param name="widgetName" value="My List Movies" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetTags" value="WidgetTagOverlayAuto" />
-			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist" />
-			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
-			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="30" />
-			<param name="widgetInfoPanel" value="top" />
-			<param name="visibility" value="true" />
-		</include>
-		<include content="widget_header_multi">
-			<param name="widgetid" value="2580" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="My List TV Shows" />
-		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
-			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2580" />
-			<param name="widgetName" value="My List TV Shows" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetTags" value="WidgetTagOverlayAuto" />
-			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist" />
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="" />
 			<param name="widgetSortOrder" value="" />

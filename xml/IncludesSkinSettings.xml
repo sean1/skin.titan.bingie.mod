@@ -417,14 +417,6 @@
             <selected>Skin.HasSetting(DisableSpotlightLabel)</selected>
             <visible>!Skin.HasSetting(DisableSpotlightContent) + String.IsEqual(Skin.String(HomeLayout),bingie)</visible>
         </control>
-		<!-- Prefer White Top 250 Sub Label on Home Spotlight -->	
-		<control type="radiobutton" id="2047">
-            <include>SkinSettings_Button</include>
-            <label>      $LOCALIZE[320154]</label>
-            <onclick>Skin.ToggleSetting(EnableSpotlightWhiteLabel)</onclick>
-            <selected>Skin.HasSetting(EnableSpotlightWhiteLabel)</selected>
-            <visible>!Skin.HasSetting(DisableSpotlightTop250) + !Skin.HasSetting(DisableSpotlightContent) + !Skin.HasSetting(DisableSpotlightLabel)</visible>
-        </control>
 		<!-- Prefer Color Director Sub Label on Home Spotlight -->	
 		<control type="radiobutton" id="2037">
             <include>SkinSettings_Button</include>
@@ -1163,15 +1155,6 @@
             <onclick>Skin.ToggleSetting(EnableFakeDiscArt)</onclick>
             <selected>Skin.HasSetting(EnableFakeDiscArt)</selected>
         </control>
-		<!-- Enable auto-download via Artwork Beef -->
-            <control type="radiobutton" id="5139">
-            <include>SkinSettings_Button</include>
-            <label>31099</label>
-            <onclick condition="System.HasAddon(script.artwork.beef)">Skin.ToggleSetting(EnableArtworkBeef)</onclick>
-            <onclick condition="!System.HasAddon(script.artwork.beef)">RunPlugin(plugin://script.artwork.beef)</onclick>
-            <selected>Skin.HasSetting(EnableArtworkBeef)</selected>
-			<visible>System.HasAddon(script.artwork.beef)</visible>
-        </control> 
 		<!-- Footer -->
 		<control type="label" id="320173">
             <include>SkinSettings_Header</include>
@@ -1372,14 +1355,6 @@
             <onclick>Skin.ToggleSetting(DisableTop250Info)</onclick>
             <selected>Skin.HasSetting(DisableTop250Info)</selected>
         </control>
-		<!-- Prefer White Top250 Sublabel on Video Info -->	
-		<control type="radiobutton" id="2052">
-            <include>SkinSettings_Button</include>
-            <label>      $LOCALIZE[320152]</label>
-            <onclick>Skin.ToggleSetting(EnableTop250ColoredLabelInfo)</onclick>
-            <selected>Skin.HasSetting(EnableTop250ColoredLabelInfo)</selected>
-            <visible>!Skin.HasSetting(DisableTop250Info)</visible>
-        </control>
 		<!-- Enable details icons -->
         <control type="radiobutton" id="46655">
             <include>SkinSettings_Button</include>
@@ -1493,7 +1468,7 @@
         <include content="SkinSettings_ColorButton">
             <param name="id" value="320062" />
             <param name="label" value="$LOCALIZE[320062]" />
-			<param name="visible" value="Skin.HasSetting(EnableTop250ColoredLabel) | Skin.HasSetting(EnableSpotlightWhiteLabel)" />
+			<param name="visible" value="Skin.HasSetting(EnableTop250ColoredLabel)" />
             <param name="skinsetting" value="BingieTop250IconColor" />
         </include>
 		<!--Bingie Additional Info Icons Color-->

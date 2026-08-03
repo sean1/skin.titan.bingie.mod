@@ -146,31 +146,6 @@
 						<width>800</width>
 						<itemgap>15</itemgap>
 					
-					<!-- TOP250 Removes Actor Image from Home Spotlight -->
-					
-					<!-- Home Spotlight Top250 Red Icon -->
-					<!-- <control type="image"> -->
-						<!-- <visible>!Skin.HasSetting(EnableSpotlightWhiteLabel)</visible> -->
-						<!-- <visible>!String.IsEmpty(Control.GetLabel(823100))</visible> -->
-						<!-- <posy>5</posy> -->
-						<!-- <left>1</left> -->
-						<!-- <height>50</height> -->
-						<!-- <width>50</width> -->
-						<!-- <aspectratio>keep</aspectratio> -->
-						<!-- <texture>bingie/top250.png</texture> -->
-					<!-- </control> -->
-					<!-- Home Spotlight Top250 White Icon -->
-					<!-- <control type="image"> -->
-						<!-- <visible>Skin.HasSetting(EnableSpotlightWhiteLabel)</visible> -->
-						<!-- <visible>!String.IsEmpty(Control.GetLabel(823100))</visible> -->
-						<!-- <posy>2</posy> -->
-						<!-- <left>1</left> -->
-						<!-- <height>50</height> -->
-						<!-- <width>50</width> -->
-						<!-- <aspectratio>keep</aspectratio> -->
-						<!-- <colordiffuse>$INFO[Skin.String(BingieTop250IconColor)]</colordiffuse> -->
-						<!-- <texture>bingie/top2501.png</texture> -->
-					<!-- </control> -->
 					<!-- Home Spotlight on IMDB Today Text -->
 					<!-- <control type="label" id="823100"> -->
 						<!-- <posy>-1</posy> -->

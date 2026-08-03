@@ -83,10 +83,6 @@
 
     <expression name="IsBingieCategoriesActive">Window.IsActive(1117)</expression>
 
-    <expression name="IsPreviousWindowHub">Window.Previous(1110) | Window.Previous(1111) | Window.Previous(1112) | Window.Previous(1113) | Window.IsActive(1118)</expression>
-
-    <expression name="IsBingieViewsVisible">Window.IsVisible(Home) | Window.IsVisible(1109) | Window.IsVisible(1119) | Window.IsVisible(1110) | Window.IsVisible(1111) | Window.IsVisible(1112) | Window.IsVisible(1113) | Window.IsVisible(1114) | Window.IsVisible(1115) | Window.IsActive(1118)</expression>
-
     <expression name="IsRecognizedVideoContent">VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)</expression>
 
     <expression name="IsPlayingUnrecognizedContent">Player.HasVideo + Player.Playing + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]</expression>
@@ -111,8 +107,6 @@
 
     <expression name="IsEpisodeDBType">String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,episode)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),episode)</expression>
 	
-	<expression name="IsSeasonDBType">String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,season)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),season)</expression>
-
     <expression name="IsEpisodeDBTypeNoFallback">String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)</expression>
 
     <expression name="IsCategoryDBType">String.IsEmpty(ListItem.DBType) + [String.IsEqual(ListItem.Property(DBTYPE),genre) | String.IsEqual(ListItem.Property(DBTYPE),category) | String.IsEqual(ListItem.Property(DBTYPE),categorie) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE),category)]</expression>

@@ -374,10 +374,6 @@ msgctxt "#31098"
 msgid "Critically Acclaimed TV Shows"
 msgstr ""
 
-msgctxt "#31099"
-msgid "Enable automatic download of Artwork during Library scan"
-msgstr ""
-
 msgctxt "#31100"
 msgid "Use Netflix user picture "
 msgstr ""
@@ -3304,16 +3300,8 @@ msgctxt "#320151"
 msgid "Disable Top250 Sublabel on Video Info"
 msgstr ""
 
-msgctxt "#320152"
-msgid "Prefer White Icon on Top250 Sublabel"
-msgstr ""
-
 msgctxt "#320153"
 msgid "Disable Sub Label on Spotlight"
-msgstr ""
-
-msgctxt "#320154"
-msgid "Prefer White Top 250 Icon on Spotlight Sublabel"
 msgstr ""
 
 msgctxt "#320155"

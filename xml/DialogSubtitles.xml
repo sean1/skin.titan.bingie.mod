@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <window>
-    <onunload>ClearProperty(filename_formatted,Home)</onunload>
-    <onload>RunScript(script.skin.helper.service,action=GETPLAYERFILENAME,output=filename_formatted)</onload>
     <controls>
         <control type="group" id="250">
 			<posy>50</posy>
@@ -345,7 +343,7 @@
                     <font>Light22</font>
                     <textcolor>darkgrey</textcolor>
                     <align>Left</align>
-					<label>$INFO[Window(Home).Property(filename_formatted)]</label>
+					<label>$INFO[Player.Filename]</label>
                     <wrapmultiline>false</wrapmultiline>
                     <scroll>true</scroll>
                 </control>

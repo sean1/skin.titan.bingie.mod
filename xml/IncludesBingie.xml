@@ -151,7 +151,6 @@
         <onload>SetProperty(bingieviews,1,Home)</onload>
         <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
         <onunload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onunload>
-        <onunload>ClearProperty(SkinHelper.WidgetContainer)</onunload>
 		<onunload>ClearProperty(TMDbHelper.WidgetContainer)</onunload>
     </include>
 

@@ -415,8 +415,6 @@
 		<value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
         <!-- normal fanart background -->
         <value condition="Control.IsVisible(99006) + !String.IsEmpty(Control.GetLabel(99006))">$INFO[Control.GetLabel(99006)]</value>
-        <!-- global background -->
-        <value condition="false">$VAR[CustomBackgroundSetting]</value>
         <value condition="false"></value>
     </variable>
 

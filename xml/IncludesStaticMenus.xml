@@ -95,8 +95,6 @@
 			<thumb />
 			<property name="labelID">tvshows</property>
 			<property name="defaultID">tvshows</property>
-			<property name="background">$INFO[Window(Home).Property(SkinHelper.AllTvShowsBackground)]</property>
-			<property name="backgroundName">$ADDON[script.skin.helper.service 32043]</property>
 			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(1110,return)</onclick>
 			<property name="path">ActivateWindow(1110,return)</property>
@@ -116,8 +114,6 @@
 			<thumb />
 			<property name="labelID">movies</property>
 			<property name="defaultID">movies</property>
-			<property name="background">$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground)]</property>
-			<property name="backgroundName">$ADDON[script.skin.helper.service 32039]</property>
 			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(1111,return)</onclick>
 			<property name="path">ActivateWindow(1111,return)</property>

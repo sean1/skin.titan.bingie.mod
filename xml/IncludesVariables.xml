@@ -556,30 +556,6 @@
 		<value condition="Player.Process(videohwdecoder)">$LOCALIZE[13281]</value>
 		<value>$LOCALIZE[31787]</value>
 	 </variable>
-
-
-    <!-- Skin Helper Vars -->
-     <variable name="CustomBackgroundSetting">
-        <value condition="false">$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.InProgressMoviesBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.RecentMoviesBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.UnwatchedMoviesBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.AllTvShowsBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.InProgressShowsBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.RecentEpisodesBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.GlobalFanartBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.AllVideosBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.AllVideosBackground2)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.RecentVideosBackground)]</value>
-		<value condition="false">$INFO[Window(Home).Property(SkinHelper.InProgressVideosBackground)]</value>
-		<value condition="false)">$INFO[Window(Home).Property(SkinHelper.PopularMovies)]</value>
-		<value condition="false)">$INFO[Window(Home).Property(SkinHelper.PopularShows)]</value>
-        <value condition="false">$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground.Wall)]</value>
-        <value condition="false">$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground.Poster.Wall)]</value>
-		<value condition="false)">$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground.Wall.BW)]</value>
-        <value condition="false)">$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground.Poster.Wall.BW)]</value>
-    </variable>
-
     <!-- Home Vars -->
     <variable name="HomeMenuWidgetInfoPlot">
         <value condition="!String.IsEmpty(ListItem.PlotOutline) + true + !String.Contains(ListItem.PlotOutline,$LOCALIZE[20339]: )">$INFO[ListItem.PlotOutline]</value>

@@ -656,7 +656,7 @@
 							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5014</onup>
-								<ondown>5011</ondown>
+								<ondown>5002</ondown>
 								<param name="id">5001</param>
 								<param name="groupid">5101</param>
 								<param name="visible">[!String.IsEmpty(Window.Property(List_5001_Visible)) | !String.IsEmpty(Window.Property(List_5001_IsUpdating))]</param>
@@ -667,41 +667,6 @@
 						<include content="ContentLoading">
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5001_IsUpdating))"/>
 							<param name="top" value="155"/>
-						</include>
-					</control>
-
-					<!-- upnext -->
-					<control type="group" id="5111">
-                        <visible>[!String.IsEmpty(Window.Property(List_5011_Visible)) | !String.IsEmpty(Window.Property(List_5011_IsUpdating))]</visible>
-						<visible>false</visible>
-                        <height>330</height>
-                        <control type="label">
-                            <posx>7</posx>
-                            <posy>0</posy>
-                            <width>1540</width>
-                            <height>25</height>
-                            <aligny>center</aligny>
-                            <font>Bold31</font>
-                            <textcolor>ffffffff</textcolor>
-                            <label>$LOCALIZE[31065]</label>
-                        </control>
-						<control type="group">
-							<posy>-166</posy>
-							<include content="Widget_Poster">
-								<onup>5001</onup>
-								<ondown>5002</ondown>
-								<param name="id">5011</param>
-								<param name="groupid">5111</param>
-								<param name="include">List_Landscape_Row</param>
-								<param name="icon">$INFO[ListItem.Icon]</param>
-								<param name="visible">[!String.IsEmpty(Window.Property(List_5011_Visible)) | !String.IsEmpty(Window.Property(List_5011_IsUpdating))]</param>
-								<param name="altvisible">[!String.IsEmpty(Window.Property(List_5011_Visible)) | !String.IsEmpty(Window.Property(List_5011_IsUpdating))]</param>
-							</include>
-						</control>
-						<!-- Loading Suggestions -->
-						<include content="ContentLoading">
-							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5011_IsUpdating))"/>
-							<param name="top" value="104"/>
 						</include>
 					</control>
 
@@ -723,7 +688,7 @@
 						<control type="group">
 							<posy>-166</posy>
 							<include content="Widget_Poster">
-								<onup>5011</onup>
+								<onup>5001</onup>
 								<ondown>5007</ondown>
 								<param name="id">5002</param>
 								<param name="groupid">5102</param>
@@ -835,7 +800,7 @@
 							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5006</onup>
-								<ondown>5093</ondown>
+								<ondown>5003</ondown>
 								<param name="id">5005</param>
 								<param name="groupid">5105</param>
 								<param name="visible">[!String.IsEmpty(Window.Property(List_5005_Visible)) | !String.IsEmpty(Window.Property(List_5005_IsUpdating))]</param>
@@ -845,41 +810,6 @@
 						<!-- Loading Suggestions -->
 						<include content="ContentLoading">
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5005_IsUpdating))"/>
-							<param name="top" value="155"/>
-						</include>
-					</control>
-
-					<!-- reviews -->
-					<control type="group" id="5193">
-                        <visible>[!String.IsEmpty(Window.Property(List_5093_Visible)) | !String.IsEmpty(Window.Property(List_5093_IsUpdating))]</visible>
-						<visible>false</visible>
-                        <height>407</height>
-                        <control type="label">
-                            <posx>7</posx>
-                            <posy>0</posy>
-                            <width>1540</width>
-                            <height>25</height>
-                            <aligny>center</aligny>
-                            <font>Bold31</font>
-                            <textcolor>ffffffff</textcolor>
-                            <label>$LOCALIZE[31120]</label>
-                        </control>
-						<control type="group">
-							<posy>-166</posy>
-							<include content="Widget_Poster">
-								<onup>5005</onup>
-								<ondown>5003</ondown>
-								<param name="spacerid">5293</param>
-								<param name="id">5093</param>
-								<param name="groupid">5193</param>
-								<param name="include">List_Reviews_Row</param>
-								<param name="visible">[!String.IsEmpty(Window.Property(List_5093_Visible)) | !String.IsEmpty(Window.Property(List_5093_IsUpdating))]</param>
-								<param name="altvisible">[!String.IsEmpty(Window.Property(List_5093_Visible)) | !String.IsEmpty(Window.Property(List_5093_IsUpdating))]</param>
-							</include>
-						</control>
-						<!-- Loading Suggestions -->
-						<include content="ContentLoading">
-							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5093_IsUpdating))"/>
 							<param name="top" value="155"/>
 						</include>
 					</control>
@@ -902,7 +832,7 @@
 						<control type="group">
 							<posy>-166</posy>
 							<include content="Widget_Poster">
-								<onup>5093</onup>
+								<onup>5005</onup>
 								<ondown>5091</ondown>
 								<param name="id">5003</param>
 								<param name="groupid">5103</param>

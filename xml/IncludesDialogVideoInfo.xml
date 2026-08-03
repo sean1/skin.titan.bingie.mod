@@ -63,7 +63,6 @@
 					<height>0</height>
 					<itemlayout>-</itemlayout>
 					<focusedlayout>-</focusedlayout>
-					<content>$VAR[InfoDialogTMDBHelperNextUpContent]</content>
 				</control>
 
         <control type="group">
@@ -615,12 +614,6 @@
 								<!-- movie trailer local -->
                                 <onclick condition="[!String.IsEmpty(ListItem.Trailer) + [true | !String.Contains(ListItem.Trailer,plugin)]]">
 									PlayMedia($ESCINFO[ListItem.Trailer],1)</onclick>
-								<!-- plugin with fallback -->
-								<onclick condition="String.IsEmpty(ListItem.Trailer) + String.IsEqual(ListItem.DBType,movie) + true">
-									RunScript(script.bingie.helper,action=playtrailer,title=$INFO[ListItem.Title]$INFO[ListItem.Year])</onclick>
-								<!-- tvshow trailer local/youtube -->
-								<onclick condition="[String.IsEmpty(ListItem.Trailer) + [String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,episode)] + true]">
-									RunScript(script.bingie.helper,action=playtrailer,title=$VAR[TVShowTitle]$INFO[ListItem.Year],tvshow=true,youtube=true)</onclick>
 								<onclick>SetFocus(70011)</onclick>
                              </control>
 
@@ -1182,7 +1175,6 @@
 					<height>0</height>
 					<itemlayout>-</itemlayout>
 					<focusedlayout>-</focusedlayout>
-					<content>$VAR[InfoDialogTMDBHelperNextUpContent]</content>
 				</control>
 
 				<!-- Normal Cast Details as Hidden List -->
@@ -1504,11 +1496,9 @@
 							<itemgap>0</itemgap>
 							<onleft>noop</onleft>
 							<onright>noop</onright>
-							<onup>RunScript(script.bingie.helper,action=ratetitle,rateaction=reset)</onup>
 							<onup>ClearProperty(showrateoptions,Home)</onup>
 							<onup>8000</onup>
 							<onup>ClearProperty(ratebuttonposition,Home)</onup>
-							<ondown>RunScript(script.bingie.helper,action=ratetitle,rateaction=reset)</ondown>
 							<ondown>ClearProperty(showrateoptions,Home)</ondown>
 							<ondown>8000</ondown>
 							<ondown>ClearProperty(ratebuttonposition,Home)</ondown>
@@ -1533,7 +1523,6 @@
 								<textureradioonnofocus/>
 								<textureradiooffnofocus colordiffuse="a6ffffff">bingie/rate/thumb_up_nf.png</textureradiooffnofocus>
 								<selected>Window.IsVisible(1151)</selected>
-								<onclick>RunScript(script.bingie.helper,action=ratetitle,rateaction=like)</onclick>
 								<onclick>SetProperty(ratelike,1,Home)</onclick>
 								<onclick>AlarmClock(showrateoptions,SetFocus(8000),00:01,silent)</onclick>
 							</control>
@@ -1572,7 +1561,6 @@
 								<textureradioonnofocus/>
 								<textureradiooffnofocus flipy="true" colordiffuse="a6ffffff">bingie/rate/thumb_up_nf.png</textureradiooffnofocus>
 								<selected>Window.IsVisible(1152)</selected>
-								<onclick>RunScript(script.bingie.helper,action=ratetitle,rateaction=dislike)</onclick>
 								<onclick>SetProperty(ratedislike,1,Home)</onclick>
 								<onclick>AlarmClock(showrateoptions,SetFocus(8000),00:01,silent)</onclick>
 							</control>
@@ -1805,12 +1793,6 @@
 								<!-- movie trailer local -->
                                 <onclick condition="[!String.IsEmpty(ListItem.Trailer) + [true | !String.Contains(ListItem.Trailer,plugin)]]">
 									PlayMedia($ESCINFO[ListItem.Trailer],1)</onclick>
-								<!-- plugin with fallback -->
-								<onclick condition="String.IsEmpty(ListItem.Trailer) + String.IsEqual(ListItem.DBType,movie) + true">
-									RunScript(script.bingie.helper,action=playtrailer,title=$INFO[ListItem.Title]$INFO[ListItem.Year])</onclick>
-								<!-- tvshow trailer local/youtube -->
-								<onclick condition="[String.IsEmpty(ListItem.Trailer) + [String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,episode)] + true]">
-									RunScript(script.bingie.helper,action=playtrailer,title=$VAR[TVShowTitle]$INFO[ListItem.Year],tvshow=true,youtube=true)</onclick>
 								<onclick>SetFocus(70011)</onclick>
 							</control>
 
@@ -3532,11 +3514,6 @@
     <variable name="InfoDialogNextUpContent">
         <value condition="[String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.DBID)">videodb://inprogresstvshows/$INFO[ListItem.DBID]/-2/?tvshowid=$INFO[ListItem.DBID]</value>
         <value condition="[String.IsEqual(ListItem.DBType,episode) | Container.Content(episodes)] + !String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">videodb://inprogresstvshows/$INFO[Window(Home).Property(ListItem.TVShowID)]/-2/?tvshowid=$INFO[Window(Home).Property(ListItem.TVShowID)]</value>
-    </variable>
-
-	<!-- next-up content for info dialog -->
-    <variable name="InfoDialogTMDBHelperNextUpContent">
-        <value condition="String.IsEqual(ListItem.DBType,tvshow) + String.IsEmpty(ListItem.DBID) + false + String.IsEqual(ListItem.Path,plugin://plugin.video.themoviedb.helper/) + !String.IsEmpty(ListItem.UniqueID(tmdb))">plugin://plugin.video.themoviedb.helper/?info=trakt_upnext&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)]&amp;tmdb_type=tv</value>
     </variable>
 
 	<variable name="BingieInfoGenre">

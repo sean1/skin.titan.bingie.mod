@@ -1610,10 +1610,6 @@
 		<value condition="Player.HasVideo + VideoPlayer.Content(Episodes)">[UPPERCASE]$INFO[VideoPlayer.Season,S,]:$INFO[VideoPlayer.Episode,E,][/UPPERCASE]$INFO[VideoPlayer.Title, ","]</value>
 	</variable>
 
-	<variable name="PlayerTitle">
-		<value condition="!String.IsEmpty(VideoPlayer.TVShowTitle)">$INFO[VideoPlayer.TVShowTitle]</value>
-		<value>$INFO[VideoPlayer.Title]</value>
-	</variable>
 
 	<variable name="PlayTimeFormat">
 		<value condition="Player.Seeking">$VAR[SeekTime]</value>
@@ -1638,10 +1634,6 @@
 		<value>$INFO[Player.Duration]</value>
 	</variable>
 
-	<variable name="TotalDurationFormatted">
-		<value condition="!String.IsEmpty(Player.Duration) + String.IsEqual(Player.Duration(hh),00)">$INFO[Player.Duration(mm:ss)]</value>
-		<value condition="!String.IsEmpty(Player.Duration)">$INFO[Player.Duration]</value>
-	</variable>
 
 	<variable name="SeekTime">
 		<value condition="String.IsEqual(Player.SeekTime(hh),00)">$INFO[Player.SeekTime(mm:ss)]</value>
@@ -1675,25 +1667,6 @@
 		<value condition="!String.IsEmpty(Player.FinishTime)">$LOCALIZE[31112]: $VAR[FinishTime]</value>
 	 </variable>
 	 
-	 <variable name="PlayerActionLabelSmall">
-		<value condition="[Player.Paused + Player.Caching] + !Player.Seeking">[B]$LOCALIZE[15107]:[/B] $INFO[Player.CacheLevel]%</value>
-		<value condition="!String.IsEmpty(Player.SeekStepSize) + ![Player.Forwarding | Player.Rewinding] + Player.seeking">[B]$LOCALIZE[31255][/B] $INFO[Player.SeekStepSize]</value>
-		<value condition="Player.DisplayAfterSeek  + ![Player.Forwarding | Player.Rewinding] + !String.IsEmpty(player.chaptercount) + !String.IsEqual(player.chaptercount,00)">$INFO[player.chapter,[B]$LOCALIZE[21396]:[/B] ,]$INFO[player.chaptercount,/,]</value>
-		<value condition="Player.DisplayAfterSeek  + ![Player.Forwarding | Player.Rewinding] + !String.IsEmpty(Player.SeekOffset)">[B]$LOCALIZE[31255][/B] $INFO[Player.SeekOffset]</value>
-		<value condition="Player.Seeking + !String.IsEmpty(player.chaptercount) + !String.IsEqual(player.chaptercount,00)">$INFO[player.chapter,[B]$LOCALIZE[21396]:[/B] ,]$INFO[player.chaptercount,/,]</value>
-		<value condition="Player.Seeking">[B]$LOCALIZE[31255][/B] $VAR[SeekTime] - $VAR[TotalDuration]</value>
-		<value condition="Player.Forwarding2x">[B]$LOCALIZE[31253][/B] x2</value>
-		<value condition="Player.Forwarding4x">[B]$LOCALIZE[31253][/B] x4</value>
-		<value condition="Player.Forwarding8x">[B]$LOCALIZE[31253][/B] x8</value>
-		<value condition="Player.Forwarding16x">[B]$LOCALIZE[31253][/B] x16</value>
-		<value condition="Player.Forwarding32x">[B]$LOCALIZE[31253][/B] x32</value>
-		<value condition="Player.Rewinding2x">[B]$LOCALIZE[31254][/B] x2</value>
-		<value condition="Player.Rewinding4x">[B]$LOCALIZE[31254][/B] x4</value>
-		<value condition="Player.Rewinding8x">[B]$LOCALIZE[31254][/B] x8</value>
-		<value condition="Player.Rewinding16x">[B]$LOCALIZE[31254][/B] x16</value>
-		<value condition="Player.Rewinding32x">[B]$LOCALIZE[31254][/B] x32</value>
-		<value condition="!String.IsEmpty(Player.FinishTime)">[B]$LOCALIZE[31112]:[/B] $VAR[FinishTime]</value>
-	 </variable>
 	 
 	 <variable name="PlayerActionLabelLarge">
 		<value condition="[Player.Paused + Player.Caching] + !Player.Seeking">[B]$LOCALIZE[15107]:[/B] $INFO[Player.CacheLevel]%</value>

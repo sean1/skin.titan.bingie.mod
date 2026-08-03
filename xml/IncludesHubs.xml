@@ -5,7 +5,7 @@
     <include name="bingie_customhub_item">
         <control type="group" id="20$PARAM[widgetid]">
             <visible>Skin.String($PARAM[skinsetting].label)</visible>
-            <visible>[Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)] + Skin.HasSetting(LockHubWidgets)</visible>
+            <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
             <width>100%</width>
             <height>40</height>
             <include content="BingieUnfocusedWidgetFade" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
@@ -16,7 +16,7 @@
             <include content="SetFixedVerticalNavigationProps" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
-            <include content="Fixed_Focus_Navigation_Factory1" condition="Skin.HasSetting(LockHubWidgets)">
+            <include content="Fixed_Focus_Navigation_Factory1">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
             <include content="Hub_Widget_Label">
@@ -43,36 +43,6 @@
                 <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) + Integer.IsEqual(Container($PARAM[widgetid]).NumItems,0)</visible>
             </control>
         </control>
-        <include content="Hub_Set_Widget_Button" condition="!Skin.HasSetting(LockHubWidgets)">
-            <param name="visibility" value="Skin.String($PARAM[skinsetting].label)" />
-            <param name="label" value="$INFO[Skin.String($PARAM[skinsetting].label)]" />
-            <param name="id" value="$PARAM[widgetid]4" />
-            <param name="skinsetting" value="$PARAM[skinsetting]" />
-        </include>
-        <include content="Hub_Set_Widget_Button" condition="!Skin.HasSetting(LockHubWidgets)">
-            <param name="visibility" value="!Skin.String($PARAM[skinsetting].label)" />
-            <param name="label" value="31822" />
-            <param name="id" value="$PARAM[widgetid]5" />
-            <param name="skinsetting" value="$PARAM[skinsetting]" />
-        </include>
-        <!-- set widget label -->
-        <control type="button" id="$PARAM[widgetid]6">
-            <width>auto</width>
-            <height>40</height>
-            <align>left</align>
-			<aligny>center</aligny>
-			<left>130</left>
-            <font>Reg24</font>
-            <include content="textoffsetx">
-                <param name="textoffsetx" value="20" />
-            </include>
-            <textoffsetx>65</textoffsetx>
-            <label>[$ADDON[script.skinshortcuts 32025]]</label>
-            <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>           
-            <onclick>Skin.SetString($PARAM[skinsetting].label)</onclick>
-            <texturenofocus/>
-            <visible>!Skin.HasSetting(LockHubWidgets) + Skin.String($PARAM[skinsetting].label) + [String.IsEmpty(Container($PARAM[widgetid]).ListItem.Property(similartitle)) + String.IsEmpty(Container($PARAM[widgetid]).ListItem.Property(genretitle))]</visible>
-        </control>
         <include content="bingie_widget_hub">
             <param name="containerType" value="fixedlist" />
             <param name="widgetid" value="$PARAM[widgetid]" />
@@ -85,7 +55,7 @@
     <include name="bingie_customhub_item2">
         <control type="group" id="20$PARAM[widgetid]">
             <visible>Skin.String($PARAM[skinsetting].label)</visible>
-            <visible>[Container($PARAM[widgetid]).IsUpdating | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)] + Skin.HasSetting(LockHubWidgets)</visible>
+            <visible>Container($PARAM[widgetid]).IsUpdating | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
             <width>100%</width>
             <height>40</height>
             <include content="BingieUnfocusedWidgetFade" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
@@ -96,22 +66,10 @@
             <include content="SetFixedVerticalNavigationProps" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
-            <include content="Fixed_Focus_Navigation_Factory1" condition="Skin.HasSetting(LockHubWidgets)">
+            <include content="Fixed_Focus_Navigation_Factory1">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
         </control>
-        <include content="Hub_Set_Widget_Button" condition="!Skin.HasSetting(LockHubWidgets)">
-            <param name="visibility" value="Skin.String($PARAM[skinsetting].label)" />
-            <param name="label" value="$INFO[Skin.String($PARAM[skinsetting].label)]" />
-            <param name="id" value="$PARAM[widgetid]4" />
-            <param name="skinsetting" value="$PARAM[skinsetting]" />
-        </include>
-        <include content="Hub_Set_Widget_Button" condition="!Skin.HasSetting(LockHubWidgets)">
-            <param name="visibility" value="!Skin.String($PARAM[skinsetting].label)" />
-            <param name="label" value="31822" />
-            <param name="id" value="$PARAM[widgetid]5" />
-            <param name="skinsetting" value="$PARAM[skinsetting]" />
-        </include>        
         <include content="bingie_widget_hub">
             <param name="containerType" value="fixedlist" />
             <param name="widgetid" value="$PARAM[widgetid]" />
@@ -144,7 +102,7 @@
             <include content="SetFixedVerticalNavigationProps" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
-            <include content="Fixed_Focus_Navigation_Factory1" condition="Skin.HasSetting(LockHubWidgets)">
+            <include content="Fixed_Focus_Navigation_Factory1">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
             <include content="$PARAM[widgetStyle]">
@@ -262,10 +220,6 @@
     <!-- Bingie Items Movies -->
     <include name="bingie_items_movies">
         <include>Empty_Hub_Alt_Buttons</include>
-        <!-- set custom spotlight content -->
-        <include content="Set_Custom_Spotlight_Hub_Button" condition="!Skin.HasSetting(LockHubWidgets) + !Skin.HasSetting(DisableSpotlightContent)">
-            <param name="hubname" value="movies"/>
-        </include>
         <include content="bingie_custom_hub_items">
             <param name="hubname" value="movies"/>
         </include>
@@ -274,10 +228,6 @@
     <!-- Bingie Items TVShows -->
     <include name="bingie_items_tvshows">
         <include>Empty_Hub_Alt_Buttons</include>
-        <!-- set custom spotlight content -->
-        <include content="Set_Custom_Spotlight_Hub_Button" condition="!Skin.HasSetting(LockHubWidgets) + !Skin.HasSetting(DisableSpotlightContent)">
-            <param name="hubname" value="tvshows"/>
-        </include>
         <include content="bingie_custom_hub_items">
             <param name="hubname" value="tvshows"/>
         </include>
@@ -296,10 +246,6 @@
     <!-- Bingie Items New -->
     <include name="bingie_items_new">
         <include>Empty_Hub_Alt_Buttons</include>
-        <!-- set custom spotlight content -->
-        <include content="Set_Custom_Spotlight_Hub_Button" condition="!Skin.HasSetting(LockHubWidgets) + !Skin.HasSetting(DisableSpotlightContent)">
-            <param name="hubname" value="new"/>
-        </include>
         <include content="bingie_custom_hub_items">
             <param name="hubname" value="new"/>
         </include>
@@ -308,10 +254,6 @@
     <!-- Bingie Items My Hub -->
     <include name="bingie_items_myhub">
         <include>Empty_Hub_Alt_Buttons</include>
-        <!-- set custom spotlight content -->
-        <include content="Set_Custom_Spotlight_Hub_Button" condition="!Skin.HasSetting(LockHubWidgets) + !Skin.HasSetting(DisableSpotlightContent)">
-            <param name="hubname" value="myhub"/>
-        </include>
         <include content="bingie_custom_hub_items">
             <param name="hubname" value="myhub"/>
         </include>
@@ -354,73 +296,6 @@
             <shadowcolor>$INFO[Skin.String(ViewDetailsTextShadowColor)]</shadowcolor>
             <label>$PARAM[label]</label>
             <animation effect="slide" end="50" time="0" condition="Container($PARAM[widgetid]).IsUpdating + Integer.IsEqual(Container($PARAM[widgetid]).NumItems,0)">Conditional</animation>
-        </control>
-    </include>
-
-    <include name="Hub_Set_Widget_Button">
-        <control type="button" id="$PARAM[id]">
-            <visible>$PARAM[visibility]</visible>
-            <include content="textoffsetx">
-                <param name="textoffsetx" value="20" />
-            </include>
-            <textoffsetx>65</textoffsetx>
-            <width>auto</width>
-            <height>46</height>
-            <align>left</align>
-			<left>130</left>
-			<aligny>center</aligny>
-            <font>Reg32</font>
-            <label>$PARAM[label]</label>
-            <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>           
-            <onclick>RunScript(script.skinshortcuts,type=widgets&amp;showNone=true&amp;skinWidgetName=$PARAM[skinsetting].label&amp;skinWidgetTarget=$PARAM[skinsetting].target&amp;skinWidgetPath=$PARAM[skinsetting].path)</onclick>
-            <texturenofocus/>
-        </control>
-    </include>
-
-    <!-- Set Custom Spotlight Content Button -->
-    <include name="Set_Custom_Spotlight_Hub_Button">
-        <control type="button" id="1500">
-            <width>auto</width>
-            <height>46</height>
-            <align>left</align>
-			<left>130</left>
-            <aligny>center</aligny>
-            <font>Reg32</font>
-            <include content="textoffsetx">
-                <param name="textoffsetx" value="20" />
-            </include>
-            <textoffsetx>65</textoffsetx>
-            <textwidth>900</textwidth>
-            <label>31874</label>
-            <label2>$INFO[Skin.String(spotlight$PARAM[hubname].label)]</label2>
-            <onclick condition="Skin.String(spotlight$PARAM[hubname].label)">Skin.Reset(spotlight$PARAM[hubname].label)</onclick>
-            <onclick condition="Skin.String(spotlight$PARAM[hubname].path)">Skin.Reset(spotlight$PARAM[hubname].path)</onclick>
-            <onclick>
-                RunScript(script.skinshortcuts,type=widgets&amp;showNone=true&amp;skinWidgetName=spotlight$PARAM[hubname].label&amp;skinWidgetTarget=spotlight$PARAM[hubname].target&amp;skinWidgetPath=spotlight$PARAM[hubname].path)</onclick>
-            <texturenofocus/>
-            <selected>Skin.String(spotlight$PARAM[hubname].label)</selected>
-        </control>
-    </include>
-
-    <include name="Set_Custom_Container_Content">
-        <control type="button" id="1500">
-            <width>auto</width>
-            <height>46</height>
-            <align>left</align>
-            <aligny>center</aligny>
-            <font>Reg32</font>
-            <include content="textoffsetx">
-                <param name="textoffsetx" value="20" />
-            </include>
-            <textoffsetx>65</textoffsetx>
-            <textwidth>900</textwidth>
-            <label>31384</label>
-            <label2>$INFO[Skin.String(mycustom.label)]</label2>
-            <onclick condition="Skin.String(mycustom.label)">Skin.Reset(mycustom.label)</onclick>
-            <onclick condition="Skin.String(mycustom.path)">Skin.Reset(mycustom.path)</onclick>
-            <onclick>RunScript(script.skinshortcuts,type=widgets&amp;showNone=true&amp;skinWidgetName=mycustom.label&amp;skinWidgetTarget=mycustom.target&amp;skinWidgetPath=mycustom.path)</onclick>
-            <texturenofocus/>
-            <selected>Skin.String(mycustom.label)</selected>
         </control>
     </include>
 
@@ -516,30 +391,12 @@
 		<posy>569</posy>
         <width>100%</width>
 		<height>100%</height>
-        <include condition="!Skin.HasSetting(LockHubWidgets)">Set_Custom_Container_Content</include>
-        <include content="Custom_Container_Label2" condition="Skin.HasSetting(LockHubWidgets)">
+        <include content="Custom_Container_Label2">
             <param name="label" value="$INFO[Skin.String(mycustom.label)]" />
         </include>
         <include content="Custom_Container_Empty_Label">
             <param name="label" value="$LOCALIZE[31372]" />
         </include>
-        <!-- set label -->
-        <control type="button" id="1502">
-            <width>1790</width>
-            <height>40</height>
-            <align>left</align>
-			<aligny>center</aligny>
-            <font>Reg24</font>
-            <include content="textoffsetx">
-                <param name="textoffsetx" value="20" />
-            </include>
-            <textoffsetx>65</textoffsetx>
-            <label>[$ADDON[script.skinshortcuts 32025]]</label>
-            <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>
-            <onclick>Skin.SetString(mycustom.label)</onclick>
-            <texturenofocus/>
-            <visible>!Skin.HasSetting(LockHubWidgets) + Skin.String(mycustom.label) + [String.IsEmpty(Container(1510).ListItem.Property(similartitle)) + String.IsEmpty(Container(1510).ListItem.Property(genretitle))]</visible>
-        </control>
         <include content="ListHubContainerTemplate">
             <param name="widgetid" value="1510"/>
             <param name="contentPath" value="$INFO[Skin.String(mycustom.path)]" />
@@ -680,8 +537,7 @@
     <!-- no items in hubs buttons -->
     <include name="Empty_Hub_Alt_Buttons">
         <control type="textbox" id="1501">
-            <visible>Skin.HasSetting(LockHubWidgets)
-                + [Integer.IsEqual(Container(1510).NumItems,0) + !Container(1510).IsUpdating] + [Integer.IsEqual(Container(1520).NumItems,0) + !Container(1520).IsUpdating]
+            <visible>[Integer.IsEqual(Container(1510).NumItems,0) + !Container(1510).IsUpdating] + [Integer.IsEqual(Container(1520).NumItems,0) + !Container(1520).IsUpdating]
                 + [Integer.IsEqual(Container(1530).NumItems,0) + !Container(1530).IsUpdating] + [Integer.IsEqual(Container(1540).NumItems,0) + !Container(1540).IsUpdating]
                 + [Integer.IsEqual(Container(1550).NumItems,0) + !Container(1550).IsUpdating] + [Integer.IsEqual(Container(1560).NumItems,0) + !Container(1560).IsUpdating]
                 + [Integer.IsEqual(Container(1570).NumItems,0) + !Container(1570).IsUpdating] + [Integer.IsEqual(Container(1580).NumItems,0) + !Container(1580).IsUpdating]</visible>
@@ -736,23 +592,6 @@
                     <onclick>ActivateWindow(Videos,sources://video/,return)</onclick>
                     <visible>!Library.HasContent(Video)</visible>
                 </control>
-                <control type="button" id="1505">
-                    <width>600</width>
-                    <height>65</height>
-                    <aligny>center</aligny>
-                    <align>left</align>
-                    <font>Reg30</font>
-                    <textoffsetx>15</textoffsetx>
-                    <textoffsety>8</textoffsety>
-                    <textcolor>$INFO[Skin.String(BingieButtonTextColor)]</textcolor>
-                    <focusedcolor>$INFO[Skin.String(BingieButtonFocusTextColor)]</focusedcolor>
-                    <texturefocus border="10" colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]">bingie/border/default_button_fo_4.png</texturefocus>
-                    <texturenofocus/>
-                    <label>31394</label>
-                    <onclick>Skin.ToggleSetting(LockHubWidgets)</onclick>
-                    <onclick>ReloadSkin()</onclick>
-                    <visible>Skin.HasSetting(LockHubWidgets)</visible>
-                </control>
             </control>
 
             <control type="group">
@@ -771,6 +610,5 @@
 
     <variable name="NoItemsInHubButtonsInfo">
         <value condition="Control.HasFocus(1504)">$LOCALIZE[31391]</value>
-        <value condition="Control.HasFocus(1505)">$LOCALIZE[31393]</value>
     </variable>
 </includes>

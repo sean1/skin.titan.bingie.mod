@@ -330,9 +330,6 @@
 				<onback>CancelAlarm(preview_delay,silent)</onback>
 				<onback condition="$EXP[IsPlayingUnrecognizedContent] + Skin.HasSetting(DetailsAutoTrailer) + [!String.IsEmpty(ListItem.Trailer) | !String.IsEmpty(Window(Home).Property(TrailerPlaying))] + !String.IsEqual(Window(Home).Property(TrailerPlaying),fullscreen)">PlayerControl(Stop)</onback>
 				<viewtype label="31444">list</viewtype>
-				<include content="View_Forced">
-					<param name="viewtype" value="$LOCALIZE[31444]" />
-				</include>
 				<orientation>vertical</orientation>
 				<pagecontrol>60</pagecontrol>
 				<scrolltime tween="cubic" easing="out">600</scrolltime>
@@ -360,7 +357,7 @@
                         <include>BigListFocusLayout</include>
 						<include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
 						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
                     </control>
 				</focusedlayout>
@@ -388,7 +385,7 @@
                         <include>BigListSlimLayoutFocus</include>
 						<include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
 						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
                     </control>
 				</focusedlayout>

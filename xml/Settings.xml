@@ -81,14 +81,6 @@
                     </control>
                 </focusedlayout>
                 <content>
-                    <item id="11">
-                        <description>Skin Settings</description>
-                        <label>20077</label>
-                        <label2>31407</label2>
-                        <onclick>activatewindow(skinsettings)</onclick>
-                        <icon>special://skin/extras/media/backgrounds/settings_bingie_mod.jpg</icon>
-                        <thumb>special://skin/extras/media/backgrounds/skinsettings.png</thumb>
-                    </item>
                     <item id="1">
                         <description>Interface</description>
                         <label>14206</label>

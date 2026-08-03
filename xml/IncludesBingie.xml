@@ -1561,12 +1561,6 @@
         <value condition="String.IsEqual(Window(Home).Property(LatestEpisode.1.ShowTitle),Window(Home).Property(ListItem.Title))">$INFO[Window(Home).Property(LatestEpisode.1.EpisodeSeason)]</value>
     </variable>
 
-    <variable name="BingieSpotlightSublabel">
-        <value condition="String.IsEqual(Container(1508).ListItem.DBTYPE,tvshow) + Integer.IsGreater(Container(15081).NumItems,0)">$INFO[Container(15081).ListItem.Season,$LOCALIZE[31070] , $LOCALIZE[31067]]</value>  <!--removed a few [B][/B] for better control of bold use in fonts.xml instead-->
-        <value condition="String.IsEqual(Container(1508).ListItem.DBTYPE,episode) + !String.IsEmpty(Container(1508).ListItem.Season) + !String.IsEmpty(Container(1508).ListItem.Episode) +
-        !String.IsEmpty(Container(1508).ListItem.Title)">$LOCALIZE[31066] [UPPERCASE]$INFO[Container(1508).ListItem.Season,$LOCALIZE[31871],]$INFO[Container(1508).ListItem.Episode,$LOCALIZE[31872],][/UPPERCASE]$INFO[Container(1508).ListItem.Title, ","] $LOCALIZE[31067]</value>
-        <value>$LOCALIZE[31841]</value>
-    </variable>
 
     <variable name="SpotlightTVShowEpisodesPath">
         <value condition="!String.IsEmpty(Container(1508).ListItem.DBID)">videodb://tvshows/titles/$INFO[Container(1508).ListItem.DBID]/-2/</value>
@@ -1624,14 +1618,6 @@
         <value condition="$EXP[IsMainMenuOpened] + [!String.IsEmpty(Window(Home).Property(ListItem.Season)) | !String.IsEmpty(Window(Home).Property(ListItem.Episode))]">[CAPITALIZE]$INFO[Window(Home).Property(ListItem.Season), $LOCALIZE[36904] ,]$INFO[Window(Home).Property(ListItem.Episode), $LOCALIZE[36906] ,][/CAPITALIZE]</value>
     </variable>
 
-    <variable name="BingieEpisodeInfoSubLabel">
-        <value condition="[!Skin.HasSetting(MovieDetailsHome) + !String.IsEmpty(ListItem.PercentPlayed) + !Integer.IsGreater(ListItem.PercentPlayed,1)] + Skin.HasSetting(MovieDetailsHome) + !String.IsEmpty(ListItem.Title)
-         + [!String.IsEmpty(ListItem.Season) | !String.IsEmpty(ListItem.Episode)]">[CAPITALIZE]$INFO[ListItem.Season,$LOCALIZE[36904] ,]$INFO[ListItem.Episode, $LOCALIZE[36906] ,][/CAPITALIZE][CR]$INFO[ListItem.Title]</value>
-        <value condition="[$EXP[IsMainMenuOpened] + !Integer.IsGreater(Window(Home).Property(ListItem.PercentPlayed),1)] + !String.IsEmpty(Window(Home).Property(ListItem.Title)) + [!String.IsEmpty(Window(Home).Property(ListItem.Season)) | !String.IsEmpty(Window(Home).Property(ListItem.Episode))]">[CAPITALIZE]$INFO[Window(Home).Property(ListItem.Season),$LOCALIZE[36904] ,]$INFO[Window(Home).Property(ListItem.Episode), $LOCALIZE[36906] ,][/CAPITALIZE][CR]$INFO[Window(Home).Property(ListItem.Title)]</value>
-        <value condition="!String.IsEmpty(ListItem.Title)">$INFO[ListItem.Title]</value>
-        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Title))">$INFO[Window(Home).Property(ListItem.Title)]</value>
-        <value>[CAPITALIZE]$INFO[Window(Home).Property(ListItem.Label)][/CAPITALIZE]</value>
-    </variable>
 
     <!-- 'SxxExx "episode_title"' format-->
     <variable name="BingieDialogEpisodeInfoLabel">
@@ -1640,9 +1626,6 @@
 		<value condition="[String.IsEqual(ListItem.DBType,episode) | Container.Content(episodes)] + !String.IsEmpty(ListItem.Title)">$INFO[ListItem.Title]</value>
     </variable>
 
-    <variable name="BingieDialogInfoSublabel">
-        <value condition="[String.IsEqual(ListItem.dbtype,episode) | String.IsEqual(Window(Home).Property(ListItem.dbtype),episode)] | [Skin.HasSetting(ShowEpisodePlotInfoDialog) + Control.IsVisible(5050)]">$VAR[BingieDialogEpisodeInfoLabel]</value>
-    </variable>
 
     <variable name="BingiePlot">
         <!-- Spotlight Widget (Inside Container) -->
@@ -1704,12 +1687,6 @@
     </variable>
 
     <!-- Plot Outline Prioritized and Per-Episode Plot -->
-    <variable name="BingieInfoDialogPlot">
-        <value condition="Skin.HasSetting(ShowEpisodePlotInfoDialog) + [String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(Container(5050).ListItem.Plot)">$INFO[Container(5050).ListItem.Plot]</value>
-        <!-- Contains is a Workaround to Ignore Bad Scraped Outline Plots, should be Solved at Scraper Level -->
-        <value condition="!String.IsEmpty(ListItem.PlotOutline) + !String.Contains(ListItem.PlotOutline,$LOCALIZE[20339]: )">$INFO[ListItem.PlotOutline]</value>
-        <value>$VAR[Plots]</value>
-    </variable>
 
     <!-- Plot Outline Prioritized for Views -->
     <variable name="ViewsPlotWithOutline">
@@ -2570,10 +2547,6 @@
         </include>
     </include>
 
-    <variable name="FixedFrameTexture">
-        <value condition="String.Contains(Skin.String(widgetstyle), landscape) | $EXP[IsBingieListsActive]">$INFO[Skin.String(thumbsborder_focused),bingie/border/thumb_fo_,.png]</value>
-        <value condition="String.Contains(Skin.String(widgetstyle), poster)">$INFO[Skin.String(thumbsborder_focused),bingie/border/poster_fo_,.png]</value>
-    </variable>
 
     <!-- Fixed Focus Bottom Override Value --> <!-- Add a ZERO if Widgets Start Scrolling Up Out of Place  -->
     <include name="Fixed_Focus_Bottom">
@@ -3335,11 +3308,6 @@
     </variable>
 
     <!-- season/episode sublabel -->
-    <variable name="BingieMainEpisodeInfoLabel">
-        <value condition="Container.Content(seasons) + !String.IsEmpty(ListItem.Season)">[B][CAPITALIZE]$INFO[ListItem.Season,$LOCALIZE[36904] ,][/CAPITALIZE][/B][CR]$VAR[BingieMainSeasonTotalEpisodesInfoLabel]</value>
-        <value condition="Container.Content(seasons) + String.IsEmpty(ListItem.Season)">$VAR[BingieMainSeasonTotalEpisodesInfoLabel]</value>
-        <value condition="Container.Content(episodes)">[B][CAPITALIZE]$INFO[ListItem.Season,$LOCALIZE[36904] ,]$INFO[ListItem.Episode, $LOCALIZE[36906] ,][/CAPITALIZE][/B][CR]$INFO[ListItem.Title]</value>
-    </variable>
 
     <!-- season total episodes / watched info -->
     <variable name="BingieMainSeasonTotalEpisodesInfoLabel">

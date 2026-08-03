@@ -94,9 +94,6 @@
             <control type="panel" id="508">
 			<bottom>13%</bottom>
 				<viewtype label="31435">posterwrap</viewtype>
-				<include content="View_Forced">
-					<param name="viewtype" value="$LOCALIZE[31435]" />
-				</include>
                 <right>43</right>
                 <bottom>0</bottom>
                 <width>292</width>

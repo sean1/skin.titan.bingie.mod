@@ -32,11 +32,6 @@
         <value>$LOCALIZE[31578]</value>
     </variable>
 
-    <variable name="SuggestionBorderColor">
-        <value condition="Control.HasFocus(1007)">$INFO[Skin.String(ViewDetailsBorderFocusColor)]</value>
-        <value>$INFO[Skin.String(BingieSecondaryTextColor)]</value>
-    </variable>
-
     <!-- INCLUDES -->
     <!-- Static Search Suggestions -->
     <include name="Search_Suggestions_Content">

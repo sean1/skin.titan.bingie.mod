@@ -24,9 +24,6 @@
             </control>		
 			<control type="panel" id="504">
 				<viewtype label="31643">list</viewtype>
-				<include content="View_Forced">
-					<param name="viewtype" value="$LOCALIZE[31643]" />
-				</include>
 				<animation effect="slide" end="505" time="0" condition="!Skin.HasSetting(View504_ShowInfoRight)">Conditional</animation>
 				<bottom>147</bottom>
                 <height>721</height>	
@@ -54,7 +51,7 @@
                         <width>781</width>
                         <include>BigListFocusLayout</include>
 						<include content="LibraryAutoTrailerButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
                     </control>
 				</focusedlayout>
@@ -72,7 +69,7 @@
                         <width>781</width>
                         <include>BigList2SlimLayoutFocus</include>
 						<include content="LibraryAutoTrailerButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
                     </control>
 				</focusedlayout>

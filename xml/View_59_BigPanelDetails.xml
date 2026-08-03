@@ -32,9 +32,6 @@
       <control type="panel" id="59">
         <animation effect="slide" end="-630" time="0" condition="Skin.HasSetting(View59_ShowInfoRight)">Conditional</animation>
         <viewtype label="31428">mediainfo</viewtype>
-          <include content="View_Forced">
-              <param name="viewtype" value="$LOCALIZE[31428]" />
-          </include>
         <!-- Right Group Panel -->
 		<right>-7</right>
         <bottom>101</bottom>
@@ -81,7 +78,7 @@
         </control>
               <include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
 						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
           </control>
         </focusedlayout>

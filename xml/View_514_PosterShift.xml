@@ -75,14 +75,6 @@
                 <animation effect="slide" start="-10,-10" end="10,10" time="8000" tween="cubic" easing="inout" pulse="true" condition="Skin.HasSetting(BackgroundAnimation)">Conditional</animation>
 			 </control>							
             
-            <!-- movie details small -->
-			<control type="group" id="88883">
-				<include>MovieDetailsTop2</include>
-                <visible>Control.IsVisible(514)</visible>
-                <visible>Skin.String(View514_DisplayInfo,small) | [Skin.String(View514_DisplayInfo,small_delayed) + System.IdleTime(3)]</visible>
-				<animation effect="slide" start="0,-350" end="0" time="350" tween="cubic" easing="inout">Visible</animation>
-			</control>
-            
 			<control type="group">
 				<visible>!Window.IsActive(addoninformation)</visible>
                 
@@ -110,9 +102,6 @@
                 <ondown condition="!Skin.HasSetting(EnableQuickJump)">60</ondown>
 					<orientation>horizontal</orientation>
 					<viewtype label="31441">bigwrap</viewtype>
-                    <include content="View_Forced">
-                        <param name="viewtype" value="$LOCALIZE[31441]" />
-                    </include>
 					<pagecontrol>60</pagecontrol>
 					<preloaditems>2</preloaditems>
 					<scrolltime tween="quadratic">200</scrolltime>

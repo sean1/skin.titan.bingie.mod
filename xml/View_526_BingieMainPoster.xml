@@ -116,9 +116,6 @@
     <include name="Bingie_Main_Poster_View">
         <control type="$PARAM[containerType]" id="526">
             <viewtype label="31027">poster</viewtype>
-            <include content="View_Forced">
-                <param name="viewtype" value="$LOCALIZE[31027]" />
-            </include>
             <top>11</top>
             <height>469</height>
             <width>1666</width>
@@ -184,7 +181,7 @@
                     </control>
                     <include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
 						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
                     <animation effect="zoom" end="103,103" center="auto" time="100" condition="Skin.HasSetting(View526_DisableFixedBingieFrame) + Skin.HasSetting(View526_EnableZoomEffect)">focus</animation>
                     <include>Bounce_Up</include>

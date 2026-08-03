@@ -69,13 +69,5 @@
 			<param name="visibility" value="System.HasAlarm(startup) + [Player.HasVideo + !Integer.IsLess(Player.TimeRemaining(ss),4)] + !String.IsEqual(Skin.String(splash_screen),netflix_default) + !String.IsEqual(Skin.String(splash_screen),netflix_alternative) + !String.IsEqual(Skin.String(splash_screen),netflix_extended) + !String.IsEqual(Skin.String(splash_screen),none)"/>
 			<param name="size" value="80"/>
 		</include>
-		<!-- Snow Effect -->
-		<control type="group">
-			<include condition="String.IsEqual(Skin.String(season_greetings),snow_animation)">snow</include>
-		</control>
-		<!-- Halloween Effect -->
-		<control type="group">
-			<include condition="String.IsEqual(Skin.String(season_greetings),halloween_animation)">pumpkin</include>
-		</control>
 	</controls>
 </window>

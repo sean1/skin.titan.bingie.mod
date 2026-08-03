@@ -6,7 +6,7 @@
         <include>ThumbsViewItemLayout</include>
      </include>
     <include name="ThumbsViewLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]">ThumbsFO</include>
+        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">ThumbsFO</include>
         <include>ThumbsViewItemLayout</include>
     </include>
     <include name="ThumbsViewItemLayout">
@@ -50,7 +50,7 @@
         <include>ThumbsViewItemLayoutSmall</include>
      </include>
     <include name="ThumbsViewLayoutFocusSmall">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]">ThumbsFO</include>
+        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">ThumbsFO</include>
         <include>ThumbsViewItemLayoutSmall</include>
     </include>
     <include name="ThumbsViewItemLayoutSmall">
@@ -112,17 +112,7 @@
         <include>ThumbsViewItemBingieLayout</include>
      </include>
     <include name="ThumbsViewBingieLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]">ThumbsFOBingie</include>
-        <include>ThumbsViewItemBingieLayout</include>
-    </include>
-	<include name="ThumbsViewBingieLayoutFocusInfo">
-        <control type="image">
-            <!--focus image-->
-            <texture background="true" border="10">$INFO[Skin.String(thumbsborder_focused),bingie/border/thumb_fo_,.png]</texture>
-            <colordiffuse>$INFO[Skin.String(ViewDetailsBorderFocusColor)]</colordiffuse>
-            <aspectratio>stretch</aspectratio>
-            <bordersize>2</bordersize>
-        </control>
+        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">ThumbsFOBingie</include>
         <include>ThumbsViewItemBingieLayout</include>
     </include>
     <include name="ThumbsViewItemBingieLayout">
@@ -415,49 +405,6 @@
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
-        </control>
-    </include>
-	<include name="ThumbsTagOverlaySmallBingie">
-        <control type="image">
-            <!--Panel Ovelay-->
-            <bordersize>8</bordersize>
-			<bottom>0</bottom>
-            <height>60</height>
-            <texture>diffuse/home_overlay_bingie.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>$INFO[Skin.String(TagOverlaysPanelColor)]</colordiffuse>
-        </control>
-        <control type="textbox">
-            <!--Label-->
-            <left>12</left>
-            <right>12</right>
-            <bottom>11</bottom>
-            <height>40</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg16</font>
-			<autoscroll>false</autoscroll>
-			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
-        </control>
-		<control type="textbox">
-            <!--Label-->
-            <left>12</left>
-            <right>12</right>
-            <bottom>11</bottom>
-            <height>40</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg16</font>
-			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
-			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
     <include name="LandscapeTagOverlay">

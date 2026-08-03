@@ -29,17 +29,13 @@
     <!-- Header -->
     <!-- ====== -->
     <variable name="value_header">
-        <value condition="[Window.IsActive(skinsettings) | Window.IsActive(Custom_1105_SkinSettings.xml)]">[UPPERCASE]$LOCALIZE[20077][/UPPERCASE]</value>
+		<value condition="Window.IsActive(skinsettings)">[UPPERCASE]$LOCALIZE[20077][/UPPERCASE]</value>
 		<value condition="Window.IsActive(favourites)">$LOCALIZE[1036]</value>
 		<value condition="Window.IsActive(loginscreen)">$INFO[System.CurrentWindow]</value>
 		<value condition="Window.IsActive(DialogVideoInfo.xml) + !String.IsEmpty(ListItem.TvShowTitle)">$INFO[ListItem.TvShowTitle]</value>
 		<value condition="Window.IsActive(DialogVideoInfo.xml) + !String.IsEmpty(ListItem.Title)">$INFO[ListItem.Title]</value>
 		<value condition="Window.IsActive(profilesettings) | Window.IsActive(profiles)">$LOCALIZE[10130]</value>
 		<value condition="Window.IsActive(selectdialog) + !String.IsEmpty(Control.GetLabel(1))">$INFO[Control.GetLabel(1)]</value>
-		<value condition="Window.IsActive(script-skinshortcuts.xml) + String.IsEqual(Window.Property(groupname),powermenu)">$LOCALIZE[31204]</value>
-		<value condition="Window.IsActive(script-skinshortcuts.xml) + !String.IsEmpty(Control.GetLabel(500))">$INFO[Control.GetLabel(500)]</value>
-		
-		<value condition="Window.IsActive(script-skinshortcuts.xml)">$LOCALIZE[31014]</value>
 		<value condition="Window.IsActive(script-NextAired-TVGuide.xml) | Window.IsActive(script-NextAired-TVGuide2.xml)">$INFO[System.AddonTitle(script.tv.show.next.aired)]</value>
         <value condition="Window.IsActive(Home)">[UPPERCASE]$LOCALIZE[10000][/UPPERCASE]</value>
 		
@@ -83,7 +79,6 @@
         
         <value condition="String.IsEqual(Container.FolderPath,videodb://tvshows/titles/)">$LOCALIZE[20343]: $INFO[Window(Home).Property(TVShows.Count)] • $LOCALIZE[20360]: $INFO[Window(Home).Property(Episodes.Count)] • $LOCALIZE[16101]: $INFO[Window(Home).Property(Episodes.UnWatched)] • $INFO[Control.GetLabel(3)]</value>
         
-        <value condition="[Window.IsActive(skinsettings) | Window.IsActive(Custom_1105_SkinSettings.xml)]">$VAR[value_header_skinsettings]</value>
         <value condition="Window.IsActive(Home)">$INFO[Container(900).ListItem.Label]</value>
 		<value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ContentHeader)) + !String.IsEqual(Container.TotalUnwatched,0)">$INFO[Window(Home).Property(SkinHelper.ContentHeader)]$INFO[Container.TotalUnwatched, • , $LOCALIZE[16101]] $INFO[Control.GetLabel(3),• ]</value>
         <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ContentHeader))">$INFO[Window(Home).Property(SkinHelper.ContentHeader)] $INFO[Control.GetLabel(3),• ]</value>
@@ -92,21 +87,6 @@
         <value>$INFO[System.CurrentWindow]</value>
     </variable>
     
-    <variable name="value_header_skinsettings">
-		<value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),12)">$LOCALIZE[31121]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),9)">$LOCALIZE[31013]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),8)">$LOCALIZE[31022]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),17)">$LOCALIZE[31221]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),7)">$LOCALIZE[31518]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),16)">$LOCALIZE[31668]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),6)">$LOCALIZE[31005]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),19)">$LOCALIZE[31531]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),14)">$LOCALIZE[31271]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),15)">$LOCALIZE[31462]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),20)">$LOCALIZE[31667]</value>
-        <value condition="String.IsEqual(Window(Home).Property(SkinSettingSection),31)">$LOCALIZE[31696]</value>
-    </variable>
-	
 	<variable name="mediatitle">
 		<value condition="Container.Content(episodes) + !String.IsEmpty(ListItem.Episode)">$INFO[ListItem.Episode]. $INFO[ListItem.Title]</value>		
 		<value condition="!String.IsEmpty(ListItem.Title) + !String.IsEqual(ListItem.Title,..)">$INFO[ListItem.Title]</value>
@@ -208,12 +188,6 @@
 		<value condition="Control.IsVisible(214) + !String.IsEmpty(Container(214).ListItem.Property(Art(clearlogo)))">$INFO[Container(214).ListItem.Property(Art(clearlogo))]</value>
 		<value condition="Control.IsVisible(215) + !String.IsEmpty(Container(215).ListItem.Property(Art(clearlogo)))">$INFO[Container(215).ListItem.Property(Art(clearlogo))]</value>
     </variable>
-	
-		
-	<variable name="View_Item_Header">
-		<value condition="[Container.Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)]">$INFO[ListItem.Episode,,.] $INFO[ListItem.Title]</value>
-		<value>$INFO[ListItem.Label]</value>
-	</variable>	
 	
 	<variable name="HDIndicator">
 		<value condition="ListItem.IsStereoscopic">3D</value>
@@ -373,16 +347,6 @@
 		<value condition="Control.HasFocus(890)">[B]$INFO[System.ProfileName][/B]</value>
    </variable>
    
-   <variable name="ViewDetailsFocusColor">
-        <value condition="$EXP[IsBingieViewsActive]">$INFO[Skin.String(HomeViewDetailsFocusColor)]</value>
-        <value>$INFO[Skin.String(ViewDetailsFocusColor)]</value>
-   </variable>
-
-    <variable name="ViewDetailsBorderFocusColor">
-        <value condition="$EXP[IsBingieViewsActive]">$INFO[Skin.String(HomeViewDetailsBorderFocusColor)]</value>
-        <value>$INFO[Skin.String(ViewDetailsBorderFocusColor)]</value>
-    </variable>
-   
    <variable name="ViewDetailsPanelColor">
         <value condition="Window.IsActive(script-skin_helper_service-CustomInfo.xml)">$INFO[Skin.String(ViewDetailsPanelColor)]</value>
         <value condition="$EXP[IsBingieViewsActive] + Skin.String(HomeWidgetsBorderColor)">$INFO[Skin.String(HomeWidgetsBorderColor)]</value>
@@ -486,23 +450,6 @@
      </variable>
      
      
-     
-     <variable name="channellogo">
-        <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ListItem.ChannelLogo))">$INFO[Window(Home).Property(SkinHelper.ListItem.ChannelLogo)]</value>
-     </variable>
-     
-     <variable name="widgetrowslabel">
-        <value condition="String.IsEqual(Container(211).ListItem.Property(multiwidget),single2)">$LOCALIZE[31751]</value>
-        <value condition="String.IsEqual(Container(211).ListItem.Property(multiwidget),multi2)">$LOCALIZE[31753]</value>
-        <value condition="!String.IsEmpty(Container(211).ListItem.Property(multiwidget.name))">$INFO[Container(211).ListItem.Property(multiwidget.name)]</value>
-        <value>$LOCALIZE[31753]</value>
-     </variable>
-     
-     <variable name="listitem_genre">
-        <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ListItem.Genre))">$INFO[Window(Home).Property(SkinHelper.ListItem.Genre)]</value>
-        <value>$INFO[ListItem.Genre]</value>
-     </variable>
-    
      <variable name="osdpanelimage">
         <value>diffuse/panel2.png</value>
      </variable>
@@ -631,57 +578,6 @@
         <value condition="System.HasAddon(plugin.program.autocompletion)">plugin://plugin.program.autocompletion?info=autocomplete&amp;&amp;id=$INFO[Control.GetLabel(312).index(1)]</value>
      </variable>
      
-     <variable name="TagsVisibilityLabel">
-        <value condition="Control.IsVisible(52) + !Skin.String(View52.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(52)">$INFO[Skin.String(View52.Tags.label)]</value>
-        <value condition="Control.IsVisible(53) + !Skin.String(View53.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(53)">$INFO[Skin.String(View53.Tags.label)]</value>
-        <value condition="Control.IsVisible(54) + !Skin.String(View54.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(54)">$INFO[Skin.String(View54.Tags.label)]</value>
-        <value condition="Control.IsVisible(55) + !Skin.String(View55.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(55)">$INFO[Skin.String(View55.Tags.label)]</value>
-        <value condition="Control.IsVisible(57) + !Skin.String(View57.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(57)">$INFO[Skin.String(View57.Tags.label)]</value>
-        <value condition="Control.IsVisible(59) + !Skin.String(View59.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(59)">$INFO[Skin.String(View59.Tags.label)]</value>
-        <value condition="Control.IsVisible(500) + !Skin.String(View500.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(500)">$INFO[Skin.String(View500.Tags.label)]</value>
-        <value condition="Control.IsVisible(501) + !Skin.String(View501.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(501)">$INFO[Skin.String(View501.Tags.label)]</value>
-        <value condition="Control.IsVisible(502) + !Skin.String(View502.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(502)">$INFO[Skin.String(View502.Tags.label)]</value>
-        <value condition="Control.IsVisible(505) + !Skin.String(View505.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(505)">$INFO[Skin.String(View505.Tags.label)]</value>
-        <value condition="Control.IsVisible(508) + !Skin.String(View508.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(508)">$INFO[Skin.String(View508.Tags.label)]</value>
-        <value condition="Control.IsVisible(509) + !Skin.String(View509.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(509)">$INFO[Skin.String(View509.Tags.label)]</value>
-        <value condition="Control.IsVisible(510) + !Skin.String(View510.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(510)">$INFO[Skin.String(View510.Tags.label)]</value>
-        <value condition="Control.IsVisible(511) + !Skin.String(View511.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(511)">$INFO[Skin.String(View511.Tags.label)]</value>
-        <value condition="Control.IsVisible(512) + !Skin.String(View512.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(512)">$INFO[Skin.String(View512.Tags.label)]</value>
-        <value condition="Control.IsVisible(513) + !Skin.String(View513.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(513)">$INFO[Skin.String(View513.Tags.label)]</value>
-        <value condition="Control.IsVisible(514) + !Skin.String(View514.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(514)">$INFO[Skin.String(View514.Tags.label)]</value>
-        <value condition="Control.IsVisible(519) + !Skin.String(View519.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(519)">$INFO[Skin.String(View519.Tags.label)]</value>
-        <value condition="Control.IsVisible(520) + !Skin.String(View520.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(520)">$INFO[Skin.String(View520.Tags.label)]</value>
-		<value condition="Control.IsVisible(523) + !Skin.String(View523.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(523)">$INFO[Skin.String(View523.Tags.label)]</value>
-        <value condition="Control.IsVisible(526) + !Skin.String(View526.Tags)">$LOCALIZE[1223]</value>
-        <value condition="Control.IsVisible(526)">$INFO[Skin.String(View526.Tags.label)]</value>
-     </variable>
-     
-     <variable name="submenuheader">
-        <value condition="String.IsEmpty(Container(900).ListItem.Property(customsubmenuheader))">$LOCALIZE[1034]</value>
-        <value condition="String.IsEqual(Container(900).ListItem.Property(customsubmenuheader),mainmenu)">$INFO[Container(900).ListItem.Label]</value>
-        <value condition="!String.IsEqual(Container(900).ListItem.Property(customsubmenuheader),None)">$INFO[Container(900).ListItem.Property(customsubmenuheader)]</value>
-     </variable>
-
 	 <variable name="VideoHWDecoder">
  		<value condition="Player.Process(videohwdecoder)">$LOCALIZE[13281]</value>
  		<value>$LOCALIZE[31787]</value>
@@ -711,24 +607,11 @@
     </variable>
 
     <!-- Home Vars -->
-    <variable name="HomeMenuWidgetInfoLabel">
-        <value condition="String.Contains(Container(900).ListItem.Property(widgetPath), plugin.video.youtube) + !String.IsEmpty(ListItem.Label2)">[B]$INFO[ListItem.label][CR]$INFO[ListItem.label2][/B]</value>
-        <value condition="String.IsEqual(ListItem.Property(DBTYPE), systeminfo)">[B]$INFO[ListItem.label][/B] $INFO[ListItem.label2]</value>
-        <value condition="String.IsEqual(ListItem.DBTYPE,episode)">[B][UPPERCASE]S$INFO[ListItem.Season]E$INFO[ListItem.Episode]:[/UPPERCASE] $INFO[ListItem.Title][/B]</value>
-        <value condition="!String.IsEmpty(ListItem.Title)">[B]$INFO[ListItem.Title][/B]</value>
-        <value condition="!String.IsEmpty(ListItem.Label)">[B]$INFO[ListItem.Label][/B]</value>
-    </variable>
     <variable name="HomeMenuWidgetInfoPlot">
         <value condition="!String.IsEmpty(ListItem.PlotOutline) + Skin.HasSetting(WidgetsPreferPlotOutline) + !String.Contains(ListItem.PlotOutline,$LOCALIZE[20339]: )">$INFO[ListItem.PlotOutline]</value>
         <value condition="!String.IsEmpty(ListItem.Plot)">$INFO[ListItem.Plot]</value>
         <value condition="!String.IsEmpty(ListItem.Property(Plot))">$INFO[ListItem.Property(Plot)]</value>
     </variable>
-    <variable name="HomeMenuWidgetInfoPlotAlt">
-        <!-- Details Widget -->
-        <value condition="!String.IsEmpty(ListItem.VideoResolution)">[B]$VAR[VideoResolutionVar,, • ]$VAR[VideoCodecVar,[UPPERCASE], • [/UPPERCASE]]$VAR[VideoAspectVar,, • ]$VAR[AudioCodecVar,[UPPERCASE], • [/UPPERCASE]]$VAR[AudioChannelsVar][/B][CR]$VAR[HomeMenuWidgetInfoPlot]</value>
-        <value>$VAR[HomeMenuWidgetInfoPlot]</value>
-    </variable>
-	
 	<variable name="CategoriesColors">
 		<value condition="String.IsEqual(Container.ListItem.Label,$LOCALIZE[320102]) | String.IsEqual(Container.ListItem.Label,$LOCALIZE[320108]) | String.IsEqual(Container.ListItem.Label,$LOCALIZE[320114]) | String.IsEqual(Container.ListItem.Label,$LOCALIZE[320119]) | String.IsEqual(Container.ListItem.Label,$LOCALIZE[320123])">FFFFA10B</value>
 		<value condition="String.IsEqual(Container.ListItem.Label,$LOCALIZE[320103]) | String.IsEqual(Container.ListItem.Label,$LOCALIZE[320115]) | String.IsEqual(Container.ListItem.Label,$LOCALIZE[320127]) | String.IsEqual(Container.ListItem.Label,$LOCALIZE[320120])">FFCE3A00</value>
@@ -748,16 +631,6 @@
         <value condition="[String.IsEqual(Skin.String(widgetstyle),landscape) | String.IsEqual(Skin.String(widgetstyle),landscapesmall) | String.IsEqual(Skin.String(widgetstyle),landscapelarge) | String.IsEqual(Skin.String(widgetstyle),landscapedetails) | String.IsEqual(Skin.String(widgetstyle),poster) | String.IsEqual(Skin.String(widgetstyle),smallposter) | String.IsEqual(Skin.String(widgetstyle),posterdetails)]">00000000</value>
         <value>$INFO[Skin.String(ViewDetailsTextShadowColor)]</value>
     </variable>
-	
-	<variable name="VideoResolutionTypeVar">
-		<value condition="String.IsEqual(ListItem.VideoResolution,480)">SD</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,540)">SD</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,576)">SD</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,720)">HD</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,1080)">HD</value>			
-		<value condition="String.IsEqual(ListItem.VideoResolution,4K)">UHD</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,8K)">UHD2</value>	
-	</variable>
 	
 	<variable name="VideoHDRVar">
 		<value condition="String.IsEqual(ListItem.HdrType,hlg)">HLG</value>

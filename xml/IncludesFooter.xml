@@ -87,11 +87,6 @@
        <value condition="!String.IsEmpty(ListItem.RatingAndVotes(tomatometerallaudience))">$INFO[ListItem.RatingAndVotes(tomatometerallaudience)]</value>
 	   </variable>
 	   
-	<variable name="rating_value_Metacritic">
-       <value condition="!String.IsEmpty(ListItem.RatingAndVotes(metacritic))">$INFO[ListItem.RatingAndVotes(metacritic)]</value>
-	   <value condition="!String.IsEmpty(Container(99950).ListItem.Property(Metacritic_Rating))">$INFO[Container(99950).ListItem.Property(Metacritic_Rating),,%  ]</value>
-	</variable>
-	
 	<variable name="rating_value_Trakt">
 	   <value condition="!String.IsEmpty(Container(99950).ListItem.Property(Trakt_Rating)) + !String.IsEqual(Container(99950).ListItem.Property(Trakt_Rating),0.0)">$INFO[Container(99950).ListItem.Property(Trakt_Rating), ,]$INFO[Container(99950).ListItem.Property(Trakt_Votes), (, $LOCALIZE[205])]</value>
 	</variable>

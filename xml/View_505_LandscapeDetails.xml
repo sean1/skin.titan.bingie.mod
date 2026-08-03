@@ -44,9 +44,6 @@
 			<preloaditems>4</preloaditems>
 			<pagecontrol>60</pagecontrol>
 			<viewtype label="31432">mediainfo</viewtype>
-            <include content="View_Forced">
-                <param name="viewtype" value="$LOCALIZE[31432]" />
-            </include>
             <visible>!Container.Content(files)</visible>
 			<scrolltime tween="cubic" easing="inout">500</scrolltime>
 			<itemlayout width="605" height="365">
@@ -63,7 +60,7 @@
                     <include>LandscapeLayoutFocus</include>
                     <include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
 						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
                 </control>
 			</focusedlayout>

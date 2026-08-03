@@ -30,9 +30,6 @@
 	  <control type="panel" id="512">
         <animation effect="slide" end="-630" time="0" condition="Skin.HasSetting(View512_ShowInfoRight)">Conditional</animation>
         <viewtype label="31439">icons</viewtype>
-          <include content="View_Forced">
-              <param name="viewtype" value="$LOCALIZE[31439]" />
-          </include>
         <right>26</right>
         <bottom>126</bottom>
         <height>750</height>
@@ -63,7 +60,7 @@
 				<include>ThumbsViewLayoutFocusSmall</include>
                 <include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
 						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
 			</control>
         </focusedlayout>

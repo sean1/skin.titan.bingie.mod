@@ -207,14 +207,6 @@
 				<include condition="Window.IsActive(1118)">bingie_items_something</include>
             </control>
 		</control>
-		 <!-- Snow Effect -->
-        <control type="group">
-            <include condition="String.IsEqual(Skin.String(season_greetings),snow_animation)">snow</include>
-        </control>
-		<!-- Halloween Effect -->
-        <control type="group">
-            <include condition="String.IsEqual(Skin.String(season_greetings),halloween_animation)">pumpkin</include>
-        </control>
     </include>
 
     <!-- Poster Layout -->
@@ -247,7 +239,7 @@
                 <width>240</width>
                 <height>330</height>
                 <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]</visible>
+                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
                     <visible>Control.HasFocus($PARAM[widgetid])</visible>
                     <include>PosterThumbFO_DefsBingie</include>
                     <include>thumbsborder_focused</include>
@@ -282,7 +274,7 @@
                 <width>240</width>
                 <height>330</height>
                 <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]</visible>
+                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
                     <visible>Control.HasFocus($PARAM[widgetid])</visible>
                     <include>PosterThumbFO_DefsBingie</include>
                     <include>thumbsborder_focused</include>
@@ -363,7 +355,7 @@
                 <width>landscape_width</width>
                 <height>210</height>
                 <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]</visible>
+                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
                     <visible>Control.HasFocus($PARAM[widgetid])</visible>
                     <include>ThumbsFO_DefsBingie</include>
                     <include>thumbsborder_focused</include>
@@ -405,7 +397,7 @@
                 <width>landscape_width</width>
                 <height>210</height>
                 <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]</visible>
+                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
                     <visible>Control.HasFocus($PARAM[widgetid])</visible>
                     <include>ThumbsFO_DefsBingie</include>
                     <include>thumbsborder_focused</include>

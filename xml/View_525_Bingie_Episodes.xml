@@ -53,12 +53,6 @@
         <value>$INFO[ListItem.Season,$LOCALIZE[20373] ,]</value>
     </variable>
 	
-	<!-- Variable for sorting out Season or TV Show Poster -->
-	<variable name="View525SeasonOrShowPoster">
-		<value condition="String.IsEmpty(ListItem.Art(season.poster))">$INFO[ListItem.Art(tvshow.poster)]</value>
-		<value>$INFO[ListItem.Art(season.poster)]</value>
-	</variable>
-	
 	<!-- Variable for sorting out Season or TV Show Landscape -->
 	<variable name="View525SeasonOrShowLandscape">
 		<value condition="!String.IsEmpty(ListItem.Art(season.landscape))">$INFO[ListItem.Art(season.landscape)]</value>
@@ -769,9 +763,6 @@
                 <!-- main container -->
                 <control type="fixedlist" id="525">
                     <viewtype label="31827">wide</viewtype>
-                    <include content="View_Forced">
-                        <param name="viewtype" value="$LOCALIZE[31827]" />
-                    </include>
                     <top>-153</top>
                     <posx>781</posx>
                     <height>1280</height>

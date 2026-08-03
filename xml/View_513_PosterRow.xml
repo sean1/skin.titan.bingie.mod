@@ -21,13 +21,6 @@
                 <animation effect="zoom" start="110" end="130" center="auto" time="12000" tween="cubic" easing="inout" pulse="true" condition="Skin.HasSetting(BackgroundAnimation)">Conditional</animation>
                 <animation effect="slide" start="-10,-10" end="10,10" time="8000" tween="cubic" easing="inout" pulse="true" condition="Skin.HasSetting(BackgroundAnimation)">Conditional</animation>
 			 </control>           
-            <!-- movie details small -->
-			<control type="group" id="88883">
-				<include>MovieDetailsTop2</include>
-                <visible>Control.IsVisible(513)</visible>
-                <visible>Skin.String(View513_DisplayInfo,small) | [Skin.String(View513_DisplayInfo,small_delayed) + System.IdleTime(3)]</visible>
-				<animation effect="slide" start="0,-350" end="0" time="350" tween="cubic" easing="inout">Visible</animation>
-			</control>				
 			<control type="group">
 				<bottom>11%</bottom>
 				<height>1000</height>
@@ -1431,9 +1424,6 @@
                 <ondown condition="!Skin.HasSetting(EnableQuickJump)">60</ondown>
 					<orientation>horizontal</orientation>
 					<viewtype label="31440">bigwrap</viewtype>
-					<include content="View_Forced">
-						<param name="viewtype" value="$LOCALIZE[31440]" />
-					</include>
 					<pagecontrol>60</pagecontrol>
 					<focusposition>1</focusposition>
 					<preloaditems>2</preloaditems>

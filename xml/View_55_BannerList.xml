@@ -46,9 +46,6 @@
                 <onright condition="!Skin.HasSetting(EnableQuickJump)">60</onright>
                 <pagecontrol>60</pagecontrol>
                 <viewtype label="31424">bigwide</viewtype>
-                <include content="View_Forced">
-                    <param name="viewtype" value="$LOCALIZE[31424]" />
-                </include>
                 <scrolltime tween="Cubic" easing="inout">500</scrolltime>
                 <focusposition>0</focusposition>
                 <orientation>vertical</orientation>
@@ -73,7 +70,7 @@
                         <include>BannerLayout</include>
                         <include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
 						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="$INFO[Skin.String(details_auto_trailer_interval)]" />
+							<param name="interval" value="3" />
 						</include>
 					</control>
                 </focusedlayout>

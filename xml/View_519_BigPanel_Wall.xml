@@ -25,9 +25,6 @@
 	  
 	  <control type="panel" id="519">
         <viewtype label="31666">icons</viewtype>
-          <include content="View_Forced">
-              <param name="viewtype" value="$LOCALIZE[31666]" />
-          </include>
         <posx>8</posx>
         <top>9</top>
         <height>1056</height>

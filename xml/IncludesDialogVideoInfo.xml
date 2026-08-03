@@ -1249,14 +1249,6 @@
 	</control>	      
 </control>	
 		
-		<!-- Snow Effect -->
-        <control type="group">
-            <include condition="String.IsEqual(Skin.String(season_greetings),snow_animation)">snow</include>
-        </control>
-		<!-- Halloween Effect -->
-        <control type="group">
-            <include condition="String.IsEqual(Skin.String(season_greetings),halloween_animation)">pumpkin</include>
-        </control>		
 	</include>
     
 	
@@ -3132,14 +3124,6 @@
 		</include>
 	</control>
 </control>
-		<!-- Snow Effect -->
-        <control type="group">
-            <include condition="String.IsEqual(Skin.String(season_greetings),snow_animation)">snow</include>
-        </control>
-		<!-- Halloween Effect -->
-        <control type="group">
-            <include condition="String.IsEqual(Skin.String(season_greetings),halloween_animation)">pumpkin</include>
-        </control>			
 		</control>
 	</include>
 	
@@ -3488,14 +3472,6 @@
                 <centerright>30</centerright>
                 <visible allowhiddenfocus="true">Control.HasFocus(90)</visible>
             </control>
-			<!-- Snow Effect -->
-			<control type="group">
-				<include condition="String.IsEqual(Skin.String(season_greetings),snow_animation)">snow</include>
-			</control>
-			<!-- Halloween Effect -->
-			<control type="group">
-				<include condition="String.IsEqual(Skin.String(season_greetings),halloween_animation)">pumpkin</include>
-			</control>
 		</control>
 	</include>
 
@@ -3802,11 +3778,6 @@
 	<variable name="BingieInfoDirector">
 		<value condition="!String.IsEmpty(ListItem.Director) + !$EXP[IsTvShowDBType]">$INFO[ListItem.Director]</value>
 		<value condition="!String.IsEmpty(Container(99950).ListItem.Property(Director)) + !$EXP[IsTvShowDBType]">$INFO[Container(99950).ListItem.Property(Director)]</value>
-	</variable>
-	
-	<variable name="InfoDialogClearLogo">
-		<value condition="!String.IsEmpty(Container.ListItem.Art(tvshow.clearlogo))">$INFO[Container.ListItem.Art(tvshow.clearlogo)]</value>
-        <value condition="!String.IsEmpty(Container.ListItem.Art(clearlogo))">$INFO[Container.ListItem.Art(clearlogo)]</value>
 	</variable>
 	
 	<variable name="InfoDialogMainFallbackTitle">

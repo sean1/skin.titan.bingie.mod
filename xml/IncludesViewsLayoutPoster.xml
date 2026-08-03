@@ -7,7 +7,7 @@
         <include condition="!Window.IsActive(Home)">PosterTagOverlay</include>
     </include>
     <include name="PosterPanelLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]] | Window.IsActive(movieinformation)">PosterThumbFO</include>
+        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]] | Window.IsActive(movieinformation)">PosterThumbFO</include>
 		<include>PosterThumbLayout</include>
         <include condition="!Window.IsActive(Home)">PosterTagOverlay</include>
     </include>
@@ -53,13 +53,6 @@
         </control>
     </include>
 	
-	<include name="BigPosterThumbFO_Case">
-        <control type="image">
-            <include>PosterThumbFO_Case</include>
-            <include>thumbsborder_focused</include>
-        </control>
-    </include>
-	
 	<!-- POSTER LAYOUT FOR BINGIE VIEWS -->
     <include name="PosterPanelBingieLayout">
         <include>PosterThumbBingieLayout</include>
@@ -72,7 +65,7 @@
         </control>
     </include>
     <include name="PosterPanelBingieLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]] | Window.IsActive(movieinformation) | Window.IsActive(1109) | Window.IsActive(1108) | Window.IsActive(1106)">PosterThumbFOBingie</include>
+        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]] | Window.IsActive(movieinformation) | Window.IsActive(1109) | Window.IsActive(1108) | Window.IsActive(1106)">PosterThumbFOBingie</include>
         <include>PosterThumbBingieLayout</include>
         <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) + !Window.IsActive(1109) + !Window.IsActive(1108) + !Window.IsActive(1106) + [Window.IsActive(1190) | Window.IsActive(1191) | !Window.IsActive(DialogVideoInfo.xml)]">PosterTagOverlayBingie</include>
         <control type="group">
@@ -153,7 +146,7 @@
           <include condition="!Window.IsActive(Home)">SmallPosterTagOverlay</include>
     </include>
     <include name="SmallPosterPanelLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]">SmallPosterFo</include>
+        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">SmallPosterFo</include>
         <include>SmallPosterThumbLayout</include>
         <include condition="!Window.IsActive(Home)">SmallPosterTagOverlay</include>
     </include>
@@ -183,7 +176,7 @@
 		</control>
     </include>
     <include name="SmallPosterPanelBingieLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | [[$EXP[IsBingieHubsActive]] + Skin.HasSetting(LockHubWidgets)]]]">SmallPosterFoBingie</include>
+        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">SmallPosterFoBingie</include>
         <include>PosterThumbBingieLayout</include>
         <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">SmallPosterTagOverlayBingie</include>
         <control type="group">
@@ -499,9 +492,4 @@
 		<value condition="Container.Content(tags)">DefaultTags.png</value>
 		<value condition="!String.IsEmpty(ListItem.Icon)">$INFO[ListItem.Icon]</value>
     </variable>
-	<variable name="DialogInfoPosterThumbList">
-        <value condition="!String.IsEmpty(Container(351).ListItem.Art(thumb))">$INFO[Container(351).ListItem.Art(thumb)]</value>
-        <value condition="!String.IsEmpty(Container(351).ListItem.Art(poster))">$INFO[Container(351).ListItem.Art(poster)]</value>
-    </variable>
-    
 </includes>

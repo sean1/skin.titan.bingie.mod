@@ -6,11 +6,12 @@
 
     <!-- Defaults -->
     <include>DefaultSkinSettings</include>
-    <include condition="String.IsEqual(Skin.String(HomeLayout),bingie)">DefaultSkinHubs</include>
+    <include>DefaultSkinHubs</include>
+    <onload>Skin.SetString(HomeLayout,bingie)</onload>
     
 	<!-- BINGIE -->
     <onload condition="!String.IsEmpty(Skin.String(CustomSearchTerm))">Skin.Reset(CustomSearchTerm)</onload>
-    <onload condition="String.IsEqual(Skin.String(HomeLayout),bingie)">SetProperty(bingieviews,1,Home)</onload>
+    <onload>SetProperty(bingieviews,1,Home)</onload>
     <onload>Skin.SetString(TMDbHelper.MonitorContainer,99950)</onload>
 	
 	<!-- Build Menu -->
@@ -26,7 +27,7 @@
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
     <onunload>ClearProperty(bingieviews,Home)</onunload>
     <include condition="Skin.String(widgets_rotate) + !String.IsEqual(Skin.String(widgets_rotate),disabled)">WidgetsAutoRotateUnload</include>
-    <include condition="String.IsEqual(Skin.String(HomeLayout),bingie)">BingieViews_WindowOpen_Fade</include>
+    <include>BingieViews_WindowOpen_Fade</include>
 
 	<controls>
 		<include>Defs_TMDbHelper_Loader</include>
@@ -34,10 +35,10 @@
         <include>GlobalBackground</include>
         <control type="button" id="1000">
             <include>HiddenObject</include>
-            <onfocus condition="String.IsEqual(Skin.String(HomeLayout),bingie) + !Skin.HasSetting(AutoFocusHome) + String.IsEmpty(Window(Home).Property(LastFocusWidget))">SetFocus(77777)</onfocus>
-            <onfocus condition="String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(AutoFocusHome) + String.IsEmpty(Window(Home).Property(LastFocusWidget))">SetFocus($VAR[DefaultMenuFocus])</onfocus>
+            <onfocus condition="!Skin.HasSetting(AutoFocusHome) + String.IsEmpty(Window(Home).Property(LastFocusWidget))">SetFocus(77777)</onfocus>
+            <onfocus condition="Skin.HasSetting(AutoFocusHome) + String.IsEmpty(Window(Home).Property(LastFocusWidget))">SetFocus($VAR[DefaultMenuFocus])</onfocus>
             <onfocus condition="String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">SetProperty(HomeFirstLoadDone,1)</onfocus>
-            <include content="WidgetsAutoRotate" condition="!String.IsEmpty(Skin.String(widgets_rotate_delay)) + !String.IsEqual(Skin.String(widgets_rotate),disabled) + String.IsEqual(Skin.String(HomeLayout),bingie)">
+            <include content="WidgetsAutoRotate" condition="!String.IsEmpty(Skin.String(widgets_rotate_delay)) + !String.IsEqual(Skin.String(widgets_rotate),disabled)">
                 <param name="interval" value="$INFO[Skin.String(widgets_rotate_delay)]" />
             </include>
             <onleft>900</onleft>
@@ -52,7 +53,7 @@
 		<include>NowPlayingBackground</include>           
 	
 		<!-- Home Screen -->
-        <include condition="String.IsEqual(Skin.String(HomeLayout),bingie)">HomeBingie</include>
+        <include>HomeBingie</include>
 
 		<!-- Debug -->
         <include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>

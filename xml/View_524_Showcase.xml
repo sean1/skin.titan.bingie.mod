@@ -35,9 +35,6 @@
             <control type="wraplist" id="524">
                 <!--Wraplist ID 500-->
                 <viewtype label="31429">posterwrap</viewtype>
-                <include content="View_Forced">
-                    <param name="viewtype" value="$LOCALIZE[31429]" />
-                </include>
                 <posx>-52</posx>
                 <width>1960</width>
                 <height>800</height>

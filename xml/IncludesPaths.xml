@@ -55,10 +55,6 @@
         <value condition="String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,episode) | String.IsEqual(ListItem.DBType,season)">info=trakt_upnext</value>
     </variable>
 	
-	<variable name="Path_Recs_Videos">
-        <value>info=videos</value>
-    </variable>
-	
 	<variable name="Path_Recs_Recommended">
         <value>info=recommendations$VAR[Path_Param_Database]$VAR[Path_Param_Digital_Release]</value>
     </variable>
@@ -124,10 +120,6 @@
 
     <variable name="Path_Recs_Writer">
         <value condition="String.IsEqual(ListItem.DBType,movie) + !String.IsEmpty(Container(99950).ListItem.Property(Writer.1.name))">$VAR[Path_Recs_Writer_Screenplay,info=crew_in_movies&amp;type=person&amp;filter_key=job&amp;filter_value=Writer&amp;query=,]$VAR[Path_Param_Database]$VAR[Path_Param_Digital_Release]</value>
-    </variable>
-	
-	<variable name="Path_Param_Search_Widget">
-        <value condition="Skin.HasSetting(fanarttvsearch)">&amp;fanarttv=false</value>
     </variable>
 	
 	 <variable name="Path_Param_Query">

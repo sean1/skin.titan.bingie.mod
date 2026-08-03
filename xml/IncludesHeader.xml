@@ -216,8 +216,6 @@
 			<aspectratio align="center" aligny="center">keep</aspectratio>
 			<texture background="true">$VAR[ListItemClearLogo]</texture>
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(88888)</visible>
-            <visible>![Skin.String(View514_DisplayInfo,small) + Control.IsVisible(514)] + ![Control.IsVisible(514) + Skin.String(View514_DisplayInfo,small_delayed) + System.IdleTime(3)]</visible>
-            <visible>![Skin.String(View513_DisplayInfo,small) + Control.IsVisible(513)] + ![Control.IsVisible(513) + Skin.String(View513_DisplayInfo,small_delayed) + System.IdleTime(3)]</visible>
 			<visible>!String.IsEmpty(Control.GetLabel(883)) + Skin.String(ClearLogoLocation, topcenter)</visible>
 		</control>		
 		
@@ -252,38 +250,6 @@
         </control>
 	</include>
     
-    <include name="SquareSubmenuHeader">
-        <!--Time-->
-        <control type="label" id="14446">
-            <right>60</right>
-            <posy>0</posy>
-            <width>600</width>
-            <height>100</height>
-            <align>right</align>
-            <info>Container(4446).ListItem.Label</info>
-            <font>Bold55</font>
-            <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-            <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
-            <visible>!String.IsEmpty(Control.GetLabel(14446)) + Control.HasFocus(4446)</visible>
-            <include>animation_fade_visible</include>
-        </control>
-	</include>
-    <include name="SquareSubmenuHeaderCompact">
-        <!--Time-->
-        <control type="label" id="14446">
-            <right>60</right>
-            <posy>0</posy>
-            <width>600</width>
-            <height>100</height>
-            <align>right</align>
-            <info>Container(4446).ListItem.Label</info>
-            <font>Bold30</font>
-            <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-            <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
-            <visible>!String.IsEmpty(Control.GetLabel(14446)) + Control.HasFocus(4446)</visible>
-            <include>animation_fade_visible</include>
-        </control>
-	</include>
     
     <include name="TimeInfoCompact">
         <control type="group">

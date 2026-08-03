@@ -44,13 +44,11 @@
     <include file="IncludesViewsLayoutSquare.xml" />
     <include file="IncludesViewsLayoutBanner.xml" />
     <include file="IncludesOSD.xml" />
-    <include file="IncludesSkinSettings.xml" />
     <include file="IncludesContextMenu.xml" />
     <include file="IncludesHomeBingie.xml"/>
     <include file="IncludesHubs.xml" />
     <include file="IncludesBingieKeyboard.xml"/>
     <include file="IncludesBingieSearch.xml"/>
-    <include file="IncludesSkinShortcuts.xml" />
 	<include file="IncludesDefaultSkinSettings.xml" />
     <include file="IncludesDefaultSkinHubs.xml" />
 	<include file="IncludesBackgroundBuilding.xml" />

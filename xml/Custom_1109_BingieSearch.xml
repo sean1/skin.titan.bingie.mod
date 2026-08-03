@@ -256,34 +256,6 @@
 				<param name="label" value="$INFO[Skin.String(CustomSearchTerm),$LOCALIZE[31579] &quot;,&quot;]" />
 				<visible>Control.HasFocus(580) + !Container(580).IsUpdating</visible>
 			</include>	
-			<!-- Search Music Videos Widget -->
-			<include content="SearchResultWidgetTopLabel">
-				<param name="groupid" value="5900" />
-				<param name="id" value="590" />
-				<param name="label" value="$INFO[Skin.String(CustomSearchTerm),$LOCALIZE[31580] &quot;,&quot;]" />
-				<visible>Control.HasFocus(590) + !Container(590).IsUpdating</visible>
-			</include>	
-			<!-- Search Albums Widget -->
-			<include content="SearchResultWidgetTopLabel">
-				<param name="groupid" value="6100" />
-				<param name="id" value="610" />
-				<param name="label" value="$INFO[Skin.String(CustomSearchTerm),$LOCALIZE[31593] &quot;,&quot;]" />
-				<visible>Control.HasFocus(610) + !Container(610).IsUpdating</visible>
-			</include>	
-			<!-- Search Artists Widget -->
-			<include content="SearchResultWidgetTopLabel">
-				<param name="groupid" value="6200" />
-				<param name="id" value="620" />
-				<param name="label" value="$INFO[Skin.String(CustomSearchTerm),$LOCALIZE[31081] &quot;,&quot;]" />
-				<visible>Control.HasFocus(620) + !Container(620).IsUpdating</visible>
-			</include>
-			<!-- Search Songs Widget -->
-			<include content="SearchResultWidgetTopLabel">
-				<param name="groupid" value="6300" />
-				<param name="id" value="630" />
-				<param name="label" value="$INFO[Skin.String(CustomSearchTerm),$LOCALIZE[31082] &quot;,&quot;]" />
-				<visible>Control.HasFocus(630) + !Container(630).IsUpdating</visible>
-			</include>
 			<!-- Add-ons -->
             <include content="SearchResultWidgetTopLabel">
                 <param name="groupid" value="6400" />
@@ -455,22 +427,6 @@
             <include content="EpisodeSearchResultWidget" condition="Library.HasContent(tvshows) + Skin.HasSetting(EnableBingieSearchEpisodes)">
                 <param name="id" value="580" />
             </include>
-            <!-- Search Music Videos By Name -->
-            <include content="MusicVideosSearchResultWidget" condition="Library.HasContent(musicvideos) + Skin.HasSetting(EnableBingieSearchMusicVideos)">
-                <param name="id" value="590" />
-            </include>
-            <!-- Search Music Albums By Name -->
-            <include content="AlbumsSearchResultWidget" condition="Library.HasContent(music) + Skin.HasSetting(EnableBingieSearchMusic)">
-                <param name="id" value="610" />
-            </include>
-            <!-- Search Artists By Name -->
-            <include content="ArtistsSearchResultWidget" condition="Library.HasContent(music) + Skin.HasSetting(EnableBingieSearchMusic)">
-                <param name="id" value="620" />
-            </include>
-            <!-- Search Songs By Name -->
-            <include content="SongsSearchResultWidget" condition="Library.HasContent(music) + Skin.HasSetting(EnableBingieSearchMusic)">
-                <param name="id" value="630" />
-            </include>
             <!-- Add-ons -->
             <include content="SearchResultWidget" condition="Skin.HasSetting(EnableBingieSearchAddons)">
                 <param name="id" value="640" />
@@ -509,8 +465,7 @@
         <include content="Busy_Spinner">
             <param name="centerleft" value="65%"/>
             <param name="centertop" value="50%"/>
-            <param name="visibility" value="[Control.HasFocus(1007) + Container(500).IsUpdating] + Control.IsVisible(500) | [Container(510).IsUpdating | Container(520).IsUpdating | Container(530).IsUpdating | Container(540).IsUpdating | Container(550).IsUpdating | Container(560).IsUpdating | Container(570).IsUpdating | Container(580).IsUpdating | Container(590).IsUpdating | 
-			Container(610).IsUpdating | Container(620).IsUpdating | Container(630).IsUpdating | Container(640).IsUpdating | Container(650).IsUpdating | Container(660).IsUpdating | Container(670).IsUpdating | Container(680).IsUpdating | Container(690).IsUpdating] + !String.IsEmpty(Skin.String(CustomSearchTerm))"/>
+            <param name="visibility" value="[Control.HasFocus(1007) + Container(500).IsUpdating] + Control.IsVisible(500) | [Container(510).IsUpdating | Container(520).IsUpdating | Container(530).IsUpdating | Container(540).IsUpdating | Container(550).IsUpdating | Container(560).IsUpdating | Container(570).IsUpdating | Container(580).IsUpdating | Container(640).IsUpdating | Container(650).IsUpdating | Container(660).IsUpdating | Container(670).IsUpdating | Container(680).IsUpdating | Container(690).IsUpdating] + !String.IsEmpty(Skin.String(CustomSearchTerm))"/>
             <param name="size" value="100"/>
         </include>
         <!-- Main Menu -->

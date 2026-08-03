@@ -1,4 +1,4 @@
- <?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
 <includes>
 	<include name="TitanInfo">	
@@ -67,7 +67,7 @@
 				</control>
 				
         <control type="group">  
-			<animation effect="fade" start="100" end="0" time="500" delay="0" condition="[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(musicvideos) | VideoPlayer.Content(livetv) | Pvr.IsPlayingRecording]] + Control.HasFocus(70011)">Conditional</animation>
+			<animation effect="fade" start="100" end="0" time="500" delay="0" condition="[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]] + Control.HasFocus(70011)">Conditional</animation>
 		<control type="group">
 				<top>50</top>  				
 				<!-- additional info header -->
@@ -797,7 +797,7 @@
 							<!-- Get Thumb Artwork Downloader -->
 							<control type="radiobutton" id="10">
 								<visible>Skin.HasSetting(videoinfo_button_artwork) + !Skin.HasSetting(ArtworkBeef) + !String.IsEqual(ListItem.Path,plugin://plugin.video.themoviedb.helper/)</visible>
-								<visible>String.IsEmpty(Window.Property(AdditionalInfo)) + [String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,musicvideo) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
+								<visible>String.IsEmpty(Window.Property(AdditionalInfo)) + [String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
 								<include content="Bingie_InfoDialog_Button_Texture">
 								<param name="radiotexture" value="dialogs/videoinfo/info/artwork.png"/>
 								</include>
@@ -822,7 +822,7 @@
 							<!-- Artwork Beef -->
 							<control type="radiobutton" id="104">
 								<visible>Skin.HasSetting(videoinfo_button_artwork) + Skin.HasSetting(ArtworkBeef) + !String.IsEqual(ListItem.Path,plugin://plugin.video.themoviedb.helper/)</visible>
-								<visible>String.IsEmpty(Window.Property(AdditionalInfo)) + [String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,musicvideo) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
+								<visible>String.IsEmpty(Window.Property(AdditionalInfo)) + [String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
 								<visible>system.hasaddon(script.artwork.beef)</visible>
 								<include content="Bingie_InfoDialog_Button_Texture">
 								<param name="radiotexture" value="dialogs/videoinfo/info/artwork.png"/>
@@ -1326,7 +1326,7 @@
 				<!-- Trailer Video Preview -->
 				<control type="group">
 					<include>FullscreenDimensions</include>
-					<visible>[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(musicvideos) | VideoPlayer.Content(livetv) | Pvr.IsPlayingRecording]] + [!String.IsEmpty(ListItem.Trailer) | !String.IsEqual(Window(Home).Property(TrailerPlaying))]</visible>
+					<visible>[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]] + [!String.IsEmpty(ListItem.Trailer) | !String.IsEqual(Window(Home).Property(TrailerPlaying))]</visible>
 					<!-- BG -->
 					<control type="image">
 						<texture colordiffuse="ff000000" background="true">diffuse/panel2.png</texture>
@@ -1348,13 +1348,13 @@
 					<animation effect="fade" start="50" end="50" time="300" condition="String.IsEmpty(Window(Home).Property(FullImage))">WindowClose</animation>
 					<animation effect="fade" end="0" time="0" condition="!String.IsEmpty(Window(Home).Property(FullImage))">WindowOpen</animation>
 					<animation effect="fade" end="0" time="0" condition="!String.IsEmpty(Window(Home).Property(FullImage))">WindowClose</animation>
-					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(musicvideos) | VideoPlayer.Content(livetv) | Pvr.IsPlayingRecording]]" />
+					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]]" />
 					<param name="image" value="$VAR[fanartBackground]" />
 				</include>
 				
 				<!-- Spotlight Fanart Background Image -->
 				<include content="BingieSpotlightFullImage">
-					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(musicvideos) | VideoPlayer.Content(livetv) | Pvr.IsPlayingRecording] | String.IsEmpty(Window(Home).Property(FullImage))]" />
+					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)] | String.IsEmpty(Window(Home).Property(FullImage))]" />
 					<param name="image" value="$VAR[fanartBackground]" />
 				</include>
 							
@@ -1377,7 +1377,7 @@
                     <orientation>vertical</orientation>
                     <usecontrolcoords>true</usecontrolcoords>
                     <itemgap>10</itemgap>
-					<animation effect="fade" start="100" end="0" time="500" delay="0" condition="[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(musicvideos) | VideoPlayer.Content(livetv) | Pvr.IsPlayingRecording]] + Control.HasFocus(70011)">Conditional</animation>
+					<animation effect="fade" start="100" end="0" time="500" delay="0" condition="[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]] + Control.HasFocus(70011)">Conditional</animation>
 				<control type="grouplist">
 					<include>Animation_Right_Delay_2</include>
 					<usecontrolcoords>true</usecontrolcoords>
@@ -2154,7 +2154,7 @@
 							<!-- Get Thumb Artwork Downloader -->
 							<control type="radiobutton" id="10">
 								<visible>Skin.HasSetting(videoinfo_button_artwork) + !Skin.HasSetting(ArtworkBeef) + !String.IsEqual(ListItem.Path,plugin://plugin.video.themoviedb.helper/)</visible>	
-								<visible>[String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,musicvideo) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
+								<visible>[String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
 								<include>Bingie_InfoDialog_Button_Default_Defs</include>
 								<include content="Bingie_InfoDialog_Button_Texture">
 									<param name="radiotexture" value="dialogs/videoinfo/info/artwork.png"/>
@@ -2169,7 +2169,7 @@
 							<!-- Artwork Beef -->
 							<control type="radiobutton" id="104">
 								<visible>Skin.HasSetting(videoinfo_button_artwork) + Skin.HasSetting(ArtworkBeef) + !String.IsEqual(ListItem.Path,plugin://plugin.video.themoviedb.helper/)</visible>	
-								<visible>[String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,musicvideo) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
+								<visible>[String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,episode)] + !String.IsEmpty(ListItem.DBID)</visible>
 								<visible>system.hasaddon(script.artwork.beef)</visible>
 								<include>Bingie_InfoDialog_Button_Default_Defs</include>
 								<include content="Bingie_InfoDialog_Button_Texture">
@@ -2242,7 +2242,7 @@
 			</control>	
 			<!--Collection List-->
 			<control type="group">
-			<animation effect="fade" start="100" end="0" time="500" condition="Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(musicvideos) | VideoPlayer.Content(livetv) | Pvr.IsPlayingRecording]">Conditional</animation>
+			<animation effect="fade" start="100" end="0" time="500" condition="Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]">Conditional</animation>
 			<visible>!Skin.HasSetting(VideoInfoButtonCollection)</visible>
 			<visible>!String.IsEqual(Window.Property(AdditionalInfo), trailers) + !String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast) + !String.IsEqual(Window.Property(AdditionalInfo),plot)</visible>
 			<visible>!String.IsEmpty(ListItem.Set)</visible>

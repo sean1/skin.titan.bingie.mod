@@ -188,7 +188,7 @@
                 [Window.IsActive(Home) + [Control.HasFocus(77777) | ControlGroup(77777).HasFocus()]] | $EXP[IsBingieHubsActive] | $EXP[IsBingieListsActive] | Window.IsActive(DialogVideoInfo.xml) |
 				[$EXP[IsBingieCategoriesActive] + [Control.HasFocus(117) | ControlGroup(117).HasFocus()]] |
                 [Container.Content(Genres) + Skin.String(moviegenrefanart.path) + !String.IsEmpty(ListItem.label) + !String.IsEqual(ListItem.label,..)] | 
-                [Container.Content(movies) | Container.Content(sets) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes) | Container.Content(musicvideos) | Container.Content(albums) | Container.Content(songs) | Container.Content(artists)]
+                [Container.Content(movies) | Container.Content(sets) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)]
             </visible>
 			<include condition="String.IsEqual(Skin.String(extrafanartdelay),5)">FadelabelPauseAtEnd5</include>
 			<include condition="String.IsEqual(Skin.String(extrafanartdelay),10)">FadelabelPauseAtEnd10</include>
@@ -200,7 +200,7 @@
 			<include condition="String.IsEqual(Skin.String(extrafanartdelay),60)">FadelabelPauseAtEnd60</include>
 			<include condition="Window.IsMedia">disabledFanart</include>
             <include condition="Window.IsMedia">disabledExtraFanart</include>
-			<!-- common movie,show,artists -->
+			<!-- common movie and TV show art -->
 			<info>ListItem.Art(fanart1)</info>
 			<info>ListItem.Art(fanart2)</info>
 			<info>ListItem.Art(fanart3)</info>
@@ -262,27 +262,6 @@
 			<info>Container.ListItem.Art(tvshow.fanart18)</info>
 			<info>Container.ListItem.Art(tvshow.fanart19)</info>
 			<info>Container.ListItem.Art(tvshow.fanart20)</info>
-			<!-- variabel - artistfanart for album, song, musicvideos -->
-			<info>Container.ListItem.Art(artist.fanart1)</info>
-			<info>Container.ListItem.Art(artist.fanart2)</info>
-			<info>Container.ListItem.Art(artist.fanart3)</info>
-			<info>Container.ListItem.Art(artist.fanart4)</info>
-			<info>Container.ListItem.Art(artist.fanart5)</info>
-			<info>Container.ListItem.Art(artist.fanart6)</info>
-			<info>Container.ListItem.Art(artist.fanart7)</info>
-			<info>Container.ListItem.Art(artist.fanart8)</info>
-			<info>Container.ListItem.Art(artist.fanart9)</info>
-			<info>Container.ListItem.Art(artist.fanart10)</info>
-			<info>Container.ListItem.Art(artist.fanart11)</info>
-			<info>Container.ListItem.Art(artist.fanart12)</info>
-			<info>Container.ListItem.Art(artist.fanart13)</info>
-			<info>Container.ListItem.Art(artist.fanart14)</info>
-			<info>Container.ListItem.Art(artist.fanart15)</info>
-			<info>Container.ListItem.Art(artist.fanart16)</info>
-			<info>Container.ListItem.Art(artist.fanart17)</info>
-			<info>Container.ListItem.Art(artist.fanart18)</info>
-			<info>Container.ListItem.Art(artist.fanart19)</info>
-			<info>Container.ListItem.Art(artist.fanart20)</info>
 			<randomize>false</randomize>
 			<scroll>false</scroll>
 			<scrollout>false</scrollout>
@@ -423,14 +402,10 @@
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),categorie)">$VAR[CategoriesFanart]</value>
         <value condition="$EXP[IsCategoryDBType]">$VAR[CategoriesRandomArt]</value>
         <!-- normal fanart backgrounds -->
-        <value condition="!String.IsEmpty(ListItem.PicturePath)">$INFO[ListItem.PicturePath]</value>
         <value condition="!String.IsEmpty(ListItem.Art(fanart))">$INFO[ListItem.Art(fanart)]</value>
 		<value condition="!String.IsEmpty(Container.ListItem.Art(fanart))">$INFO[Container.ListItem.Art(fanart)]</value>
         <value condition="!String.IsEmpty(Container.ListItem.Art(season.fanart))">$INFO[Container.ListItem.Art(season.fanart)]</value>
         <value condition="!String.IsEmpty(Container.ListItem.Art(tvshow.fanart))">$INFO[Container.ListItem.Art(tvshow.fanart)]</value>
-        <value condition="!String.IsEmpty(Container.ListItem.Art(artist.fanart))">$INFO[Container.ListItem.Art(artist.fanart)]</value>
-        <value condition="!String.IsEmpty(Container.ListItem.Art(albumartist.fanart))">$INFO[Container.ListItem.Art(albumartist.fanart)]</value>
-		<value condition="!String.IsEmpty(ListItem.Property(fanart)) + !String.IsEmpty(Window(Weather).Property(Current.FanartCode)) + Skin.String(WeatherIconPack.path)">$INFO[ListItem.Property(fanart)]</value>
         <!-- fallback for bingie in menu / skinhelper provided art in media windows -->
         <value condition="!String.IsEmpty(Window(Home).Property(ListItem.Art.fanart)) + String.IsEqual(Skin.String(HomeLayout),bingie) + $EXP[IsBingieViewsActive]">$INFO[Window(Home).Property(ListItem.Art.fanart)]</value>
     </variable>
@@ -463,9 +438,6 @@
     </variable>
     
     <variable name="backgroundVar">	
-		<!-- music background -->
-		<value condition="!String.IsEmpty(ListItem.Art(landscape)) + Window.IsActive(Music)">$INFO[ListItem.Art(landscape)]</value>
-		<value condition="!String.IsEmpty(ListItem.Art(fanart)) + Window.IsActive(Music)">$INFO[ListItem.Art(fanart)]</value>	
         <!-- animated fanart background -->
         <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)) + Skin.HasSetting(AnimatedFanart)">$INFO[Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)]</value>
         <!-- nativ extrafanart background -->
@@ -477,11 +449,6 @@
         <value condition="Skin.String(CustomBackgroundSetting)">$INFO[Skin.String(CustomBackgroundSetting)]</value>				
     </variable>
 	
-	<variable name="weatherbackground">
-        <!-- weather fanart -->
-        <value condition="Window.IsActive(MyWeather.xml)">$INFO[Skin.String(WeatherFanArtPack.path)]$INFO[Window(Weather).Property(Current.fanartCode)]$INFO[Skin.String(WeatherFanArtPack.ext)]</value>
-    </variable>
-    
     <variable name="bingieThumb">
         <!-- animated fanart background -->
         <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)) + Skin.HasSetting(AnimatedFanart)">$INFO[Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)]</value>
@@ -490,10 +457,5 @@
         <!-- normal fanart background -->
         <value condition="Control.IsVisible(99006) + !String.IsEmpty(Control.GetLabel(99006))">$INFO[Control.GetLabel(99006)]</value>		
     </variable>
-	
-   <variable name="bingiePVRThumb">
-		<value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ListItem.Art.fanart))">$INFO[Window(Home).Property(SkinHelper.ListItem.Art.fanart)]</value>    
-		<value condition="!String.IsEmpty(Window(Home).Property(ListItem.Icon))">resource://resource.images.skinbackgrounds.titanium/hover_my tv.jpg</value>
-	</variable>
 	
 </includes>

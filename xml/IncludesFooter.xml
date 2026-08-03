@@ -5,8 +5,6 @@
 	<!-- Footer -->
 	<include name="Footer">
 		<control type="group">
-            <visible>![Window.IsActive(pictures) + Skin.HasSetting(MyPicsDisableFooter)]</visible>
-
 			<!--Footer Background-->
 			<control type="group">						
 				<control type="image">
@@ -21,9 +19,6 @@
 				</control>
 			</control>			
 
-			<!-- PVR Content -->
-            <include condition="Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvrecordings) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch)">FooterContentPVR</include>
-            
             <!-- codec info normal-->
 			<control type="group">
 				<posx>20</posx>
@@ -34,7 +29,6 @@
 			
 			<!--Rating normal-->
             <include condition="[Window.IsActive(Videos) | Window.IsActive(videoplaylist)]">Footer_RatingAndStudio_Hor</include>
-			<include condition="Window.IsActive(MyMusicNav.xml)">StarRatingMusicFooter</include>
 		</control>
 	</include>
 	
@@ -53,98 +47,6 @@
 		</control>
 	</include>
 	
-    <include name="FooterContentPVR">
-        <!--Progress (PVR)-->
-        <control type="group">
-			<animation effect="slide" end="27,0" time="0" condition="String.EndsWith(system.time,PM) | String.EndsWith(system.time,AM)">Conditional</animation>
-            <visible>[Window.IsActive(tvchannels) | Window.IsActive(tvguide)]</visible>
-            <bottom>20</bottom>
-            <height>65</height>
-			<align>left</align>
-			<left>-7</left>
-            <control type="label">
-                <!--Start-->
-                <posx>143</posx>
-                <posy>4</posy>
-                <width>400</width>
-				<align>right</align>
-                <font>flags</font>
-                <textcolor>$INFO[Skin.String(FooterTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(FooterTextShadowColor)]</shadowcolor>
-                <info>ListItem.StartTime</info>
-            </control>
-            <control type="progress">
-                <!--Progress Bar-->
-                <posx>151</posx>
-                <posy>25</posy>
-                <width>158</width>
-                <height>20</height>
-                <info>ListItem.Progress</info>
-				<visible>!String.IsEmpty(ListItem.StartTime) + !String.IsEmpty(ListItem.EndTime)</visible>
-            </control>
-            <control type="label">
-                <!--End-->
-                <posx>316</posx>
-                <posy>4</posy>
-                <width>400</width>
-                <font>flags</font>
-                <textcolor>$INFO[Skin.String(FooterTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(FooterTextShadowColor)]</shadowcolor>
-                <info>ListItem.EndTime</info>
-            </control>
-        </control>
-        <!-- Programname etc -->
-        <control type="group">
-            <bottom>35</bottom>
-            <height>65</height>
-            <control type="label">
-                <!--live tv channel-->
-                <visible>String.IsEmpty(Control.Getlabel(44123))</visible>
-                <right>70</right>
-                <posy>17</posy>
-                <width>500</width>
-                <align>right</align>
-                <font>Reg30</font>
-                <textcolor>$INFO[Skin.String(FooterTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(FooterTextShadowColor)]</shadowcolor>
-                <label>$INFO[ListItem.ChannelName]</label>
-            </control>
-            <control type="label">
-                <!--live tv programname-->
-                <posx>610</posx>
-                <posy>17</posy>
-                <width>700</width>
-                <align>center</align>
-                <font>Bold30</font>
-                <textcolor>$INFO[Skin.String(FooterTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(FooterTextShadowColor)]</shadowcolor>
-                <label>$INFO[ListItem.Title]</label>
-                <visible>!Control.IsVisible(884)</visible>
-            </control>
-                <control type="image" id="44123">
-                <right>70</right>
-                <posy>0</posy>
-                <width>260</width>
-                <height>100</height>
-                <texture background="true">$VAR[channellogo]</texture>
-                <aspectratio align="right" aligny="center">keep</aspectratio>
-            </control>
-            <control type="label">
-                <!--live tv diskspace-->
-                <visible>Window.IsActive(tvrecordings) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch)</visible>
-                <left>70</left>
-                <posy>17</posy>
-                <width>500</width>
-                <align>left</align>
-                <font>Reg30</font>
-                <textcolor>$INFO[Skin.String(FooterTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(FooterTextShadowColor)]</shadowcolor>
-                <label>$INFO[PVR.backenddiskspace]</label>
-            </control>
-             </control>
-    </include>  
-
-    <!-- Power button -->
 	<include name="PowerButton">
 		<control type="button" id="2">
             <description>powerbutton</description>
@@ -194,24 +96,6 @@
 	   <value condition="!String.IsEmpty(Container(99950).ListItem.Property(Trakt_Rating)) + !String.IsEqual(Container(99950).ListItem.Property(Trakt_Rating),0.0)">$INFO[Container(99950).ListItem.Property(Trakt_Rating), ,]$INFO[Container(99950).ListItem.Property(Trakt_Votes), (, $LOCALIZE[205])]</value>
 	</variable>
 	
-    <include name="StarRatingMusicFooter">
-        <control type="group">
-            <bottom>20</bottom>
-            <height>80</height>
-            <right>60</right>
-            <control type="image">
-                <!--Stars modern-->
-                <right>0</right>
-                <posy>20</posy>
-                <width>220</width>
-                <height>55</height>
-                <colordiffuse>$INFO[Skin.String(FooterTextColor)]</colordiffuse>
-                <texture>$VAR[musicrating_stars]</texture>
-                <aspectratio>keep</aspectratio>
-            </control>
-        </control>
-    </include>
-
     <!-- BINGIE FOOTER REVISIT -->
 
     <!-- Horizontal Rating Flags Definitions -->

@@ -461,14 +461,10 @@
 		<value condition="!String.IsEmpty(ListItem.Art(poster))">$INFO[ListItem.Art(poster)]</value>
 		<value condition="!String.IsEmpty(ListItem.Property(poster))">$INFO[ListItem.Property(poster)]</value>
 		<value condition="!String.IsEmpty(ListItem.Property(tvshow.poster))">$INFO[ListItem.Property(tvshow.poster)]</value>
-        <value condition="String.StartsWith(Container.FolderPath, pvr://) + String.IsEqual(Container.ListItem.Label,ListItem.Label)">$VAR[PVRThumb]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
-		<value condition="!String.IsEmpty(Listitem.Art(artist.thumb))">$INFO[Listitem.Art(artist.thumb)]</value>
-		<value condition="!String.IsEmpty(Listitem.Art(albumartist.thumb))">$INFO[Listitem.Art(albumartist.thumb)]</value>
 		<value condition="String.IsEqual(ListItem.Label,..)">dialogs/filebrowser/DefaultFolderBack.png</value>
 		<value condition="String.IsEqual(ListItem.Label,$LOCALIZE[21452])">dialogs/filebrowser/DefaultAddSource.png</value>
-        <value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)] + !String.Contains(ListItem.FolderPath,music)">$VAR[MovieGenreIconVar]</value>
-        <value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)] + String.Contains(ListItem.FolderPath,music)">$VAR[MusicGenreIconVar]</value>
+        <value condition="Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)">$VAR[MovieGenreIconVar]</value>
         <value condition="Container.Content(actors) + !String.IsEmpty(ListItem.Art(characterart))">$INFO[ListItem.Art(characterart)]</value>
         <value condition="Container.Content(actors) + !String.IsEmpty(ListItem.Label)">http://localhost:52307/getthumb&amp;title=$INFO[ListItem.Label] IMDB Actor</value>
         <value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb))">DefaultActorPoster.png</value>
@@ -488,11 +484,8 @@
 		<value condition="!String.IsEmpty(ListItem.Art(poster))">$INFO[ListItem.Art(poster)]</value>
         <value condition="!String.IsEmpty(ListItem.Property(poster))">$INFO[ListItem.Property(poster)]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
-		<value condition="!String.IsEmpty(Listitem.Art(artist.thumb))">$INFO[Listitem.Art(artist.thumb)]</value>
-		<value condition="!String.IsEmpty(Listitem.Art(albumartist.thumb))">$INFO[Listitem.Art(albumartist.thumb)]</value>
 		<value condition="String.IsEqual(ListItem.Label,..)">dialogs/filebrowser/DefaultFolderBack.png</value>
 		<value condition="String.IsEqual(ListItem.Label,$LOCALIZE[21452])">dialogs/filebrowser/DefaultAddSource.png</value>
-		<value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)] + String.Contains(ListItem.FolderPath,music)">$VAR[MusicGenreIconVarList]</value>
         <value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)]">$VAR[MovieGenreIconVarList]</value>
         <value condition="[Container.Content(studios) | String.IsEqual(ListItem.DBTYPE,studio)]">resource://resource.images.studios.white/$INFO[ListItem.Label,,.png]</value>
         <value condition="Container.Content(actors) + !String.IsEmpty(ListItem.Art(characterart))">$INFO[ListItem.Art(characterart)]</value>

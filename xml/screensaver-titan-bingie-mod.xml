@@ -69,11 +69,11 @@
             <fadetime>1000</fadetime>
             <texture background="true">$INFO[ListItem.Art(clearlogo)]</texture>
         </control>			
-        <!-- BINGIE MOD LOGO -->
+        <!-- BINGIE Lite logo -->
 		<control type="image">
 			<visible>!Container(1297).IsUpdating</visible>
 			<visible>Skin.HasSetting(NetflixLogoScreensaver)</visible>
-			<description>Netflix logo</description>
+			<description>BINGIE Lite logo</description>
 			<right>325</right>
 			<bottom>10</bottom>
 			<width>0</width>

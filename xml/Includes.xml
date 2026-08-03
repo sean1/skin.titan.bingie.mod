@@ -9,7 +9,6 @@
     <include file="IncludesAnimations.xml" />
     <include file="IncludesNowPlaying.xml" />
     <include file="IncludesDialogVideoInfo.xml" />
-    <include file="View_10_SimplePVR.xml" />
     <include file="View_50_List.xml" />
 	<include file="View_51_BigList.xml" />
 	<include file="View_52_HorizontalPanel.xml" />
@@ -55,11 +54,9 @@
 	<include file="IncludesDefaultSkinSettings.xml" />
     <include file="IncludesDefaultSkinHubs.xml" />
 	<include file="IncludesBackgroundBuilding.xml" />
-	<include file="IncludesWeather.xml" />
     <include file="IncludesHeader.xml" />
     <include file="IncludesFooter.xml" />
 	<include file="IncludesPaths.xml" />
-    <include file="IncludesOSDDialogs.xml" />
 	<include file="script-skinshortcuts-includes.xml"/>
     <include file="IncludesDebugInfo.xml" condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)" />
 
@@ -76,11 +73,11 @@
     <constant name="episodes_thumb_width">466</constant>
 
     <!-- expressions -->
-    <expression name="IsBingieViewsActive">Window.IsActive(Home) | Window.IsActive(1109) | Window.IsActive(1106) | Window.IsActive(1119) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1114) | Window.IsActive(1115) | Window.IsActive(1116) | Window.IsActive(1118)</expression>
+    <expression name="IsBingieViewsActive">Window.IsActive(Home) | Window.IsActive(1109) | Window.IsActive(1106) | Window.IsActive(1119) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1114) | Window.IsActive(1115) | Window.IsActive(1118)</expression>
 
-    <expression name="IsBingieHubsActive">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1114) | Window.IsActive(1116) | Window.IsActive(1118)</expression>
+    <expression name="IsBingieHubsActive">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1114) | Window.IsActive(1118)</expression>
 	
-	<expression name="IsBingieHubsActive2">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1116) | Window.IsActive(1118)</expression>
+	<expression name="IsBingieHubsActive2">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1118)</expression>
 
     <expression name="IsBingieListsActive">Window.IsActive(1115)</expression>
 
@@ -88,13 +85,13 @@
 
     <expression name="IsPreviousWindowHub">Window.Previous(1110) | Window.Previous(1111) | Window.Previous(1112) | Window.Previous(1113) | Window.IsActive(1118)</expression>
 
-    <expression name="IsBingieViewsVisible">Window.IsVisible(Home) | Window.IsVisible(1109) | Window.IsVisible(1119) | Window.IsVisible(1110) | Window.IsVisible(1111) | Window.IsVisible(1112) | Window.IsVisible(1113) | Window.IsVisible(1114) | Window.IsVisible(1115) | Window.IsVisible(1116) | Window.IsActive(1118)</expression>
+    <expression name="IsBingieViewsVisible">Window.IsVisible(Home) | Window.IsVisible(1109) | Window.IsVisible(1119) | Window.IsVisible(1110) | Window.IsVisible(1111) | Window.IsVisible(1112) | Window.IsVisible(1113) | Window.IsVisible(1114) | Window.IsVisible(1115) | Window.IsActive(1118)</expression>
 
-    <expression name="IsRecognizedVideoContent">VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(livetv) | VideoPlayer.Content(musicvideos) | Pvr.IsPlayingRecording</expression>
+    <expression name="IsRecognizedVideoContent">VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)</expression>
 
-    <expression name="IsPlayingUnrecognizedContent">Player.HasVideo + Player.Playing + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(musicvideos) | VideoPlayer.Content(livetv) | Pvr.IsPlayingRecording]</expression>
+    <expression name="IsPlayingUnrecognizedContent">Player.HasVideo + Player.Playing + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]</expression>
 
-    <expression name="IsPlayingRecognizedContent">Player.Paused + Player.HasVideo | Player.HasVideo + Player.Playing + [VideoPlayer.Content(movies) | VideoPlayer.Content(episodes) | VideoPlayer.Content(livetv) | VideoPlayer.Content(musicvideos) | Pvr.IsPlayingRecording]</expression>
+    <expression name="IsPlayingRecognizedContent">Player.Paused + Player.HasVideo | Player.HasVideo + Player.Playing + [VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]</expression>
 
     <expression name="IsMainMenuOpened">ControlGroup(9001).HasFocus() | Control.HasFocus(900) | String.IsEqual(Window(Home).Property(ShowViewSubMenu),show)</expression>
 
@@ -110,8 +107,6 @@
 
     <expression name="IsMovieDBType">String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,movie)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),movie)</expression>
 
-    <expression name="IsMusicDBType">String.IsEqual(ListItem.DBTYPE,music) | String.IsEqual(ListItem.DBTYPE,song) | String.IsEqual(ListItem.DBTYPE,album) | String.IsEqual(ListItem.DBTYPE,artist)</expression>
-	
 	<expression name="IsMovieDBTypeNoFallback">String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie)</expression>
 
     <expression name="IsEpisodeDBType">String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,episode)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),episode)</expression>
@@ -122,7 +117,7 @@
 
     <expression name="IsCategoryDBType">String.IsEmpty(ListItem.DBType) + [String.IsEqual(ListItem.Property(DBTYPE),genre) | String.IsEqual(ListItem.Property(DBTYPE),category) | String.IsEqual(ListItem.Property(DBTYPE),categorie) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE),category)]</expression>
 
-    <expression name="IsMenuEntryActive">[Window.IsActive(Home) + String.IsEqual(ListItem.Property(path), ActivateWindow(home,return))] | [Window.IsActive(1110) + String.IsEqual(ListItem.Property(path), ActivateWindow(1110,return))] | [Window.IsActive(1111) + String.IsEqual(ListItem.Property(path), ActivateWindow(1111,return))] | [Window.IsActive(1112) + String.IsEqual(ListItem.Property(path), ActivateWindow(1112,return))] | [Window.IsActive(1113) + String.IsEqual(ListItem.Property(path), ActivateWindow(1113,return))] | [Window.IsActive(1114) + String.IsEqual(ListItem.Property(path), ActivateWindow(1114,return))] | [Window.IsActive(1115) + String.IsEqual(ListItem.Property(path), ActivateWindow(1115,return))] | [Window.IsActive(1109) + String.IsEqual(ListItem.Property(path), ActivateWindow(1109,return))] | [Window.IsActive(1119) + String.IsEqual(ListItem.Property(path), ActivateWindow(1119,return))] | [Window.IsActive(1116) + String.IsEqual(ListItem.Property(path), ActivateWindow(1116,return))] | [Window.IsActive(1118) + String.IsEqual(ListItem.Property(path), ActivateWindow(1118,return))]</expression>
+    <expression name="IsMenuEntryActive">[Window.IsActive(Home) + String.IsEqual(ListItem.Property(path), ActivateWindow(home,return))] | [Window.IsActive(1110) + String.IsEqual(ListItem.Property(path), ActivateWindow(1110,return))] | [Window.IsActive(1111) + String.IsEqual(ListItem.Property(path), ActivateWindow(1111,return))] | [Window.IsActive(1112) + String.IsEqual(ListItem.Property(path), ActivateWindow(1112,return))] | [Window.IsActive(1113) + String.IsEqual(ListItem.Property(path), ActivateWindow(1113,return))] | [Window.IsActive(1114) + String.IsEqual(ListItem.Property(path), ActivateWindow(1114,return))] | [Window.IsActive(1115) + String.IsEqual(ListItem.Property(path), ActivateWindow(1115,return))] | [Window.IsActive(1109) + String.IsEqual(ListItem.Property(path), ActivateWindow(1109,return))] | [Window.IsActive(1119) + String.IsEqual(ListItem.Property(path), ActivateWindow(1119,return))] | [Window.IsActive(1118) + String.IsEqual(ListItem.Property(path), ActivateWindow(1118,return))]</expression>
 
     <expression name="IsKnownMenuEntryPath">String.IsEqual(ListItem.Property(path), ActivateWindow(home,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1110,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1111,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1112,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1113,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1114,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1115,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1109,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1119,return)) | String.IsEqual(ListItem.Property(path), ActivateWindow(1118,return))</expression>
 	
@@ -1026,7 +1021,7 @@
 				<!-- Play Time / Remaining Time -->
 				<control type="label">
 					<description>Play Time</description>
-					<animation end="-45,0" time="0" effect="slide" condition="[Player.Seeking + [!String.IsEqual(Player.SeekTime(hh),00) | [VideoPlayer.HasEpg + !String.IsEqual(PVR.EpgEventSeekTime(hh),00)]]] | [VideoPlayer.HasEPG + !String.IsEqual(PVR.EpgEventElapsedTime(hh),00)] | !String.IsEqual(Player.Time(hh),00)">Conditional</animation>
+					<animation end="-45,0" time="0" effect="slide" condition="[Player.Seeking + !String.IsEqual(Player.SeekTime(hh),00)] | !String.IsEqual(Player.Time(hh),00)">Conditional</animation>
 					<posx>274</posx>
 					<posy>146</posy>
 					<width>160</width>
@@ -1125,7 +1120,7 @@
 					<height>20</height>
 					<width>700</width>
 					<info>Player.ProgressCache</info>
-					<visible>Player.HasDuration + !VideoPlayer.content(livetv)</visible>					
+					<visible>Player.HasDuration</visible>
 					<texturebg border="10" colordiffuse="00ffffff">diffuse/panel.png</texturebg>
 					<lefttexture/>
 					<midtexture border="10" colordiffuse="$INFO[Skin.String(OSDProgressBarCacheColor)]">diffuse/osd_panel.png</midtexture>
@@ -1140,21 +1135,6 @@
 					<height>20</height>
 					<width>700</width>
 					<info>Player.Progress</info>
-					<visible>!VideoPlayer.HasEpg</visible>
-					<texturebg border="10" colordiffuse="$VAR[OSDProgressBarBackgroundColor]">diffuse/osd_panel_trans.png</texturebg>
-					<lefttexture/>
-					<midtexture border="10" colordiffuse="$INFO[Skin.String(OSDProgressBarColor)]">diffuse/osd_panel.png</midtexture>
-					<righttexture/>
-					<overlaytexture/>
-				</control>
-				<control type="progress" id="23">
-					<description>Progress Bar</description>
-					<posx>525</posx>
-					<posy>160</posy>
-					<height>20</height>
-					<width>700</width>
-					<info>PVR.EpgEventProgress</info>
-					<visible>VideoPlayer.HasEpg</visible>
 					<texturebg border="10" colordiffuse="$VAR[OSDProgressBarBackgroundColor]">diffuse/osd_panel_trans.png</texturebg>
 					<lefttexture/>
 					<midtexture border="10" colordiffuse="$INFO[Skin.String(OSDProgressBarColor)]">diffuse/osd_panel.png</midtexture>
@@ -1180,7 +1160,7 @@
                     <texturesliderbar>colors/color_transparent.png</texturesliderbar>
                     <textureslidernib border="1" colordiffuse="$INFO[Skin.String(OSDButtonsFocusColor)]">diffuse/seekslider.png</textureslidernib>
                     <textureslidernibfocus>colors/color_white.png</textureslidernibfocus>
-                    <visible>Player.Seeking + !Player.HasAudio</visible>
+                    <visible>Player.Seeking</visible>
                 </control>
 				<!--Process/Seekbar-->
 				<control type="label">

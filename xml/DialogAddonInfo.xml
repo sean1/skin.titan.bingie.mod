@@ -11,7 +11,7 @@
 			<animation effect="fade" time="250" start="0" end="100" reversible="false">WindowOpen</animation>
         </control>
 		
-        <!--Dialog PVR Guid Info-->
+        <!-- Dialog Add-on Info -->
         <control type="group">
             <visible>!Window.IsVisible(AddonSettings) + !Window.IsActive(TextViewer)</visible>
 			<animation type="WindowOpen">

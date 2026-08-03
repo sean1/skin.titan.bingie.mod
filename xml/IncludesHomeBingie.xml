@@ -388,7 +388,7 @@
                     <!-- Details Row at Top-->
                     <control type="group">				
 					<visible>!$EXP[IsMainMenuOpened]</visible>
-					<visible>!$EXP[IsCategoryDBType] + !$EXP[IsMusicDBType]</visible>
+					<visible>!$EXP[IsCategoryDBType]</visible>
                         <visible>Skin.HasSetting(MovieDetailsHome) + !Integer.IsGreater(ListItem.PercentPlayed,1) | !Skin.HasSetting(MovieDetailsHome)</visible>						
                         <include>Default_Visible_Fade</include>
                         <top>-7</top>
@@ -397,17 +397,6 @@
                         <include>SpotlightRowDetails</include>
                     </control>
 					
-					<!-- Details Row at Top-->
-                    <control type="group">				
-					<visible>!$EXP[IsMainMenuOpened]</visible>
-					<visible>$EXP[IsMusicDBType] + !String.IsEqual(ListItem.DBTYPE,song)</visible>					
-                        <include>Default_Visible_Fade</include>
-                        <top>-7</top>
-                        <width>1000</width>
-                        <height>55</height>
-                        <include>MusicRowDetails</include>
-                    </control>
-
                     <!-- TV shows Seasons and Episodes -->
                     <control type="grouplist">
 					<visible>!$EXP[IsCategoryDBType]</visible>

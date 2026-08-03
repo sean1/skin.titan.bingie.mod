@@ -20,9 +20,7 @@
 		<property name="widgetTarget1" tag="property" attribute="name|widgetTarget" />
         <property name="contentStyle1" tag="property" attribute="name|widgetForceRefresh" value="refresh">refresh</property>
         <property name="contentStyle1" tag="property" attribute="name|widgetPath" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle1" tag="property" attribute="name|widgetPath" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle1" tag="property" attribute="name|widgetPath" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle1" tag="property" attribute="name|widgetPath" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle1" tag="property" attribute="name|widgetPath" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle1" tag="property" attribute="name|widgetPath" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle1">normal</property>
@@ -47,9 +45,7 @@
 		<property name="widgetTarget2" tag="property" attribute="name|widgetTarget.1" />
         <property name="contentStyle2" tag="property" attribute="name|widgetForceRefresh.1" value="refresh">refresh</property>
         <property name="contentStyle2" tag="property" attribute="name|widgetPath.1" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle2" tag="property" attribute="name|widgetPath.1" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle2" tag="property" attribute="name|widgetPath.1" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle2" tag="property" attribute="name|widgetPath.1" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle2" tag="property" attribute="name|widgetPath.1" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle2" tag="property" attribute="name|widgetPath.1" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle2">normal</property>
@@ -74,9 +70,7 @@
 		<property name="widgetTarget3" tag="property" attribute="name|widgetTarget.2" />
         <property name="contentStyle3" tag="property" attribute="name|widgetForceRefresh.2" value="refresh">refresh</property>
         <property name="contentStyle3" tag="property" attribute="name|widgetPath.2" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle3" tag="property" attribute="name|widgetPath.2" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle3" tag="property" attribute="name|widgetPath.2" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle3" tag="property" attribute="name|widgetPath.2" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle3" tag="property" attribute="name|widgetPath.2" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle3" tag="property" attribute="name|widgetPath.2" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle3">normal</property>
@@ -101,9 +95,7 @@
 		<property name="widgetTarget4" tag="property" attribute="name|widgetTarget.3" />
         <property name="contentStyle4" tag="property" attribute="name|widgetForceRefresh.3" value="refresh">refresh</property>
         <property name="contentStyle4" tag="property" attribute="name|widgetPath.3" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle4" tag="property" attribute="name|widgetPath.3" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle4" tag="property" attribute="name|widgetPath.3" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle4" tag="property" attribute="name|widgetPath.3" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle4" tag="property" attribute="name|widgetPath.3" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle4" tag="property" attribute="name|widgetPath.3" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle4">normal</property>
@@ -128,9 +120,7 @@
 		<property name="widgetTarget5" tag="property" attribute="name|widgetTarget.4" />
         <property name="contentStyle5" tag="property" attribute="name|widgetForceRefresh.4" value="refresh">refresh</property>
         <property name="contentStyle5" tag="property" attribute="name|widgetPath.4" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle5" tag="property" attribute="name|widgetPath.4" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle5" tag="property" attribute="name|widgetPath.4" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle5" tag="property" attribute="name|widgetPath.4" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle5" tag="property" attribute="name|widgetPath.4" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle5" tag="property" attribute="name|widgetPath.4" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle5">normal</property>
@@ -155,9 +145,7 @@
 		<property name="widgetTarget6" tag="property" attribute="name|widgetTarget.5" />
         <property name="contentStyle6" tag="property" attribute="name|widgetForceRefresh.5" value="refresh">refresh</property>
         <property name="contentStyle6" tag="property" attribute="name|widgetPath.5" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle6" tag="property" attribute="name|widgetPath.5" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle6" tag="property" attribute="name|widgetPath.5" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle6" tag="property" attribute="name|widgetPath.5" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle6" tag="property" attribute="name|widgetPath.5" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle6" tag="property" attribute="name|widgetPath.5" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle6">normal</property>
@@ -182,9 +170,7 @@
 		<property name="widgetTarget7" tag="property" attribute="name|widgetTarget.6" />
         <property name="contentStyle7" tag="property" attribute="name|widgetForceRefresh.6" value="refresh">refresh</property>
         <property name="contentStyle7" tag="property" attribute="name|widgetPath.6" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle7" tag="property" attribute="name|widgetPath.6" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle7" tag="property" attribute="name|widgetPath.6" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle7" tag="property" attribute="name|widgetPath.6" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle7" tag="property" attribute="name|widgetPath.6" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle7" tag="property" attribute="name|widgetPath.6" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle7">normal</property>
@@ -209,9 +195,7 @@
 		<property name="widgetTarget8" tag="property" attribute="name|widgetTarget.7" />
         <property name="contentStyle8" tag="property" attribute="name|widgetForceRefresh.7" value="refresh">refresh</property>
         <property name="contentStyle8" tag="property" attribute="name|widgetPath.7" value="$INCLUDE[skinshortcuts-submenu]">submenu</property>
-        <property name="contentStyle8" tag="property" attribute="name|widgetPath.7" value="$INCLUDE[WeatherWidget]">weather</property>
         <property name="contentStyle8" tag="property" attribute="name|widgetPath.7" value="$INCLUDE[SystemInfoWidget]">systeminfo</property>
-        <property name="contentStyle8" tag="property" attribute="name|widgetPath.7" value="$INCLUDE[RCBWidget]">rcb</property>
         <property name="contentStyle8" tag="property" attribute="name|widgetPath.7" value="$INCLUDE[CategoriesWidget]">categories</property>
         <property name="contentStyle8" tag="property" attribute="name|widgetPath.7" value="$INCLUDE[MyListWidget]">mylist</property>
         <property name="contentStyle8">normal</property>
@@ -427,7 +411,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]510">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]510).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]510).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]510).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]510).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]510).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]510).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]510).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]510).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]510).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]510).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]510).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]510).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]510).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]510).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]510).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]510).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]510).ListItem.Label]</value>
@@ -450,7 +433,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]520">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]520).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]520).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]520).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]520).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]520).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]520).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]520).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]520).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]520).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]520).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]520).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]520).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]520).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]520).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]520).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]520).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]520).ListItem.Label]</value>
@@ -473,7 +455,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]530">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]530).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]530).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]530).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]530).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]530).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]530).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]530).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]530).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]530).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]530).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]530).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]530).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]530).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]530).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]530).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]530).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]530).ListItem.Label]</value>
@@ -495,7 +476,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]540">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]540).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]540).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]540).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]540).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]540).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]540).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]540).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]540).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]540).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]540).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]540).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]540).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]540).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]540).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]540).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]540).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]540).ListItem.Label]</value>
@@ -517,7 +497,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]550">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]550).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]550).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]550).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]550).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]550).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]550).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]550).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]550).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]550).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]550).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]550).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]550).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]550).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]550).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]550).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]550).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]550).ListItem.Label]</value>
@@ -539,7 +518,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]560">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]560).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]560).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]560).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]560).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]560).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]560).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]560).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]560).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]560).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]560).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]560).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]560).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]560).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]560).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]560).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]560).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]560).ListItem.Label]</value>
@@ -561,7 +539,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]570">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]570).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]570).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]570).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]570).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]570).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]570).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]570).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]570).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]570).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]570).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]570).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]570).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]570).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]570).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]570).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]570).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]570).ListItem.Label]</value>
@@ -583,7 +560,6 @@
             </variable>
             <variable name="widgetinfolabel-$SKINSHORTCUTS[id]580">
                 <value condition="String.Contains(Container($SKINSHORTCUTS[id]580).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container($SKINSHORTCUTS[id]580).ListItem.label] $INFO[Container($SKINSHORTCUTS[id]580).ListItem.label2]</value>
-                <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]580).ListItem.Title) + String.Contains(Container($SKINSHORTCUTS[id]580).ListItem.FolderPath, pvr://)">$INFO[Container($SKINSHORTCUTS[id]580).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]580).ListItem.Season) + !String.IsEmpty(Container($SKINSHORTCUTS[id]580).ListItem.Episode) + !String.Contains(Container($SKINSHORTCUTS[id]580).ListItem.TvShowTitle,Container($SKINSHORTCUTS[id]580).ListItem.Title)">[UPPERCASE]S$INFO[Container($SKINSHORTCUTS[id]580).ListItem.Season]E$INFO[Container($SKINSHORTCUTS[id]580).ListItem.Episode]:[/UPPERCASE] $INFO[Container($SKINSHORTCUTS[id]580).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]580).ListItem.Title)">$INFO[Container($SKINSHORTCUTS[id]580).ListItem.Title]</value>
                 <value condition="!String.IsEmpty(Container($SKINSHORTCUTS[id]580).ListItem.Label)">$INFO[Container($SKINSHORTCUTS[id]580).ListItem.Label]</value>

@@ -629,7 +629,7 @@
                         <aligny>center</aligny>
                         <font>bold23</font>
                         <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>
-                        <label>$VAR[YearOrPremieredOrPVR,,    ]$VAR[GetMPAA,,    ]$VAR[DurationOrTotalSECount]</label>
+                        <label>$VAR[YearOrPremiered,,    ]$VAR[GetMPAA,,    ]$VAR[DurationOrTotalSECount]</label>
                     </control>
 					<control type="group">
 						<left>30</left>
@@ -921,14 +921,8 @@
     <include name="widget_base_content_submenu">
         <content><include>skinshortcuts-group-$PARAM[submenuid]</include></content>
     </include>
-    <include name="widget_base_content_weather">
-        <content><include>StaticWidget_Weather</include></content>
-    </include>
     <include name="widget_base_content_systeminfo">
         <content><include>StaticWidget_SystemInfo</include></content>
-    </include>
-    <include name="widget_base_content_rcb">
-        <content><include>StaticWidget_RCB</include></content>
     </include>
     <include name="widget_base_content_categories">
         <include>StaticWidget_Categories</include>
@@ -1552,196 +1546,6 @@
             <onclick>ActivateWindow(systeminfo)</onclick>
         </item>
     </include>
-    <include name="StaticWidget_Weather">
-        <!--weather widgets -->
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Weather).Property(Day0.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Weather).Property(Day0.HighTemp)] $INFO[System.TemperatureUnits] / $INFO[Window(Weather).Property(Day0.LowTemp)] $INFO[System.TemperatureUnits]</label2>
-            <property name="fanart">$VAR[WeatherFanArtSingleImage_Day0]</property>
-            <thumb>$VAR[WeatherIconSingleImage_Day0]</thumb>
-            <property name="DBTYPE">weather</property>
-            <property name="logo">$INFO[Window(Weather).Property(WeatherProviderLogo)]</property>
-            <property name="plot">$INFO[Window(Weather).Property(Day0.Outlook)]</property>
-            <onclick>ActivateWindow(weather)</onclick>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Weather).Property(Day1.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Weather).Property(Day1.HighTemp)] $INFO[System.TemperatureUnits] / $INFO[Window(Weather).Property(Day1.LowTemp)] $INFO[System.TemperatureUnits]</label2>
-            <property name="fanart">$VAR[WeatherFanArtSingleImage_Day1]</property>
-            <thumb>$VAR[WeatherIconSingleImage_Day1]</thumb>
-            <property name="DBTYPE">weather</property>
-            <property name="logo">$INFO[Window(Weather).Property(WeatherProviderLogo)]</property>
-            <property name="plot">$INFO[Window(Weather).Property(Day1.Outlook)]</property>
-            <onclick>ActivateWindow(weather)</onclick>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Weather).Property(Day2.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Weather).Property(Day2.HighTemp)] $INFO[System.TemperatureUnits] / $INFO[Window(Weather).Property(Day2.LowTemp)] $INFO[System.TemperatureUnits]</label2>
-            <property name="fanart">$VAR[WeatherFanArtSingleImage_Day2]</property>
-            <thumb>$VAR[WeatherIconSingleImage_Day2]</thumb>
-            <property name="DBTYPE">weather</property>
-            <property name="logo">$INFO[Window(Weather).Property(WeatherProviderLogo)]</property>
-            <property name="plot">$INFO[Window(Weather).Property(Day2.Outlook)]</property>
-            <onclick>ActivateWindow(weather)</onclick>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Weather).Property(Day3.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Weather).Property(Day3.HighTemp)] $INFO[System.TemperatureUnits] / $INFO[Window(Weather).Property(Day3.LowTemp)] $INFO[System.TemperatureUnits]</label2>
-            <property name="fanart">$VAR[WeatherFanArtSingleImage_Day3]</property>
-            <thumb>$VAR[WeatherIconSingleImage_Day3]</thumb>
-            <property name="DBTYPE">weather</property>
-            <property name="logo">$INFO[Window(Weather).Property(WeatherProviderLogo)]</property>
-            <property name="plot">$INFO[Window(Weather).Property(Day3.Outlook)]</property>
-            <onclick>ActivateWindow(weather)</onclick>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Weather).Property(Day4.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Weather).Property(Day4.HighTemp)] $INFO[System.TemperatureUnits] / $INFO[Window(Weather).Property(Day4.LowTemp)] $INFO[System.TemperatureUnits]</label2>
-            <property name="fanart">$VAR[WeatherFanArtSingleImage_Day4]</property>
-            <thumb>$VAR[WeatherIconSingleImage_Day4]</thumb>
-            <property name="DBTYPE">weather</property>
-            <property name="logo">$INFO[Window(Weather).Property(WeatherProviderLogo)]</property>
-            <property name="plot">$INFO[Window(Weather).Property(Day4.Outlook)]</property>
-            <onclick>ActivateWindow(weather)</onclick>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Weather).Property(Day5.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Weather).Property(Day5.HighTemp)] $INFO[System.TemperatureUnits] / $INFO[Window(Weather).Property(Day5.LowTemp)] $INFO[System.TemperatureUnits]</label2>
-            <property name="fanart">$VAR[WeatherFanArtSingleImage_Day5]</property>
-            <thumb>$VAR[WeatherIconSingleImage_Day5]</thumb>
-            <property name="logo">$INFO[Window(Weather).Property(WeatherProviderLogo)]</property>
-            <property name="plot">$INFO[Window(Weather).Property(Day5.Outlook)]</property>
-            <onclick>ActivateWindow(weather)</onclick>
-            <property name="DBTYPE">weather</property>
-            <visible>!String.IsEmpty(Window(Weather).Property(Day5.Title))</visible>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Weather).Property(Day6.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Weather).Property(Day6.HighTemp)] $INFO[System.TemperatureUnits] / $INFO[Window(Weather).Property(Day6.LowTemp)] $INFO[System.TemperatureUnits]</label2>
-            <property name="fanart">$VAR[WeatherFanArtSingleImage_Day6]</property>
-            <thumb>$VAR[WeatherIconSingleImage_Day6]</thumb>
-            <property name="DBTYPE">weather</property>
-            <property name="logo">$INFO[Window(Weather).Property(WeatherProviderLogo)]</property>
-            <property name="plot">$INFO[Window(Weather).Property(Day6.Outlook)]</property>
-            <onclick>ActivateWindow(weather)</onclick>
-            <visible>!String.IsEmpty(Window(Weather).Property(Day6.Title))</visible>
-        </item>
-    </include>
-    <include name="StaticWidget_RCB">
-        <!--rom collection browser -->
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.1.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.1.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.1.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.1.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.1.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.1.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.1.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.1.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.2.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.2.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.2.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.2.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.2.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.2.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.2.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.2.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.3.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.3.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.3.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.3.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.3.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.3.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.3.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.3.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.4.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.4.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.4.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.4.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.4.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.4.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.4.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.4.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.5.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.5.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.5.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.5.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.5.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.5.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.5.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.5.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.6.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.6.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.6.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.6.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.6.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.6.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.6.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.6.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.7.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.7.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.7.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.7.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.7.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.7.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.7.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.7.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.8.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.8.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.8.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.8.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.8.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.8.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.8.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.8.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.9.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.9.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.9.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.9.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.9.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.9.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.9.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.9.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-        <item>
-            <label>[UPPERCASE]$INFO[Window(Home).Property(MostPlayedROM.10.Title)][/UPPERCASE]</label>
-            <label2>$INFO[Window(Home).Property(MostPlayedROM.10.Console)]</label2>
-            <property name="fanart">$INFO[Window(Home).Property(MostPlayedROM.10.Fanart)]</property>
-            <thumb>$INFO[Window(Home).Property(MostPlayedROM.10.Thumb)]</thumb>
-            <property name="poster">$INFO[Window(Home).Property(MostPlayedROM.10.Thumb)]</property>
-            <property name="plot">$INFO[Window(Home).Property(MostPlayedROM.10.Plot)]</property>
-            <onclick>$INFO[Window(Home).Property(MostPlayedROM.10.LaunchCommand)]</onclick>
-            <visible>!String.IsEmpty(Window(Home).Property(MostPlayedROM.10.Title))</visible>
-            <property name="DBTYPE">rcb</property>
-        </item>
-    </include>
-    
-	<!-- Widget Tag Overlay -->
     <include name="WidgetTagOverlayEnable">
         <visible>true</visible>
     </include>
@@ -1930,63 +1734,4 @@
 
 
     
-    <!-- Widget Base Content PVR -->
-    <include name="widget_base_content_pvr">
-        <include>StaticWidget_pvr</include>
-    </include>
-    <!-- Widget PVR -->
-    <include name="StaticWidget_pvr">
-        <content>
-            <item id="1">
-                <label>$LOCALIZE[320012]</label>
-                <thumb>bingie/categories/tvchannels.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path"></property>
-                <onclick>ActivateWindow(tvchannels,return)</onclick>
-            </item>
-            <item id="2">
-                <label>$LOCALIZE[320013]</label>
-                <thumb>bingie/categories/tvguide.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path"></property>
-                <onclick>ActivateWindow(tvguide,return)</onclick>
-            </item>
-            <item id="3">
-                <label>$LOCALIZE[320014]</label>
-                <thumb>bingie/categories/tvsearch.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path"></property>
-                <onclick>ActivateWindow(tvsearch,return)</onclick>
-            </item>
-            <item id="4">
-                <label>$LOCALIZE[320015]</label>
-                <thumb>bingie/categories/tvrecordings.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path"></property>
-                <onclick>ActivateWindow(tvrecordings,return)</onclick>
-            </item>
-            <item id="5">
-                <label>$LOCALIZE[19040]</label>
-                <thumb>bingie/categories/timers.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path"></property>
-                <onclick>ActivateWindow(tvtimers,return)</onclick>
-            </item>
-            <item id="6">
-                <label>$LOCALIZE[320016]</label>
-                <thumb>bingie/categories/timerrules.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path"></property>
-                <onclick>ActivateWindow(tvtimerrules,return)</onclick>
-            </item>
-            <item id="7">
-                <label>$LOCALIZE[320017]</label>
-                <thumb>bingie/categories/radiochannels.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path"></property>
-                <onclick>ActivateWindow(radiochannels,return)</onclick>
-                <visible>Pvr.HasRadioChannels</visible>
-            </item>
-        </content>
-    </include>
 </includes>

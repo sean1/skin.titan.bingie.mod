@@ -105,14 +105,6 @@
                         <icon>special://skin/extras/media/backgrounds/settings_media_settings.jpg</icon>
                         <thumb>special://skin/extras/media/backgrounds/mediasettings.png</thumb>
                     </item>
-                    <item id="3">
-                        <description>Live TV</description>
-                        <label>31088</label>
-                        <label2>31410</label2>
-                        <onclick>ActivateWindow(PVRSettings)</onclick>
-                        <icon>special://skin/extras/media/backgrounds/settings_live_tv.jpg</icon>
-                        <thumb>special://skin/extras/media/backgrounds/livetv.png</thumb>
-                    </item>
                     <item id="4">
                         <description>Player</description>
                         <label>14201</label>
@@ -160,14 +152,6 @@
                         <onclick>activatewindow(Profiles)</onclick>
                         <icon>special://skin/extras/media/backgrounds/settings_profiles.jpg</icon>
                         <thumb>special://skin/extras/media/backgrounds/actor.png</thumb>
-                    </item>
-                    <item id="13">
-                        <description>Games</description>
-                        <label>$LOCALIZE[15016]</label>
-                        <label2>$LOCALIZE[31403]</label2>
-                        <onclick>ActivateWindow(GameSettings)</onclick>
-                        <icon>special://skin/extras/media/backgrounds/settings_games.jpg</icon>
-                        <thumb>special://skin/extras/media/backgrounds/games.png</thumb>
                     </item>
                     <item id="14">
                         <description>File Manager</description>

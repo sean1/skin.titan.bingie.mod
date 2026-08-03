@@ -1,6 +1,6 @@
 # Kodi Media Center language file
-# Addon Name: Titan Bingie Mod
-# Addon id: skin.titan.bingie.mod
+# Addon Name: BINGIE Lite
+# Addon id: skin.titan.bingie.lite
 # Addon Provider: AchillesPunks, HugoL, Matke
 msgid ""
 msgstr ""
@@ -128,10 +128,6 @@ msgctxt "#31764"
 msgid "Always hide"
 msgstr "Altijd verbergen"
 
-msgctxt "#31179"
-msgid "Always open fullscreen music playback"
-msgstr "Altijd muziek afspelen in volledig scherm"
-
 msgctxt "#31356"
 msgid "Always show tags"
 msgstr "Altijd tags tonen"
@@ -147,10 +143,6 @@ msgstr "Amazon originele serie"
 msgctxt "#31201"
 msgid "Animate Disc-art"
 msgstr "Schijfkunst animeren"
-
-msgctxt "#31617"
-msgid "Animate music background"
-msgstr "Animeer muziekachtergrond"
 
 msgctxt "#320111"
 msgid "Animations"
@@ -724,21 +716,9 @@ msgctxt "#31116"
 msgid "Default"
 msgstr "Standaard"
 
-msgctxt "#31663"
-msgid "Default OSD button for Live TV playback"
-msgstr "Standaard OSD-knop voor Live TV-weergave"
-
-msgctxt "#31664"
-msgid "Default OSD button for music playback"
-msgstr "Standaard OSD-knop voor het afspelen van muziek"
-
 msgctxt "#31662"
 msgid "Default OSD button for video playback"
 msgstr "Standaard OSD-knop voor videoweergave"
-
-msgctxt "#31824"
-msgid "Default music background (as fallback if no artist fanart or fanart disabled)"
-msgstr "Standaard muziekachtergrond (als fallback als er geen artiest fanart is of fanart uitgeschakeld)"
 
 msgctxt "#31767"
 msgid "Default palette for color picker"
@@ -767,10 +747,6 @@ msgstr "Heb je al inhoud aan je bibliotheek toegevoegd?"
 msgctxt "#320196"
 msgid "Died:"
 msgstr "Overleden:"
-
-msgctxt "#31813"
-msgid "Diffuse color for lyrics overlay"
-msgstr "Diffuus kleur voor tekstoverlay"
 
 msgctxt "#31506"
 msgid "Dim screen when the busy animation is active"
@@ -823,10 +799,6 @@ msgstr "FanArt uitschakelen"
 msgctxt "#320046"
 msgid "Disable Highlight Widget (use current layout)"
 msgstr "Widget markeren uitschakelen (huidige lay-out gebruiken)"
-
-msgctxt "#31715"
-msgid "Disable Kodi screensaver on fullscreen music playback"
-msgstr "Kodi-schermbeveiliging uitschakelen bij muziekweergave op volledig scherm"
 
 msgctxt "#31006"
 msgid "Disable Media/Codec Info in Bingie Views"
@@ -884,10 +856,6 @@ msgctxt "#31265"
 msgid "Disable all submenus"
 msgstr "Alle submenu's uitschakelen"
 
-msgctxt "#31332"
-msgid "Disable background-overlay in lyrics window"
-msgstr "Achtergrond-overlay in songtekstvenster uitschakelen"
-
 msgctxt "#31736"
 msgid "Disable clearart in Now Playing info bar"
 msgstr "Clearart in de infobalk van afspelen uitschakelen"
@@ -928,10 +896,6 @@ msgctxt "#31648"
 msgid "Display tags/labels for episodes"
 msgstr "Tags/labels voor afleveringen weergeven"
 
-msgctxt "#31030"
-msgid "Display weather"
-msgstr "Het weer weergeven"
-
 msgctxt "#31357"
 msgid "Do not auto rotate the widgets"
 msgstr "De widgets niet automatisch roteren"
@@ -948,10 +912,6 @@ msgctxt "#31642"
 msgid "Do not display channel numbers in the guide"
 msgstr "Kanaalnummers niet weergeven in de gids"
 
-msgctxt "#31232"
-msgid "Do not hide OSD infopanel on fullscreen music playback"
-msgstr "OSD-infopaneel niet verbergen bij schermvullende muziekweergave"
-
 msgctxt "#31159"
 msgid "Documentaries"
 msgstr "Documentaires"
@@ -959,10 +919,6 @@ msgstr "Documentaires"
 msgctxt "#31160"
 msgid "Docuseries"
 msgstr "Docuserie"
-
-msgctxt "#31825"
-msgid "Don't use rich artwork on the OSD at livetv playback"
-msgstr "Gebruik geen rijke illustraties op de OSD bij Live TV-weergave"
 
 msgctxt "#320102"
 msgid "Dramas"
@@ -1052,10 +1008,6 @@ msgctxt "#31807"
 msgid "Enable OSD of buffering progess during video playback"
 msgstr "OSD van bufferprogress tijdens videoweergave inschakelen"
 
-msgctxt "#31566"
-msgid "Enable PVR artwork"
-msgstr "PVR-kunstwerk inschakelen"
-
 msgctxt "#320185"
 msgid "Enable Plot on Pause"
 msgstr "Uitzetten op pauze inschakelen"
@@ -1087,14 +1039,6 @@ msgstr "Zoomeffect inschakelen"
 msgctxt "#320237"
 msgid "Enable air date"
 msgstr "Uitzenddatum inschakelen"
-
-msgctxt "#31341"
-msgid "Enable artist slideshow while playing music"
-msgstr "Diavoorstelling van artiest inschakelen tijdens het afspelen van muziek"
-
-msgctxt "#31708"
-msgid "Enable artwork lookups for PVR"
-msgstr "Kunstwerk zoeken voor PVR inschakelen"
 
 msgctxt "#320060"
 msgid "Enable auto pause on OSD open"
@@ -1153,8 +1097,8 @@ msgid "Enable indicator for watched items"
 msgstr "Indicator voor bekeken items inschakelen"
 
 msgctxt "#31789"
-msgid "Enable indicator if item is playing or is recording/timer (pvr)"
-msgstr "Indicator inschakelen als item wordt afgespeeld of is opgenomen/timer (pvr)"
+msgid "Enable indicator if item is playing"
+msgstr "Indicator inschakelen als item wordt afgespeeld"
 
 msgctxt "#31318"
 msgid "Enable kiosk mode"
@@ -1167,10 +1111,6 @@ msgstr "Grote afspeel- en zoekindicatoren op het scherm inschakelen"
 msgctxt "#31738"
 msgid "Enable letters popup while scrolling"
 msgstr "Letter popup inschakelen tijdens scrollen"
-
-msgctxt "#31616"
-msgid "Enable mini guide on fullscreen Live TV"
-msgstr "Minigids inschakelen op volledig scherm Live TV"
 
 msgctxt "#31004"
 msgid "Enable moving frame"
@@ -1187,10 +1127,6 @@ msgstr "Snel springen alfabetnavigatiestrook inschakelen"
 msgctxt "#31710"
 msgid "Enable skin helper artwork lookups for addons"
 msgstr "Skin helper artwork lookups inschakelen voor addons"
-
-msgctxt "#31792"
-msgid "Enable small PVR Channels OSD"
-msgstr "Kleine PVR-kanalen OSD inschakelen"
 
 msgctxt "#31323"
 msgid "Enable smart shortcuts"
@@ -1263,10 +1199,6 @@ msgstr "Uitgebreid"
 msgctxt "#31269"
 msgid "Extended Info"
 msgstr "Uitgebreide info"
-
-msgctxt "#31950"
-msgid "Extra fanart (slideshow)"
-msgstr "Extra fanart (diashow)"
 
 msgctxt "#31253"
 msgid "FAST FORWARD"
@@ -1345,8 +1277,8 @@ msgid "Footer panel color"
 msgstr "Kleur voettekstpaneel"
 
 msgctxt "#31024"
-msgid "Force stop playback when not in fullscreen mode (exc. Live TV)"
-msgstr "Afspelen forceren stoppen wanneer niet in volledig scherm (m.u.v. Live TV)"
+msgid "Force stop playback when leaving fullscreen mode"
+msgstr "Afspelen geforceerd stoppen bij het verlaten van volledig scherm"
 
 msgctxt "#31518"
 msgid "Forced views"
@@ -1676,10 +1608,6 @@ msgctxt "#31828"
 msgid "Listitem border focus color"
 msgstr "Lijstitem rand focus kleur"
 
-msgctxt "#31088"
-msgid "Live-TV"
-msgstr "Live-tv"
-
 msgctxt "#320096"
 msgid "Local library"
 msgstr "Plaatselijke bibliotheek"
@@ -1896,14 +1824,6 @@ msgctxt "#31049"
 msgid "Music & Musicals"
 msgstr "Muziek & Musicals"
 
-msgctxt "#31670"
-msgid "Music playback"
-msgstr "Muziek afspelen"
-
-msgctxt "#31580"
-msgid "Music videos title related to"
-msgstr "Muziekvideo's titel gerelateerd aan"
-
 msgctxt "#31383"
 msgid "My Custom List"
 msgstr "Mijn aangepaste lijst"
@@ -1995,10 +1915,6 @@ msgstr "Nieuwe Zoekopdracht"
 msgctxt "#31212"
 msgid "Next Episode in"
 msgstr "Volgende aflevering in"
-
-msgctxt "#31637"
-msgid "No active weather alerts"
-msgstr "Geen actieve weerwaarschuwingen"
 
 msgctxt "#31371"
 msgid "No items in My List.[CR]Start adding Movies & TV Shows you like, just press the 'Add to My List' button from information page."
@@ -2136,18 +2052,6 @@ msgctxt "#31358"
 msgid "Only rotate the spotlight widget every"
 msgstr "Roteer de Schijnwerper-widget alleen elke"
 
-msgctxt "#31993"
-msgid "Only show Weather"
-msgstr "Toon alleen het weer"
-
-msgctxt "#31347"
-msgid "Only show Weather (left)"
-msgstr "Toon alleen het weer (links)"
-
-msgctxt "#31346"
-msgid "Only show Weather (right)"
-msgstr "Toon alleen het weer (rechts)"
-
 msgctxt "#31952"
 msgid "Only when OSD active"
 msgstr "Alleen wanneer OSD actief is"
@@ -2171,30 +2075,6 @@ msgstr "Overzicht"
 msgctxt "#31251"
 msgid "PAUSED"
 msgstr "Gepauzeerd"
-
-msgctxt "#31778"
-msgid "PVR Guide focused item color"
-msgstr "PVR-gids gericht item kleur"
-
-msgctxt "#31780"
-msgid "PVR Guide focused item textcolor"
-msgstr "PVR-gids gericht item tekstkleur"
-
-msgctxt "#31777"
-msgid "PVR Guide unfocused item color"
-msgstr "PVR Gids onscherpe itemkleur"
-
-msgctxt "#31779"
-msgid "PVR Guide unfocused item textcolor"
-msgstr "PVR Gids onscherpe item tekstkleur"
-
-msgctxt "#31069"
-msgid "PVR Hub"
-msgstr "PVR Hub"
-
-msgctxt "#31709"
-msgid "PVR artwork settings"
-msgstr "PVR artwork instellingen"
 
 msgctxt "#31680"
 msgid "Panel"
@@ -2395,14 +2275,6 @@ msgstr "Profiel pictogram"
 msgctxt "#31254"
 msgid "REWIND"
 msgstr "Terugspoelen"
-
-msgctxt "#320017"
-msgid "Radio Channels"
-msgstr "Radiozenders"
-
-msgctxt "#31135"
-msgid "Radio channels"
-msgstr "Radiozenders"
 
 msgctxt "#320034"
 msgid "Random Movies"
@@ -2644,10 +2516,6 @@ msgctxt "#320055"
 msgid "Search Library"
 msgstr "Zoeken in bibliotheek"
 
-msgctxt "#31038"
-msgid "Search Music Videos, Albums, Artists or Songs"
-msgstr "Muziekvideo's, albums, artiesten of liedjes zoeken"
-
 msgctxt "#31415"
 msgid "Search Settings"
 msgstr "Instellingen zoeken"
@@ -2684,14 +2552,6 @@ msgctxt "#31416"
 msgid "Search for Episodes by name"
 msgstr "Afleveringen zoeken op naam"
 
-msgctxt "#31418"
-msgid "Search for Music Albums, Artists and Songs"
-msgstr "Muziekalbums, artiesten en nummers zoeken"
-
-msgctxt "#31417"
-msgid "Search for Music Videos"
-msgstr "Zoeken naar muziekvideo's"
-
 msgctxt "#320095"
 msgid "Search results for"
 msgstr "Zoekresultaten voor"
@@ -2719,18 +2579,6 @@ msgstr "Selecteer film-/tv-genrepictogrammen"
 msgctxt "#31772"
 msgid "Select Movie Genre fanart"
 msgstr "Kies filmgenre fanart"
-
-msgctxt "#31627"
-msgid "Select Music Genre icons"
-msgstr "Selecteer muziekgenre-pictogrammen"
-
-msgctxt "#31624"
-msgid "Select Weather fanart"
-msgstr "Selecteer Weer fanart"
-
-msgctxt "#31623"
-msgid "Select Weather icons"
-msgstr "Weerpictogrammen selecteren"
 
 msgctxt "#31117"
 msgid "Select Which Buttons to Show in Credits & More Info"
@@ -2820,14 +2668,6 @@ msgctxt "#31220"
 msgid "Shadow color for header"
 msgstr "Schaduwkleur voor koptekst"
 
-msgctxt "#31817"
-msgid "Shadowcolor for focused lyrics text"
-msgstr "Schaduwkleur voor gerichte songtekst"
-
-msgctxt "#31816"
-msgid "Shadowcolor for unfocused lyrics text"
-msgstr "Schaduwkleur voor onscherpe songtekst"
-
 msgctxt "#31060"
 msgid "Show/Hide OSD buttons"
 msgstr "OSD-knoppen weergeven/verbergen"
@@ -2868,29 +2708,13 @@ msgctxt "#31985"
 msgid "Show Header Title (left) and Time (right)"
 msgstr "Titel kop (links) en tijd (rechts) weergeven"
 
-msgctxt "#31987"
-msgid "Show Header Title (left) and Weather (right)"
-msgstr "Titel koptekst (links) en Weer (rechts) weergeven"
-
-msgctxt "#31995"
-msgid "Show Logo & Weather (left) and Time (right)"
-msgstr "Toon Logo & Weer (links) en Tijd (rechts)"
-
 msgctxt "#31996"
 msgid "Show Logo (left) and Profile (right)"
 msgstr "Toon logo (links) en profiel (rechts)"
 
-msgctxt "#31988"
-msgid "Show Logo (left) and Time & Weather (right)"
-msgstr "Toon logo (links) en tijd & weer (rechts)"
-
 msgctxt "#31984"
 msgid "Show Logo (left) and Time (right)"
 msgstr "Toon tijd (links) en tijd (rechts)"
-
-msgctxt "#31997"
-msgid "Show Logo (left) and Weather (right)"
-msgstr "Toon logo (links) en weer (rechts)"
 
 msgctxt "#31259"
 msgid "Show OSD Infopanel on Pause"
@@ -2912,37 +2736,13 @@ msgctxt "#31724"
 msgid "Show The Runtime in Minutes Instead of Hours in The Details Section"
 msgstr "Toon de looptijd in minuten in plaats van uren in het gedeelte Details"
 
-msgctxt "#31990"
-msgid "Show Time & Weather (right)"
-msgstr "Toon tijd en weer (rechts)"
-
-msgctxt "#31989"
-msgid "Show Title (left) and Time & Weather (right)"
-msgstr "Titel weergeven (links) en Tijd &amp; Weer (rechts)"
-
-msgctxt "#31986"
-msgid "Show Weather (left) and Time (right)"
-msgstr "Weer (links) en tijd (rechts) weergeven"
-
 msgctxt "#31802"
 msgid "Show animated art only in details/info (not in lists)"
 msgstr "Toon geanimeerde kunst alleen in details/info (niet in lijsten)"
 
-msgctxt "#31640"
-msgid "Show artist biography on OSD while playing music"
-msgstr "Artiestenbiografie tonen op OSD tijdens het afspelen van muziek"
-
-msgctxt "#31665"
-msgid "Show artist logo on fullscreen music playback"
-msgstr "Artiestenlogo tonen bij muziek afspelen op volledig scherm"
-
 msgctxt "#31327"
 msgid "Show clearlogo (if available)"
 msgstr "Duidelijk logo weergeven (indien beschikbaar)"
-
-msgctxt "#31325"
-msgid "Show current weather in the video info & video on-screen displays"
-msgstr "Toon het huidige weer in de video info & video on-screen displays"
 
 msgctxt "#31029"
 msgid "Show footer bar in views"
@@ -2956,10 +2756,6 @@ msgctxt "#31599"
 msgid "Show infopanel right"
 msgstr "Infopaneel rechts tonen"
 
-msgctxt "#31732"
-msgid "Show large scrolling text while music playback"
-msgstr "Grote scrollende tekst tonen tijdens het afspelen van muziek"
-
 msgctxt "#31114"
 msgid "Show large thumbnail"
 msgstr "Grote miniatuur weergeven"
@@ -2971,10 +2767,6 @@ msgstr "Achtergrond paneel weergeven"
 msgctxt "#31133"
 msgid "Show plot in video infopanel or onscreen display"
 msgstr "Plot weergeven in video-infopaneel of schermdisplay"
-
-msgctxt "#31338"
-msgid "Show video preview in PVR section"
-msgstr "Videovoorvertoning tonen in PVR-sectie"
 
 msgctxt "#31429"
 msgid "Showcase"
@@ -2999,10 +2791,6 @@ msgstr "Vergelijkbare films"
 msgctxt "#31576"
 msgid "Similar TV Shows"
 msgstr "Vergelijkbare TV-series"
-
-msgctxt "#31567"
-msgid "Simple list (PVR)"
-msgstr "Eenvoudige lijst (PVR)"
 
 msgctxt "#31435"
 msgid "Single Poster"
@@ -3252,10 +3040,6 @@ msgctxt "#31458"
 msgid "Textcolor for buttons in the skin"
 msgstr "Tekstkleur voor knoppen in het thema"
 
-msgctxt "#31815"
-msgid "Textcolor for focused lyrics"
-msgstr "Tekstkleur voor centrale songteksten"
-
 msgctxt "#31455"
 msgid "Textcolor for footer"
 msgstr "Tekstkleur voor voettekst"
@@ -3264,13 +3048,9 @@ msgctxt "#31219"
 msgid "Textcolor for header"
 msgstr "Tekstkleur voor koptekst"
 
-msgctxt "#31814"
-msgid "Textcolor for unfocused lyrics"
-msgstr "Tekstkleur voor onscherpe teksten"
-
 msgctxt "#31388"
-msgid "The new Titan skin for Kodi Nexus.[CR]This skin has many different layouts to choose from, let us start with the Titan BINGIE MOD main layout. This layout is designed to simulate Netflix user experience for TV.[CR]In order to get everything running as it should, it's recommended to set the following Kodi options:[CR][CR][COLOR ff41b957]    - Disable mouse[CR]    - Hide parent folder items[CR]    - Auto focus first unwatched episode[CR]    - Flatten TV Shows seasons (show all episodes)[CR]    - Set media default action to 'Resume'[/COLOR][CR][CR]Note that this settings are global and will be valid for all installed skins.[CR]But no worries, all settings can be reverted in Kodi settings."
-msgstr "Het nieuwe Titan thema voor Kodi Nexus.[CR]Dit thema heeft veel verschillende layouts om uit te kiezen, laten we beginnen met de Titan BINGIE MOD hoofdlayout. Deze lay-out is ontworpen om de Netflix gebruikerservaring voor TV te simuleren.[CR]Om alles naar behoren te laten werken, is het aan te raden om de volgende Kodi opties in te stellen:[CR][CR][COLOR ff41b957] - Muis uitschakelen[CR] - Bovenliggende map items verbergen[CR] - Automatisch focussen op eerste niet bekeken aflevering[CR] - TV-series seizoenen afvlakken (alle afleveringen tonen)[CR] - Media standaard actie instellen op 'Hervatten'[/COLOR][CR][CR]Merk op dat deze instellingen globaal zijn en geldig zijn voor alle geïnstalleerde thema's.[CR]Maar geen zorgen, alle instellingen kunnen worden teruggedraaid in de Kodi-instellingen."
+msgid "The new Titan skin for Kodi Nexus.[CR]This skin has many different layouts to choose from, let us start with the BINGIE Lite main layout. This layout is designed to simulate Netflix user experience for TV.[CR]In order to get everything running as it should, it's recommended to set the following Kodi options:[CR][CR][COLOR ff41b957]    - Disable mouse[CR]    - Hide parent folder items[CR]    - Auto focus first unwatched episode[CR]    - Flatten TV Shows seasons (show all episodes)[CR]    - Set media default action to 'Resume'[/COLOR][CR][CR]Note that this settings are global and will be valid for all installed skins.[CR]But no worries, all settings can be reverted in Kodi settings."
+msgstr "Het nieuwe Titan thema voor Kodi Nexus.[CR]Dit thema heeft veel verschillende layouts om uit te kiezen, laten we beginnen met de BINGIE Lite hoofdlayout. Deze lay-out is ontworpen om de Netflix gebruikerservaring voor TV te simuleren.[CR]Om alles naar behoren te laten werken, is het aan te raden om de volgende Kodi opties in te stellen:[CR][CR][COLOR ff41b957] - Muis uitschakelen[CR] - Bovenliggende map items verbergen[CR] - Automatisch focussen op eerste niet bekeken aflevering[CR] - TV-series seizoenen afvlakken (alle afleveringen tonen)[CR] - Media standaard actie instellen op 'Hervatten'[/COLOR][CR][CR]Merk op dat deze instellingen globaal zijn en geldig zijn voor alle geïnstalleerde thema's.[CR]Maar geen zorgen, alle instellingen kunnen worden teruggedraaid in de Kodi-instellingen."
 
 msgctxt "#31558"
 msgid "There are no matches for this category."
@@ -3512,10 +3292,6 @@ msgctxt "#31452"
 msgid "Use extended layout"
 msgstr "Uitgebreide lay-out gebruiken"
 
-msgctxt "#31451"
-msgid "Use extended layout for weather"
-msgstr "Gebruik uitgebreide lay-out voor het weer"
-
 msgctxt "#31207"
 msgid "Use extra fanart"
 msgstr "Gebruik extra fanart"
@@ -3636,10 +3412,6 @@ msgctxt "#320198"
 msgid "We think you'll like this"
 msgstr "We denken dat je dit leuk zult vinden"
 
-msgctxt "#31636"
-msgid "Weather Alerts"
-msgstr "Weeralarmen"
-
 msgctxt "#31288"
 msgid "Weekend Forecast"
 msgstr "Weekend Voorspelling"
@@ -3649,12 +3421,12 @@ msgid "Welcome Back"
 msgstr "Welkom terug"
 
 msgctxt "#320018"
-msgid "Welcome to[CR]Titan BINGIE MOD"
-msgstr "Welkom bij [CR]Titan BINGIE MOD"
+msgid "Welcome to[CR]BINGIE Lite"
+msgstr "Welkom bij[CR]BINGIE Lite"
 
 msgctxt "#31387"
-msgid "Welcome to Titan BINGIE MOD"
-msgstr "Welkom bij Titan BINGIE MOD"
+msgid "Welcome to BINGIE Lite"
+msgstr "Welkom bij BINGIE Lite"
 
 msgctxt "#320117"
 msgid "Westerns"
@@ -3701,8 +3473,8 @@ msgid "Widgets"
 msgstr "Widgets"
 
 msgctxt "#31395"
-msgid "With Titan BINGIE MOD you can have all of your Kodi and library content in one place, through the use of widgets.[CR][CR]Home widgets can be configured from:[CR][COLOR white]    - Skin Settings -> Configure Shortcuts tab -> Edit Menu Shortcuts[/COLOR][CR][CR]There are also Hubs for Movies, TV Shows, New and you can add your own.[CR]Hubs can have their own spotlight and widgets and everything is set from the hub's screen, when the hub is UNLOCKED.[CR][COLOR white]    - Skin Settings -> Configure Shortcuts tab -> Tick off the 'Lock Hubs' button[/COLOR][CR]When you're done, don't forget to lock the hubs![CR][CR][COLOR ff41b957]The skin is pre-packed with widgets for Movies & TV Shows.[CR]If you haven't added files to your video library yet, now is a good time![CR]Otherwise, you'd be staring at a blank screen...[/COLOR]"
-msgstr "Met Titan BINGIE MOD kun je al je Kodi- en bibliotheekcontent op één plek hebben, door het gebruik van widgets.[CR][CR]Thuisbasis widgets kunnen worden geconfigureerd via:[CR][KLEUR WIT] - Thema-instellingen -> Configureer snelkoppelingen tab -> Bewerk menu-snelkoppelingen[/COLOR][CR][CR]Er zijn ook Hubs voor Films, TV-series, Nieuw en je kunt je eigen Hubs toevoegen.CR][CR]Hubs kunnen hun eigen Schijnwerper en widgets hebben en alles wordt ingesteld vanaf het scherm van de hub, wanneer de hub ONVERGRENDELD is.[CR][COLOR white] - Thema-instellingen -> Configureer snelkoppelingen tab -> vink de knop 'Hubs vergrendelen' uit[/COLOR][CR]Als je klaar bent, vergeet dan niet om de hubs te vergrendelen![CR][CR][COLOR ff41b957]Het thema zit boordevol widgets voor Films & TV-series.[CR]Als je nog geen bestanden aan je videobibliotheek hebt toegevoegd, is dit een goed moment![CR]Anders zou je naar een leeg scherm zitten te staren...[/COLOR]"
+msgid "With BINGIE Lite you can have all of your Kodi and library content in one place, through the use of widgets.[CR][CR]Home widgets can be configured from:[CR][COLOR white]    - Skin Settings -> Configure Shortcuts tab -> Edit Menu Shortcuts[/COLOR][CR][CR]There are also Hubs for Movies, TV Shows, New and you can add your own.[CR]Hubs can have their own spotlight and widgets and everything is set from the hub's screen, when the hub is UNLOCKED.[CR][COLOR white]    - Skin Settings -> Configure Shortcuts tab -> Tick off the 'Lock Hubs' button[/COLOR][CR]When you're done, don't forget to lock the hubs![CR][CR][COLOR ff41b957]The skin is pre-packed with widgets for Movies & TV Shows.[CR]If you haven't added files to your video library yet, now is a good time![CR]Otherwise, you'd be staring at a blank screen...[/COLOR]"
+msgstr "Met BINGIE Lite kun je al je Kodi- en bibliotheekcontent op één plek hebben, door het gebruik van widgets.[CR][CR]Thuisbasis widgets kunnen worden geconfigureerd via:[CR][KLEUR WIT] - Thema-instellingen -> Configureer snelkoppelingen tab -> Bewerk menu-snelkoppelingen[/COLOR][CR][CR]Er zijn ook Hubs voor Films, TV-series, Nieuw en je kunt je eigen Hubs toevoegen.CR][CR]Hubs kunnen hun eigen Schijnwerper en widgets hebben en alles wordt ingesteld vanaf het scherm van de hub, wanneer de hub ONVERGRENDELD is.[CR][COLOR white] - Thema-instellingen -> Configureer snelkoppelingen tab -> vink de knop 'Hubs vergrendelen' uit[/COLOR][CR]Als je klaar bent, vergeet dan niet om de hubs te vergrendelen![CR][CR][COLOR ff41b957]Het thema zit boordevol widgets voor Films & TV-series.[CR]Als je nog geen bestanden aan je videobibliotheek hebt toegevoegd, is dit een goed moment![CR]Anders zou je naar een leeg scherm zitten te staren...[/COLOR]"
 
 msgctxt "#320089"
 msgid "Writer"
@@ -3748,29 +3520,21 @@ msgctxt "#31400"
 msgid "[B]CONFIGURE APPEARANCE SETTINGS[/B][CR][CR]Change the skin · Set language and region · Change file listing options · Set up a screensaver"
 msgstr "[B]WEERGAVE INSTELLINGEN CONFIGUREREN[/B][CR][CR]Thema wijzigen - Taal en regio instellen - Opties voor bestandsvermelding wijzigen - Screensaver instellen"
 
-msgctxt "#31403"
-msgid "[B]CONFIGURE GAMES SETTINGS[/B][CR][CR]Set gameplay options"
-msgstr "[B]SPEL-INSTELLINGEN CONFIGUREREN[/B][CR][CR]Spelopties instellen"
-
-msgctxt "#31410"
-msgid "[B]CONFIGURE LIVE-TV SETTINGS[/B][CR][CR]Configure PVR settings"
-msgstr "[B]LIVE-TV INSTELLINGEN CONFIGUREREN[/B][CR][CR]PVR-instellingen configureren"
-
 msgctxt "#31401"
-msgid "[B]CONFIGURE MEDIA SETTINGS[/B][CR][CR]Manage your video, music and picture library · Change video, music and picture listing options"
-msgstr "[B]MEDIA-INSTELLINGEN CONFIGUREREN[/B][CR][CR]Uw video-, muziek- en fotobibliotheek beheren - Opties voor video-, muziek- en fotolijsten wijzigen"
+msgid "[B]CONFIGURE MEDIA SETTINGS[/B][CR][CR]Manage your video library · Change video listing options"
+msgstr "[B]MEDIA-INSTELLINGEN CONFIGUREREN[/B][CR][CR]Uw videobibliotheek beheren - Opties voor videolijsten wijzigen"
 
 msgctxt "#31405"
 msgid "[B]CONFIGURE NETWORK SETTINGS[/B][CR][CR]Setup control of Kodi via UPnP and HTTP · Configure file sharing · Set internet access options"
 msgstr "[B]NETWERKINSTELLINGEN CONFIGUREREN[/B][CR][CR]Besturing van Kodi instellen via UPnP en HTTP - Bestandsdeling configureren - Opties voor internettoegang instellen"
 
 msgctxt "#31402"
-msgid "[B]CONFIGURE PLAYER SETTINGS[/B][CR][CR]Set video and music playback options · Configure slideshows · Set subtitle fonts"
-msgstr "[B]AFSPEELINSTELLINGEN CONFIGUREREN[/B][CR][CR]Afspeelopties voor video en muziek instellen - Diavoorstellingen configureren - Lettertypen ondertitels instellen"
+msgid "[B]CONFIGURE PLAYER SETTINGS[/B][CR][CR]Set video playback options · Set subtitle fonts"
+msgstr "[B]AFSPEELINSTELLINGEN CONFIGUREREN[/B][CR][CR]Afspeelopties voor video instellen - Lettertypen voor ondertitels instellen"
 
 msgctxt "#31407"
-msgid "[B]CONFIGURE SKIN SETTINGS[/B][CR][CR]Setup Titan Bingie Mod skin · Add and remove home menu items · Change skin backgrounds"
-msgstr "[B]THEMA INSTELLINGEN[/B][CR][CR]Titan Bingie Mod thema instellen - Toevoegen en verwijderen Thuisbasis menu items - Thema-achtergronden wijzigen"
+msgid "[B]CONFIGURE SKIN SETTINGS[/B][CR][CR]Setup BINGIE Lite · Add and remove home menu items · Change skin backgrounds"
+msgstr "[B]THEMA INSTELLINGEN[/B][CR][CR]BINGIE Lite instellen - Toevoegen en verwijderen Thuisbasis menu items - Thema-achtergronden wijzigen"
 
 msgctxt "#31406"
 msgid "[B]CONFIGURE SYSTEM SETTINGS[/B][CR][CR]Setup and calibrate displays · Configure audio output · Set power saving options · Enable debugging"

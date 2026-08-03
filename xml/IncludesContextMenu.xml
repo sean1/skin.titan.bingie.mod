@@ -55,7 +55,6 @@
 		<control type="group">
 			<height>100%</height>
             <width>270</width>
-			<animation effect="slide" start="0" end="0,210" time="0" condition="Window.IsActive(visualisation)">Conditional</animation>
 			<animation type="WindowOpen">
 				<effect type="slide" start="-660" end="0" time="250" tween="cubic" easing="inout" />
 			</animation>
@@ -236,7 +235,6 @@
             <label>$LOCALIZE[31305]$INFO[Container.Viewmode,: ,]</label>
             <include>Items_LockUnlock</include>
             <onclick>RunScript(script.skin.helper.service,action=SETVIEW)</onclick>
-            <visible>!Window.IsActive(tvguide) + !Window.IsActive(tvchannels)</visible>
         </control>
 
         <control type="radiobutton" id="4404">
@@ -249,8 +247,8 @@
             <textureradiooffnofocus colordiffuse="$INFO[Skin.String(SideBladeTextColor)]">common/locked.png</textureradiooffnofocus>
             <include>Items_LockUnlock</include>
             <include>Items_LockView</include>
-            <visible>Window.IsVisible(MyVideoNav.xml) | Window.IsVisible(MyMusicNav.xml) | Window.IsVisible(AddonBrowser.xml) | Window.IsVisible(MyPics.xml) | Window.IsVisible(MyPrograms.xml) | Window.IsVisible(MyGames.xml)</visible>
-            <visible>[Container.Content() + !String.IsEmpty(Skin.String(Skin.ForcedView.))] | [Container.Content(tags) + !String.IsEmpty(Skin.String(Skin.ForcedView.tags))] | [Container.Content(years) + !String.IsEmpty(Skin.String(Skin.ForcedView.years))] | [Container.Content(genres) + !String.IsEmpty(Skin.String(Skin.ForcedView.genres))] | [Container.Content(countries) + !String.IsEmpty(Skin.String(Skin.ForcedView.countries))] | [Container.Content(studios) + !String.IsEmpty(Skin.String(Skin.ForcedView.studios))] | [Container.Content(playlists) + !String.IsEmpty(Skin.String(Skin.ForcedView.playlists))] | [Container.Content(movies) + !String.IsEmpty(Skin.String(Skin.ForcedView.movies))] | [Container.Content(sets) + !String.IsEmpty(Skin.String(Skin.ForcedView.sets))] | [Container.Content(tvshows) + !String.IsEmpty(Skin.String(Skin.ForcedView.tvshows))] | [Container.Content(seasons) + !String.IsEmpty(Skin.String(Skin.ForcedView.seasons))] | [Container.Content(episodes) + !String.IsEmpty(Skin.String(Skin.ForcedView.episodes))] | [Container.Content(artists) + !String.IsEmpty(Skin.String(Skin.ForcedView.artists))] | [Container.Content(albums) + !String.IsEmpty(Skin.String(Skin.ForcedView.albums))] | [Container.Content(songs) + !String.IsEmpty(Skin.String(Skin.ForcedView.songs))] | [Container.Content(musicvideos) + !String.IsEmpty(Skin.String(Skin.ForcedView.musicvideos))] | [Container.Content(addons) + !String.IsEmpty(Skin.String(Skin.ForcedView.addons))] | [Container.Content(actors) + !String.IsEmpty(Skin.String(Skin.ForcedView.actors))] | [Container.Content(directors) + !String.IsEmpty(Skin.String(Skin.ForcedView.directors))] | [Container.Content(files) + !String.IsEmpty(Skin.String(Skin.ForcedView.files))] | [Container.Content(mixed) + !String.IsEmpty(Skin.String(Skin.ForcedView.mixed))] | [Container.Content(images) + !String.IsEmpty(Skin.String(Skin.ForcedView.images))] | [Container.Content(games) + !String.IsEmpty(Skin.String(Skin.ForcedView.games))] | [Container.Content(unknown) + !String.IsEmpty(Skin.String(Skin.ForcedView.unknown))] | [Container.Content(videos) + !String.IsEmpty(Skin.String(Skin.ForcedView.videos))]</visible>
+            <visible>Window.IsVisible(MyVideoNav.xml) | Window.IsVisible(AddonBrowser.xml) | Window.IsVisible(MyPrograms.xml)</visible>
+            <visible>[Container.Content() + !String.IsEmpty(Skin.String(Skin.ForcedView.))] | [Container.Content(tags) + !String.IsEmpty(Skin.String(Skin.ForcedView.tags))] | [Container.Content(years) + !String.IsEmpty(Skin.String(Skin.ForcedView.years))] | [Container.Content(genres) + !String.IsEmpty(Skin.String(Skin.ForcedView.genres))] | [Container.Content(countries) + !String.IsEmpty(Skin.String(Skin.ForcedView.countries))] | [Container.Content(studios) + !String.IsEmpty(Skin.String(Skin.ForcedView.studios))] | [Container.Content(playlists) + !String.IsEmpty(Skin.String(Skin.ForcedView.playlists))] | [Container.Content(movies) + !String.IsEmpty(Skin.String(Skin.ForcedView.movies))] | [Container.Content(sets) + !String.IsEmpty(Skin.String(Skin.ForcedView.sets))] | [Container.Content(tvshows) + !String.IsEmpty(Skin.String(Skin.ForcedView.tvshows))] | [Container.Content(seasons) + !String.IsEmpty(Skin.String(Skin.ForcedView.seasons))] | [Container.Content(episodes) + !String.IsEmpty(Skin.String(Skin.ForcedView.episodes))] | [Container.Content(addons) + !String.IsEmpty(Skin.String(Skin.ForcedView.addons))] | [Container.Content(actors) + !String.IsEmpty(Skin.String(Skin.ForcedView.actors))] | [Container.Content(directors) + !String.IsEmpty(Skin.String(Skin.ForcedView.directors))] | [Container.Content(files) + !String.IsEmpty(Skin.String(Skin.ForcedView.files))] | [Container.Content(mixed) + !String.IsEmpty(Skin.String(Skin.ForcedView.mixed))] | [Container.Content(unknown) + !String.IsEmpty(Skin.String(Skin.ForcedView.unknown))] | [Container.Content(videos) + !String.IsEmpty(Skin.String(Skin.ForcedView.videos))]</visible>
             <visible>!Skin.HasSetting(global.kioskmode)</visible>
         </control>
         <control type="radiobutton" id="4405">
@@ -263,7 +261,7 @@
             <textureradiooffnofocus colordiffuse="$INFO[Skin.String(SideBladeTextColor)]">common/unlocked.png</textureradiooffnofocus>
             <include>Items_LockUnlock</include>
             <include>Items_LockView</include>
-            <visible>Window.IsVisible(MyVideoNav.xml) | Window.IsVisible(MyMusicNav.xml) | Window.IsVisible(AddonBrowser.xml) | Window.IsVisible(MyPics.xml) | Window.IsVisible(MyPrograms.xml) | Window.IsVisible(MyGames.xml)</visible>
+            <visible>Window.IsVisible(MyVideoNav.xml) | Window.IsVisible(AddonBrowser.xml) | Window.IsVisible(MyPrograms.xml)</visible>
             <visible>!Control.IsVisible(4404)</visible>
             <visible>!Skin.HasSetting(global.kioskmode)</visible>
         </control>
@@ -296,15 +294,6 @@
             </visible>
         </control>
 
-        <control type="radiobutton" id="341">
-            <!--Show info-->
-            <include>SideBladeMenuButton</include>
-            <label>36427</label>
-            <onclick>Skin.ToggleSetting(GuideShowInfo)</onclick>
-            <selected>Skin.HasSetting(GuideShowInfo)</selected>
-            <visible>Window.IsActive(tvguide)</visible>
-        </control>
-        
  		<control type="radiobutton" id="3010">
 			<!--Show info-->
 			<include>SideBladeMenuButton</include>
@@ -593,12 +582,11 @@
 			[Control.IsVisible(524) + Skin.HasSetting(View524_ShowCDart)]
             </selected>
 			<visible>
-            Control.IsVisible(51) + Window.IsActive(Music) + Skin.HasSetting(View51_DetailsShowFanart) | Control.IsVisible(504) + Window.IsActive(Music) + Skin.HasSetting(View504_DetailsShowFanart) | Control.IsVisible(508) |
-            Control.IsVisible(510) + Window.IsActive(Music) + Skin.HasSetting(View510_DetailsShowFanart) | Control.IsVisible(513) | Control.IsVisible(514) |
+            Control.IsVisible(508) | Control.IsVisible(513) | Control.IsVisible(514) |
             [Control.IsVisible(502) + !Skin.HasSetting(LandscapeViewShowInfo)] | [Control.IsVisible(524) + !Skin.HasSetting(ShowCaseViewShowInfo)]
             </visible>
             <visible>!Skin.String(View513_DisplayInfo,small) | Skin.String(View514_DisplayInfo,small)</visible>
-			<visible>$EXP[IsMovieDBType] | [$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)] | [!$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)] | Window.IsActive(Music)</visible>
+			<visible>$EXP[IsMovieDBType] | [$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)] | [!$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)]</visible>
 		</control>
 
         <control type="radiobutton" id="3067">
@@ -628,12 +616,11 @@
 			[Control.IsVisible(524) + Skin.HasSetting(View524_ShowCDart)]
 			</visible>
 			<visible>
-            Control.IsVisible(51) + Window.IsActive(Music) + Skin.HasSetting(View51_DetailsShowFanart) | Control.IsVisible(504) + Window.IsActive(Music) + Skin.HasSetting(View504_DetailsShowFanart) | Control.IsVisible(508) |
-            Control.IsVisible(510) + Window.IsActive(Music) + Skin.HasSetting(View510_DetailsShowFanart) | Control.IsVisible(513) | Control.IsVisible(514) |
+            Control.IsVisible(508) | Control.IsVisible(513) | Control.IsVisible(514) |
             [Control.IsVisible(502) + !Skin.HasSetting(LandscapeViewShowInfo)] | [Control.IsVisible(524) + !Skin.HasSetting(ShowCaseViewShowInfo)]
             </visible>
             <visible>!Skin.String(View513_DisplayInfo,small) | Skin.String(View514_DisplayInfo,small)</visible>
-			<visible>$EXP[IsMovieDBType] | [$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)] | [!$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)] | Window.IsActive(Music)</visible>
+			<visible>$EXP[IsMovieDBType] | [$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)] | [!$EXP[IsMovieDBType] + Skin.HasSetting(EnableFakeDiscArt)]</visible>
 		</control>
         <control type="radiobutton" id="3080">
 			<!--Hide background panel-->
@@ -716,7 +703,7 @@
             [Skin.HasSetting(View514_DisableFanArt) + Control.IsVisible(514)] |
             [Skin.HasSetting(View519_DisableFanArt) + Control.IsVisible(519)] |
 			[Skin.HasSetting(View520_DisableFanArt) + Control.IsVisible(520)]</selected>
-			<visible>Skin.HasSetting(ShowFanartBackground) + !String.IsEmpty(ListItem.Art(FanArt)) | Window.IsActive(Music)</visible>
+			<visible>Skin.HasSetting(ShowFanartBackground) + !String.IsEmpty(ListItem.Art(FanArt))</visible>
 			<visible>
             Control.IsVisible(10) | Control.IsVisible(50) | Control.IsVisible(51) | 
             Control.IsVisible(52) | Control.IsVisible(53) | Control.IsVisible(54) | 
@@ -817,168 +804,12 @@
             <label>20077</label>
             <onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
             <onclick>SetFocus(5000)</onclick>
-            <onclick condition="!String.StartsWith(Window(Home).property(contenttype),tv)">SetProperty(SkinSettingSection,17,Home)</onclick>
-            <onclick condition="String.StartsWith(Window(Home).property(contenttype),tv)">SetProperty(SkinSettingSection,18,Home)</onclick>
+            <onclick>SetProperty(SkinSettingSection,17,Home)</onclick>
             <onclick>ActivateWindow(1105)</onclick>
         </control>
 
 	</include>
     
-    <include name="PVRsideblade">
-	    <control type="group">
-            <include condition="Skin.HasSetting(smallContextMenu)">SideBladeClassic</include>
-			<include condition="!Skin.HasSetting(smallContextMenu)">SideBladeModern</include>
-			<!-- hidden labels for pvr -->
-			<control type="label" id="29">
-				<description>Empty so we can pass the values up one level</description>
-				<visible>False</visible>
-			</control>
-			<control type="label" id="30">
-				<description>Empty so we can pass the values up one level</description>
-				<visible>False</visible>
-			</control>
-			<!--Grouplist 9000-->
-            <control type="grouplist" id="9000">
-                <posx>21</posx>
-                <posy>185</posy>
-                <width>458</width>
-                <height>770</height>
-                <itemgap>3</itemgap>
-                <onleft>5000</onleft>
-                <onright>5000</onright>
-				<onright>ClearProperty(ShowViewSubMenu,Home)</onright>
-				<onleft>ClearProperty(ShowViewSubMenu,Home)</onleft>
-				<onback>ClearProperty(ShowViewSubMenu,Home)</onback>
-				<onback condition="!Window.IsActive(tvguide)">5000</onback>
-                <onup>9000</onup>
-                <ondown>9000</ondown>
-                <orientation>vertical</orientation>
-                <control type="button" id="100">
-                    <!--Channels-->
-                    <description>Channels</description>
-                    <label>19019</label>
-                    <include>SideBladeMenuButton</include>
-					<onclick condition="Window.IsActive(TVChannels) | Window.IsActive(RadioChannels)">NextChannelGroup</onclick>
-					<onclick condition="String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(TVChannels)</onclick>
-					<onclick condition="!String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(RadioChannels)</onclick>
-                </control>
-                <control type="button" id="101">
-					<description>TV Guide</description>
-					<left>0</left>
-					<top>80</top>
-					<textwidth>400</textwidth>
-					<include>SideBladeMenuButton</include>
-					<label>22020</label>
-					<onclick condition="Window.IsActive(TVGuide) | Window.IsActive(RadioGuide)">NextChannelGroup</onclick>
-					<onclick condition="String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(TVGuide)</onclick>
-					<onclick condition="!String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(RadioGuide)</onclick>
-				</control>
-				<control type="button" id="102">
-					<description>Recordings</description>
-					<left>0</left>
-					<top>120</top>
-					<textwidth>400</textwidth>
-					<include>SideBladeMenuButton</include>
-					<label>19163</label>
-					<onclick condition="String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(TVRecordings)</onclick>
-					<onclick condition="!String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(RadioRecordings)</onclick>
-				</control>
-				<control type="button" id="103">
-					<description>Timers</description>
-					<left>0</left>
-					<top>160</top>
-					<textwidth>400</textwidth>
-					<include>SideBladeMenuButton</include>
-					<label>19040</label>
-					<onclick condition="String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(TVTimers)</onclick>
-					<onclick condition="!String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(RadioTimers)</onclick>
-				</control>
-                <control type="button" id="105">
-					<description>Timer Rules</description>
-					<left>0</left>
-					<top>160</top>
-					<textwidth>400</textwidth>
-					<include>SideBladeMenuButton</include>
-					<label>19138</label>
-					<onclick condition="String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(TVTimerRules)</onclick>
-					<onclick condition="!String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(RadioTimerRules)</onclick>
-				</control>
-				<control type="button" id="104">
-					<description>Search</description>
-					<left>0</left>
-					<top>200</top>
-					<textwidth>400</textwidth>
-					<include>SideBladeMenuButton</include>
-					<label>137</label>
-					<onclick condition="String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(TVSearch)</onclick>
-					<onclick condition="!String.IsEmpty(Window.Property(IsRadio))">ActivateWindow(RadioSearch)</onclick>
-				</control>
-				<control type="button" id="28">
-					<description>Channel Groups</description>
-					<left>0</left>
-					<right>40</right>
-					<textwidth>400</textwidth>
-					<include>SideBladeMenuButton</include>
-					<label/>
-				</control>
-				<control type="radiobutton" id="5">
-					<description>Group recording items by folder structure</description>
-					<left>0</left>
-					<right>40</right>
-					<textwidth>400</textwidth>
-					<include>SideBladeMenuButton</include>
-					<label>19270</label>
-					<visible>Window.IsActive(TVRecordings) | Window.IsActive(RadioRecordings)</visible>
-				</control>
-				
-				<control type="button" id="3">
-					<description>Sort by button</description>
-					<include>SideBladeMenuButton</include>
-					<label>103</label>
-				</control>
-				<control type="togglebutton" id="4">
-					<description>Sort asc</description>
-					<include>SideBladeMenuButton</include>
-					<alttexturefocus border="10" colordiffuse="$INFO[Skin.String(ButtonFocusColor)]">diffuse/panel.png</alttexturefocus>
-					<alttexturenofocus/>
-					<label>21431</label>
-					<altlabel>21430</altlabel>
-					<usealttexture>Container.SortDirection(Ascending)</usealttexture>
-				</control>
-                
-                <control type="radiobutton" id="6">
-					<description>Show hidden channels</description>
-					<include>SideBladeMenuButton</include>
-					<label>19051</label>
-					<visible>Window.IsActive(TVChannels) | Window.IsActive(RadioChannels)</visible>
-				</control>
-				<control type="radiobutton" id="7">
-					<description>Show deleted recordings</description>
-					<include>SideBladeMenuButton</include>
-					<label>19184</label>
-					<visible>Window.IsActive(TVRecordings) | Window.IsActive(RadioRecordings)</visible>
-				</control>
-                <control type="radiobutton" id="8">  
-                    <description>Hide disabled timers</description>  
-                    <include>SideBladeMenuButton</include>  
-                    <label>19077</label>  
-                    <visible>Window.IsActive(TVTimers) | Window.IsActive(RadioTimers) | Window.IsActive(TVTimerRules) | Window.IsActive(RadioTimerRules)</visible>  
-                </control>  
-  
-				<control type="radiobutton" id="31">
-                    <!--filter-->
-                    <include>SideBladeMenuButton</include>
-                    <label>587</label>
-					<selected>Container.Filtered</selected>
-					<onclick>right</onclick>
-					<visible>Window.IsActive(TVChannels) | Window.IsActive(RadioChannels)</visible>
-                </control>
-                <include>SideBladeViewCommands</include>
-				
-            </control>
-         </control>
-		 
-	</include>
 
     <include name="SideBladeMenuButton">
 		<width>458</width>

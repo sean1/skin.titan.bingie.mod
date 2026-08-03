@@ -68,20 +68,6 @@
 	<setting id="osdmediaflagsstyle" value="large" label="$LOCALIZE[31944]" condition="" icon="special://skin/extras/viewthumbs/flags_large.jpg" description=""/>
     <setting id="osdmediaflagsstyle" value="disabled" label="$LOCALIZE[1223]" condition="" icon="" description="" default="true"/>
 
-    <!-- Guide Rows -->
-    <setting id="GuideRows" value="7" label="7 $LOCALIZE[455]" condition="" icon="" description="">
-        <onselect condition="Window.IsActive(MyPVRGuide.xml)">ReloadSkin()</onselect>
-    </setting>
-    <setting id="GuideRows" value="8" label="8 $LOCALIZE[455]" condition="" icon="" description="">
-        <onselect condition="Window.IsActive(MyPVRGuide.xml)">ReloadSkin()</onselect>
-    </setting>
-    <setting id="GuideRows" value="9" label="9 $LOCALIZE[455]" condition="" icon="" description="" default="true">
-        <onselect condition="Window.IsActive(MyPVRGuide.xml)">ReloadSkin()</onselect>
-    </setting>
-    <setting id="GuideRows" value="10" label="10 $LOCALIZE[455]" condition="" icon="" description="">
-        <onselect condition="Window.IsActive(MyPVRGuide.xml)">ReloadSkin()</onselect>
-    </setting>
-
     <!-- Global Background -->
 	<setting id="CustomBackgroundSetting" value="colors/color_transparent.png" label="$LOCALIZE[571]" condition="" description="" default="true"/>
     <setting id="CustomBackgroundSetting" value="special://skin/extras/media/global_bingie.jpg" label="Bingie" condition="" icon="special://skin/extras/media/global_bingie.jpg" description=""/>
@@ -161,16 +147,6 @@
 	<setting id="extrafanartdelay" value="50" label="50 $LOCALIZE[31231]" condition="" icon="" description=""/>
     <setting id="extrafanartdelay" value="60" label="60 $LOCALIZE[31231]" condition="" icon="" description=""/>
 
-    <!-- Artist Fanart -->
-    <setting id="MusicArtistFanart" value="single" label="$LOCALIZE[31949]" condition="" icon="" description=""/>
-    <setting id="MusicArtistFanart" value="slideshow" label="$LOCALIZE[31950]" condition="" icon="" description="" default="true"/>
-    <setting id="MusicArtistFanart" value="disabled" label="$LOCALIZE[1223]" condition="" icon="" description=""/>
-
-    <!-- Artist Logo -->
-    <setting id="MusicArtistLogo" value="disabled" label="$LOCALIZE[1223]" condition="" icon="" description=""/>
-    <setting id="MusicArtistLogo" value="enabled" label="$LOCALIZE[31951]" condition="" icon="" description="" default="true"/>
-    <setting id="MusicArtistLogo" value="osd" label="$LOCALIZE[31952]" condition="" icon="" description=""/>
-
     <!-- Clearlogo Location -->
     <setting id="ClearLogoLocation" value="topleft" label="$LOCALIZE[31329]" condition="" icon="" description=""/>
     <setting id="ClearLogoLocation" value="topcenter" label="$LOCALIZE[31330]" condition="" icon="" description="" default="true"/>
@@ -189,26 +165,6 @@
     <setting id="defaultosdbutton_video" value="102" label="$LOCALIZE[13395]" condition="" icon="" description=""/>
     <setting id="defaultosdbutton_video" value="214" label="$LOCALIZE[298]" condition="" icon="" description=""/>
 
-    <setting id="defaultosdbutton_livetv" value="203" label="$LOCALIZE[208]/$LOCALIZE[31953]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="204" label="$LOCALIZE[31954]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="201" label="$LOCALIZE[210]" condition="" icon="" description="" default="true"/>
-    <setting id="defaultosdbutton_livetv" value="202" label="$LOCALIZE[31955]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="205" label="$LOCALIZE[31956]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="206" label="$LOCALIZE[209]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="10" label="$LOCALIZE[36428]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="101" label="$LOCALIZE[13396]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="102" label="$LOCALIZE[13395]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="105" label="$LOCALIZE[10550]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="806" label="$LOCALIZE[31957]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_livetv" value="807" label="$LOCALIZE[31958]" condition="" icon="" description=""/>
-
-    <setting id="defaultosdbutton_music" value="203" label="$LOCALIZE[208]/$LOCALIZE[31953]" condition="" icon="" description="" default="true"/>
-    <setting id="defaultosdbutton_music" value="204" label="$LOCALIZE[31954]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_music" value="201" label="$LOCALIZE[210]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_music" value="202" label="$LOCALIZE[31955]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_music" value="205" label="$LOCALIZE[31956]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_music" value="206" label="$LOCALIZE[209]" condition="" icon="" description=""/>
-    <setting id="defaultosdbutton_music" value="500" label="$LOCALIZE[31959]" condition="" icon="" description=""/>
 
     <!-- Kodi Logo on Home Location -->
     <setting id="LogoImageAlignment" value="center" label="$LOCALIZE[31960]" condition="" icon="" description=""/>
@@ -319,10 +275,6 @@
     <setting id="infoline" value="library_info" label="$LOCALIZE[20314]" condition="" icon="" description=""/>
     <setting id="infoline" value="movie_library" label="$LOCALIZE[14022] - $LOCALIZE[20342]" condition="" icon="" description=""/>
     <setting id="infoline" value="tvshows_library" label="$LOCALIZE[14022] - $LOCALIZE[20343]" condition="" icon="" description=""/>
-    <setting id="infoline" value="music_library" label="$LOCALIZE[14022] - $LOCALIZE[2]" condition="" icon="" description=""/>
-    <setting id="infoline" value="pvr" label="$LOCALIZE[19166]" condition="" icon="" description=""/>
-    <setting id="infoline" value="weather" label="$LOCALIZE[24027]" condition="" icon="" description=""/>
-    <setting id="infoline" value="musicvideo_library" label="$LOCALIZE[14022] - $LOCALIZE[20389]" condition="" icon="" description=""/>
     <setting id="infoline" value="sysinfo" label="$LOCALIZE[130]" condition="" icon="" description=""/>
     <setting id="infoline" value="addonsinfo" label="$LOCALIZE[24001]/$LOCALIZE[1036]" condition="" icon="" description=""/>
     <setting id="infoline" value="totalsortby" label="$LOCALIZE[31034]/$LOCALIZE[581]" condition="!Window.IsActive(script-skinshortcuts.xml)" icon="" description=""/>
@@ -415,8 +367,6 @@
     <setting id="search_types" value="||MULTISELECT||" label="" condition="" icon="" description="">
         <option id="EnableBingieSearchLibrary" label="$LOCALIZE[320055]" condition="" default="true"/>
 		<option id="EnableBingieSearchEpisodes" label="$LOCALIZE[31416]" condition=""/>
-        <option id="EnableBingieSearchMusic" label="$LOCALIZE[31418]" condition=""/>
-        <option id="EnableBingieSearchMusicVideos" label="$LOCALIZE[31417]" condition=""/>
 		<option id="EnableBingieSearchAddons" label="$LOCALIZE[31026]" condition=""/>
 		<option id="EnableBingieSearchYoutube" label="$LOCALIZE[31419]" condition=""/>
         <option id="EnableBingieSearchTMDBHelper" label="$LOCALIZE[320052]" condition=""/>
@@ -485,7 +435,6 @@
     <setting id="bingie_videoosd_buttons" value="||MULTISELECT||" label="" condition="" icon="" description="">
         <option id="bingie_videoosd_buttons_info" label="$LOCALIZE[19033]" condition="" default="true"/>
         <option id="bingie_videoosd_buttons_bookmarks" label="$LOCALIZE[298]" condition=""/>
-        <option id="bingie_videoosd_buttons_pvrguide" label="$LOCALIZE[10702]" condition=""/>
         <option id="bingie_videoosd_buttons_discmenu" label="$LOCALIZE[427]" condition=""/>
         <option id="bingie_videoosd_buttons_video" label="$LOCALIZE[13395]" condition="" default="true"/>
         <option id="bingie_videoosd_buttons_audio" label="$LOCALIZE[13396]" condition="" default="true"/>
@@ -510,19 +459,11 @@
     <setting id="general_header" value="disable" label="$LOCALIZE[1223]" condition="" icon="" description="$LOCALIZE[31345]" default="true"/>
     <setting id="general_header" value="logo-time" label="$LOCALIZE[31058] + $LOCALIZE[31705]" condition="" icon="" description="$LOCALIZE[31984]"/>
     <setting id="general_header" value="title-time" label="$LOCALIZE[369] + $LOCALIZE[31705]" condition="" icon="" description="$LOCALIZE[31985]"/>
-    <setting id="general_header" value="weather-time" label="$LOCALIZE[400] + $LOCALIZE[31705]" condition="" icon="" description="$LOCALIZE[31986]"/>
-    <setting id="general_header" value="title-weather" label="$LOCALIZE[369] + $LOCALIZE[400]" condition="" icon="" description="$LOCALIZE[31987]"/>
-    <setting id="general_header" value="logo-weathclock" label="$LOCALIZE[31058] + $LOCALIZE[31705] + $LOCALIZE[400]" condition="" icon="" description="$LOCALIZE[31988]"/>
-    <setting id="general_header" value="title-weathclock" label="$LOCALIZE[369] + $LOCALIZE[31705] + $LOCALIZE[400]" condition="" icon="" description="$LOCALIZE[31989]"/>
-    <setting id="general_header" value="-weathclock" label="$LOCALIZE[31705] + $LOCALIZE[400]" condition="" icon="" description="$LOCALIZE[31990]"/>
     <setting id="general_header" value="time" label="$LOCALIZE[31705]" condition="" icon="" description="$LOCALIZE[31991]"/>
     <setting id="general_header" value="title" label="$LOCALIZE[369]" condition="" icon="" description="$LOCALIZE[31992]"/>
-    <setting id="general_header" value="-weather" label="$LOCALIZE[400]" condition="" icon="" description="$LOCALIZE[31993]"/>
 
     <!-- home header options -->
-    <setting id="home_header" value="-weathclock" label="$LOCALIZE[31705] + $LOCALIZE[400]" condition="" icon="" description="$LOCALIZE[31990]" default=""/>
     <setting id="home_header" value="time" label="$LOCALIZE[31705]" condition="" icon="" description="$LOCALIZE[31991]"/>
-    <setting id="home_header" value="-weather" label="$LOCALIZE[400]" condition="" icon="" description="$LOCALIZE[31346]" default=""/>
     <setting id="home_header" value="disable" label="$LOCALIZE[1223]" condition="" icon="" description="$LOCALIZE[31345]" default="true"/>
 
     <!-- custom header for submenu -->
@@ -534,8 +475,6 @@
     <!-- skinshortcuts background -->
     <setting id="skinshortcuts-$INFO[Container(211).ListItem.Property(submenuVisibility)]" label="$LOCALIZE[31804]" value="widgetfanart" condition="!String.IsEmpty(Container(211).ListItem.Property(widget))"/>
 
-    <setting id="MusicBackground" value="special://skin/resources/fanart.jpg" label="$LOCALIZE[571]" condition="" icon="special://skin/resources/fanart.jpg" default="true"/>
-	
 	<!--User Picture-->
     <setting id="user_picture" value="1" label="$LOCALIZE[31119] 1" condition="" icon="special://skin/extras/userpicture/defaultuser_1.png" description=""/>
     <setting id="user_picture" value="2" label="$LOCALIZE[31119] 2" condition="" icon="special://skin/extras/userpicture/defaultuser_2.png" description=""/>

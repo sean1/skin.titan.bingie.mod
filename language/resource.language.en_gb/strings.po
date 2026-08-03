@@ -1,6 +1,6 @@
 # Kodi Media Center language file
-# Addon Name: Bingie Mod
-# Addon id: skin.titan.bingie.mod
+# Addon Name: BINGIE Lite
+# Addon id: skin.titan.bingie.lite
 # Addon Provider: AchillesPunks, HugoL, Matke
 msgid ""
 msgstr ""
@@ -107,7 +107,7 @@ msgid "Rated"
 msgstr ""
 
 msgctxt "#31024"
-msgid "Force stop playback when not in fullscreen mode (exc. Live TV)"
+msgid "Force stop playback when leaving fullscreen mode"
 msgstr ""
 
 msgctxt "#31025"
@@ -128,10 +128,6 @@ msgstr ""
 
 msgctxt "#31029"
 msgid "Show footer bar in views"
-msgstr ""
-
-msgctxt "#31030"
-msgid "Display weather"
 msgstr ""
 
 msgctxt "#31031"
@@ -160,10 +156,6 @@ msgstr ""
 
 msgctxt "#31037"
 msgid "Set default limit for items in Widgets"
-msgstr ""
-
-msgctxt "#31038"
-msgid "Search Music Videos, Albums, Artists or Songs"
 msgstr ""
 
 msgctxt "#31039"
@@ -282,10 +274,6 @@ msgctxt "#31068"
 msgid "Bingie OSD header text color"
 msgstr ""
 
-msgctxt "#31069"
-msgid "PVR Hub"
-msgstr ""
-
 msgctxt "#31070"
 msgid "Watch Season"
 msgstr ""
@@ -348,10 +336,6 @@ msgstr ""
 
 msgctxt "#31086"
 msgid "Bingie home progress bar color"
-msgstr ""
-
-msgctxt "#31088"
-msgid "Live-TV"
 msgstr ""
 
 msgctxt "#31089"
@@ -522,10 +506,6 @@ msgctxt "#31134"
 msgid "Profile"
 msgstr ""
 
-msgctxt "#31135"
-msgid "Radio channels"
-msgstr ""
-
 msgctxt "#31137"
 msgid "Settings for recordings"
 msgstr ""
@@ -624,10 +604,6 @@ msgstr ""
 
 msgctxt "#31176"
 msgid "Splash Screen Settings"
-msgstr ""
-
-msgctxt "#31179"
-msgid "Always open fullscreen music playback"
 msgstr ""
 
 msgctxt "#31181"
@@ -760,10 +736,6 @@ msgstr ""
 
 msgctxt "#31231"
 msgid "seconds"
-msgstr ""
-
-msgctxt "#31232"
-msgid "Do not hide OSD infopanel on fullscreen music playback"
 msgstr ""
 
 msgctxt "#31233"
@@ -958,10 +930,6 @@ msgctxt "#31323"
 msgid "Enable smart shortcuts"
 msgstr ""
 
-msgctxt "#31325"
-msgid "Show current weather in the video info & video on-screen displays"
-msgstr ""
-
 msgctxt "#31327"
 msgid "Show clearlogo (if available)"
 msgstr ""
@@ -976,10 +944,6 @@ msgstr ""
 
 msgctxt "#31331"
 msgid "top right"
-msgstr ""
-
-msgctxt "#31332"
-msgid "Disable background-overlay in lyrics window"
 msgstr ""
 
 msgctxt "#31333"
@@ -998,16 +962,8 @@ msgctxt "#31336"
 msgid "SEASON FINALE"
 msgstr ""
 
-msgctxt "#31338"
-msgid "Show video preview in PVR section"
-msgstr ""
-
 msgctxt "#31339"
 msgid "Enable smart shortcuts for the Emby addon"
-msgstr ""
-
-msgctxt "#31341"
-msgid "Enable artist slideshow while playing music"
 msgstr ""
 
 msgctxt "#31344"
@@ -1016,14 +972,6 @@ msgstr ""
 
 msgctxt "#31345"
 msgid "Disable header completely"
-msgstr ""
-
-msgctxt "#31346"
-msgid "Only show Weather (right)"
-msgstr ""
-
-msgctxt "#31347"
-msgid "Only show Weather (left)"
 msgstr ""
 
 msgctxt "#31348"
@@ -1147,14 +1095,14 @@ msgid "Recommended TV Shows"
 msgstr ""
 
 msgctxt "#31387"
-msgid "Welcome to BINGIE MOD"
+msgid "Welcome to BINGIE Lite"
 msgstr ""
 
 msgctxt "#31388"
 msgid ""
 "The new Titan skin for Kodi Nexus."
 "[CR]This skin has many different layouts to choose from, let us start with the "
-"BINGIE MOD main layout. This layout is designed to simulate Netflix user experience "
+"BINGIE Lite main layout. This layout is designed to simulate Netflix user experience "
 "for TV.[CR]In "
 "order to get everything running as it should, it's recommended to set the "
 "following Kodi options:[CR][CR][COLOR ff41b957]    - Disable mouse[CR]    - Hide "
@@ -1189,7 +1137,7 @@ msgid "Unlock Hubs now"
 msgstr ""
 
 msgctxt "#31395"
-msgid "With BINGIE MOD you can have all of your Kodi and library content in one place, through the use of widgets.[CR][CR]"
+msgid "With BINGIE Lite you can have all of your Kodi and video library content in one place, through the use of widgets.[CR][CR]"
 "Home widgets can be configured from:[CR]"
 "[COLOR white]    - Skin Settings -> Configure Shortcuts tab -> Edit Menu Shortcuts[/COLOR][CR][CR]"
 "There are also Hubs for Movies, TV Shows, New and you can add your own.[CR]"
@@ -1214,15 +1162,11 @@ msgid "[B]CONFIGURE APPEARANCE SETTINGS[/B][CR][CR]Change the skin · Set langua
 msgstr ""
 
 msgctxt "#31401"
-msgid "[B]CONFIGURE MEDIA SETTINGS[/B][CR][CR]Manage your video, music and picture library · Change video, music and picture listing options"
+msgid "[B]CONFIGURE MEDIA SETTINGS[/B][CR][CR]Manage your video library · Change video listing options"
 msgstr ""
 
 msgctxt "#31402"
-msgid "[B]CONFIGURE PLAYER SETTINGS[/B][CR][CR]Set video and music playback options · Configure slideshows · Set subtitle fonts"
-msgstr ""
-
-msgctxt "#31403"
-msgid "[B]CONFIGURE GAMES SETTINGS[/B][CR][CR]Set gameplay options"
+msgid "[B]CONFIGURE PLAYER SETTINGS[/B][CR][CR]Set video playback options · Set subtitle fonts"
 msgstr ""
 
 msgctxt "#31404"
@@ -1238,7 +1182,7 @@ msgid "[B]CONFIGURE SYSTEM SETTINGS[/B][CR][CR]Setup and calibrate displays · C
 msgstr ""
 
 msgctxt "#31407"
-msgid "[B]CONFIGURE SKIN SETTINGS[/B][CR][CR]Setup Bingie Mod skin · Add and remove home menu items · Change skin backgrounds"
+msgid "[B]CONFIGURE SKIN SETTINGS[/B][CR][CR]Setup BINGIE Lite · Add and remove home menu items · Change skin backgrounds"
 msgstr ""
 
 msgctxt "#31408"
@@ -1247,10 +1191,6 @@ msgstr ""
 
 msgctxt "#31409"
 msgid "[B]SYSTEM INFO[/B][CR][CR]Summary · Storage · Network · Video · Hardware"
-msgstr ""
-
-msgctxt "#31410"
-msgid "[B]CONFIGURE LIVE-TV SETTINGS[/B][CR][CR]Configure PVR settings"
 msgstr ""
 
 msgctxt "#31411"
@@ -1271,14 +1211,6 @@ msgstr ""
 
 msgctxt "#31416"
 msgid "Search for Episodes by name"
-msgstr ""
-
-msgctxt "#31417"
-msgid "Search for Music Videos"
-msgstr ""
-
-msgctxt "#31418"
-msgid "Search for Music Albums, Artists and Songs"
 msgstr ""
 
 msgctxt "#31419"
@@ -1399,10 +1331,6 @@ msgstr ""
 
 msgctxt "#31450"
 msgid "Slim List"
-msgstr ""
-
-msgctxt "#31451"
-msgid "Use extended layout for weather"
 msgstr ""
 
 msgctxt "#31452"
@@ -1709,14 +1637,6 @@ msgctxt "#31565"
 msgid "Open submenu"
 msgstr ""
 
-msgctxt "#31566"
-msgid "Enable PVR artwork"
-msgstr ""
-
-msgctxt "#31567"
-msgid "Simple list (PVR)"
-msgstr ""
-
 msgctxt "#31568"
 msgid "Enable indicator for unwatched items"
 msgstr ""
@@ -1763,10 +1683,6 @@ msgstr ""
 
 msgctxt "#31579"
 msgid "Episode titles related to"
-msgstr ""
-
-msgctxt "#31580"
-msgid "Music videos title related to"
 msgstr ""
 
 msgctxt "#31589"
@@ -1829,14 +1745,6 @@ msgctxt "#31608"
 msgid "Critics"
 msgstr ""
 
-msgctxt "#31616"
-msgid "Enable mini guide on fullscreen Live TV"
-msgstr ""
-
-msgctxt "#31617"
-msgid "Animate music background"
-msgstr ""
-
 msgctxt "#31619"
 msgid "Enable circular navigation"
 msgstr ""
@@ -1845,20 +1753,8 @@ msgctxt "#31622"
 msgid "More Like This"
 msgstr ""
 
-msgctxt "#31623"
-msgid "Select Weather icons"
-msgstr ""
-
-msgctxt "#31624"
-msgid "Select Weather fanart"
-msgstr ""
-
 msgctxt "#31626"
 msgid "Select Movie/TV Genre icons"
-msgstr ""
-
-msgctxt "#31627"
-msgid "Select Music Genre icons"
 msgstr ""
 
 msgctxt "#31628"
@@ -1879,18 +1775,6 @@ msgstr ""
 
 msgctxt "#31635"
 msgid "Horizontal navigation"
-msgstr ""
-
-msgctxt "#31636"
-msgid "Weather Alerts"
-msgstr ""
-
-msgctxt "#31637"
-msgid "No active weather alerts"
-msgstr ""
-
-msgctxt "#31640"
-msgid "Show artist biography on OSD while playing music"
 msgstr ""
 
 msgctxt "#31641"
@@ -1957,18 +1841,6 @@ msgctxt "#31662"
 msgid "Default OSD button for video playback"
 msgstr ""
 
-msgctxt "#31663"
-msgid "Default OSD button for Live TV playback"
-msgstr ""
-
-msgctxt "#31664"
-msgid "Default OSD button for music playback"
-msgstr ""
-
-msgctxt "#31665"
-msgid "Show artist logo on fullscreen music playback"
-msgstr ""
-
 msgctxt "#31666"
 msgid "Big Panel Wall"
 msgstr ""
@@ -1983,10 +1855,6 @@ msgstr ""
 
 msgctxt "#31669"
 msgid "Now Playing Infobar"
-msgstr ""
-
-msgctxt "#31670"
-msgid "Music playback"
 msgstr ""
 
 msgctxt "#31671"
@@ -2065,14 +1933,6 @@ msgctxt "#31706"
 msgid "Prefer animated posters (if available)"
 msgstr ""
 
-msgctxt "#31708"
-msgid "Enable artwork lookups for PVR"
-msgstr ""
-
-msgctxt "#31709"
-msgid "PVR artwork settings"
-msgstr ""
-
 msgctxt "#31710"
 msgid "Enable skin helper artwork lookups for addons"
 msgstr ""
@@ -2087,10 +1947,6 @@ msgstr ""
 
 msgctxt "#31714"
 msgid "Reload"
-msgstr ""
-
-msgctxt "#31715"
-msgid "Disable Kodi screensaver on fullscreen music playback"
 msgstr ""
 
 msgctxt "#31716"
@@ -2139,10 +1995,6 @@ msgstr ""
 
 msgctxt "#31731"
 msgid "Configure individually per-widget"
-msgstr ""
-
-msgctxt "#31732"
-msgid "Show large scrolling text while music playback"
 msgstr ""
 
 msgctxt "#31733"
@@ -2245,22 +2097,6 @@ msgctxt "#31776"
 msgid "Highlight channel row in guide"
 msgstr ""
 
-msgctxt "#31777"
-msgid "PVR Guide unfocused item color"
-msgstr ""
-
-msgctxt "#31778"
-msgid "PVR Guide focused item color"
-msgstr ""
-
-msgctxt "#31779"
-msgid "PVR Guide unfocused item textcolor"
-msgstr ""
-
-msgctxt "#31780"
-msgid "PVR Guide focused item textcolor"
-msgstr ""
-
 msgctxt "#31781"
 msgid "Video process information"
 msgstr ""
@@ -2294,7 +2130,7 @@ msgid "Focused/active color for radiobuttons and spin controls"
 msgstr ""
 
 msgctxt "#31789"
-msgid "Enable indicator if item is playing or is recording/timer (pvr)"
+msgid "Enable indicator if item is playing"
 msgstr ""
 
 msgctxt "#31790"
@@ -2303,10 +2139,6 @@ msgstr ""
 
 msgctxt "#31791"
 msgid "Header panel color"
-msgstr ""
-
-msgctxt "#31792"
-msgid "Enable small PVR Channels OSD"
 msgstr ""
 
 msgctxt "#31793"
@@ -2373,26 +2205,6 @@ msgctxt "#31812"
 msgid "Enable automatic creation of wall backgrounds"
 msgstr ""
 
-msgctxt "#31813"
-msgid "Diffuse color for lyrics overlay"
-msgstr ""
-
-msgctxt "#31814"
-msgid "Textcolor for unfocused lyrics"
-msgstr ""
-
-msgctxt "#31815"
-msgid "Textcolor for focused lyrics"
-msgstr ""
-
-msgctxt "#31816"
-msgid "Shadowcolor for unfocused lyrics text"
-msgstr ""
-
-msgctxt "#31817"
-msgid "Shadowcolor for focused lyrics text"
-msgstr ""
-
 msgctxt "#31818"
 msgid "Disable Clearlogo in Bingie Views (text title instead)"
 msgstr ""
@@ -2407,14 +2219,6 @@ msgstr ""
 
 msgctxt "#31823"
 msgid "Use fixed focus"
-msgstr ""
-
-msgctxt "#31824"
-msgid "Default music background (as fallback if no artist fanart or fanart disabled)"
-msgstr ""
-
-msgctxt "#31825"
-msgid "Don't use rich artwork on the OSD at livetv playback"
 msgstr ""
 
 msgctxt "#31827"
@@ -2780,10 +2584,6 @@ msgctxt "#31949"
 msgid "Single fanart image"
 msgstr ""
 
-msgctxt "#31950"
-msgid "Extra fanart (slideshow)"
-msgstr ""
-
 msgctxt "#31951"
 msgid "Always visible"
 msgstr ""
@@ -2880,26 +2680,6 @@ msgctxt "#31985"
 msgid "Show Header Title (left) and Time (right)"
 msgstr ""
 
-msgctxt "#31986"
-msgid "Show Weather (left) and Time (right)"
-msgstr ""
-
-msgctxt "#31987"
-msgid "Show Header Title (left) and Weather (right)"
-msgstr ""
-
-msgctxt "#31988"
-msgid "Show Logo (left) and Time & Weather (right)"
-msgstr ""
-
-msgctxt "#31989"
-msgid "Show Title (left) and Time & Weather (right)"
-msgstr ""
-
-msgctxt "#31990"
-msgid "Show Time & Weather (right)"
-msgstr ""
-
 msgctxt "#31991"
 msgid "Only Show Time"
 msgstr ""
@@ -2908,20 +2688,8 @@ msgctxt "#31992"
 msgid "Only Show Title"
 msgstr ""
 
-msgctxt "#31993"
-msgid "Only show Weather"
-msgstr ""
-
-msgctxt "#31995"
-msgid "Show Logo & Weather (left) and Time (right)"
-msgstr ""
-
 msgctxt "#31996"
 msgid "Show Logo (left) and Profile (right)"
-msgstr ""
-
-msgctxt "#31997"
-msgid "Show Logo (left) and Weather (right)"
 msgstr ""
 
 msgctxt "#31998"
@@ -3000,12 +2768,8 @@ msgctxt "#320016"
 msgid "Timer Rules"
 msgstr ""
 
-msgctxt "#320017"
-msgid "Radio Channels"
-msgstr ""
-
 msgctxt "#320018"
-msgid "Welcome to[CR]BINGIE MOD"
+msgid "Welcome to[CR]BINGIE Lite"
 msgstr ""
 
 msgctxt "#320019"
@@ -3645,7 +3409,7 @@ msgid "Disable Static Slim Menu"
 msgstr ""
 
 msgctxt "#320178"
-msgid "Disable Bingie Mod Logo on Home and Settings"
+msgid "Disable BINGIE Lite Logo on Home and Settings"
 msgstr ""
 
 msgctxt "#320179"
@@ -3689,7 +3453,7 @@ msgid "Disable 'Top 250' indicator"
 msgstr ""
 
 msgctxt "#320189"
-msgid "Bingie Mod Default"
+msgid "BINGIE Lite Default"
 msgstr ""
 
 msgctxt "#320190"
@@ -3902,7 +3666,7 @@ msgstr ""
 
 msgctxt "#320242"
 msgid "Enable 2 Studio Logos on Home/Bingie Views"
-msgid ""
+msgstr ""
 
 msgctxt "#320243"
 msgid "Bingie ScreenSaver Settings"
@@ -3919,5 +3683,3 @@ msgstr ""
 msgctxt "#320246"
 msgid "Show Media File Path (DialogVideoInfo)"
 msgstr ""
-
-

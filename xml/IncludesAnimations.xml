@@ -8,12 +8,6 @@
         <animation time="200" effect="fade">Visible</animation>
         <animation time="200" effect="fade">Hidden</animation>
     </include>
-    <include name="animation_view_change_pvr">
-        <!--View Change PVR-->
-        <animation time="200" effect="fade">Visible</animation>
-        <animation time="200" effect="fade">Hidden</animation>
-    </include>
-
     <include name="Startup_Dialog_OpenClose">
         <animation type="WindowOpen" reversible="false">
             <effect type="zoom" start="80" end="100" center="960,540" delay="160" tween="circle" easing="out" time="240" />

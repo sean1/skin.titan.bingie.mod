@@ -45,12 +45,6 @@
             <onback>900</onback>
         </control>
 
-        <!-- Preload Weather Conditions -->
-        <control type="label">
-            <label>$INFO[Weather.Conditions]</label>
-            <include>HiddenObject</include>
-        </control>
-
         <!-- Preload submenu for count calculations -->
         <include condition="!Skin.HasSetting(DisableAllSubmenus)">hiddenSubmenu</include>
 

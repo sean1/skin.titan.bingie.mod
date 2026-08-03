@@ -8,7 +8,6 @@
 
 		<!-- common items -->
 		<node label="32029">
-			<shortcut label="32022" grouping="32029" icon="shortcuts/antenna.png" condition="PVR.HasTVChannels">ActivateWindow(TVChannels)</shortcut>
 			<shortcut label="137" grouping="32029" icon="shortcuts/search.png">ActivateWindow(1109,return)</shortcut>
 			<shortcut label="10000" grouping="32029" icon="shortcuts/home.png" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">ActivateWindow(home,return)</shortcut>
 			<shortcut label="320027" grouping="32029" icon="shortcuts/something.png" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">ActivateWindow(1118,return)</shortcut>
@@ -19,19 +18,11 @@
 			<shortcut label="31534" grouping="32029" icon="shortcuts/mylist.png" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">ActivateWindow(1114,return)</shortcut>
 			<shortcut label="31252" grouping="32029" icon="shortcuts/widget.png" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">ActivateWindow(1113,return)</shortcut>
 			<shortcut label="31383" grouping="32029" icon="shortcuts/widget.png" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">ActivateWindow(1115,return)</shortcut>
-			<shortcut label="31069" grouping="32029" icon="shortcuts/antenna.png" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">ActivateWindow(1116,return)</shortcut>
 			<shortcut label="342" grouping="32029" icon="$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground)]">ActivateWindow(Videos,videodb://movies/titles/,return)</shortcut>
 			<shortcut label="20343" grouping="32029" icon="$INFO[Window(Home).Property(SkinHelper.AllTvShowsBackground)]">ActivateWindow(Videos,videodb://tvshows/titles/,return)</shortcut>
-			<shortcut label="2" grouping="32029" icon="shortcuts/music.png" thumb="$INFO[Window(Home).Property(SkinHelper.AllMusicBackground)]" condition="Library.HasContent(music)">ActivateWindow(Music,musicdb://albums/,return)</shortcut>
-			<shortcut label="20389" grouping="32029" icon="$INFO[Window(Home).Property(SkinHelper.AllMusicVideosBackground)]" condition="Library.HasContent(musicvideos)">ActivateWindow(Videos,videodb://musicvideos/titles/,return)</shortcut>
-			<shortcut label="12600" grouping="32029" icon="$INFO[Skin.String(WeatherFanArtPack.path)]$INFO[Window(Weather).Property(Current.FanartCode)]$VAR[WeatherFanArtExtension]">ActivateWindow(Weather)</shortcut>
-			<shortcut label="10002" grouping="32029" icon="$INFO[Window(Home).Property(SkinHelper.PicturesBackground)]">ActivateWindow(pictures,return)</shortcut>
 			<shortcut label="10025" grouping="32029" icon="resource://resource.images.skinicons.wide/videos.png">ActivateWindow(Videos,return)</shortcut>
-			<shortcut label="10821" grouping="32029" icon="resource://resource.images.skinicons.wide/games.png">ActivateWindow(Games,return)</shortcut>
 			<shortcut label="10004" grouping="32029" icon="resource://resource.images.skinicons.wide/settings.png">ActivateWindow(Settings)</shortcut>
 			<shortcut label="1037" grouping="32029" icon="resource://resource.images.skinicons.wide/videoaddons.png">ActivateWindow(Videos,addons://sources/video/,return)</shortcut>
-			<shortcut label="19163" grouping="32029" icon="resource://resource.images.skinicons.wide/tvrecordings.png" condition="PVR.HasTVChannels">ActivateWindow(TVRecordings,return)</shortcut>
-			<shortcut label="19021" grouping="32029" icon="resource://resource.images.skinicons.wide/radio.png">ActivateWindow(radiochannels,return)</shortcut>
 			<shortcut label="7" grouping="32029" icon="resource://resource.images.skinicons.wide/filemanager.png">ActivateWindow(filemanager)</shortcut>
 			<shortcut label="10040" grouping="32029" icon="resource://resource.images.skinicons.wide/addons.png">ActivateWindow(Programs,Addons,return)</shortcut>
 			<shortcut label="20244" grouping="32029" icon="resource://resource.images.skinicons.wide/programs.png" condition="System.Platform.Android">ActivateWindow(10001,androidapp://sources/apps/,return)</shortcut>
@@ -58,51 +49,6 @@
 			</node>
 		</node>
 		
-		<!-- music -->
-		<node label="32031" condition="Library.HasContent(music)">
-			<shortcut label="2" grouping="32029" icon="resource://resource.images.skinicons.wide/music_6.png">ActivateWindow(10502,musicdb://,return)</shortcut>
-			<shortcut label="19021" grouping="32029" icon="resource://resource.images.skinicons.wide/radio.png">ActivateWindow(radiochannels,return)</shortcut>
-            <shortcut label="19140" grouping="1211" type="1211">ActivateWindow(1107,return)</shortcut>
-			<shortcut label="589" grouping="1211" type="1211">PlayerControl(Partymode(music))</shortcut>
-            <content>music</content>
-			<node label="32040">
-				<content>playlist-audio</content>
-			</node>
-			<node label="32011">
-				<shortcut label="1038" type="32019" icon="DefaultAddonMusic.png">ActivateWindow(10502,Addons,return)</shortcut>
-				<content>addon-audio</content>
-			</node>
-			<node label="32075">
-				<content>musicsources</content>
-				<content>upnp-music</content>
-			</node>
-		</node>
-		
-		<!-- Live TV -->
-		<node label="32017" condition="PVR.HasTVChannels">
-			<shortcut label="32022" grouping="32029" icon="resource://resource.images.skinicons.wide/livetv.png" condition="PVR.HasTVChannels">ActivateWindow(TVGuide)</shortcut>
-			<shortcut label="19163" grouping="32029" icon="resource://resource.images.skinicons.wide/tvrecordings.png" condition="PVR.HasTVChannels">ActivateWindow(TVRecordings,return)</shortcut>
-			<shortcut label="19021" grouping="32029" icon="resource://resource.images.skinicons.wide/radio.png" condition="PVR.HasTVChannels">ActivateWindow(radiochannels,return)</shortcut>
-			<node label="32017" condition="PVR.HasTVChannels">
-				<content>pvr</content>
-				<node label="19023">
-					<content>pvr-tv</content>
-				</node>
-			</node>
-			<node label="32087" condition="PVR.HasRadioChannels">
-				<content>radio</content>
-				<node label="19024">
-					<content>pvr-radio</content>
-				</node>
-			</node>
-		</node>
-		
-		<!-- pictures -->
-		<node label="32020">
-			<shortcut label="10002" grouping="32029" icon="$INFO[Window(Home).Property(SkinHelper.PicturesBackground)]">ActivateWindow(pictures,return)</shortcut>
-			<content>picturesources</content>
-		</node>
-		
         <!-- addons -->
         <node label="32007">
 			<node label="32009">
@@ -114,14 +60,6 @@
 			<node label="32010">
 				<shortcut label="1037" type="32014" icon="DefaultAddonVideo.png">ActivateWindow(Videos,addons://sources/video/,return)</shortcut>
 				<content>addon-video</content>
-			</node>
-			<node label="32011">
-				<shortcut label="1038" type="32019" icon="DefaultAddonMusic.png">ActivateWindow(10502,addons://sources/audio/,return)</shortcut>
-				<content>addon-audio</content>
-			</node>
-			<node label="32012">
-				<shortcut label="1039" type="32020" icon="DefaultAddonPicture.png">ActivateWindow(Pictures,Addons,return)</shortcut>
-				<content>addon-image</content>
 			</node>
 		</node>
 
@@ -152,13 +90,10 @@
 			<shortcut label="20045" icon="common/mastermode.png">Mastermode</shortcut>
 			<shortcut label="13016" icon="common/shutdown1.png">Powerdown</shortcut>
 			<shortcut label="13011" icon="common/sleep.png">Suspend</shortcut>
-			<shortcut label="600" icon="common/rip-cd.png">RipCD</shortcut>
 			<shortcut label="360" icon="common/screensaver.png">ActivateScreensaver</shortcut>
 			<shortcut label="13014" icon="common/minimize.png">Minimize</shortcut>
 			<shortcut label="32046" icon="common/update-video.png">UpdateLibrary(video)</shortcut>
-			<shortcut label="32047" icon="common/update-audio.png">UpdateLibrary(music)</shortcut>
 			<shortcut label="32055" icon="common/clean-video.png">CleanLibrary(video)</shortcut>
-			<shortcut label="32056" icon="common/clean-audio.png">CleanLibrary(music)</shortcut>
 			<shortcut label="20150" icon="common/shutdown-timer.png">AlarmClock(shutdowntimer,Shutdown())</shortcut>
 			<shortcut label="20151" icon="common/cancel-timer.png">CancelAlarm(shutdowntimer)</shortcut>
 			<shortcut label="14092" icon="common/toggle-debug.png">Skin.ToggleDebug</shortcut>
@@ -185,38 +120,15 @@
 				<content>videosources</content>
 			</node>
 		</node>
-		<node label="32031">
-			<content>music</content>
-			<node label="32040">
-				<content>playlist-audio</content>
-			</node>
-			<node label="32011">
-				<content>addon-audio</content>
-			</node>
-			<node label="32075">
-				<content>musicsources</content>
-			</node>
-		</node>
-		<node label="32020">
-			<content>picturesources</content>
-		</node>
 		<node label="32007">
 			<node label="32010">
 				<content>addon-video</content>
-			</node>
-			<node label="32011">
-				<content>addon-audio</content>
-			</node>
-			<node label="32012">
-				<content>addon-image</content>
 			</node>
             <node label="32009">
 				<content>addon-program-plugin</content>
 			</node>
 			<shortcut label="10001" type="32021" icon="defaultaddonprogram.png" widget="addon" widgetType="program" widgetTarget="programs">addons://sources/executable</shortcut>
 			<shortcut label="1037" type="32014" icon="defaultaddonvideo.png" widget="addon" widgetType="video" widgetTarget="video">addons://sources/video</shortcut>
-			<shortcut label="1038" type="32019" icon="defaultaddonmusic.png" widget="addon" widgetType="music" widgetTarget="music">addons://sources/audio</shortcut>
-			<shortcut label="1039" type="32020" icon="defaultaddonpicture.png" widget="addon" widgetType="picture" widgetTarget="pictures">addons://sources/image</shortcut>
 		</node>
 	</widget-groupings>
     
@@ -227,17 +139,8 @@
 	<propertydefault defaultID="tvshows" property="backgroundName">$ADDON[script.skin.helper.service 32043]</propertydefault>
 	<backgrounddefault defaultID="new">$INFO[Window(Home).Property(SkinHelper.RecentVideosBackground)]</backgrounddefault>
 	<propertydefault defaultID="new" property="backgroundName">$LOCALIZE[31837]</propertydefault>
-	<backgrounddefault defaultID="music">$INFO[Window(Home).Property(SkinHelper.AllMusicBackground)]</backgrounddefault>
-	<propertydefault defaultID="music" property="backgroundName">$ADDON[script.skin.helper.service 32048]</propertydefault>
-	<backgrounddefault defaultID="musicvideos">$INFO[Window(Home).Property(SkinHelper.AllMusicVideosBackground)]</backgrounddefault>
-	<propertydefault defaultID="musicvideos" property="backgroundName">$ADDON[script.skin.helper.service 32047]</propertydefault>
-	<backgrounddefault defaultID="pictures">$INFO[Window(Home).Property(SkinHelper.PicturesBackground)]</backgrounddefault>
-	<propertydefault defaultID="pictures" property="backgroundName">$ADDON[script.skin.helper.service 32046]</propertydefault>
 	<backgrounddefault defaultID="videos">$INFO[Window(Home).Property(SkinHelper.GlobalFanartBackground)]</backgrounddefault>
 	<propertydefault defaultID="videos" property="backgroundName">$ADDON[script.skin.helper.service 32038]</propertydefault>
-	<backgrounddefault defaultID="weather">$INFO[Skin.String(WeatherFanArtPack.path)]$INFO[Window(Weather).Property(Current.FanartCode)]$VAR[WeatherFanArtExtension]</backgrounddefault>
-	<backgrounddefault defaultID="livetv">$INFO[Window(Home).Property(SkinHelper.PvrBackground)]</backgrounddefault>
-	<propertydefault defaultID="livetv" property="backgroundName">571</propertydefault>
 	<backgrounddefault defaultID="plugin.video.youtube">resource://resource.images.skinbackgrounds.titanium/hover_extensions.jpg</backgrounddefault>
 	<propertydefault defaultID="plugin.video.youtube" property="backgroundName">571</propertydefault>
 	<backgrounddefault defaultID="10040">resource://resource.images.skinbackgrounds.titanium/programs.jpg</backgrounddefault>
@@ -248,13 +151,10 @@
 	
 	<!-- widgets -->
 	<widget label="31531" type="32010" condition="Window.IsActive(script-skinshortcuts.xml)">||BROWSE||script.skin.helper.service/?action=smartshortcuts</widget>
-    <widget label="$INFO[System.AddonTitle(plugin.service.gto)]" name="$INFO[System.AddonTitle(plugin.service.gto)]" condition="System.HasAddon(plugin.service.gto)" type="pvr" target="pvr" path="plugin://plugin.service.gto?action=getcontent&amp;ts=$INFO[Window(Home).Property(GTO.timestamp)]">gto</widget>
 	<widget label="$LOCALIZE[31025]" name="$LOCALIZE[31025]" type="static" target="static" path="$INCLUDE[CategoriesWidget]">categories</widget>
 	<widget label="$LOCALIZE[31534]" name="$LOCALIZE[31534]" type="video" target="videos" path="$INCLUDE[MyListWidget]">mylist</widget>
 
 	<!-- default widgets -->
-	<widgetdefaultnode defaultID="musicvideos" group="mainmenu" label="$LOCALIZE[20390]" type="musicvideos" path="videodb://recentlyaddedmusicvideos/" target="videos">recentmusicvideos</widgetdefaultnode>
-	<widgetdefaultnode defaultID="weather" group="mainmenu" label="$LOCALIZE[8]" type="static" path="$INCLUDE[WeatherWidget]" target="static">weather</widgetdefaultnode>
 
     <!-- home widgets --> <!-- Updated Continue Watching to Show Movies & TV Inprogress -->
 	<propertydefault defaultID="10000" property="widget">continuewatching</propertydefault>
@@ -343,10 +243,6 @@
 		<condition>!String.IsEqual(Skin.String(HomeLayout),bingie)</condition>
 		<action>ReplaceWindow(Videos,videodb://movies/titles/)</action>
 	</override>
-	<override action="ActivateWindow(1116,return)" group="mainmenu">
-		<condition>!String.IsEqual(Skin.String(HomeLayout),bingie)</condition>
-		<action>ReplaceWindow(TVChannels)</action>
-	</override>
 
 	<!-- Search Enging Toggle -->
 	<override action="ActivateWindow(1109,return)" group="mainmenu">
@@ -360,5 +256,3 @@
 		<action>RunPlugin(plugin://script.globalsearch)</action>
 	</override>
 </overrides>
-
-

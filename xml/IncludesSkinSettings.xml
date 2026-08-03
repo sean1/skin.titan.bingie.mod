@@ -39,16 +39,6 @@
             <include condition="Window.IsActive(Custom_1105_SkinSettings.xml)">SkinSettings_MenuButtonSmall</include>
             <usealttexture>String.IsEqual(Window(Home).Property(SkinSettingSection),17)</usealttexture>
         </control>
-        <!--PVR settings-->
-		<control type="togglebutton" id="18">
-            <label>31088</label>
-            <altlabel>31088</altlabel>
-            <onfocus>SetProperty(SkinSettingSection,18,Home)</onfocus>
-            <include condition="!Window.IsActive(Custom_1105_SkinSettings.xml)">SkinSettings_MenuButtonLarge</include>
-            <include condition="Window.IsActive(Custom_1105_SkinSettings.xml)">SkinSettings_MenuButtonSmall</include>
-            <usealttexture>String.IsEqual(Window(Home).Property(SkinSettingSection),18)</usealttexture>
-            <visible>PVR.HasTVChannels</visible>
-        </control>
         <!-- Playback & OSD -->
 		<control type="togglebutton" id="16">
             <label>31668</label>
@@ -198,15 +188,6 @@
         </include>
     </include>
 
-    <!-- Live TV Tab-->
-    <include name="SkinSettings_PVR">
-        <include content="SkinSettings_Tab">
-            <param name="id" value="18"/>
-            <!-- content -->
-            <include>PVR_Settings</include>
-        </include>
-    </include>
-
     <!-- OSD Tab-->
     <include name="SkinSettings_OSD">
         <include content="SkinSettings_Tab">
@@ -216,7 +197,6 @@
             <include>OSD_Info_Panel_Settings</include>
             <include>OSD_Video_Playback_Settings</include>
             <include>OSD_Up_Next_Settings</include>
-            <include>OSD_Music_Playback_Settings</include>
             <include>OSD_Now_Playing_Settings</include>
         </include>
     </include>
@@ -233,7 +213,6 @@
             <include>CustomColors_Header_Colors_Settings</include>
             <include>CustomColors_Footer_Colors_Settings</include>
             <include>CustomColors_OSD_Colors_Settings</include>
-            <include>CustomColors_PVR_Colors_Settings</include>
         </include>
     </include>
 
@@ -652,7 +631,7 @@
 		<!-- Hide Ratings & Studio Logos on Spotlight/Widgets -->
         <include content="SkinSettings_ActionButton">
             <param name="id" value="2021" />
-            <param name="label" value="Hide Ratings & Studio Logos on Spotlight/Widgets" />
+            <param name="label" value="Hide Ratings &amp; Studio Logos on Spotlight/Widgets" />
             <param name="action" value="RunScript(script.skin.helper.service,action=setskinsetting,setting=home_footer_visibility,header=$LOCALIZE[31118])" />
         </include>
 	</include>
@@ -1847,36 +1826,7 @@
         </include>
     </include>
 
-    <!-- Custom Color PVR Settings -->
-    <include name="CustomColors_PVR_Colors_Settings">
-        <!-- PVR Guide colors -->
-        <control type="label" id="69568">
-            <include>SkinSettings_Header</include>
-            <label>$LOCALIZE[31088]</label>
-        </control>
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31777" />
-            <param name="label" value="$LOCALIZE[31777]" />
-            <param name="skinsetting" value="PVRGuideItemColorUnfocus" />
-        </include>
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31778" />
-            <param name="label" value="$LOCALIZE[31778]" />
-            <param name="skinsetting" value="PVRGuideItemColorFocus" />
-        </include>
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31779" />
-            <param name="label" value="$LOCALIZE[31779]" />
-            <param name="skinsetting" value="PVRGuideItemTextColorUnfocus" />
-        </include>
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31780" />
-            <param name="label" value="$LOCALIZE[31780]" />
-            <param name="skinsetting" value="PVRGuideItemTextColorFocus" />
-        </include>
-    </include>
-
-    <!-- Custom Colors OSD Settings -->
+    <!-- Custom OSD Color Settings -->
     <include name="CustomColors_OSD_Colors_Settings">
         <!-- media library views colors -->
         <control type="label" id="69567">
@@ -1961,41 +1911,6 @@
             <param name="id" value="31295" />
             <param name="label" value="$LOCALIZE[320172]" />
             <param name="skinsetting" value="OSDBufferingSpinnerColor" />
-        </include>
-        <!-- Lyrics diffuse panel -->
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31813" />
-            <param name="label" value="$LOCALIZE[31813]" />
-            <param name="skinsetting" value="LyricsOverlayColor" />
-            <param name="visible" value="!Skin.HasSetting(DisableLyricsOverlay)" />
-        </include>
-        <!-- Lyrics unfocused text -->
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31814" />
-            <param name="label" value="$LOCALIZE[31814]" />
-            <param name="skinsetting" value="LyricsTextColor" />
-            <param name="visible" value="Skin.String(LyricScript_Path)" />
-        </include>
-        <!-- Lyrics unfocused text shadow -->
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31816" />
-            <param name="label" value="$LOCALIZE[31816]" />
-            <param name="skinsetting" value="LyricsTextShadowColor" />
-            <param name="visible" value="Skin.String(LyricScript_Path)" />
-        </include>
-        <!-- Lyrics focused text -->
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31815" />
-            <param name="label" value="$LOCALIZE[31815]" />
-            <param name="skinsetting" value="LyricsFocusTextColor" />
-            <param name="visible" value="Skin.String(LyricScript_Path)" />
-        </include>
-        <!-- Lyrics focused text shadow -->
-        <include content="SkinSettings_ColorButton">
-            <param name="id" value="31817" />
-            <param name="label" value="$LOCALIZE[31817]" />
-            <param name="skinsetting" value="LyricsFocusTextShadowColor" />
-            <param name="visible" value="Skin.String(LyricScript_Path)" />
         </include>
 		<!-- media library views colors -->
         <control type="label" id="31016">
@@ -2118,109 +2033,7 @@
         </include>
     </include>
 
-    <!-- PVR Tab -->
-    <!-- PVR Settings -->
-    <include name="PVR_Settings">
-        <!-- PVR appearance settings -->
-        <control type="label" id="13040">
-            <include>SkinSettings_Header</include>
-            <label>31088</label>
-            <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-        </control>
-        <!-- number of rows guide -->
-        <control type="button" id="13043">
-            <include>SkinSettings_Button</include>
-            <label>31245</label>
-            <label2>$INFO[Skin.String(GuideRows.label)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setskinsetting,setting=GuideRows,header=$LOCALIZE[31245])</onclick>
-        </control>
-        <control type="radiobutton" id="13045">
-            <include>SkinSettings_Button</include>
-            <label>31239</label>
-            <onclick>Skin.ToggleSetting(UseAltEpgProgress)</onclick>
-            <onclick condition="Window.IsActive(tvguide)">ReloadSkin()</onclick>
-            <selected>Skin.HasSetting(UseAltEpgProgress)</selected>
-        </control>
-        <control type="radiobutton" id="13046">
-            <description>no channel names in guide</description>
-            <include>SkinSettings_Button</include>
-            <label>31333</label>
-            <onclick>Skin.ToggleSetting(HideChannelNamesInGuide)</onclick>
-            <selected>Skin.HasSetting(HideChannelNamesInGuide)</selected>
-            <onclick condition="Window.IsActive(tvguide)">ReloadSkin()</onclick>
-        </control>
-        <control type="radiobutton" id="31642">
-            <description>no channel numbers in guide</description>
-            <include>SkinSettings_Button</include>
-            <label>31642</label>
-            <onclick>Skin.ToggleSetting(HideChannelNumbersInGuide)</onclick>
-            <selected>Skin.HasSetting(HideChannelNumbersInGuide)</selected>
-        </control>
-        <control type="radiobutton" id="31673">
-            <description>no channel logos in guide</description>
-            <include>SkinSettings_Button</include>
-            <label>31673</label>
-            <onclick>Skin.ToggleSetting(HideChannelLogosInGuide)</onclick>
-            <selected>Skin.HasSetting(HideChannelLogosInGuide)</selected>
-        </control>
-        <control type="radiobutton" id="13047">
-            <description>Show video preview in PVR section</description>
-            <include>SkinSettings_Button</include>
-            <label>31338</label>
-            <onclick>Skin.ToggleSetting(PVRShowPreview)</onclick>
-            <selected>Skin.HasSetting(PVRShowPreview)</selected>
-        </control>
-        <control type="radiobutton" id="13049">
-            <description>Enable mini guide on fullscreen live tv</description>
-            <include>SkinSettings_Button</include>
-            <label>31616</label>
-            <onclick>Skin.ToggleSetting(pvrGuideOnFullscreenVideo)</onclick>
-            <selected>Skin.HasSetting(pvrGuideOnFullscreenVideo)</selected>
-        </control>
-        <control type="radiobutton" id="31792">
-            <description>Enable small PVR channels OSD</description>
-            <include>SkinSettings_Button</include>
-            <label>31792</label>
-            <onclick>Skin.ToggleSetting(small_pvrchannelsosd)</onclick>
-            <selected>Skin.HasSetting(small_pvrchannelsosd)</selected>
-        </control>
-        <control type="radiobutton" id="31776">
-            <description>Highlight channel row in guide</description>
-            <include>SkinSettings_Button</include>
-            <label>31776</label>
-            <onclick>Skin.ToggleSetting(pvrGuideHighlightChannel)</onclick>
-            <selected>Skin.HasSetting(pvrGuideHighlightChannel)</selected>
-        </control>
-        <control type="radiobutton" id="31708">
-            <description>Enable artwork lookups for PVR</description>
-            <include>SkinSettings_Button</include>
-            <label>31708</label>
-            <onclick>Skin.ToggleSetting(SkinHelper.EnablePVRThumbs)</onclick>
-            <selected>!Skin.HasSetting(SkinHelper.EnablePVRThumbs)</selected>
-        </control>
-		<control type="radiobutton" id="31825">
-            <include>SkinSettings_Button</include>
-            <label>      $LOCALIZE[31825]</label>
-            <onclick>Skin.ToggleSetting(NoPvrArtOSD)</onclick>
-            <selected>Skin.HasSetting(NoPvrArtOSD)</selected>
-            <visible>!Skin.HasSetting(SkinHelper.EnablePVRThumbs)</visible>
-        </control>
-        <include content="SkinSettings_ActionButton">
-            <param name="id" value="31709" />
-            <param name="label" value="      $LOCALIZE[31709]" />
-            <param name="action" value="Addon.OpenSettings(script.module.metadatautils)" />
-            <param name="visible" value="!Skin.HasSetting(SkinHelper.EnablePVRThumbs)" />
-        </include>
-        <control type="radiobutton" id="13041">
-            <include>SkinSettings_Button</include>
-            <label>31237</label>
-            <onclick>Skin.ToggleSetting(ShowEpgGenreColors)</onclick>
-            <selected>Skin.HasSetting(ShowEpgGenreColors)</selected>
-        </control>
-    </include>
-
-    <!-- OSD Tab -->
-    <!-- OSD General Settings -->
+    <!-- OSD Settings -->
     <include name="OSD_General_Settings">
         <!-- OSD generic -->
         <control type="label" id="478">
@@ -2350,13 +2163,6 @@
             <label2>$INFO[Skin.String(defaultosdbutton_video.label)]</label2>
             <onclick>RunScript(script.skin.helper.service,action=setskinsetting,setting=defaultosdbutton_video,header=$LOCALIZE[31662])</onclick>
         </control>
-        <control type="button" id="31663">
-            <description>Default OSD button</description>
-            <include>SkinSettings_Button</include>
-            <label>31663</label>
-            <label2>$INFO[Skin.String(defaultosdbutton_livetv.label)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setskinsetting,setting=defaultosdbutton_livetv,header=$LOCALIZE[31663])</onclick>
-        </control>
         <include content="SkinSettings_ActionButton">
             <param name="id" value="46658" />
             <param name="label" value="$LOCALIZE[31060]" />
@@ -2401,13 +2207,6 @@
             <onclick>RunScript(script.skin.helper.service,action=setskinsetting,setting=osdmediaflagsstyle,header=$LOCALIZE[31632])</onclick>
             <visible>!Skin.HasSetting(UseBingieOSD)</visible>
         </control>
-        <control type="radiobutton" id="13059">
-            <include>SkinSettings_Button</include>
-            <label>31325</label>
-            <onclick>Skin.ToggleSetting(ShowWeatherVideoInfoOSD)</onclick>
-            <selected>Skin.HasSetting(ShowWeatherVideoInfoOSD)</selected>
-			<visible>!Skin.HasSetting(UseBingieOSD)</visible>
-        </control>
     </include>
 
     <!-- OSD Up Next Settings -->
@@ -2429,98 +2228,7 @@
         </control>
     </include>
 
-	<!-- OSD Music Playback Settings -->
-    <include name="OSD_Music_Playback_Settings">
-        <control type="label" id="31670">
-            <include>SkinSettings_Header</include>
-            <label>31670</label>
-            <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-        </control>
-        <control type="button" id="31664">
-            <description>Default OSD button</description>
-            <include>SkinSettings_Button</include>
-            <label>31664</label>
-            <label2>$INFO[Skin.String(defaultosdbutton_music.label)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setskinsetting,setting=defaultosdbutton_music,header=$LOCALIZE[31664])</onclick>
-        </control>
-        <control type="radiobutton" id="5143">
-            <include>SkinSettings_Button</include>
-            <label>31179</label>
-            <onclick>Skin.ToggleSetting(FullscreenMusic)</onclick>
-            <selected>Skin.HasSetting(FullscreenMusic)</selected>
-        </control>
-        <control type="radiobutton" id="13055">
-            <include>SkinSettings_Button</include>
-            <label>31232</label>
-            <onclick>Skin.ToggleSetting(AlwaysShowMusicInfo)</onclick>
-            <selected>Skin.HasSetting(AlwaysShowMusicInfo)</selected>
-        </control>
-        <control type="radiobutton" id="5161">
-            <description>disable backgroundoverlay lyrics dialog</description>
-            <include>SkinSettings_Button</include>
-            <label>31332</label>
-            <onclick>Skin.ToggleSetting(DisableLyricsOverlay)</onclick>
-            <selected>Skin.HasSetting(DisableLyricsOverlay)</selected>
-            <visible>System.HasAddon(script.cu.lrclyrics)</visible>
-        </control>
-        <control type="button" id="5157">
-            <description>Artist Slideshow in musicplayer</description>
-            <include>SkinSettings_Button</include>
-            <label>31341</label>
-            <label2>$INFO[Skin.String(MusicArtistFanart.label)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setskinsetting,setting=MusicArtistFanart,header=$LOCALIZE[31341])</onclick>
-        </control>
-        <control type="button" id="31665">
-            <description>Artist Logo in musicplayer</description>
-            <include>SkinSettings_Button</include>
-            <label>31665</label>
-            <label2>$INFO[Skin.String(MusicArtistLogo.label)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setskinsetting,setting=MusicArtistLogo,header=$LOCALIZE[31665])</onclick>
-        </control>
-        <control type="radiobutton" id="31640">
-            <description>Artist Bio in musicplayer</description>
-            <include>SkinSettings_Button</include>
-            <label>31640</label>
-            <onclick>Skin.ToggleSetting(enableArtistBio)</onclick>
-            <selected>Skin.HasSetting(enableArtistBio)</selected>
-        </control>
-        <control type="button" id="31824">
-            <description>Fallback image music playback</description>
-            <include>SkinSettings_Button</include>
-            <label>31824</label>
-            <label2>$INFO[Skin.String(MusicBackground.label)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=selectimage,skinstring=MusicBackground,header=$LOCALIZE[31824],allowmulti=true,resourceaddon=resource.images.skinbackgrounds,skinhelperbackgrounds=true)</onclick>
-        </control>
-        <control type="radiobutton" id="5170">
-            <description>Animate Music background</description>
-            <include>SkinSettings_Button</include>
-            <label>31617</label>
-            <onclick>Skin.ToggleSetting(animateMusicArt)</onclick>
-            <selected>Skin.HasSetting(animateMusicArt)</selected>
-        </control>
-        <control type="radiobutton" id="31732">
-            <description>scrolling music text</description>
-            <include>SkinSettings_Button</include>
-            <label>31732</label>
-            <onclick>Skin.ToggleSetting(MusicOSDScrollingTitles)</onclick>
-            <selected>Skin.HasSetting(MusicOSDScrollingTitles)</selected>
-        </control>
-        <control type="radiobutton" id="31715">
-            <description>Disable screensaver on music playback</description>
-            <include>SkinSettings_Button</include>
-            <label>31715</label>
-            <onclick>Skin.ToggleSetting(SkinHelper.DisableScreenSaverOnFullScreenMusic)</onclick>
-            <selected>Skin.HasSetting(SkinHelper.DisableScreenSaverOnFullScreenMusic)</selected>
-        </control>
-        <control type="button" id="130631">
-            <include>SkinSettings_Button</include>
-            <label>31629</label>
-            <label2>$INFO[Skin.String(SkinHelper.AutoCloseMusicOSD)] $LOCALIZE[31231]</label2>
-            <onclick>Skin.SetNumeric(SkinHelper.AutoCloseMusicOSD)</onclick>
-        </control>
-    </include>
-
-	<!-- OSD Now Playing Settings -->
+    <!-- OSD Now Playing Settings -->
     <include name="OSD_Now_Playing_Settings">
         <!-- Now playing options -->
         <control type="label" id="31669">
@@ -2557,8 +2265,6 @@
         </control>
     </include>
 
-    <!-- Shortcuts Tab -->
-    <!-- Shortcuts Configuration -->
     <include name="Shortcuts_Config">
         <control type="label" id="6001">
             <include>SkinSettings_Header</include>
@@ -2899,13 +2605,6 @@
             <onclick>Skin.ToggleSetting(smallContextMenu)</onclick>
             <selected>Skin.HasSetting(smallContextMenu)</selected>
         </control>
-        <control type="radiobutton" id="5163">
-            <description>use extended weather screen</description>
-            <include>SkinSettings_Button</include>
-            <label>31451</label>
-            <onclick>Skin.ToggleSetting(useExtendedWeatherScreen)</onclick>
-            <selected>Skin.HasSetting(useExtendedWeatherScreen)</selected>
-        </control>
     </include>
 
     <!-- General Trailers Settings -->
@@ -3243,33 +2942,12 @@
             <label>31878</label>
             <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
         </control>
-        <control type="button" id="17121">
-            <description>Weather Icons</description>
-            <include>SkinSettings_Button</include>
-            <label>31623</label>
-            <label2>$INFO[Skin.String(WeatherIconPack.name)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setresourceaddon,skinstring=WeatherIconPack,addontype=resource.images.weathericons)</onclick>
-        </control>
-        <control type="button" id="31624">
-            <description>Weather FanArt</description>
-            <include>SkinSettings_Button</include>
-            <label>31624</label>
-            <label2>$INFO[Skin.String(WeatherFanArtPack.name)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setresourceaddon,skinstring=WeatherFanArtPack,addontype=resource.images.weatherfanart)</onclick>
-        </control>
         <control type="button" id="17125">
             <description>Movie Genre Icons</description>
             <include>SkinSettings_Button</include>
             <label>31626</label>
             <label2>$INFO[Skin.String(MovieGenreIconPack.name)]</label2>
             <onclick>RunScript(script.skin.helper.service,action=setresourceaddon,skinstring=MovieGenreIconPack,addontype=resource.images.moviegenreicons)</onclick>
-        </control>
-        <control type="button" id="17126">
-            <description>Music Genre Icons</description>
-            <include>SkinSettings_Button</include>
-            <label>31627</label>
-            <label2>$INFO[Skin.String(MusicGenreIconPack.name)]</label2>
-            <onclick>RunScript(script.skin.helper.service,action=setresourceaddon,skinstring=MusicGenreIconPack,addontype=resource.images.musicgenreicons)</onclick>
         </control>
         <control type="button" id="31772">
             <description>Movie Genre Fanart</description>
@@ -3389,7 +3067,7 @@
             <selected>!Skin.HasSetting(ImageFadeTime)</selected>
             <visible>String.IsEqual(Skin.String(HomeLayout),bingie)</visible>
         </control>
-        <!--Disable Bingie Mod Logo on Bingie Screensaver-->
+        <!-- Disable BINGIE Lite logo on the screensaver -->
         <control type="radiobutton" id="2074">
             <include>SkinSettings_Button</include>
             <label>320240</label>

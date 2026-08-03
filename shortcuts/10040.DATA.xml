@@ -16,20 +16,4 @@
 		<thumb />
 		<action>ActivateWindow(Videos,addons,return)</action>
 	</shortcut>
-	<shortcut>
-		<defaultID>1038</defaultID>
-		<label>1038</label>
-		<label2 />
-		<icon />
-		<thumb />
-		<action>ActivateWindow(10502,addons://sources/audio/,return)</action>
-	</shortcut>
-	<shortcut>
-		<defaultID>1039</defaultID>
-		<label>1039</label>
-		<label2 />
-		<icon />
-		<thumb />
-		<action>ActivateWindow(Pictures,Addons,return)</action>
-	</shortcut>
 </shortcuts>

@@ -60,8 +60,8 @@
 			
 			 <!--Info-->
             <control type="grouplist">
-                <!--Regie, Duration... Movies, TV-Shows, Sesaons, Music-Videos-->
-                <visible>Container.Content(MusicVideos) | Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)</visible>
+                <!--Regie, Duration... Movies, TV-Shows, Seasons-->
+                <visible>Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)</visible>
                 <itemgap>0</itemgap>
                 <onup>500</onup>
                 <ondown>500</ondown>
@@ -171,75 +171,13 @@
                     <visible>!String.IsEmpty(Control.GetLabel(5304))</visible>
                 </control>
             </control>
-            <control type="grouplist">
-                <!-- PVR details-->
-                <visible>[Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch) | Window.IsActive(tvrecordings)]</visible>
-                <posx>80</posx>
-                <posy>20</posy>
-                <itemgap>0</itemgap>
-                <onup>500</onup>
-                <ondown>500</ondown>
-                <onleft>100</onleft>
-                <orientation>vertical</orientation>
-                <control type="button">
-                    <width>870</width>
-                    <font>Reg36</font>
-                    <height>50</height>
-                    <textcolor>$INFO[Skin.String(ViewDetailsHighlightTextColor)]</textcolor>
-                    <shadowcolor>$INFO[Skin.String(ViewDetailsHighlightTextShadowColor)]</shadowcolor>
-                    <disabledcolor fallback="white">$INFO[Skin.String(ViewDetailsHighlightTextColor)]</disabledcolor>
-                    <label>$VAR[ListTitlePVR]</label>
-                    <include>ListDetailsBtn</include>
-                </control>
-                <control type="button">
-                    <width>870</width>
-                    <include>ListDetailsBtn</include>
-                    <label>[B]$LOCALIZE[20359][/B]</label>
-                    <label2>$INFO[ListItem.Season,S,]$INFO[ListItem.Episode,E, - ]$INFO[ListItem.EpisodeName]</label2>
-                    <visible>!String.IsEmpty(ListItem.EpisodeName) | !String.IsEmpty(ListItem.Season)</visible>
-                </control>
-                <control type="button">
-                    <width>870</width>
-                    <include>ListDetailsBtn</include>
-                    <label>[B]$LOCALIZE[19029]:[/B]</label>
-                    <label2>$VAR[PVRChannelName]</label2>
-                </control>
-                <control type="button">
-                    <width>870</width>
-                    <include>ListDetailsBtn</include>
-                    <label>[B]$LOCALIZE[555]:[/B]</label>
-                    <label2>$VAR[ListDateInfoPVR]</label2>
-                    <visible>!String.IsEmpty(ListItem.Date)</visible>
-                </control>
-                <control type="button">
-                    <width>870</width>
-                    <include>ListDetailsBtn</include>
-                    <label>[B]$LOCALIZE[180]:[/B]</label>
-                    <label2>$INFO[ListItem.Duration(mins),, min]</label2>
-                    <visible>!String.IsEmpty(ListItem.Duration)</visible>
-                </control>
-                <control type="button">
-                    <width>870</width>
-                    <include>ListDetailsBtn</include>
-                    <label>[B]$LOCALIZE[515]:[/B]</label>
-                    <label2>$VAR[PVRGenre]</label2>
-                </control>
-                <control type="button">
-                    <!--Next Title-->
-                    <width>870</width>
-                    <include>ListDetailsBtn</include>
-                    <label>[B]$LOCALIZE[19031]:[/B]</label>
-                    <label2>$INFO[ListItem.NextTitle] $INFO[ListItem.NextStartTime] - $INFO[ListItem.NextEndTime]</label2>
-                    <visible>!String.IsEmpty(ListItem.NextTitle)</visible>
-                </control>
-            </control>
             <control type="group">
                 <posx>574</posx>
                 <posy>238</posy>
                 <width>550</width>
                 <height>475</height>
-                <!--Info Plot: Movies, TV-Shows, Music-Videos-->
-                <visible>Container.Content(MusicVideos) | Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)</visible>
+                <!--Info Plot: Movies, TV-Shows, Seasons-->
+                <visible>Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)</visible>
                 <control type="textbox">
                     <posx>0</posx>
                     <posy>0</posy>
@@ -255,7 +193,7 @@
                 <posy>250</posy>
                 <width>927</width>
                 <height>460</height>
-                <!--Info Plot: Movies, TV-Shows, Music-Videos-->
+                <!--Info Plot: Episodes-->
                 <visible>Container.Content(episodes)</visible>
                 <control type="textbox">
                     <posx>-9</posx>
@@ -266,18 +204,6 @@
                     <align>justify</align>
                     <font>Light28</font>
                 </control>
-            </control>
-            <control type="textbox">
-                <!--PVR Plot-->
-                <posx>80</posx>
-                <posy>320</posy>
-                <visible>[Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch) | Window.IsActive(tvrecordings)]</visible>
-                <width>560</width>
-                <height>400</height>
-                <font>Light28</font>
-                <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(ViewDetailsTextShadowColor)]</shadowcolor>
-                <label>$VAR[Plots]</label>
             </control>
             <!--Control Tags-->
             <control type="grouplist">
@@ -336,7 +262,7 @@
                 </include>
                 <scrolltime>300</scrolltime>
                 <!-- All Other x=570 w=1180 -->
-                <itemlayout condition="![Container.content(MusicVideos) | Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes) | [Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch) | Window.IsActive(tvrecordings)]]" width="1900" height="63">
+                <itemlayout condition="![Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)]" width="1900" height="63">
                     <control type="label">
                         <!--Label 1-->
                         <posx>563</posx>
@@ -357,7 +283,7 @@
                         <texture>common/separator.png</texture>
                     </control>
                 </itemlayout>
-                <focusedlayout condition="![Container.content(MusicVideos) | Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes) | [Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch) | Window.IsActive(tvrecordings)]]" width="1900" height="90">
+                <focusedlayout condition="![Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)]" width="1900" height="90">
                     <control type="image">
 						<right>95</right>
 						<posy>0</posy>
@@ -400,8 +326,8 @@
                         <texture>common/separator.png</texture>
                     </control>					
                 </focusedlayout>
-                <!-- Music-Videos, Movies, TV-Shows, seasons x=1165 w=580 -->
-                <itemlayout condition="[Container.content(MusicVideos) | Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)] + ![Skin.HasSetting(View50_ShowBanners) + [Container.Content(tvshows) | Container.Content(movies) | Container.Content(seasons)]]" width="1800" height="63">
+                <!-- Movies, TV-Shows, seasons x=1165 w=580 -->
+                <itemlayout condition="Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)" width="1800" height="63">
                     <control type="label">
                         <!--Label 1-->
                         <posx>1113</posx>
@@ -422,7 +348,7 @@
                         <texture>common/separator.png</texture>
                     </control>
                 </itemlayout>
-                <focusedlayout condition="[Container.content(MusicVideos) | Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)] + ![Skin.HasSetting(View50_ShowBanners) + [Container.Content(tvshows) | Container.Content(movies) | Container.Content(seasons)]]" width="1800" height="90">
+                <focusedlayout condition="Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons)" width="1800" height="90">
                     <control type="image">
 						<right>-5</right>
 						<posy>0</posy>
@@ -465,8 +391,8 @@
                         <texture>common/separator.png</texture>
                     </control>				
                 </focusedlayout>
-     			<!-- Episodes, pvr timers, pvr search, pvr recordings x=980 w=765 -->
-                <itemlayout condition="Container.Content(episodes) | Window.IsActive(tvtimers) | Window.IsActive(tvrecordings) | Window.IsActive(tvsearch)" width="1800" height="63">
+                <!-- Episodes x=980 w=765 -->
+                <itemlayout condition="Container.Content(episodes)" width="1800" height="63">
                     <control type="label">
                         <!--Label 1-->
                         <posx>986</posx>
@@ -487,7 +413,7 @@
                         <texture>common/separator.png</texture>
                     </control>
                 </itemlayout>
-                <focusedlayout condition="Container.Content(episodes) | Window.IsActive(tvtimers) | Window.IsActive(tvrecordings) | Window.IsActive(tvsearch)" width="1800" height="90">
+                <focusedlayout condition="Container.Content(episodes)" width="1800" height="90">
                     <control type="image">
 						<right>-5</right>
 						<posy>0</posy>
@@ -530,154 +456,6 @@
                         <texture>common/separator.png</texture>
                     </control>					
                 </focusedlayout>
-                <!-- pvr channels -->
-                <itemlayout condition="Window.IsActive(tvchannels)" height="60" width="1900">
-                    <control type="label">
-                        <!--Channel Number-->
-                        <posx>1030</posx>
-                        <posy>5</posy>
-                        <width>100</width>
-                        <height>50</height>
-                        <font>Reg29</font>
-                        <textcolor>$INFO[Skin.String(ViewDetailsListItemTextColor)]</textcolor>
-                        <align>left</align>
-                        <info>ListItem.ChannelNumberLabel</info>
-                    </control>
-                    <control type="image">
-                        <!--Rec-->
-                        <posx>1185</posx>
-                        <posy>0</posy>
-                        <width>55</width>
-                        <height>55</height>
-                        <texture>pvr/icons/pvr_record.png</texture>
-                        <visible>ListItem.IsRecording</visible>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                    </control>
-                    <control type="image">
-                        <!--Now Playing Icon-->
-                        <posx>1185</posx>
-                        <posy>0</posy>
-                        <width>55</width>
-                        <height>55</height>
-                        <fadetime>600</fadetime>
-                        <texture>pvr/icons/pvr_play.png</texture>
-                        <visible>ListItem.Isplaying</visible>
-                        <visible>!ListItem.IsRecording</visible>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                    </control>
-                    <control type="image">
-                        <!--Chanel Icon-->
-                        <posx>1100</posx>
-                        <posy>5</posy>
-                        <width>48</width>
-                        <height>48</height>
-                        <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                    </control>
-                    <control type="label">
-                        <!--Channel Name-->
-                        <animation effect="slide" start="0" end="50" time="0" reversible="false" condition="[ListItem.Isplaying | ListItem.IsRecording]">Conditional</animation>
-                        <posx>1200</posx>
-                        <width>545</width>
-                        <height>55</height>
-                        <font>Reg29</font>
-                        <textcolor>$INFO[Skin.String(ViewDetailsListItemTextColor)]</textcolor>
-                        <align>left</align>
-                        <aligny>center</aligny>
-                        <label>$INFO[ListItem.Label]</label>
-                    </control>
-                    <control type="image">
-                        <!--Separator-->
-                        <posx>1024</posx>
-                        <posy>56</posy>
-                        <width>774</width>
-                        <height>2</height>
-                        <fadetime>400</fadetime>
-                        <colordiffuse>list_separator</colordiffuse>
-                        <texture>common/separator.png</texture>
-                    </control>
-                </itemlayout>
-                <focusedlayout condition="Window.IsActive(tvchannels)" height="90" width="1900">
-                    <control type="image">
-                        <right>80</right>
-                        <posy>0</posy>
-                        <height>86</height>
-                        <width>810</width>
-                        <texture border="10">diffuse/panel.png</texture>
-                        <colordiffuse>$INFO[Skin.String(ViewDetailsFocusColor)]</colordiffuse>
-                    </control>
-                    <control type="label">
-                        <!--Channel Number-->
-                        <posx>1030</posx>
-                        <posy>5</posy>
-                        <width>80</width>
-                        <height>80</height>
-                        <font>Reg29</font>
-                        <textcolor>$INFO[Skin.String(ViewDetailsListItemTextFocusColor)]</textcolor>
-                        <info>ListItem.ChannelNumberLabel</info>
-                    </control>
-                    <control type="image">
-                        <!--Rec-->
-                        <posx>1185</posx>
-                        <posy>0</posy>
-                        <width>55</width>
-                        <height>55</height>
-                        <texture>pvr/icons/pvr_record.png</texture>
-                        <visible>ListItem.IsRecording</visible>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                    </control>
-                    <control type="image">
-                        <!--Now Playing Icon-->
-                        <posx>1185</posx>
-                        <posy>0</posy>
-                        <width>55</width>
-                        <height>55</height>
-                        <fadetime>600</fadetime>
-                        <texture>pvr/icons/pvr_play.png</texture>
-                        <visible>ListItem.Isplaying</visible>
-                        <visible>!ListItem.IsRecording</visible>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                    </control>
-                    <control type="image">
-                        <!--Chanel Icon-->
-                        <posx>1085</posx>
-                        <posy>5</posy>
-                        <width>78</width>
-                        <height>78</height>
-                        <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                    </control>
-                    <control type="label">
-                        <!--Channel Name-->
-                        <animation effect="slide" start="0" end="50" time="0" reversible="false" condition="[ListItem.Isplaying | ListItem.IsRecording]">Conditional</animation>
-                        <posx>1200</posx>
-                        <width>545</width>
-                        <height>55</height>
-                        <font>Reg29</font>
-                        <textcolor>$INFO[Skin.String(ViewDetailsListItemTextFocusColor)]</textcolor>
-                        <label>$INFO[ListItem.Label]</label>
-                    </control>
-                    <control type="label">
-                        <!--Channel Now Playing-->
-                        <posx>1200</posx>
-                        <posy>50</posy>
-                        <width>545</width>
-                        <height>33</height>
-                        <font>Light28</font>
-                        <textcolor>$INFO[Skin.String(ViewDetailsListItemTextFocusColor)]</textcolor>
-                        <label>[B]$INFO[ListItem.Title][/B]</label>
-                    </control>
-                    <control type="image">
-                        <!--Separator-->
-                        <posx>1024</posx>
-                        <posy>86</posy>
-                        <width>774</width>
-                        <height>2</height>
-                        <fadetime>400</fadetime>
-                        <colordiffuse>list_separator</colordiffuse>
-                        <texture>common/separator.png</texture>
-                    </control>
-                </focusedlayout>				
             </control>
         
         <control type="group">
@@ -686,7 +464,6 @@
             <control type="group">
                 <!--Poster-->
                 <visible>!Container.Content(episodes)</visible>
-                <visible>![Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch) | Window.IsActive(tvrecordings)]</visible>
                 <visible>Integer.IsGreater(Container.NumItems,0)</visible>
 				<posy>3</posy>
 				<posx>52</posx>

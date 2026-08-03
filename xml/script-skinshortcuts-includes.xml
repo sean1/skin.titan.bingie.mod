@@ -1422,7 +1422,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2510">
 		<value condition="String.Contains(Container(2510).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2510).ListItem.label] $INFO[Container(2510).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2510).ListItem.Title) + String.Contains(Container(2510).ListItem.FolderPath, pvr://)">$INFO[Container(2510).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2510).ListItem.Season) + !String.IsEmpty(Container(2510).ListItem.Episode) + !String.Contains(Container(2510).ListItem.TvShowTitle,Container(2510).ListItem.Title)">[UPPERCASE]S$INFO[Container(2510).ListItem.Season]E$INFO[Container(2510).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2510).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2510).ListItem.Title)">$INFO[Container(2510).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2510).ListItem.Label)">$INFO[Container(2510).ListItem.Label]</value>
@@ -1443,7 +1442,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2520">
 		<value condition="String.Contains(Container(2520).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2520).ListItem.label] $INFO[Container(2520).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2520).ListItem.Title) + String.Contains(Container(2520).ListItem.FolderPath, pvr://)">$INFO[Container(2520).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2520).ListItem.Season) + !String.IsEmpty(Container(2520).ListItem.Episode) + !String.Contains(Container(2520).ListItem.TvShowTitle,Container(2520).ListItem.Title)">[UPPERCASE]S$INFO[Container(2520).ListItem.Season]E$INFO[Container(2520).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2520).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2520).ListItem.Title)">$INFO[Container(2520).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2520).ListItem.Label)">$INFO[Container(2520).ListItem.Label]</value>
@@ -1464,7 +1462,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2530">
 		<value condition="String.Contains(Container(2530).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2530).ListItem.label] $INFO[Container(2530).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2530).ListItem.Title) + String.Contains(Container(2530).ListItem.FolderPath, pvr://)">$INFO[Container(2530).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2530).ListItem.Season) + !String.IsEmpty(Container(2530).ListItem.Episode) + !String.Contains(Container(2530).ListItem.TvShowTitle,Container(2530).ListItem.Title)">[UPPERCASE]S$INFO[Container(2530).ListItem.Season]E$INFO[Container(2530).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2530).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2530).ListItem.Title)">$INFO[Container(2530).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2530).ListItem.Label)">$INFO[Container(2530).ListItem.Label]</value>
@@ -1485,7 +1482,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2540">
 		<value condition="String.Contains(Container(2540).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2540).ListItem.label] $INFO[Container(2540).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2540).ListItem.Title) + String.Contains(Container(2540).ListItem.FolderPath, pvr://)">$INFO[Container(2540).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2540).ListItem.Season) + !String.IsEmpty(Container(2540).ListItem.Episode) + !String.Contains(Container(2540).ListItem.TvShowTitle,Container(2540).ListItem.Title)">[UPPERCASE]S$INFO[Container(2540).ListItem.Season]E$INFO[Container(2540).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2540).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2540).ListItem.Title)">$INFO[Container(2540).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2540).ListItem.Label)">$INFO[Container(2540).ListItem.Label]</value>
@@ -1506,7 +1502,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2550">
 		<value condition="String.Contains(Container(2550).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2550).ListItem.label] $INFO[Container(2550).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2550).ListItem.Title) + String.Contains(Container(2550).ListItem.FolderPath, pvr://)">$INFO[Container(2550).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2550).ListItem.Season) + !String.IsEmpty(Container(2550).ListItem.Episode) + !String.Contains(Container(2550).ListItem.TvShowTitle,Container(2550).ListItem.Title)">[UPPERCASE]S$INFO[Container(2550).ListItem.Season]E$INFO[Container(2550).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2550).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2550).ListItem.Title)">$INFO[Container(2550).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2550).ListItem.Label)">$INFO[Container(2550).ListItem.Label]</value>
@@ -1527,7 +1522,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2560">
 		<value condition="String.Contains(Container(2560).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2560).ListItem.label] $INFO[Container(2560).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2560).ListItem.Title) + String.Contains(Container(2560).ListItem.FolderPath, pvr://)">$INFO[Container(2560).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2560).ListItem.Season) + !String.IsEmpty(Container(2560).ListItem.Episode) + !String.Contains(Container(2560).ListItem.TvShowTitle,Container(2560).ListItem.Title)">[UPPERCASE]S$INFO[Container(2560).ListItem.Season]E$INFO[Container(2560).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2560).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2560).ListItem.Title)">$INFO[Container(2560).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2560).ListItem.Label)">$INFO[Container(2560).ListItem.Label]</value>
@@ -1548,7 +1542,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2570">
 		<value condition="String.Contains(Container(2570).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2570).ListItem.label] $INFO[Container(2570).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2570).ListItem.Title) + String.Contains(Container(2570).ListItem.FolderPath, pvr://)">$INFO[Container(2570).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2570).ListItem.Season) + !String.IsEmpty(Container(2570).ListItem.Episode) + !String.Contains(Container(2570).ListItem.TvShowTitle,Container(2570).ListItem.Title)">[UPPERCASE]S$INFO[Container(2570).ListItem.Season]E$INFO[Container(2570).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2570).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2570).ListItem.Title)">$INFO[Container(2570).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2570).ListItem.Label)">$INFO[Container(2570).ListItem.Label]</value>
@@ -1569,7 +1562,6 @@
 	</variable>
 	<variable name="widgetinfolabel-2580">
 		<value condition="String.Contains(Container(2580).ListItem.Property(DBTYPE), systeminfo)">$INFO[Container(2580).ListItem.label] $INFO[Container(2580).ListItem.label2]</value>
-		<value condition="!String.IsEmpty(Container(2580).ListItem.Title) + String.Contains(Container(2580).ListItem.FolderPath, pvr://)">$INFO[Container(2580).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2580).ListItem.Season) + !String.IsEmpty(Container(2580).ListItem.Episode) + !String.Contains(Container(2580).ListItem.TvShowTitle,Container(2580).ListItem.Title)">[UPPERCASE]S$INFO[Container(2580).ListItem.Season]E$INFO[Container(2580).ListItem.Episode]:[/UPPERCASE] $INFO[Container(2580).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2580).ListItem.Title)">$INFO[Container(2580).ListItem.Title]</value>
 		<value condition="!String.IsEmpty(Container(2580).ListItem.Label)">$INFO[Container(2580).ListItem.Label]</value>

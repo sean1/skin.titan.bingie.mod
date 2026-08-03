@@ -8,7 +8,7 @@
 
         <!--Global Background-->
         <include>GlobalBackground</include>
-        <!--Time & Weather-->
+        <!--Time-->
         <include>TimeInfo</include>
 		<!-- Now playing -->
 		<include>NowPlayingModern</include>

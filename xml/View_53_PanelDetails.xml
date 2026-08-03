@@ -49,7 +49,7 @@
                 <focusposition>6</focusposition>
                 <preloaditems>2</preloaditems>
           <!-- itemlayout movies -->
-                <itemlayout height="249" width="170" condition="Container.Content(MusicVideos) | Container.Content(tvshows) | Container.Content(Movies) | Container.Content(seasons)">
+                <itemlayout height="249" width="170" condition="Container.Content(tvshows) | Container.Content(movies) | Container.Content(seasons) | Container.Content(sets) | Container.Content(actors)">
                     <control type="group">
                         <width>168</width>
                         <height>238</height>
@@ -63,7 +63,7 @@
                       </control>
                 </itemlayout>
                 <!-- focussed layout movies -->
-                <focusedlayout height="249" width="170" condition="Container.Content(MusicVideos) | Container.Content(tvshows) | Container.Content(Movies) | Container.Content(seasons)">
+                <focusedlayout height="249" width="170" condition="Container.Content(tvshows) | Container.Content(movies) | Container.Content(seasons) | Container.Content(sets) | Container.Content(actors)">
                     <control type="group">
                         <width>168</width>
                         <height>238</height>

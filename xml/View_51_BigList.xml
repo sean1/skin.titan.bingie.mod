@@ -176,7 +176,7 @@
 			<label>$INFO[ListItem.Rating]</label>
 			<textcolor>$INFO[Skin.String(ViewDetailsListItemTextColor)]</textcolor>
 			<font>Light28</font>
-            <visible>![Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch) | Window.IsActive(tvrecordings) | Window.IsActive(addonbrowser)]</visible>
+            <visible>!Window.IsActive(addonbrowser)</visible>
 			<visible>![Skin.HasSetting(BigListViewShowInfo) + !Control.IsVisible(504) + [[Skin.HasSetting(WatchedIndicator.Watched) + String.IsEqual(ListItem.Overlay,OverlayWatched.png)] | [Skin.HasSetting(WatchedIndicator.Sets) + String.Contains(ListItem.Path,videodb://movies/sets/)] | [Skin.HasSetting(WatchedIndicator.Progress) + ListItem.IsResumable] | [Skin.HasSetting(WatchedIndicator.Episodes) + Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0)] | ListItem.IsPlaying | ListItem.IsRecording]]</visible>
 		</control>		
 		
@@ -248,7 +248,7 @@
 			<label>$INFO[ListItem.Rating]</label>
 			<textcolor>$INFO[Skin.String(ViewDetailsListItemTextColor)]</textcolor>
 			<font>Light28</font>
-            <visible>![Window.IsActive(tvchannels) | Window.IsActive(tvguide) | Window.IsActive(tvtimers) | Window.IsActive(tvsearch) | Window.IsActive(tvrecordings) | Window.IsActive(addonbrowser)]</visible>
+            <visible>!Window.IsActive(addonbrowser)</visible>
 			<visible>![Skin.HasSetting(BigListViewShowInfo) + !Control.IsVisible(504) + [[Skin.HasSetting(WatchedIndicator.Watched) + String.IsEqual(ListItem.Overlay,OverlayWatched.png)] | [Skin.HasSetting(WatchedIndicator.Sets) + String.Contains(ListItem.Path,videodb://movies/sets/)] | [Skin.HasSetting(WatchedIndicator.Progress) + ListItem.IsResumable] | [Skin.HasSetting(WatchedIndicator.Episodes) + Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0)] | ListItem.IsPlaying | ListItem.IsRecording]]</visible>
 		</control>
 		

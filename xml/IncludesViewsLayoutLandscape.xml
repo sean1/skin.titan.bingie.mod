@@ -105,9 +105,6 @@
     <variable name="ClearLogoFallback">
         <value condition="!String.IsEmpty(ListItem.Art(clearlogo))">$INFO[ListItem.Art(clearlogo)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(tvshow.clearlogo))">$INFO[ListItem.Art(tvshow.clearlogo)]</value>
-        <value condition="!Skin.HasSetting(SkinHelper.EnablePVRThumbs) + String.StartsWith(ListItem.FileNameAndPath, pvr://) + !String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
-        <value condition="!Skin.HasSetting(SkinHelper.EnablePVRThumbs) + !String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))">$INFO[ListItem.Art(thumb)]</value>
-        <value condition="Skin.HasSetting(SkinHelper.EnablePVRThumbs) + String.StartsWith(ListItem.FileNameAndPath, pvr://)">http://localhost:52307/getthumb&amp;title=$ESCINFO[ListItem.Title]</value>
     </variable>
 	
 	<!-- THUMBS LAYOUT (BINGIE LANDSCAPE) -->
@@ -552,19 +549,15 @@
 		<value condition="!String.IsEmpty(ListItem.Property(fanart))">$INFO[ListItem.Property(fanart)]</value>
 		<value condition="String.IsEqual(ListItem.Label,..)">dialogs/filebrowser/DefaultFolderBack2.png</value>
         <value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)] + String.Contains(ListItem.FolderPath,video)">$VAR[MovieGenreIconVarList]</value>
-        <value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)] + [Window.IsActive(music) | String.Contains(ListItem.Folderpath,music)]">$VAR[MusicGenreIconVarList]</value>
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),genre)">$VAR[BingieGenreIconVarList]</value>
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),categorie)">$VAR[CategoriesBricks]</value>
-        <value condition="Window.IsActive(tvrecordings) + !String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
 		<value condition="Container.Content(studios)">$INFO[ListItem.Label,special://skin/extras/flags/studios/,.png]</value>
 		<value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb))">resource://resource.images.skinicons.wide/ActorPoster.png</value>
 		<value condition="Container.Content(directors) + String.IsEmpty(ListItem.Art(thumb))">resource://resource.images.skinicons.wide/ActorPoster.png</value>
-		<value condition="Container.Content(artists) + String.IsEmpty(ListItem.Art(thumb))">resource://resource.images.skinicons.wide/artist.png</value>
         <value condition="Container.Content(years)">resource://resource.images.skinicons.wide/year.png</value>
 		<value condition="Container.Content(countries)">resource://resource.images.skinicons.wide/Country.png</value>
 		<value condition="Container.Content(tags)">resource://resource.images.skinicons.wide/Tags.png</value>
         <value condition="!String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
 		<value condition="!String.IsEmpty(ListItem.Icon)">$INFO[ListItem.Icon]</value>
-        <value condition="!String.IsEmpty(ListItem.EpgEventIcon)">$INFO[ListItem.EpgEventIcon]</value>
     </variable>
 </includes>

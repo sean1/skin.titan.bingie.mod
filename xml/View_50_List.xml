@@ -246,7 +246,11 @@
             </control>
             <!-- ID="50" -->
             <control type="list" id="50">
-                <visible>!Window.IsActive(MyVideoNav.xml) | [String.Contains(Container.FolderPath,plugin://plugin.video.pov/) + String.Contains(Container.FolderPath,mode=navigator.genres)]</visible>
+                <visible>
+                    !Window.IsActive(MyVideoNav.xml) |
+                    [String.Contains(Container.FolderPath,plugin://plugin.video.pov/) +
+                    [String.Contains(Container.FolderPath,mode=navigator.genres) | String.Contains(Container.FolderPath,mode=navigator.search) | String.Contains(Container.FolderPath,mode=search_history)]]
+                </visible>
                 <posy>11</posy>
                 <posx>55</posx>
                 <width>1880</width>

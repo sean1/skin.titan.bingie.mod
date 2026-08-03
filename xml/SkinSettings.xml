@@ -2,7 +2,6 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">10</defaultcontrol>
-    <include>DefaultSkinSettings</include>
     <controls>
         <include>GlobalBackground</include>
         <include>Header</include>

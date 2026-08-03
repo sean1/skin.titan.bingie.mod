@@ -30,9 +30,9 @@
                     <posy>-20</posy>
                     <width>940</width>
                     <height>415</height>
-                    <colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+                    <colordiffuse>cc0a0a0a</colordiffuse>
 					<texture border="10">diffuse/panel.png</texture>
-					
+
                 </control>
 			    <control type="image">
                     <description>Trakt Background</description>
@@ -40,7 +40,7 @@
                     <posy>-10</posy>
                     <width>920</width>
                     <height>395</height>
-                    <colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+                    <colordiffuse>cc0a0a0a</colordiffuse>
 					<texture border="10">diffuse/panel.png</texture>
                 </control>
                 <control type="image">
@@ -61,7 +61,7 @@
                     <align>right</align>
                     <aligny>center</aligny>
                     <font>Bold38</font>
-                    <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                    <textcolor>ffffffff</textcolor>
 					<shadowcolor>black</shadowcolor>
                     <scroll>true</scroll>
                 </control>
@@ -104,7 +104,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/1.png</texturefocus>
                     <texturenofocus>dialogs/trakt/1.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11039</ondown>
@@ -122,7 +122,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/2.png</texturefocus>
                     <texturenofocus>dialogs/trakt/2.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11030</ondown>
@@ -150,7 +150,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/3.png</texturefocus>
                     <texturenofocus>dialogs/trakt/3.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11031</ondown>
@@ -178,7 +178,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/4.png</texturefocus>
                     <texturenofocus>dialogs/trakt/4.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11032</ondown>
@@ -206,7 +206,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/5.png</texturefocus>
                     <texturenofocus>dialogs/trakt/5.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11033</ondown>
@@ -234,7 +234,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/6.png</texturefocus>
                     <texturenofocus>dialogs/trakt/6.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11034</ondown>
@@ -262,7 +262,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/7.png</texturefocus>
                     <texturenofocus>dialogs/trakt/7.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11035</ondown>
@@ -290,7 +290,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/8.png</texturefocus>
                     <texturenofocus>dialogs/trakt/8.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11036</ondown>
@@ -318,7 +318,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/9.png</texturefocus>
                     <texturenofocus>dialogs/trakt/9.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11037</ondown>
@@ -346,7 +346,7 @@
                     <height>52</height>
                     <texturefocus>dialogs/trakt/10.png</texturefocus>
                     <texturenofocus>dialogs/trakt/10.png</texturenofocus>
-					<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+					<colordiffuse>cce0e0e0</colordiffuse>
                     <align>center</align>
                     <aligny>center</aligny>
                     <ondown>11038</ondown>

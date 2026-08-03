@@ -2,15 +2,14 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">9000</defaultcontrol>
-    <include>DefaultSkinSettings</include>
     <!--set trailer alarm off-->
     <onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
     <controls>
         <!--Global Background-->
         <include>GlobalBackground</include>
- 		<!-- Now playing -->
+		<!-- Now playing -->
 		<include>NowPlayingModern</include>
-		
+
         <!--Header-->
         <include>Header</include>
         <control type="group">
@@ -22,16 +21,16 @@
                 <posx>60</posx>
                 <width>1800</width>
                 <texture border="15">diffuse/bgpanel.png</texture>
-            <colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+            <colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-            
+
             <control type="image">
                 <posx>60</posx>
                 <width>556</width>
                 <texture border="15">diffuse/bgpanel.png</texture>
-                <colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+                <colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-            
+
             <!--Picture	(Fanart)-->
             <control type="image">
                 <posx>88</posx>
@@ -41,7 +40,7 @@
                 <texture background="true">$INFO[Container(9000).ListItem.ActualIcon]</texture>
                 <aspectratio>scale</aspectratio>
             </control>
-            
+
             <!--InfoText-->
             <control type="textbox">
                 <posx>88</posx>
@@ -52,9 +51,9 @@
                 <align>left</align>
                 <label>$INFO[Container(9000).ListItem.Label2]</label>
             </control>
-            
-            
-            
+
+
+
             <!--List 9000-->
             <control type="panel" id="9000">
                 <viewtype label="31437">icons</viewtype>
@@ -155,13 +154,12 @@
                     </item>
                 </content>
             </control>
-            
+
         </control>
-		
+
 		<!--Footer-->
-        <include condition="!Skin.HasSetting(EnableFooterBar)">Footer</include>
+        <include condition="!true">Footer</include>
 		<!--BINGIE Version-->
         <include>BingieLogo</include>
-        <include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>
     </controls>
 </window>

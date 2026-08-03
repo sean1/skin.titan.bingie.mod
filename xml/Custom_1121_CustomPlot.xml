@@ -8,11 +8,11 @@
     <controls>
         <!--Dialog Overlay-->
         <include>DialogOverlayExtra</include>
-		
+
         <!--Dialog Tex Viewer-->
         <control type="group">
             <include>animation_window_open_close</include>
-			
+
 			<control type="image">
                 <!--Panel-->
                 <posx>445</posx>
@@ -20,9 +20,9 @@
                 <width>1030</width>
                 <height>771</height>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>				
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-			
+
 			<control type="image">
                 <!--Panel-->
                  <posx>445</posx>
@@ -31,9 +31,9 @@
                 <height>771</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
 				<bordersize>10</bordersize>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>				
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-					
+
 			 <control type="label">
                 <description>Heading</description>
                 <posx>473</posx>
@@ -43,7 +43,7 @@
                 <include>DialogHeader</include>
                 <align>center</align>
             </control>
-			
+
             <control type="image">
                 <posx>479</posx>
                 <posy>245</posy>
@@ -51,7 +51,7 @@
                 <height>561</height>
                 <texture border="5">dialogs/default/inner.png</texture>
             </control>
-						
+
             <control type="textbox" id="5">
                 <description>textarea</description>
                 <posx>495</posx>
@@ -63,13 +63,13 @@
                 <align>left</align>
                 <pagecontrol>60</pagecontrol>
             </control>
-			
+
             <control type="scrollbar" id="60">
-				<texturesliderbackground border="5" colordiffuse="$INFO[Skin.String(ScrollbarBackgroundColor)]">scrollbar/texturesliderbar_small.png</texturesliderbackground>
-				<texturesliderbar colordiffuse="$INFO[Skin.String(ScrollbarUnfocusedColor)]" border="5">scrollbar/texturesliderbar_small.png</texturesliderbar>
-				<texturesliderbarfocus colordiffuse="$INFO[Skin.String(ScrollbarFocusedColor)]" border="5">scrollbar/texturesliderbar_small.png</texturesliderbarfocus>
-				<textureslidernib colordiffuse="$INFO[Skin.String(ScrollbarUnfocusedColor)]">scrollbar/texturesliderbar_nib.png</textureslidernib>
-				<textureslidernibfocus colordiffuse="$INFO[Skin.String(ScrollbarFocusedColor)]">scrollbar/texturesliderbar_nib.png</textureslidernibfocus>
+				<texturesliderbackground border="5" colordiffuse="ff141414">scrollbar/texturesliderbar_small.png</texturesliderbackground>
+				<texturesliderbar colordiffuse="ff646464" border="5">scrollbar/texturesliderbar_small.png</texturesliderbar>
+				<texturesliderbarfocus colordiffuse="ffcc0000" border="5">scrollbar/texturesliderbar_small.png</texturesliderbarfocus>
+				<textureslidernib colordiffuse="ff646464">scrollbar/texturesliderbar_nib.png</textureslidernib>
+				<textureslidernibfocus colordiffuse="ffcc0000">scrollbar/texturesliderbar_nib.png</textureslidernibfocus>
                 <posx>1448</posx>
                 <posy>247</posy>
                 <height>557</height>
@@ -81,7 +81,7 @@
                 <orientation>vertical</orientation>
                 <animation effect="fade" start="75" end="0" time="300" tween="sine" easing="inout" condition="!Control.HasFocus(60)">Conditional</animation>
             </control>
-			
+
             <control type="group" id="8000">
                 <posx>466</posx>
                 <posy>809</posy>
@@ -99,7 +99,7 @@
                     <animation effect="fade" start="100" end="75" time="0" condition="!Control.IsEnabled(7)">Conditional</animation>
                 </control>
             </control>
-			
+
         </control>
     </controls>
 </window>

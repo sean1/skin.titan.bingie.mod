@@ -2,10 +2,10 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">3</defaultcontrol>
-	
+
     <controls>
 		<include>DialogOverlayExtra</include>
-		
+
         <!--Dialog Addon Settings-->
         <control type="group">
             <include>animation_window_open_close</include>
@@ -21,8 +21,8 @@
                 <width>1352</width>
                 <height>730</height>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 			<control type="image">
                 <!--Panel-->
@@ -32,10 +32,10 @@
                 <height>730</height>
 				<bordersize>10</bordersize>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-			
+
             <!--Header-->
             <control type="label" id="2">
                 <description>Heading</description>
@@ -132,7 +132,7 @@
                 <align>left</align>
                 <spinposx>17</spinposx>
                 <textoffsetx>20</textoffsetx>
-                
+
             </control>
             <control type="label" id="14">
                 <description>Default Label</description>
@@ -165,10 +165,10 @@
 				<onright>8004</onright>
 				<onleft>5</onleft>
 				<showonepage>false</showonepage>
-				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling  | String.IsEqual(Skin.String(scrollbar_visibility),always_show)">Conditional</animation>
-				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling  | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
+				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling  | false">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling  | false]">Conditional</animation>
 			</control>
-			
+
 			<control type="grouplist" id="8002">
                 <posx>320</posx>
                 <posy>800</posy>

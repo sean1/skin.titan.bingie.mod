@@ -14,7 +14,7 @@
             <include>WatchedIndicatorSmall</include>
         </control>
         <!--Label Overlay-->
-        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) + !Window.IsActive(1109) + !Window.IsActive(DialogVideoInfo.xml)">SquarePosterTagOverlay</include>
+        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml)">SquarePosterTagOverlay</include>
     </include>
     <include name="SquarePosterPanelLayoutFocus">
         <control type="image">
@@ -31,7 +31,7 @@
             <include>WatchedIndicatorSmall</include>
         </control>
         <!--Label Overlay-->
-        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) + !Window.IsActive(1109) + !Window.IsActive(DialogVideoInfo.xml)">SquarePosterTagOverlay</include>
+        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml)">SquarePosterTagOverlay</include>
 
     </include>
 
@@ -43,46 +43,46 @@
     <include name="SquareThumbFO">
         <aspectratio aligny="top">stretch</aspectratio>
         <texture>diffuse/panel.png</texture>
-        <colordiffuse>$INFO[Skin.String(ViewDetailsBorderFocusColor)]</colordiffuse>
+        <colordiffuse>ffffffff</colordiffuse>
     </include>
 
     <include name="SquarePosterTagOverlayVisibility">
         <visible>
-            ![Control.IsVisible(509) + Skin.String(View509.Tags,disable)] + 
-            ![Control.IsVisible(510) + Skin.String(View510.Tags,disable)] + 
+            ![Control.IsVisible(509) + false] +
+            ![Control.IsVisible(510) + false] +
             !String.IsEqual(ListItem.Label,..) +
-            ![!String.IsEmpty(ListItem.Property(defaultID))] + 
-            !String.IsEqual(ListItem.Property(disableLabel), disable) | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + Skin.HasSetting(ShowLabelsPosterEpisodes) + [String.IsEqual(Skin.String(Widgets_DisplayTags),enable) | String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | String.IsEqual(Skin.String(Widgets_DisplayTags),override)]]
+            ![!String.IsEmpty(ListItem.Property(defaultID))] +
+            !String.IsEqual(ListItem.Property(disableLabel), disable) | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
         </visible>
         <visible>
-            [[Control.IsVisible(509) + Skin.String(View509.Tags,enable)] | 
-            [Control.IsVisible(510) + Skin.String(View510.Tags,enable)] | 
-            !String.IsEmpty(ListItem.Property(defaultID)) | 
-            Window.IsActive(settings) | Window.IsActive(1109) | Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(script-globalsearch.xml)] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + Skin.HasSetting(ShowLabelsPosterEpisodes) + [String.IsEqual(Skin.String(Widgets_DisplayTags),enable) | String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | String.IsEqual(Skin.String(Widgets_DisplayTags),override)]]
+            [[Control.IsVisible(509) + false] |
+            [Control.IsVisible(510) + false] |
+            !String.IsEmpty(ListItem.Property(defaultID)) |
+            Window.IsActive(settings) | Window.IsActive(DialogVideoInfo.xml)] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
         </visible>
     </include>
     <include name="SquarePosterTagOverlay">
         <control type="group">
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) + !Window.IsActive(1109) + !Window.IsActive(DialogVideoInfo.xml) + !Window.IsActive(script-globalsearch.xml) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">SquarePosterTagOverlayVisibility</include>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml) | [false + false]">SquarePosterTagOverlayVisibility</include>
             <control type="image">
                 <bottom>0</bottom>
                 <height>74</height>
                 <bordersize>8</bordersize>
                 <texture>diffuse/poster_tag2.png</texture>
-                <colordiffuse>$INFO[Skin.String(TagOverlaysPanelColor)]</colordiffuse>
+                <colordiffuse>dd000000</colordiffuse>
             </control>
             <control type="textbox">
                 <left>15</left>
                 <right>15</right>
                 <bottom>14</bottom>
                 <height>48</height>
-                <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+                <include condition="false">align_center</include>
                 <align>left</align>
                 <aligny>center</aligny>
                 <label>$VAR[ThumbListDetailsSquare]</label>
                 <font>Reg18</font>
                 <autoscroll>false</autoscroll>
-                <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             </control>
             <control type="textbox">
@@ -90,13 +90,13 @@
                 <right>15</right>
                 <bottom>14</bottom>
                 <height>48</height>
-                <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+                <include condition="false">align_center</include>
                 <align>left</align>
                 <aligny>center</aligny>
                 <label>$VAR[ThumbListDetailsSquare]</label>
                 <font>Reg18</font>
                 <autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
-                <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             </control>
         </control>

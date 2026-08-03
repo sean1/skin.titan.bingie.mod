@@ -12,7 +12,7 @@
 			<width>100%</width>
 			<height>100%</height>
 			<texture>diffuse/panel2.png</texture>
-			<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+			<colordiffuse>cc0a0a0a</colordiffuse>
 		</control>
 		<!-- Still watching dialog -->
 		<control type="group">
@@ -26,7 +26,7 @@
 					<width>100%</width>
 					<height>50</height>
 					<font>Bold46</font>
-					<textcolor>$INFO[Skin.String(BingieOSDLabelTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<label>$ADDON[service.upnext 30024]</label>
 				</control>
 				<!-- Buttons -->
@@ -46,9 +46,9 @@
 						<label>[CAPITALIZE]$LOCALIZE[31535][/CAPITALIZE]</label>
 						<aligny>center</aligny>
 						<font>Reg34</font>
-						<textcolor>$INFO[Skin.String(BingieButtonTextColor)]</textcolor>
-						<focusedcolor>$INFO[Skin.String(BingieButtonFocusTextColor)]</focusedcolor>
-						<texturefocus colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]" border="10">bingie/border/default_button_fo_4.png</texturefocus>
+						<textcolor>a6ffffff</textcolor>
+						<focusedcolor>ffffffff</focusedcolor>
+						<texturefocus colordiffuse="ffffffff" border="10">bingie/border/default_button_fo_4.png</texturefocus>
 						<texturenofocus/>
 					</control>
 					<!-- Cancel -->
@@ -60,9 +60,9 @@
 						<onleft>3012</onleft>
 						<label>222</label>
 						<font>Reg34</font>
-						<textcolor>$INFO[Skin.String(BingieButtonTextColor)]</textcolor>
-						<focusedcolor>$INFO[Skin.String(BingieButtonFocusTextColor)]</focusedcolor>
-						<texturefocus colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]" border="10">bingie/border/default_button_fo_4.png</texturefocus>
+						<textcolor>a6ffffff</textcolor>
+						<focusedcolor>ffffffff</focusedcolor>
+						<texturefocus colordiffuse="ffffffff" border="10">bingie/border/default_button_fo_4.png</texturefocus>
 						<texturenofocus/>
 					</control>
 				</control>

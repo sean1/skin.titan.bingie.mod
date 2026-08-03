@@ -6,7 +6,7 @@
         <include>ThumbsViewItemLayout</include>
      </include>
     <include name="ThumbsViewLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">ThumbsFO</include>
+        <include condition="![[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]">ThumbsFO</include>
         <include>ThumbsViewItemLayout</include>
     </include>
     <include name="ThumbsViewItemLayout">
@@ -29,7 +29,7 @@
             <aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
             <visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-			<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
+			<visible>false</visible>
         </control>
         <include condition="!$EXP[IsBingieViewsActive]">ThumbsTagOverlay</include>
         <control type="group">
@@ -45,12 +45,12 @@
             </include>
         </control>
     </include>
-	
+
 	<include name="ThumbsViewLayoutSmall">
         <include>ThumbsViewItemLayoutSmall</include>
      </include>
     <include name="ThumbsViewLayoutFocusSmall">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">ThumbsFO</include>
+        <include condition="![[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]">ThumbsFO</include>
         <include>ThumbsViewItemLayoutSmall</include>
     </include>
     <include name="ThumbsViewItemLayoutSmall">
@@ -73,7 +73,7 @@
             <aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
             <visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-			<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
+			<visible>false</visible>
         </control>
         <include condition="!$EXP[IsBingieViewsActive]">ThumbsTagOverlaySmall</include>
         <control type="group">
@@ -99,20 +99,20 @@
 
     <include name="ThumbsFO_Defs">
         <texture background="true">diffuse/landscape.png</texture>
-        <colordiffuse>$INFO[Skin.String(ViewDetailsBorderFocusColor)]</colordiffuse>
+        <colordiffuse>ffffffff</colordiffuse>
     </include>
-    
+
     <variable name="ClearLogoFallback">
         <value condition="!String.IsEmpty(ListItem.Art(clearlogo))">$INFO[ListItem.Art(clearlogo)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(tvshow.clearlogo))">$INFO[ListItem.Art(tvshow.clearlogo)]</value>
     </variable>
-	
+
 	<!-- THUMBS LAYOUT (BINGIE LANDSCAPE) -->
     <include name="ThumbsViewBingieLayout">
         <include>ThumbsViewItemBingieLayout</include>
      </include>
     <include name="ThumbsViewBingieLayoutFocus">
-        <include condition="![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]">ThumbsFOBingie</include>
+        <include condition="![[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]">ThumbsFOBingie</include>
         <include>ThumbsViewItemBingieLayout</include>
     </include>
     <include name="ThumbsViewItemBingieLayout">
@@ -124,7 +124,7 @@
             <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
         </control>
-        <include condition="!$EXP[IsBingieViewsActive] + !Window.IsActive(1117)">ThumbsTagOverlayBingie</include>
+        <include condition="!$EXP[IsBingieViewsActive]">ThumbsTagOverlayBingie</include>
         <include condition="!$EXP[IsBingieViewsActive]">New_Episodes_Tag_Overlay</include>
         <control type="group">
             <!--Watched Overlay-->
@@ -149,9 +149,9 @@
 
     <include name="ThumbsFO_DefsBingie">
         <texture background="true">home/home_matte3.png</texture>
-        <colordiffuse>$INFO[Skin.String(ViewDetailsBorderFocusColor)]</colordiffuse>
+        <colordiffuse>ffffffff</colordiffuse>
     </include>
-    
+
     <!-- LANDSCAPE LAYOUT -->
     <include name="LandscapeLayout">
         <include>LandscapeItemLayout</include>
@@ -160,7 +160,7 @@
         <control type="image">
             <!--focus image-->
             <texture diffuse="home/home_matte2.png">diffuse/panel2.png</texture>
-            <colordiffuse>$INFO[Skin.String(ViewDetailsBorderFocusColor)]</colordiffuse>
+            <colordiffuse>ffffffff</colordiffuse>
             <aspectratio>stretch</aspectratio>
             <include>thumbsborder_focused</include>
         </control>
@@ -186,9 +186,9 @@
             <aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
             <visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-			<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
+			<visible>false</visible>
         </control>
-        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlay</include>
+        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlay</include>
 		<control type="group">
 			<right>8</right>
 			<top>8</top>
@@ -203,30 +203,30 @@
             </include>
 		 </control>
     </include>
-    
+
     <!-- TAG OVERLAYS -->
 	<include name="LandscapeTagOverlayVisibility">
         <visible>
             ![String.IsEmpty(ListItem.DBType) + [String.IsEqual(ListItem.Property(DBTYPE),categorie) | String.IsEqual(ListItem.Property(DBTYPE),category)]] +
             ![String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),genre) + System.HasAddon(resource.images.moviegenreicons.bingie)] +
-            ![Control.IsVisible(501) + Skin.String(View501.Tags,disable)] +
-            ![Control.IsVisible(502) + Skin.String(View502.Tags,disable)] + 
-            ![Control.IsVisible(505) + Skin.String(View505.Tags,disable)] + 
-            ![[!Window.IsActive(Home) + Control.IsVisible(511)] + Skin.String(View511.Tags,disable)] + 
-            ![Control.IsVisible(512) + Skin.String(View512.Tags,disable)] + 
-            ![Control.IsVisible(523) + Skin.String(View523.Tags,disable)] + 
-            ![!String.IsEmpty(ListItem.Property(defaultID))] + 
+            ![Control.IsVisible(501) + false] +
+            ![Control.IsVisible(502) + false] +
+            ![Control.IsVisible(505) + false] +
+            ![[!Window.IsActive(Home) + Control.IsVisible(511)] + false] +
+            ![Control.IsVisible(512) + false] +
+            ![Control.IsVisible(523) + false] +
+            ![!String.IsEmpty(ListItem.Property(defaultID))] +
             !String.IsEqual(ListItem.Property(disableLabel), disable) +
-            !String.IsEqual(ListItem.Label,..) | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + Skin.HasSetting(ShowLabelsPosterEpisodes) + [String.IsEqual(Skin.String(Widgets_DisplayTags),enable) | String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | String.IsEqual(Skin.String(Widgets_DisplayTags),override)]]
+            !String.IsEqual(ListItem.Label,..) | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
         </visible>
         <visible>
-            [[Control.IsVisible(501) + Skin.String(View501.Tags,enable)] |
-            [Control.IsVisible(502) + Skin.String(View502.Tags,enable)] | 
-            [Control.IsVisible(505) + Skin.String(View505.Tags,enable)] | 
-            [[!Window.IsActive(Home) + Control.IsVisible(511)] + Skin.String(View511.Tags,enable)] | 
-            [Control.IsVisible(512) + Skin.String(View512.Tags,enable)] | 
-            [Control.IsVisible(523) + Skin.String(View523.Tags,enable)] |
-            !String.IsEmpty(ListItem.Property(defaultID))] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + Skin.HasSetting(ShowLabelsPosterEpisodes) + [String.IsEqual(Skin.String(Widgets_DisplayTags),enable) | String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | String.IsEqual(Skin.String(Widgets_DisplayTags),override)]]
+            [[Control.IsVisible(501) + false] |
+            [Control.IsVisible(502) + false] |
+            [Control.IsVisible(505) + false] |
+            [[!Window.IsActive(Home) + Control.IsVisible(511)] + false] |
+            [Control.IsVisible(512) + false] |
+            [Control.IsVisible(523) + false] |
+            !String.IsEmpty(ListItem.Property(defaultID))] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
         </visible>
 	</include>
 	<include name="ThumbsTagOverlay">
@@ -236,8 +236,8 @@
 			<bottom>0</bottom>
             <height>78</height>
             <texture>diffuse/home_overlay.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>$INFO[Skin.String(TagOverlaysPanelColor)]</colordiffuse>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
+            <colordiffuse>dd000000</colordiffuse>
         </control>
         <control type="textbox">
             <!--Label-->
@@ -245,15 +245,15 @@
             <right>16</right>
             <bottom>10</bottom>
             <height>60</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
 			<autoscroll>false</autoscroll>
 			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
         </control>
 		<control type="textbox">
             <!--Label-->
@@ -261,107 +261,107 @@
             <right>16</right>
             <bottom>10</bottom>
             <height>60</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
 			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
 	<include name="ThumbsTagOverlayBingie">
         <control type="image">
             <!--Panel Ovelay-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!Skin.HasSetting(DisableNewEpisodesIndicator)]]</visible>
+            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <bordersize>8</bordersize>
 			<bottom>0</bottom>
             <height>78</height>
             <texture>diffuse/home_overlay_bingie.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>$INFO[Skin.String(TagOverlaysPanelColor)]</colordiffuse>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
+            <colordiffuse>dd000000</colordiffuse>
         </control>
         <control type="textbox">
             <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!Skin.HasSetting(DisableNewEpisodesIndicator)]]</visible>
+            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <left>16</left>
             <right>16</right>
             <bottom>10</bottom>
             <height>60</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
 			<autoscroll>false</autoscroll>
 			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
         </control>
 		<control type="textbox">
             <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!Skin.HasSetting(DisableNewEpisodesIndicator)]]</visible>
+            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <left>16</left>
             <right>16</right>
             <bottom>10</bottom>
             <height>60</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
 			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
 	<include name="ThumbsTagOverlayLargeBingie">
         <control type="image">
             <!--Panel Ovelay-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!Skin.HasSetting(DisableNewEpisodesIndicator)]]</visible>
+            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <bordersize>8</bordersize>
 			<bottom>0</bottom>
             <height>94</height>
             <texture>diffuse/home_overlay_bingie.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>$INFO[Skin.String(TagOverlaysPanelColor)]</colordiffuse>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
+            <colordiffuse>dd000000</colordiffuse>
         </control>
         <control type="textbox">
             <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!Skin.HasSetting(DisableNewEpisodesIndicator)]]</visible>
+            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <left>16</left>
             <right>16</right>
             <bottom>8</bottom>
             <height>80</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg28</font>
 			<autoscroll>false</autoscroll>
 			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
         </control>
 		<control type="textbox">
             <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!Skin.HasSetting(DisableNewEpisodesIndicator)]]</visible>
+            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <left>16</left>
             <right>16</right>
             <bottom>8</bottom>
             <height>80</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg28</font>
 			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
     <include name="ThumbsTagOverlaySmall">
@@ -371,8 +371,8 @@
 			<bottom>0</bottom>
             <height>74</height>
             <texture>diffuse/home_overlay_small.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>$INFO[Skin.String(TagOverlaysPanelColor)]</colordiffuse>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
+            <colordiffuse>dd000000</colordiffuse>
         </control>
         <control type="textbox">
             <!--Label-->
@@ -380,15 +380,15 @@
             <right>12</right>
             <bottom>9</bottom>
             <height>57</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg18</font>
 			<autoscroll>false</autoscroll>
 			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
         </control>
 		<control type="textbox">
             <!--Label-->
@@ -396,15 +396,15 @@
             <right>12</right>
             <bottom>9</bottom>
             <height>57</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg18</font>
 			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
     <include name="LandscapeTagOverlay">
@@ -414,8 +414,8 @@
 			<bottom>0</bottom>
             <height>97</height>
             <texture>home/home_overlay.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>$INFO[Skin.String(TagOverlaysPanelColor)]</colordiffuse>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
+            <colordiffuse>dd000000</colordiffuse>
         </control>
         <control type="textbox">
             <!--Label-->
@@ -423,15 +423,15 @@
             <right>8</right>
             <bottom>4</bottom>
             <height>28%</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg30</font>
 			<autoscroll>false</autoscroll>
 			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
         </control>
 		<control type="textbox">
             <!--Label-->
@@ -439,15 +439,15 @@
             <right>8</right>
             <bottom>4</bottom>
             <height>28%</height>
-            <include condition="Skin.HasSetting(ThumbsLabelAlignmentCenter)">align_center</include>
+            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg30</font>
 			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>$INFO[Skin.String(TagOverlaysTextColor)]</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1117)">LandscapeTagOverlayVisibility</include>
+            <textcolor>ffffffff</textcolor>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
 
@@ -455,13 +455,12 @@
     <include name="New_Episodes_Tag_Overlay">
         <control type="group">
 			<visible>!$EXP[IsCategoryDBType]</visible>
-            <visible>!Skin.HasSetting(DisableNewEpisodesIndicator)</visible>
+            <visible>!false</visible>
             <visible>$EXP[IsTvShowDBType] + $EXP[IsTVShowInLastEpisodes]</visible>
             <width>100%</width>
             <height>30</height>
             <left>108</left>
             <bottom>7</bottom>
-			<animation effect="slide" end="32" time="0" condition="String.IsEqual(window(home).Property(widgetstyle),landscapelarge)">Conditional</animation>
 			<animation effect="slide" end="-15" time="0" condition="Control.IsVisible(523)">Conditional</animation>
             <control type="button">
                 <width>150</width>
@@ -473,23 +472,23 @@
                 <font>Reg19</font>
                 <textoffsety>1</textoffsety>
                 <label>[B]$LOCALIZE[31007][/B]</label>
-                <textcolor>$INFO[Skin.String(NewEpisodes.TextColor)]</textcolor>
-				<focusedcolor>$INFO[Skin.String(NewEpisodes.TextColor)]</focusedcolor>
+                <textcolor>ffffffff</textcolor>
+				<focusedcolor>ffffffff</focusedcolor>
                 <textoffsetx>5</textoffsetx>
-                <texturefocus colordiffuse="$INFO[Skin.String(BingieNewEpisodesTagColor)]" border="10">diffuse/panel3.png</texturefocus>
-                <texturenofocus colordiffuse="$INFO[Skin.String(BingieNewEpisodesTagColor)]" border="10">diffuse/panel3.png</texturenofocus>
+                <texturefocus colordiffuse="ffe50914" border="10">diffuse/panel3.png</texturefocus>
+                <texturenofocus colordiffuse="ffe50914" border="10">diffuse/panel3.png</texturenofocus>
             </control>
         </control>
     </include>
 
     <variable name="LandscapeImage">
-		<value condition="!String.IsEmpty(ListItem.Art(thumb)) + [String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + ![Window.IsActive(Home) + Skin.HasSetting(PreferTvShowThumbWidget)]">$INFO[ListItem.Art(thumb)]</value>
+		<value condition="!String.IsEmpty(ListItem.Art(thumb)) + [String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + ![Window.IsActive(Home) + false]">$INFO[ListItem.Art(thumb)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(thumb)) + [String.IsEqual(ListItem.Property(DBTYPE),category) | String.Contains(ListItem.Path,youtube)]">$INFO[ListItem.Art(thumb)]</value>
-        <value condition="Skin.HasSetting(PreferClearArtOverLandscape) + !String.IsEmpty(ListItem.Art(clearart)) + !Skin.HasSetting(DisableLandscapeThumbs)">$INFO[ListItem.Art(clearart)]</value>
-        <value condition="Skin.HasSetting(PreferClearArtOverLandscape) + !String.IsEmpty(ListItem.Art(tvshow.clearart)) + !Skin.HasSetting(DisableLandscapeThumbs)">$INFO[ListItem.Art(tvshow.clearart)]</value>
-        <value condition="!String.IsEmpty(ListItem.Art(season.landscape)) + !Skin.HasSetting(DisableLandscapeThumbs)">$INFO[ListItem.Art(season.landscape)]</value>
-        <value condition="!String.IsEmpty(ListItem.Art(landscape)) + !Skin.HasSetting(DisableLandscapeThumbs)">$INFO[ListItem.Art(landscape)]</value>
-        <value condition="!String.IsEmpty(ListItem.Art(tvshow.landscape)) + !Skin.HasSetting(DisableLandscapeThumbs)">$INFO[ListItem.Art(tvshow.landscape)]</value>
+        <value condition="false + !String.IsEmpty(ListItem.Art(clearart)) + !false">$INFO[ListItem.Art(clearart)]</value>
+        <value condition="false + !String.IsEmpty(ListItem.Art(tvshow.clearart)) + !false">$INFO[ListItem.Art(tvshow.clearart)]</value>
+        <value condition="!String.IsEmpty(ListItem.Art(season.landscape)) + !false">$INFO[ListItem.Art(season.landscape)]</value>
+        <value condition="!String.IsEmpty(ListItem.Art(landscape)) + !false">$INFO[ListItem.Art(landscape)]</value>
+        <value condition="!String.IsEmpty(ListItem.Art(tvshow.landscape)) + !false">$INFO[ListItem.Art(tvshow.landscape)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(tvshow.fanart)) + !String.IsEmpty(ListItem.DBType)">$INFO[ListItem.Art(tvshow.fanart)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(fanart)) + !String.IsEmpty(ListItem.DBType)">$INFO[ListItem.Art(fanart)]</value>
 		<value condition="!String.IsEmpty(ListItem.Property(landscape))">$INFO[ListItem.Property(landscape)]</value>

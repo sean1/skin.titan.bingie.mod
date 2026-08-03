@@ -5,10 +5,6 @@
     <animation effect="fade" start="100" end="0" time="500">WindowClose</animation>
     <visible>!String.IsEmpty(Window(Home).Property(DialogMPAATopBar)) + String.IsEmpty(Window(Home).Property(DisableOSDCast))</visible>
     <onload>AlarmClock(CloseMPAATopBar,ClearProperty(DialogMPAATopBar,Home),00:07,silent)</onload>
-	<onload>Skin.Reset(EnableOSDInfo)</onload>
-	<onload>Skin.Reset(EnableOSDCastInfo)</onload>
-	<onload>Skin.Reset(EnableOSDCrewInfo)</onload>
-    
     <controls>
         <control type="group">
             <visible>!Window.IsActive(videoosd) + Window.IsVisible(fullscreenvideo)</visible>
@@ -43,8 +39,8 @@
                     <align>left</align>
                     <aligny>center</aligny>
                     <font>Reg34</font>
-                    <textcolor>$INFO[Skin.String(OSDPrimaryTextColor)]</textcolor>
-                    <shadowcolor>$INFO[Skin.String(OSDPrimaryTextShadowColor)]</shadowcolor>
+                    <textcolor>ffffffff</textcolor>
+                    <shadowcolor>None</shadowcolor>
                     <label>$VAR[VideoRatingTopBarLabel]</label>
                 </control>
             </control>

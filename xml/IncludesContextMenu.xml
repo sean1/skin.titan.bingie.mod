@@ -2,55 +2,6 @@
 <!-- BINGIE -->
 <includes>
 
-    <include name="DialogContextMenuClassic">
-        <control type="group">
-            <posx>710</posx>
-            <bottom>12%</bottom>
-            <height>800</height>
-            <!--Panel-->
-            <control type="image">
-                <width>500</width>
-                <height>800</height>
-                <texture border="15">diffuse/bgpanel.png</texture>
-                <bordersize>20</bordersize>
-                <colordiffuse>$INFO[Skin.String(SideBladePanelColor)]</colordiffuse>
-            </control>
-            <!--Label Menu: -->
-            <control type="label" id="200">
-                <!--Label Menu-->
-                <posx>21</posx>
-                <posy>40</posy>
-                <width>458</width>
-                <align>left</align>
-                <textoffsetx>50</textoffsetx>
-                <font>Bold40</font>
-                <textcolor>$INFO[Skin.String(SideBladeTextColor)]</textcolor>
-                <label>$LOCALIZE[33061]:</label>
-            </control>
-            <control type="image">
-                <!--Seperator-->
-                <posx>56</posx>
-                <posy>120</posy>
-                <width>388</width>
-                <height>20</height>
-                <align>left</align>
-                <texture>common/menu-separator2.png</texture>
-            </control>
-            <control type="grouplist" id="996">
-                <width/>
-                <posx>21</posx>
-                <posy>140</posy>
-                <height>630</height>
-                <itemgap>3</itemgap>
-                <!--Buttons-->
-               <control type="button" id="1000">
-                    <description>Buttons</description>
-                    <include>SideBladeMenuButton</include>
-                </control>
-            </control>
-        </control>
-	</include>
-		
 	<include name="DialogContextMenuModern">
 		<control type="group">
 			<height>100%</height>
@@ -68,7 +19,7 @@
 			<width>520</width>
 			<height>1080</height>
 			<texture border="5">diffuse/panel2.png</texture>
-			<colordiffuse>$INFO[Skin.String(SideBladePanelColor)]</colordiffuse>
+			<colordiffuse>fa0a0a0a</colordiffuse>
 			<aspectratio>stretch</aspectratio>
 		</control>
 		<!-- header -->
@@ -79,7 +30,7 @@
             <height>100</height>
             <font>Bold45</font>
             <align>left</align>
-            <textcolor>$INFO[Skin.String(SideBladeTextColor)]</textcolor>
+            <textcolor>ffffffff</textcolor>
             <label>[UPPERCASE]$LOCALIZE[33061][/UPPERCASE]</label>
 			<visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog)</visible>
         </control>
@@ -101,7 +52,7 @@
                 <height>20</height>
                 <align>left</align>
                 <texture>common/menu-separator2.png</texture>
-            </control>						
+            </control>
             <control type="grouplist" id="996">
                 <width>458</width>
                 <posx>21</posx>
@@ -112,12 +63,12 @@
                 <!--Buttons-->
                 <control type="button" id="1000">
                     <description>Buttons</description>
-                    <include>SideBladeMenuButton</include>               
-				</control>			
+                    <include>SideBladeMenuButton</include>
+				</control>
             </control>
         </control>
-	</include>	
-	
+	</include>
+
 	<include name="SideBladeModern">
 		<posx>-660</posx>
 		<posy>0</posy>
@@ -132,7 +83,7 @@
                 <left>0</left>
                 <width>500</width>
                 <height>100%</height>
-                <colordiffuse>$INFO[Skin.String(SideBladePanelColor)]</colordiffuse>
+                <colordiffuse>fa0a0a0a</colordiffuse>
                 <aspectratio>stretch</aspectratio>
                 <texture background="true">diffuse/panel2.png</texture>
             </control>
@@ -146,7 +97,7 @@
             <height>100</height>
             <font>Bold45</font>
             <align>left</align>
-            <textcolor>$INFO[Skin.String(SideBladeTextColor)]</textcolor>
+            <textcolor>ffffffff</textcolor>
             <label>[UPPERCASE]$LOCALIZE[33063][/UPPERCASE]</label>
 			<visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog)</visible>
         </control>
@@ -167,33 +118,10 @@
 			<height>20</height>
 			<align>left</align>
 			<texture>common/menu-separator2.png</texture>
-		</control>		
+		</control>
 	</include>
-	
-	<include name="SideBladeClassic">
-		<posx>-635</posx>
-		<posy>-15</posy>
-		<visible>!Window.IsActive(virtualkeyboard)</visible>
-		<include>animation_sub_menu</include>
-		<!--Panel-->
-		<control type="image">
-			<posy>150</posy>
-			<width>500</width>
-			<height>840</height>
-            <bordersize>20</bordersize>
-			<texture border="15">diffuse/bgpanel.png</texture>
-            <colordiffuse>$INFO[Skin.String(SideBladePanelColor)]</colordiffuse>
-		</control>
-        <control type="button">
-			<posy>150</posy>
-			<width>500</width>
-			<height>840</height>
-			<description>Hidden button to prevent unwanted focus while hovering the menu</description>
-            <visible allowhiddenfocus="true">false</visible>
-		</control>
-	</include>	
-    
-    <include name="SideBladeViewCommands">
+
+	<include name="SideBladeViewCommands">
          <control type="button" id="308">
 			<!--Switch fullscreen-->
 			<include>SideBladeMenuButton</include>
@@ -208,18 +136,18 @@
 			<onclick>ActivateWindow(favouritesbrowser)</onclick>
 		</control>
 	</include>
-    
+
 
     <include name="SideBladeMenuButton">
 		<width>458</width>
 		<align>left</align>
 		<font>Reg26</font>
-		<textcolor>$INFO[Skin.String(SideBladeTextColor)]</textcolor>
-		<focusedcolor>$INFO[Skin.String(ButtonFocusTextColor)]</focusedcolor>
+		<textcolor>ffffffff</textcolor>
+		<focusedcolor>ff000000</focusedcolor>
 		<disabledcolor>77585858</disabledcolor>
 		<invalidcolor>red</invalidcolor>
 		<pulseonselect>false</pulseonselect>
-		<texturefocus colordiffuse="$INFO[Skin.String(ButtonFocusColor)]" border="10">diffuse/panel.png</texturefocus>
+		<texturefocus colordiffuse="cce0e0e0" border="10">diffuse/panel.png</texturefocus>
         <texturenofocus/>
     </include>
 

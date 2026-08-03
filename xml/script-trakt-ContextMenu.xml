@@ -1,5 +1,5 @@
 <window>
-<controls>	
+<controls>
 	<include>DialogOverlayExtra</include>
 	<defaultcontrol always="true">111</defaultcontrol>
 	<control type="group">
@@ -11,7 +11,7 @@
 				<posy>-10</posy>
 				<width>510</width>
 				<height>330</height>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
 				<texture border="10">diffuse/panel.png</texture>
 			</control>
 			<control type="image" id="2">
@@ -39,7 +39,7 @@
 						<posy>0</posy>
 						<width>450</width>
 						<height>60</height>
-						<texture border="10" colordiffuse="$INFO[Skin.String(ButtonColor)]">diffuse/panel.png</texture>
+						<texture border="10" colordiffuse="ff141414">diffuse/panel.png</texture>
 					</control>
 					<control type="label">
 						<posx>0</posx>
@@ -47,7 +47,7 @@
 						<width>450</width>
 						<height>60</height>
 						<font>font13</font>
-						<textcolor fallback="white">$INFO[Skin.String(ButtonTextColor)]</textcolor>
+						<textcolor fallback="white">ffffffff</textcolor>
 						<selectedcolor>FFFFFF33</selectedcolor>
 						<align>center</align>
 						<aligny>center</aligny>
@@ -60,7 +60,7 @@
 						<posy>0</posy>
 						<width>450</width>
 						<height>60</height>
-						<texture border="10" colordiffuse="$INFO[Skin.String(ButtonColor)]">diffuse/panel.png</texture>
+						<texture border="10" colordiffuse="ff141414">diffuse/panel.png</texture>
 						<visible>!Control.HasFocus(111)</visible>
 						<animation effect="fade" time="300">Visible</animation>
 						<animation effect="fade" time="300">Hidden</animation>
@@ -70,7 +70,7 @@
 						<posy>0</posy>
 						<width>450</width>
 						<height>60</height>
-						<texture border="10" colordiffuse="$INFO[Skin.String(ButtonFocusColor)]">diffuse/panel.png</texture>
+						<texture border="10" colordiffuse="cce0e0e0">diffuse/panel.png</texture>
 						<visible>Control.HasFocus(111)</visible>
 						<animation effect="fade" time="300">Visible</animation>
 						<animation effect="fade" time="300">Hidden</animation>
@@ -81,7 +81,7 @@
 						<width>450</width>
 						<height>60</height>
 						<font>font13</font>
-						<textcolor fallback="white">$INFO[Skin.String(ButtonTextColor)]</textcolor>
+						<textcolor fallback="white">ffffffff</textcolor>
 						<selectedcolor>FFFFFF33</selectedcolor>
 						<align>center</align>
 						<aligny>center</aligny>
@@ -96,7 +96,7 @@
 						<width>450</width>
 						<height>60</height>
 						<font>font13</font>
-						<textcolor fallback="white">$INFO[Skin.String(ButtonFocusTextColor)]</textcolor>
+						<textcolor fallback="white">ff000000</textcolor>
 						<selectedcolor>FFFFFF33</selectedcolor>
 						<align>center</align>
 						<aligny>center</aligny>

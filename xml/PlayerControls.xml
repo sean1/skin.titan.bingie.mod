@@ -3,20 +3,20 @@
 <window type="dialog" id="400">
 
     <defaultcontrol always="true">100</defaultcontrol>
-	
+
 	<include>animation_window_open_close</include>
-           		
+
     <visible>Player.HasVideo + Window.IsActive(PlayerControls) + !Window.IsActive(fullscreenvideo)</visible>
     <coordinates>
         <system>1</system>
     </coordinates>
     <controls>
-	
+
 	<include>DialogOverlayExtra</include>
 
 	<!--NowPlaying-->
 	<include>NowPlayingModern</include>
-		
+
 		<control type="group">
 			<left>585</left>
 			<top>310</top>
@@ -25,16 +25,16 @@
 				<top>0</top>
 				<width>745</width>
 				<height>395</height>
-				<colordiffuse>$INFO[Skin.String(OSDPanelColor)]</colordiffuse>
+				<colordiffuse>cc000000</colordiffuse>
 				<texture border="10">diffuse/panel.png</texture>
 			</control>
-			
+
 			<control type="image">
 				<left>+10</left>
 				<top>+10</top>
 				<width>725</width>
 				<height>375</height>
-				<colordiffuse>$INFO[Skin.String(OSDPanelColor)]</colordiffuse>
+				<colordiffuse>cc000000</colordiffuse>
 				<texture border="10">diffuse/panel.png</texture>
 			</control>
 
@@ -214,7 +214,7 @@
 
 			<control type="group">
 				<visible>Player.HasVideo</visible>
-						
+
 			<control type="videowindow">
 				<centertop>+155</centertop>
 				<centerleft>+375</centerleft>
@@ -223,9 +223,9 @@
 				<aspectratio>scale</aspectratio>
 				<visible>Player.HasVideo</visible>
 			</control>
-						
+
 			</control>
-			
+
 			<!-- mouse close window -->
 			<control type="button">
 				<description>Close Window button</description>
@@ -244,8 +244,8 @@
 				<ondown>100</ondown>
 				<visible>system.getbool(input.enablemouse)</visible>
 			</control>
-		
+
 		</control>
-		
+
     </controls>
 </window>

@@ -5,31 +5,31 @@
     <controls>
         <!--Globalbackground-->
         <include>GlobalBackground</include>
- 		<!-- Now playing -->
+		<!-- Now playing -->
 		<include>NowPlayingModern</include>
-		
+
         <!--Header-->
         <include>Header</include>
- 		<control type="group">
+		<control type="group">
 		<include>animation_window_open_close</include>
 		<bottom>125</bottom>
 		<height>75%</height>
-		
+
         <!--Panel-->
 		<control type="image">
 			<posx>60</posx>
 			<width>1800</width>
 			<texture border="15">diffuse/bgpanel.png</texture>
-			<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+			<colordiffuse>cc0a0a0a</colordiffuse>
 		</control>
-		
+
 		<control type="image">
 			<posx>60</posx>
 			<width>510</width>
 			<texture border="15">diffuse/bgpanel.png</texture>
-			<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+			<colordiffuse>cc0a0a0a</colordiffuse>
 		</control>
-		
+
         <!--Grouplist Buttons-->
         <control type="grouplist" id="9000">
             <posx>90</posx>
@@ -97,13 +97,13 @@
             <include>animation_fade_visible_hidden</include>
             <control type="label" id="52">
                 <description>XBMC XBE BUILD Version</description>
-                <textcolor>$INFO[Skin.String(GeneralHighlightTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="21">
                 <description>CPU Text</description>
                 <width>1100</width>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <label>$LOCALIZE[13271] $INFO[System.CPUUsage]</label>
             </control>
             <control type="progress" id="22">
@@ -114,7 +114,7 @@
             <control type="label" id="23">
                 <description>Memory Text</description>
                 <width>1100</width>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <label>$LOCALIZE[154] $INFO[system.memory(used.percent)]</label>
             </control>
             <control type="progress" id="24">
@@ -131,77 +131,77 @@
                 <description>Label 2</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="3">
                 <description>Label 3</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="4">
                 <description>Label 4</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="5">
                 <description>Label 5</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="6">
                 <description>Label 6</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="7">
                 <description>Label 7</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="8">
                 <description>Label 8</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="9">
                 <description>Label 9</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="10">
                 <description>Label 10</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="11">
                 <description>Label 11</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
             <control type="label" id="12">
                 <description>Label 12</description>
                 <font>Reg30</font>
                 <height>45</height>
-                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <width>1100</width>
             </control>
         </control>
@@ -210,7 +210,7 @@
 				<top>330</top>
 				<height>460</height>
 				<width>1100</width>
-				<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+				<textcolor>ffffffff</textcolor>
 				<font>Reg30</font>
 				<pagecontrol>60</pagecontrol>
 				<autoscroll delay="5000" repeat="7500" time="5000">true</autoscroll>
@@ -225,9 +225,9 @@
 				<visible>Control.IsVisible(30)</visible>
 			</control>
 		</control>
-    
+
 		<!--Footer-->
-        <include condition="!Skin.HasSetting(EnableFooterBar)">Footer</include>
+        <include condition="!true">Footer</include>
 		<!--BINGIE Version-->
         <include>BingieLogo</include>
 	</controls>

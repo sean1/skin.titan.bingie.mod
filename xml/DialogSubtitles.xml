@@ -14,8 +14,8 @@
                 <width>1510</width>
                 <height>650</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				
+				<colordiffuse>cc0a0a0a</colordiffuse>
+
             </control>
 			<control type="image">
                 <!--Panel-->
@@ -25,8 +25,8 @@
                 <height>650</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
 				<bordersize>10</bordersize>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				
+				<colordiffuse>cc0a0a0a</colordiffuse>
+
             </control>
 
             <!--Top Label-->
@@ -38,7 +38,7 @@
                     <width>880</width>
                     <height>50</height>
                     <font>Reg45</font>
-                    <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+                    <textcolor>ffffffff</textcolor>
                     <align>Left</align>
                     <wrapmultiline>false</wrapmultiline>
                 </control>
@@ -49,7 +49,7 @@
                     <width>780</width>
                     <height>50</height>
                     <font>Reg25</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<align>Left</align>
                     <wrapmultiline>false</wrapmultiline>
 				</control>
@@ -79,7 +79,7 @@
                     <pagecontrol>121</pagecontrol>
                     <scrolltime>200</scrolltime>
                     <itemlayout width="1050" height="100">
-                        
+
                         <!--Language Flag -->
                         <control type="image">
 								<left>38</left>
@@ -89,9 +89,9 @@
                                 <texture background="true">flags/flags_color/language/$INFO[ListItem.Art(thumb)].png</texture>
                                 <aspectratio>keep</aspectratio>
                             </control>
-                        
+
 						<!-- Language Text -->
-							
+
 						<control type="textbox">
 							<left>0</left>
 							<top>40</top>
@@ -105,31 +105,21 @@
 							<label>$INFO[ListItem.Label]</label>
 							<autoscroll>false</autoscroll>
 						</control>
-						
+
                         <!--Rating-->
                         <control type="image">
                                 <posx>130</posx>
                                 <posy>12</posy>
                                 <width>100</width>
-                                <height>30</height>	
-								
+                                <height>30</height>
+
 								<!--new code-->
 
 								<texture background="true" colordiffuse="gold">$INFO[ListItem.ActualIcon,ratings/star_rating_simple/rating,.png]</texture>
 								<aspectratio>keep</aspectratio>
-							
-								<!--old code--->
-								
-                                <!--font>Light30</font>
-                                <aligny>center</aligny>
-								<textcolor>$INFO[Skin.String(ButtonFocusTextColor)]</textcolor>
-                                <selectedcolor>$INFO[Skin.String(ButtonFocusTextColor)]</selectedcolor>
-                                <align>left</align>
-                                <label>$INFO[ListItem.ActualIcon]</label-->
-								
-								
+
                         </control>
-                        
+
                         <control type="textbox">
                                 <!--Label 2-->
                                 <posx>255</posx>
@@ -138,8 +128,8 @@
                                 <height>64</height>
                                 <font>font12</font>
                                 <aligny>top</aligny>
-                                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-                                <selectedcolor>$INFO[Skin.String(ButtonFocusColor)]</selectedcolor>
+                                <textcolor>ffffffff</textcolor>
+                                <selectedcolor>cce0e0e0</selectedcolor>
                                 <align>left</align>
 								<label>$INFO[ListItem.Label2]</label>
 								<wrapmultiline>true</wrapmultiline>
@@ -155,7 +145,7 @@
 								<visible>ListItem.property(sync)</visible>
                                 <!--texture>flags/subsync.png</texture>
                                 <visible>ListItem.property(sync)</visible>
-                                <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse-->
+                                <colordiffuse>ffffffff</colordiffuse-->
 								<aspectratio>keep</aspectratio>
 							</control>
 							<!-- sync image - OFF -->
@@ -179,7 +169,7 @@
                                 <width>1048</width>
                                 <height>100</height>
                                 <texture border="10" colordiffuse="black">diffuse/panel.png</texture>
-                                <!--colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse-->
+                                <!--colordiffuse>cce0e0e0</colordiffuse-->
                             </control>
                             <!--Language Flag -->
                            <control type="image">
@@ -190,9 +180,9 @@
                                 <texture background="true">flags/flags_color/language/$INFO[ListItem.Art(thumb)].png</texture>
                                 <aspectratio>keep</aspectratio>
                             </control>
-                            
+
 							<!-- Language Text -->
-							
+
 						<control type="textbox">
 							<left>0</left>
 							<top>40</top>
@@ -205,27 +195,17 @@
 							<wrapmultiline>true</wrapmultiline>
 							<label>$INFO[ListItem.Label]</label>
 						</control>
-						
+
                             <!--Rating-->
                             <control type="image">
                                 <posx>130</posx>
                                 <posy>12</posy>
                                 <width>100</width>
-                                <height>30</height>	
-								<!--colordiffuse>$INFO[Skin.String(ViewDetailsHighlightTextColor)]</colordiffuse-->							
+                                <height>30</height>
+								<!--colordiffuse>ffcc0001</colordiffuse-->
 								<texture background="true" colordiffuse="gold">$INFO[ListItem.ActualIcon,ratings/star_rating_simple/rating,.png]</texture>
 								<aspectratio>keep</aspectratio>
-							
-								<!--old code--->
-								
-                                <!--font>Light30</font>
-                                <aligny>center</aligny>
-								<textcolor>$INFO[Skin.String(ButtonFocusTextColor)]</textcolor>
-                                <selectedcolor>$INFO[Skin.String(ButtonFocusTextColor)]</selectedcolor>
-                                <align>left</align>
-                                <label>$INFO[ListItem.ActualIcon]</label-->
-								
-								
+
                             </control>
                             <control type="label">
                                 <!--Label 2-->
@@ -235,13 +215,13 @@
                                 <height>80</height>
                                 <font>font12</font>
                                 <aligny>top</aligny>
-                                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-                                <selectedcolor>$INFO[Skin.String(ButtonFocusColor)]</selectedcolor>
+                                <textcolor>ffffffff</textcolor>
+                                <selectedcolor>cce0e0e0</selectedcolor>
                                 <align>left</align>
 								<label>$INFO[ListItem.Label2]</label>
 								<scroll>true</scroll>
                             </control>
-                            
+
 								<!-- sync image - ON -->
                             <control type="image">
                                 <posx>130</posx>
@@ -252,7 +232,7 @@
 								<visible>ListItem.property(sync)</visible>
                                 <!--texture>flags/subsync.png</texture>
                                 <visible>ListItem.property(sync)</visible>
-                                <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse-->
+                                <colordiffuse>ffffffff</colordiffuse-->
 								<aspectratio>keep</aspectratio>
 							</control>
 							<!-- sync image - OFF -->
@@ -277,9 +257,9 @@
                                 <texture background="true">flags/flags_color/language/$INFO[ListItem.Art(thumb)].png</texture>
                                 <aspectratio>keep</aspectratio>
                             </control>
-                            
+
 							<!-- Language Text -->
-							
+
 						<control type="textbox">
 							<left>0</left>
 							<top>40</top>
@@ -292,28 +272,18 @@
 							<wrapmultiline>true</wrapmultiline>
 							<label>$INFO[ListItem.Label]</label>
 						</control>
-							
-							
+
+
                             <!--Rating-->
                             <control type="image">
                                 <posx>130</posx>
                                 <posy>12</posy>
                                 <width>100</width>
-                                <height>30</height>		
-								<!--colordiffuse>$INFO[Skin.String(ViewDetailsHighlightTextColor)]</colordiffuse-->							
+                                <height>30</height>
+								<!--colordiffuse>ffcc0001</colordiffuse-->
 								<texture background="true" colordiffuse="gold">$INFO[ListItem.ActualIcon,ratings/star_rating_simple/rating,.png]</texture>
 								<aspectratio>keep</aspectratio>
-							
-								<!--old code--->
-								
-                                <!--font>Light30</font>
-                                <aligny>center</aligny>
-								<textcolor>$INFO[Skin.String(ButtonFocusTextColor)]</textcolor>
-                                <selectedcolor>$INFO[Skin.String(ButtonFocusTextColor)]</selectedcolor>
-                                <align>left</align>
-                                <label>$INFO[ListItem.ActualIcon]</label-->
-								
-							
+
                             </control>
                             <control type="textbox">
                                 <!--Label 2-->
@@ -323,8 +293,8 @@
                                 <height>64</height>
                                 <font>font12</font>
                                 <aligny>top</aligny>
-                                <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-                                <selectedcolor>$INFO[Skin.String(ButtonFocusColor)]</selectedcolor>
+                                <textcolor>ffffffff</textcolor>
+                                <selectedcolor>cce0e0e0</selectedcolor>
                                 <align>left</align>
 								<label>$INFO[ListItem.Label2]</label>
 								<wrapmultiline>true</wrapmultiline>
@@ -339,7 +309,7 @@
 								<visible>ListItem.property(sync)</visible>
                                 <!--texture>flags/subsync.png</texture>
                                 <visible>ListItem.property(sync)</visible>
-                                <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse-->
+                                <colordiffuse>ffffffff</colordiffuse-->
 								<aspectratio>keep</aspectratio>
 							</control>
 							<!-- sync image - OFF -->
@@ -355,17 +325,17 @@
                         </control>
                     </focusedlayout>
                 </control>
-                
+
                 <control type="scrollbar" id="121">
                     <posx>1333</posx>
                     <posy>240</posy>
                     <height>404</height>
                     <onleft>120</onleft>
 					<onright>150</onright>
-                    <animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(121) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)">Conditional</animation>
-                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(121) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
+                    <animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(121) | Container.Scrolling | false">Conditional</animation>
+                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(121) | Container.Scrolling | false]">Conditional</animation>
                 </control>
-                
+
 				<control type="label">
                     <!--filename-->
                     <posx>303</posx>
@@ -427,8 +397,8 @@
                             <height>60</height>
                             <font>Light28</font>
                             <aligny>center</aligny>
-                            <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-                            <selectedcolor>$INFO[Skin.String(GeneralTextColor)]</selectedcolor>
+                            <textcolor>ffffffff</textcolor>
+                            <selectedcolor>ffffffff</selectedcolor>
                             <align>left</align>
                             <info>ListItem.Label</info>
                             <visible>!ListItem.property(man)</visible>
@@ -440,8 +410,8 @@
                             <height>60</height>
                             <font>Light28</font>
                             <aligny>center</aligny>
-                            <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-                            <selectedcolor>$INFO[Skin.String(GeneralTextColor)]</selectedcolor>
+                            <textcolor>ffffffff</textcolor>
+                            <selectedcolor>ffffffff</selectedcolor>
                             <align>left</align>
                             <info>ListItem.Label</info>
                             <visible>ListItem.property(man)</visible>
@@ -462,7 +432,7 @@
                             <width>330</width>
                             <height>60</height>
                             <texture border="10">diffuse/panel.png</texture>
-							<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+							<colordiffuse>cce0e0e0</colordiffuse>
                             <visible>Control.HasFocus(150)</visible>
                         </control>
                         <control type="label">
@@ -473,8 +443,8 @@
                             <height>60</height>
                             <font>Light28</font>
                             <aligny>center</aligny>
-                            <textcolor>$INFO[Skin.String(ButtonFocusTextColor)]</textcolor>
-							<selectedcolor>$INFO[Skin.String(ButtonFocusTextColor)]</selectedcolor>
+                            <textcolor>ff000000</textcolor>
+							<selectedcolor>ff000000</selectedcolor>
                             <align>left</align>
                             <info>ListItem.Label</info>
                             <visible>!ListItem.property(man)</visible>
@@ -488,7 +458,7 @@
                             <height>60</height>
                             <font>Light28</font>
                             <aligny>center</aligny>
-                            <textcolor>$INFO[Skin.String(ButtonFocusTextColor)]</textcolor>
+                            <textcolor>ff000000</textcolor>
                             <align>left</align>
                             <info>ListItem.Label</info>
                             <visible>ListItem.property(man)</visible>
@@ -502,8 +472,8 @@
                             <height>60</height>
                             <font>Light28</font>
                             <aligny>center</aligny>
-                            <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-							<selectedcolor>$INFO[Skin.String(GeneralTextColor)]</selectedcolor>
+                            <textcolor>ffffffff</textcolor>
+							<selectedcolor>ffffffff</selectedcolor>
                             <align>left</align>
                             <info>ListItem.Label</info>
                             <visible>!ListItem.property(man)</visible>
@@ -517,8 +487,8 @@
                             <height>60</height>
                             <font>Light28</font>
                             <aligny>center</aligny>
-                            <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
-							<selectedcolor>$INFO[Skin.String(GeneralTextColor)]</selectedcolor>
+                            <textcolor>ffffffff</textcolor>
+							<selectedcolor>ffffffff</selectedcolor>
                             <align>left</align>
                             <info>ListItem.Label</info>
                             <visible>ListItem.property(man)</visible>
@@ -534,7 +504,7 @@
 						</control>
                     </focusedlayout>
                 </control>
-                
+
             </control>
         </control>
     </controls>

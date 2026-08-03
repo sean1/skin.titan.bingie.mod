@@ -5,11 +5,11 @@
     <zorder>1</zorder>
     <onload>Dialog.Close(videoosd,true)</onload>
     <onload>Dialog.Close(seekbar,true)</onload>
-    <animation type="WindowOpen" condition="Skin.HasSetting(NextUpNotificationSlim)">
+    <animation type="WindowOpen" condition="false">
         <effect type="slide" start="0,400" end="0,0" tween="cubic" easing="out" delay="0" time="450" reversible="false"/>
         <effect type="fade" start="0" end="100" delay="0" time="350" reversible="false"/>
     </animation>
-    <animation type="WindowClose" condition="Skin.HasSetting(NextUpNotificationSlim)">
+    <animation type="WindowClose" condition="false">
         <effect type="slide" start="0,0" end="0,400" tween="cubic" easing="out" delay="0" time="450" reversible="false"/>
         <effect type="fade" start="100" end="0" delay="0" time="350" reversible="false"/>
     </animation>
@@ -31,7 +31,7 @@
         <!-- OSD -->
         <!-- Buttons Notification -->
         <control type="group" id="500397">
-            <visible>Skin.HasSetting(NextUpNotificationSlim)</visible>
+            <visible>false</visible>
             <control type="grouplist">
                 <align>right</align>
                 <bottom>100</bottom>
@@ -46,10 +46,10 @@
                     <aligny>center</aligny>
                     <align>center</align>
                     <font>Reg30</font>
-                    <textcolor>$INFO[Skin.String(BingieButtonTextColor)]</textcolor>
-                    <focusedcolor>$INFO[Skin.String(BingieButtonFocusTextColor)]</focusedcolor>
+                    <textcolor>a6ffffff</textcolor>
+                    <focusedcolor>ffffffff</focusedcolor>
                     <label>31021</label>
-                    <texturefocus colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]" border="10">bingie/border/slimframefo.png</texturefocus>
+                    <texturefocus colordiffuse="ffffffff" border="10">bingie/border/slimframefo.png</texturefocus>
                     <texturenofocus/>
                     <onclick>SendClick(3013)</onclick>
                 </control>
@@ -61,15 +61,15 @@
                     <textoffsetx>80</textoffsetx>
                     <textwidth>335</textwidth>
                     <font>Reg30</font>
-                    <textcolor>$INFO[Skin.String(BingieButtonTextColor)]</textcolor>
-                    <focusedcolor>$INFO[Skin.String(BingieButtonFocusTextColor)]</focusedcolor>
+                    <textcolor>a6ffffff</textcolor>
+                    <focusedcolor>ffffffff</focusedcolor>
                     <label>$INFO[Player.TimeRemaining(ss),$LOCALIZE[31212] ,]</label>
-                    <texturefocus colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]" border="10">bingie/border/slimframefo.png</texturefocus>
+                    <texturefocus colordiffuse="ffffffff" border="10">bingie/border/slimframefo.png</texturefocus>
                     <texturenofocus/>
-                    <textureradioonfocus colordiffuse="$INFO[Skin.String(BingieButtonFocusTextColor)]">dialogs/upnext/play.png</textureradioonfocus>
-                    <textureradioofffocus colordiffuse="$INFO[Skin.String(BingieButtonFocusTextColor)]">dialogs/upnext/play.png</textureradioofffocus>
-                    <textureradioonnofocus colordiffuse="$INFO[Skin.String(BingieButtonTextColor)]">dialogs/upnext/play.png</textureradioonnofocus>
-                    <textureradiooffnofocus colordiffuse="$INFO[Skin.String(BingieButtonTextColor)]">dialogs/upnext/play.png</textureradiooffnofocus>
+                    <textureradioonfocus colordiffuse="ffffffff">dialogs/upnext/play.png</textureradioonfocus>
+                    <textureradioofffocus colordiffuse="ffffffff">dialogs/upnext/play.png</textureradioofffocus>
+                    <textureradioonnofocus colordiffuse="a6ffffff">dialogs/upnext/play.png</textureradioonnofocus>
+                    <textureradiooffnofocus colordiffuse="a6ffffff">dialogs/upnext/play.png</textureradiooffnofocus>
                     <radioposx>26</radioposx>
                     <radiowidth>34</radiowidth>
                     <radioheight>34</radioheight>
@@ -80,13 +80,13 @@
 
             <!-- Full Info Notification -->
             <control type="group">
-                <visible>!Skin.HasSetting(NextUpNotificationSlim)</visible>
+                <visible>!false</visible>
                 <!-- gradient overlay, cornered would be better -->
                 <control type="image">
                     <bottom>0</bottom>
                     <width>100%</width>
                     <height>100%</height>
-                    <texture colordiffuse="$INFO[Skin.String(GeneralPanelsColor)]">diffuse/panel2.png</texture>
+                    <texture colordiffuse="cc0a0a0a">diffuse/panel2.png</texture>
                 </control>
                 <!-- NextUp Info -->
                 <control type="grouplist">
@@ -100,7 +100,7 @@
                         <width>500</width>
                         <height>36</height>
                         <font>Bold36</font>
-                        <textcolor>$INFO[Skin.String(BingieOSDLabelTextColor)]</textcolor>
+                        <textcolor>ffffffff</textcolor>
                         <align>left</align>
                         <aligny>center</aligny>
                         <label>$INFO[Window.Property(tvshowtitle)]</label>
@@ -111,7 +111,7 @@
                         <height>38</height>
                         <font>Bold32</font>
                         <aligny>center</aligny>
-                        <textcolor>$INFO[Skin.String(BingieOSDSubLabelTextColor)]</textcolor>
+                        <textcolor>ffffffff</textcolor>
                         <label>[LIGHT]$INFO[Player.TimeRemaining(ss),$LOCALIZE[31850] , $LOCALIZE[31231,,...]][/LIGHT]</label>
                     </control>
                     <!-- Thumb/Fanart -->
@@ -123,7 +123,7 @@
                             <width>550</width>
                             <height>315</height>
                             <bordersize>4</bordersize>
-                            <bordertexture colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]">diffuse/panel2.png</bordertexture>
+                            <bordertexture colordiffuse="ffffffff">diffuse/panel2.png</bordertexture>
                             <texture background="true">$VAR[NextUpThumb]</texture>
                             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
                         </control>
@@ -140,7 +140,7 @@
                             <width>135</width>
                             <height>135</height>
                             <aspectratio>keep</aspectratio>
-                            <texture colordiffuse="$INFO[Skin.String(OSDProgressBarColor)]">$INFO[Player.TimeRemaining(ss),dialogs/nextup/,.png]</texture>
+                            <texture colordiffuse="ffe50914">$INFO[Player.TimeRemaining(ss),dialogs/nextup/,.png]</texture>
                             <visible>!Integer.IsGreater(Player.TimeRemaining(ss),30)</visible>
                         </control>
                         <!-- Sxx: Exx -->
@@ -149,7 +149,7 @@
                             <left>25</left>
                             <height>20</height>
                             <width>auto</width>
-                            <textcolor>$INFO[Skin.String(BingieProgressBarBackgroundColor)]</textcolor>
+                            <textcolor>ff929699</textcolor>
                             <font>Bold26</font>
                             <label>$INFO[Window.Property(season),S,: ]$INFO[Window.Property(episode),E,]</label>
                         </control>
@@ -160,7 +160,7 @@
                         <height>30</height>
                         <aligny>center</aligny>
                         <font>Bold28</font>
-                        <textcolor>$INFO[Skin.String(BingieOSDSubLabelTextColor)]</textcolor>
+                        <textcolor>ffffffff</textcolor>
                         <label>$INFO[Window.Property(title)]</label>
                         <visible>!String.IsEmpty(Window.Property(title))</visible>
                     </control>
@@ -178,7 +178,7 @@
                             <height>40</height>
                             <aligny>center</aligny>
                             <font>Reg24</font>
-                            <textcolor>$INFO[Skin.String(BingieOSDDeatailsTextColor)]</textcolor>
+                            <textcolor>a6ffffff</textcolor>
                             <label>$INFO[Window.Property(year)]</label>
                             <visible>!String.IsEmpty(Window.Property(year))</visible>
                         </control>
@@ -192,20 +192,20 @@
                                 <height>100%</height>
                                 <width>100%</width>
                                 <font>Reg24</font>
-                                <textcolor>$INFO[Skin.String(BingieOSDDeatailsTextColor)]</textcolor>
+                                <textcolor>a6ffffff</textcolor>
                                 <align>center</align>
                                 <aligny>center</aligny>
                                 <scroll>false</scroll>
                                 <label>$INFO[VideoPlayer.MPAA]</label>
                             </control>
-                        </control>                       
+                        </control>
                     </control>
                     <!-- Plot -->
                     <control type="textbox">
                         <width>auto</width>
                         <height max="110">auto</height>
                         <align>justify</align>
-                        <textcolor>$INFO[Skin.String(BingieOSDPlotTextColor)]</textcolor>
+                        <textcolor>b3ffffff</textcolor>
                         <label>$INFO[Window.Property(plot)]</label>
                     </control>
 					<control type="progress" id="3014">

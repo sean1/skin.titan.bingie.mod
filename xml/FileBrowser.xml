@@ -7,11 +7,11 @@
 		<left>0</left>
 		<top>0</top>
 	</coordinates>
-	
+
     <controls>
 
 		<include>DialogOverlayExtra</include>
-		
+
         <!--File Browser-->
         <control type="group">
             <include>animation_window_open_close</include>
@@ -24,7 +24,7 @@
                 <width>1030</width>
                 <height>730</height>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 			<control type="image">
                 <!--Panel-->
@@ -34,10 +34,10 @@
                 <height>730</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
 				<bordersize>10</bordersize>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 
-			
+
             <control type="image">
                 <posx>478</posx>
                 <posy>300</posy>
@@ -182,7 +182,7 @@
                             <width>580</width>
                             <height>60</height>
                             <texture border="10">diffuse/panel.png</texture>
-							<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+							<colordiffuse>cce0e0e0</colordiffuse>
                         </control>
                         <control type="image">
                             <posx>5</posx>
@@ -317,7 +317,7 @@
                             <width>580</width>
                             <height>60</height>
                             <texture border="10">diffuse/panel.png</texture>
-							<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+							<colordiffuse>cce0e0e0</colordiffuse>
                         </control>
                         <control type="image">
                             <posx>5</posx>
@@ -352,18 +352,18 @@
                     </control>
                 </focusedlayout>
             </control>
-     			<!--scrollbar-->
-			<control type="scrollbar" id="60"> 
+			<!--scrollbar-->
+			<control type="scrollbar" id="60">
 				<posx>1065</posx>
                 <posy>300</posy>
 				<height>480</height>
 				<onleft>450</onleft>
 				<onleft>451</onleft>
 				<showonepage>false</showonepage>
-				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)">Conditional</animation>
-				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
-			</control>	
-			
+				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling | false">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | false]">Conditional</animation>
+			</control>
+
 			<!--Buttons-->
             <control type="grouplist" id="8000">
                 <posx>472</posx>

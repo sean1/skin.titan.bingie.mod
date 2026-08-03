@@ -7,7 +7,6 @@
     <include>BingieViews_WindowOpen_Fade</include>
 	<onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
 	<onload condition="System.HasAlarm(StopPlayback)">CancelAlarm(StopPlayback,silent)</onload>
-	<onunload condition="$EXP[IsPlayingUnrecognizedContent] + Skin.HasSetting(BingieAutoTrailer)">AlarmClock(StopPlayback,PlayerControl(Stop),00:00,silent)</onunload>
     <controls>
 		<include>Defs_TMDbHelper_Loader</include>
         <!-- fake go-to-fullscreen button -->
@@ -19,9 +18,8 @@
         <!--NowPlaying-->
         <include>NowPlayingBackground</include>
         <!-- hidden submenu for count calculations -->
-        <include condition="!Skin.HasSetting(DisableAllSubmenus)">hiddenSubmenu</include>
+        <include>hiddenSubmenu</include>
         <include>PlaySomething_Widget_Base</include>
-        <include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>
 		<!-- Loading Spinner -->
         <include content="Busy_Spinner">
             <param name="centerleft" value="50%"/>

@@ -5,11 +5,11 @@
     <controls>
         <!--Dialog Overlay-->
         <include>DialogOverlayExtra</include>
-		
+
         <!--Dialog Tex Viewer-->
         <control type="group">
             <include>animation_window_open_close</include>
-			
+
 			<control type="image">
                 <!--Panel-->
                 <posx>445</posx>
@@ -17,8 +17,8 @@
                 <width>1030</width>
                 <height>771</height>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				
+				<colordiffuse>cc0a0a0a</colordiffuse>
+
             </control>
 			<control type="image">
                 <!--Panel-->
@@ -28,11 +28,11 @@
                 <height>771</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
 				<bordersize>10</bordersize>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				
+				<colordiffuse>cc0a0a0a</colordiffuse>
+
             </control>
-			
-			
+
+
 			 <control type="label">
                 <description>Heading</description>
                 <posx>473</posx>
@@ -42,7 +42,7 @@
                 <include>DialogHeader</include>
                 <align>center</align>
             </control>
-			
+
             <control type="image">
                 <posx>479</posx>
                 <posy>245</posy>
@@ -50,9 +50,9 @@
                 <height>561</height>
                 <texture border="5">dialogs/default/inner.png</texture>
             </control>
-			
-			
-			
+
+
+
             <control type="textbox" id="5">
                 <description>textarea</description>
                 <posx>495</posx>

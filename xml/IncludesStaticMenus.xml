@@ -1,0 +1,749 @@
+<includes>
+	<include name="StaticMainMenu">
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<label>$LOCALIZE[10000]</label>
+			<label2>Home</label2>
+			<icon>shortcuts/home.png</icon>
+			<thumb />
+			<property name="labelID">10000</property>
+			<property name="defaultID">10000</property>
+			<property name="widget">pov-in-progress-movies</property>
+			<property name="widgetTarget">videos</property>
+			<property name="widgetType">movies</property>
+			<property name="widgetPath">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=in_progress_movies</property>
+			<property name="widgetName">Continue Watching Movies</property>
+			<property name="widget.1">pov-in-progress-tv</property>
+			<property name="widgetTarget.1">videos</property>
+			<property name="widgetType.1">episodes</property>
+			<property name="widgetPath.1">plugin://plugin.video.pov/?mode=build_in_progress_episode</property>
+			<property name="widgetName.1">Continue Watching TV</property>
+			<property name="widget.2">pov-trending-movies</property>
+			<property name="widgetTarget.2">videos</property>
+			<property name="widgetType.2">movies</property>
+			<property name="widgetPath.2">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending</property>
+			<property name="widgetName.2">Trending Movies</property>
+			<property name="widget.3">pov-trending-tv</property>
+			<property name="widgetTarget.3">videos</property>
+			<property name="widgetType.3">tvshows</property>
+			<property name="widgetPath.3">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</property>
+			<property name="widgetName.3">Trending TV Shows</property>
+			<property name="widget.4">pov-popular-movies</property>
+			<property name="widgetTarget.4">videos</property>
+			<property name="widgetType.4">movies</property>
+			<property name="widgetPath.4">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular</property>
+			<property name="widgetName.4">Popular Movies</property>
+			<property name="widget.5">pov-popular-tv</property>
+			<property name="widgetTarget.5">videos</property>
+			<property name="widgetType.5">tvshows</property>
+			<property name="widgetPath.5">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
+			<property name="widgetName.5">Popular TV Shows</property>
+			<property name="widget.6">pov-my-list-movies</property>
+			<property name="widgetTarget.6">videos</property>
+			<property name="widgetType.6">movies</property>
+			<property name="widgetPath.6">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist</property>
+			<property name="widgetName.6">My List Movies</property>
+			<property name="widget.7">pov-my-list-tv</property>
+			<property name="widgetTarget.7">videos</property>
+			<property name="widgetType.7">tvshows</property>
+			<property name="widgetPath.7">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist</property>
+			<property name="widgetName.7">My List TV Shows</property>
+			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
+			<onclick>ActivateWindow(home,return)</onclick>
+			<property name="path">ActivateWindow(home,return)</property>
+			<property name="list">home</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
+			<property name="submenuVisibility">num-10000</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<label>$LOCALIZE[137]</label>
+			<label2>Search</label2>
+			<icon>shortcuts/search.png</icon>
+			<thumb />
+			<property name="labelID">137</property>
+			<property name="defaultID">137</property>
+			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.search,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.search,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=navigator.search</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
+			<property name="submenuVisibility">num-137</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<label>$LOCALIZE[320032]</label>
+			<label2>New &amp; Popular</label2>
+			<icon>shortcuts/new.png</icon>
+			<thumb />
+			<property name="labelID">320032</property>
+			<property name="defaultID">320032</property>
+			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
+			<onclick>ActivateWindow(1112,return)</onclick>
+			<property name="path">ActivateWindow(1112,return)</property>
+			<property name="list">1112</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
+			<property name="submenuVisibility">num-320032</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<label>$LOCALIZE[20343]</label>
+			<label2>TV shows</label2>
+			<icon>shortcuts/tv.png</icon>
+			<thumb />
+			<property name="labelID">tvshows</property>
+			<property name="defaultID">tvshows</property>
+			<property name="background">$INFO[Window(Home).Property(SkinHelper.AllTvShowsBackground)]</property>
+			<property name="backgroundName">$ADDON[script.skin.helper.service 32043]</property>
+			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
+			<onclick>ActivateWindow(1110,return)</onclick>
+			<property name="path">ActivateWindow(1110,return)</property>
+			<property name="list">1110</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
+			<property name="submenuVisibility">tvshows</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<label>$LOCALIZE[342]</label>
+			<label2>Movies</label2>
+			<icon>shortcuts/clapperboard.png</icon>
+			<thumb />
+			<property name="labelID">movies</property>
+			<property name="defaultID">movies</property>
+			<property name="background">$INFO[Window(Home).Property(SkinHelper.AllMoviesBackground)]</property>
+			<property name="backgroundName">$ADDON[script.skin.helper.service 32039]</property>
+			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
+			<onclick>ActivateWindow(1111,return)</onclick>
+			<property name="path">ActivateWindow(1111,return)</property>
+			<property name="list">1111</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
+			<property name="submenuVisibility">movies</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">True</property>
+		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<label>$LOCALIZE[31025]</label>
+			<label2>Categories</label2>
+			<icon>shortcuts/categories.png</icon>
+			<thumb />
+			<property name="labelID">31025</property>
+			<property name="defaultID">31025</property>
+			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
+			<onclick>ActivateWindow(1119,return)</onclick>
+			<property name="path">ActivateWindow(1119,return)</property>
+			<property name="list">1119</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
+			<property name="submenuVisibility">num-31025</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<label>$LOCALIZE[31534]</label>
+			<label2>My List</label2>
+			<icon>shortcuts/mylist.png</icon>
+			<thumb />
+			<property name="labelID">31534</property>
+			<property name="defaultID">31534</property>
+			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
+			<onclick>ActivateWindow(1114,return)</onclick>
+			<property name="path">ActivateWindow(1114,return)</property>
+			<property name="list">1114</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
+			<property name="submenuVisibility">num-31534</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
+	</include>
+	<include name="StaticSubmenu">
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">4</property>
+			<label>All TV Shows</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">all-tv-shows</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.main&amp;action=TVShowList,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.main&amp;action=TVShowList,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=navigator.main&amp;action=TVShowList</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">4</property>
+			<label>Trending TV Shows</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">trending-tv-shows</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">4</property>
+			<label>Popular TV Shows</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">popular-tv-shows</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">4</property>
+			<label>New TV Shows</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">new-tv-shows</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">4</property>
+			<label>TV Genres</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">tv-genres</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=tvshow,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=tvshow,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=tvshow</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<property name="mainmenuid">4</property>
+			<label>My List</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">my-list</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<property name="mainmenuid">4</property>
+			<label>Search</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">137</property>
+			<property name="defaultID">137</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=tv_show,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=tv_show,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=tv_show</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">5</property>
+			<label>All Movies</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">all-movies</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.main&amp;action=MovieList,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.main&amp;action=MovieList,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=navigator.main&amp;action=MovieList</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">5</property>
+			<label>Trending Movies</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">trending-movies</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">5</property>
+			<label>Popular Movies</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">popular-movies</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">5</property>
+			<label>New Releases</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">new-releases</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">5</property>
+			<label>Movie Genres</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">movie-genres</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=movie,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=navigator.genres&amp;menu_type=movie</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<property name="mainmenuid">5</property>
+			<label>My List</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">my-list</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<property name="mainmenuid">5</property>
+			<label>Search</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">137</property>
+			<property name="defaultID">137</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=movie,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=movie,return)</property>
+			<property name="list">plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=movie</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[5]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/settings1.png</icon>
+			<thumb />
+			<property name="labelID">5</property>
+			<property name="defaultID">5</property>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>ActivateWindow(Settings)</onclick>
+			<property name="path">ActivateWindow(Settings)</property>
+			<property name="list">Settings</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[320029]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/exit1.png</icon>
+			<thumb />
+			<property name="labelID">320029</property>
+			<property name="defaultID">13012</property>
+			<visible>[System.ShowExitButton] + String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>Quit()</onclick>
+			<property name="path">Quit()</property>
+			<property name="list">Quit()</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[320030]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/reboot1.png</icon>
+			<thumb />
+			<property name="labelID">320030</property>
+			<property name="defaultID">13013</property>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>Reboot</onclick>
+			<property name="path">Reboot</property>
+			<property name="list">Reboot</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[320031]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/shutdown1.png</icon>
+			<thumb />
+			<property name="labelID">320031</property>
+			<property name="defaultID">13016</property>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>ShutDown</onclick>
+			<property name="path">ShutDown</property>
+			<property name="list">ShutDown</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[20126]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/lock.png</icon>
+			<thumb />
+			<property name="labelID">20126</property>
+			<property name="defaultID">20126</property>
+			<visible>[[[System.HasLoginScreen | Integer.IsGreater(System.ProfileCount,1)] + System.Loggedon] + [System.HasLoginScreen]] + String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>System.LogOff</onclick>
+			<property name="path">System.LogOff</property>
+			<property name="list">System.LogOff</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+	</include>
+	<include name="StaticPowerMenu">
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[5]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/settings1.png</icon>
+			<thumb />
+			<property name="labelID">5</property>
+			<property name="defaultID">5</property>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>ActivateWindow(Settings)</onclick>
+			<property name="path">ActivateWindow(Settings)</property>
+			<property name="list">Settings</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[320029]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/exit1.png</icon>
+			<thumb />
+			<property name="labelID">320029</property>
+			<property name="defaultID">13012</property>
+			<visible>System.ShowExitButton</visible>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>Quit()</onclick>
+			<property name="path">Quit()</property>
+			<property name="list">Quit()</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[320030]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/reboot1.png</icon>
+			<thumb />
+			<property name="labelID">320030</property>
+			<property name="defaultID">13013</property>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>Reboot</onclick>
+			<property name="path">Reboot</property>
+			<property name="list">Reboot</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[320031]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/shutdown1.png</icon>
+			<thumb />
+			<property name="labelID">320031</property>
+			<property name="defaultID">13016</property>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>ShutDown</onclick>
+			<property name="path">ShutDown</property>
+			<property name="list">ShutDown</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[20126]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/lock.png</icon>
+			<thumb />
+			<property name="labelID">20126</property>
+			<property name="defaultID">20126</property>
+			<visible>[[System.HasLoginScreen | Integer.IsGreater(System.ProfileCount,1)] + System.Loggedon] + [System.HasLoginScreen]</visible>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>System.LogOff</onclick>
+			<property name="path">System.LogOff</property>
+			<property name="list">System.LogOff</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+	</include>
+	<include name="StaticHomeWidgets">
+		<include>StaticHomeWidgetRows</include>
+	</include>
+	<include name="StaticHomeWidgetRows">
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2510" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Continue Watching Movies" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2510" />
+			<param name="widgetName" value="Continue Watching Movies" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=in_progress_movies" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2520" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Continue Watching TV" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2520" />
+			<param name="widgetName" value="Continue Watching TV" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_in_progress_episode" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2530" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Trending Movies" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2530" />
+			<param name="widgetName" value="Trending Movies" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2540" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Trending TV Shows" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2540" />
+			<param name="widgetName" value="Trending TV Shows" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_trending" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2550" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Popular Movies" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2550" />
+			<param name="widgetName" value="Popular Movies" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2560" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Popular TV Shows" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2560" />
+			<param name="widgetName" value="Popular TV Shows" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2570" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="My List Movies" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2570" />
+			<param name="widgetName" value="My List Movies" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_watchlist" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2580" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="My List TV Shows" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2580" />
+			<param name="widgetName" value="My List TV Shows" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_watchlist" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="30" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+	</include>
+</includes>

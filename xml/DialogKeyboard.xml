@@ -3,8 +3,7 @@
 <window>
     <defaultcontrol always="true">300</defaultcontrol>
     <controls>
-        <include condition="Window.IsActive(1109) | Window.IsActive(1108) | Window.IsActive(1106)">BingieSearchMiniKeyboard</include>
-        <include condition="!Window.IsActive(1109) + !Window.IsActive(1108) + !Window.IsActive(1106)">DefaultKeyboard</include>
+        <include>DefaultKeyboard</include>
     </controls>
 
 </window>

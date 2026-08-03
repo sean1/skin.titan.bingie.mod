@@ -3,7 +3,7 @@
 <window>
     <defaultcontrol always="true">1</defaultcontrol>
     <controls>
-	
+
 	<control type="group">
 			<posx>-660</posx>
 			<posy>0</posy>
@@ -20,7 +20,7 @@
 			<width>590</width>
 			<height>100%</height>
 			<texture border="10">diffuse/panel.png</texture>
-			<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+			<colordiffuse>cc0a0a0a</colordiffuse>
 			<aspectratio>stretch</aspectratio>
 		</control>
         <control type="image">
@@ -29,7 +29,7 @@
 			<width>585</width>
 			<height>100%</height>
 			<texture border="10">diffuse/panel.png</texture>
-			<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+			<colordiffuse>cc0a0a0a</colordiffuse>
 			<aspectratio>stretch</aspectratio>
 		</control>
         <control type="image">
@@ -38,11 +38,11 @@
 			<width>585</width>
 			<height>100%</height>
 			<texture border="10">diffuse/panel.png</texture>
-			<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+			<colordiffuse>cc0a0a0a</colordiffuse>
 			<aspectratio>stretch</aspectratio>
 		</control>
-		
-		
+
+
 		<!-- header -->
         <control type="label">
             <posx>10</posx>
@@ -51,7 +51,7 @@
             <height>100</height>
             <font>Bold45</font>
             <align>center</align>
-            <textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+            <textcolor>ffffffff</textcolor>
             <label>$LOCALIZE[298] ($INFO[Container(11).NumItems])</label>
 			<visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog)</visible>
         </control>
@@ -63,7 +63,7 @@
 				<height>210</height>
 				<texture background="true">$INFO[Container(11).ListItem.Icon]</texture>
 				<aspectratio>scale</aspectratio>
-			</control>	
+			</control>
 			<control type="list" id="11">
                 <!--List ID=11-->
                 <width>545</width>
@@ -75,7 +75,7 @@
                 <onup>11</onup>
                 <ondown>1</ondown>
                 <scrolltime>100</scrolltime>
-				
+
 				<itemlayout width="545" height="65">
 					<control type="group">
 						<control type="button">
@@ -93,13 +93,13 @@
 							<label>$INFO[ListItem.Label]$INFO[ListItem.Label2, (,)]</label>
 							<font>Reg24</font>
 							<scroll>false</scroll>
-							<textcolor>$INFO[Skin.String(ButtonTextColor)]</textcolor>
-							<selectedcolor>$INFO[Skin.String(ButtonTextColor)]</selectedcolor>
+							<textcolor>ffffffff</textcolor>
+							<selectedcolor>ffffffff</selectedcolor>
 							<disabledcolor>midgrey</disabledcolor>
 						</control>
 					</control>
 				</itemlayout>
-				
+
 				<focusedlayout width="545" height="65">
 					<control type="group">
 						<control type="button">
@@ -115,7 +115,7 @@
 						<control type="image">
 							<width>545</width>
 							<height>60</height>
-							<texture diffuse="diffuse/panel.png" border="10" colordiffuse="$INFO[Skin.String(ButtonFocusColor)]">colors/color_white.png</texture>
+							<texture diffuse="diffuse/panel.png" border="10" colordiffuse="cce0e0e0">colors/color_white.png</texture>
 							<visible>Control.HasFocus(11)</visible>
 						</control>
 						<control type="label"> <!--label-->
@@ -124,8 +124,8 @@
 							<label>$INFO[ListItem.Label]$INFO[ListItem.Label2, (,)]</label>
 							<font>Reg24</font>
 							<scroll>true</scroll>
-							<textcolor>$INFO[Skin.String(ButtonFocusTextColor)]</textcolor>
-							<selectedcolor>$INFO[Skin.String(ButtonFocusTextColor)]</selectedcolor>
+							<textcolor>ff000000</textcolor>
+							<selectedcolor>ff000000</selectedcolor>
 							<visible>Control.HasFocus(11)</visible>
 						</control>
 						<control type="label"> <!--label-->
@@ -134,15 +134,15 @@
 							<label>$INFO[ListItem.Label]$INFO[ListItem.Label2, (,)]</label>
 							<font>Reg24</font>
 							<scroll>false</scroll>
-							<textcolor>$INFO[Skin.String(ButtonTextColor)]</textcolor>
-							<selectedcolor>$INFO[Skin.String(ButtonTextColor)]</selectedcolor>
+							<textcolor>ffffffff</textcolor>
+							<selectedcolor>ffffffff</selectedcolor>
 							<visible>!Control.HasFocus(11)</visible>
 						</control>
 					</control>
 				</focusedlayout>
 
 			</control>
-			
+
             <control type="grouplist" id="1">
                 <!--Buttons-->
                 <posx>20</posx>
@@ -184,9 +184,9 @@
 					<onclick>Dialog.Close(all,true)</onclick>
                 </control>
             </control>
-			
+
         </control>
-	
+
 
     </controls>
 </window>

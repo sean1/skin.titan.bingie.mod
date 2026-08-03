@@ -24,7 +24,7 @@
             <control type="image">
                 <width>1000</width>
                 <height>100%</height>
-                <texture background="true" colordiffuse="$INFO[Skin.String(SideBladePanelColor)]">diffuse/panel2.png</texture>
+                <texture background="true" colordiffuse="fa0a0a0a">diffuse/panel2.png</texture>
             </control>
 
             <control type="grouplist">
@@ -40,7 +40,7 @@
                     <description>Heading</description>
                     <width>100%</width>
                     <font>Bold42</font>
-                    <textcolor>$INFO[Skin.String(GeneralHighlightTextColor)]</textcolor>
+                    <textcolor>ffffffff</textcolor>
                     <align>left</align>
                     <height>100</height>
                     <label>20333</label>

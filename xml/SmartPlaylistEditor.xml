@@ -17,8 +17,8 @@
                 <width>1030</width>
                 <height>880</height>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 			<control type="image">
                 <!--Panel-->
@@ -28,10 +28,10 @@
                 <height>880</height>
 				<bordersize>10</bordersize>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-			
+
             <control type="label" id="2">
                 <description>Heading</description>
                 <posx>473</posx>
@@ -107,7 +107,7 @@
                         <width>74</width>
                         <height>60</height>
                         <texture>dialogs/mediasource/keyboard-nf.png</texture>
-                        <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+                        <colordiffuse>ffffffff</colordiffuse>
                         <visible>!Control.HasFocus(12)</visible>
                     </control>
                     <control type="image">
@@ -116,7 +116,7 @@
                         <width>74</width>
                         <height>60</height>
                         <texture>dialogs/mediasource/keyboard-nf.png</texture>
-                        <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                        <colordiffuse>ff000000</colordiffuse>
                         <visible>Control.HasFocus(12)</visible>
                     </control>
                 </control>
@@ -171,7 +171,7 @@
                                 <width>74</width>
                                 <height>60</height>
                                 <texture>dialogs/mediasource/rules-nf.png</texture>
-                                <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+                                <colordiffuse>ffffffff</colordiffuse>
                             </control>
                         </itemlayout>
                         <focusedlayout height="60">
@@ -197,7 +197,7 @@
                                     <width>74</width>
                                     <height>60</height>
                                     <texture>dialogs/mediasource/rules-nf.png</texture>
-                                    <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+                                    <colordiffuse>ffffffff</colordiffuse>
                                     <visible>!ListItem.IsSelected</visible>
                                 </control>
                             </control>
@@ -207,7 +207,7 @@
                                     <width>690</width>
                                     <height>60</height>
                                     <texture border="10">diffuse/panel.png</texture>
-									<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+									<colordiffuse>cce0e0e0</colordiffuse>
                                 </control>
                                 <control type="label">
                                     <posx>20</posx>
@@ -222,7 +222,7 @@
                                     <width>74</width>
                                     <height>60</height>
                                     <texture>dialogs/mediasource/rules-nf.png</texture>
-                                    <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                                    <colordiffuse>ff000000</colordiffuse>
                                     <visible>!ListItem.IsSelected</visible>
                                 </control>
                             </control>
@@ -232,7 +232,7 @@
                                 <width>40</width>
                                 <height>40</height>
                                 <texture>common/checkbox.png</texture>
-								<colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+								<colordiffuse>ffffffff</colordiffuse>
                                 <visible>ListItem.IsSelected</visible>
                             </control>
                         </focusedlayout>

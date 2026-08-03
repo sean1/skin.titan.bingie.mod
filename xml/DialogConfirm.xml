@@ -9,9 +9,9 @@
 		<visible>!Window.IsActive(DialogNumeric.xml)</visible>
 		<!--Dialog Overlay-->
 		<include>DialogOverlayExtra</include>
-		
+
 		<control type="group">
-			
+
 			<posx>400</posx>
 			<posy>410</posy>
 			<include>animation_window_open_close</include>
@@ -21,32 +21,32 @@
 				<width>2000</width>
 				<height>410</height>
 				<texture>diffuse/panel2.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
 			</control>
-			
+
 			<control type="image">
 				<posx>-460</posx>
 				<posy>-40</posy>
 				<width>2000</width>
 				<height>410</height>
 				<texture>diffuse/panel2.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
 			</control>
-			
+
 			<control type="multiimage">
 				<description>Busy animation</description>
 				<posx>0</posx>
 				<posy>10</posy>
 				<width>180</width>
 				<height>180</height>
-				<colordiffuse>$INFO[Skin.String(SpinnerTexture.Color)]</colordiffuse>
+				<colordiffuse>ffe50914</colordiffuse>
 				<imagepath>dialogs/extendedprogress/watched_percentage/</imagepath>
 				<aspectratio>keep</aspectratio>
 				<timeperimage>250</timeperimage>
 			</control>
-			
+
 			<control type="label">
 				<posx>-9</posx>
 				<posy>-8</posy>
@@ -55,14 +55,14 @@
 				<align>center</align>
 				<aligny>center</aligny>
 				<font>Reg36</font>
-				<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+				<textcolor>ffffffff</textcolor>
 				<label>$INFO[System.Progressbar,,%]</label>
 			</control>
 
 			<control type="group">
 			<posx>250</posx>
 			<width>880</width>
-		
+
 			<control type="label" id="1">
 				<posx>15</posx>
 				<description>Heading</description>
@@ -80,8 +80,8 @@
 				<label/>
 				<font>Reg30</font>
 			</control>
-			
-		
+
+
 			<control type="grouplist">
                 <posx>8</posx>
                 <posy>220</posy>
@@ -116,10 +116,10 @@
                     <include>DialogButtonOther</include>
                 </control>
             </control>
-			
+
 
 		</control>
-		</control>	
+		</control>
 	</control>
 	</controls>
 

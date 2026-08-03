@@ -11,7 +11,7 @@
             <width>100%</width>
             <height>380</height>
 			<control type="image">
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
 				<texture border="10">diffuse/panel.png</texture>
 			</control>
 			<control type="group">
@@ -24,11 +24,11 @@
 					<top>10</top>
 					<width>565</width>
 					<height>25</height>
-					<label>$LOCALIZE[31781]</label> 
+					<label>$LOCALIZE[31781]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Bold26</font>
-					<textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 				</control>
 				<control type="label">
 					<description>Hardware decoding</description>
@@ -36,7 +36,7 @@
 					<top>40</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[31782]: </label> 
+					<label>$LOCALIZE[31782]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -47,11 +47,11 @@
 					<top>40</top>
 					<width>490</width>
 					<height>25</height>
-					<label>$LOCALIZE[19074]</label> 
+					<label>$LOCALIZE[19074]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 					<visible>Player.Process(videohwdecoder)</visible>
 				</control>
@@ -61,11 +61,11 @@
 					<top>40</top>
 					<width>490</width>
 					<height>25</height>
-					<label>$LOCALIZE[31783]</label> 
+					<label>$LOCALIZE[31783]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 					<visible>!Player.Process(videohwdecoder)</visible>
 				</control>
@@ -75,7 +75,7 @@
 					<top>65</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[31784]: </label> 
+					<label>$LOCALIZE[31784]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -86,11 +86,11 @@
 					<top>65</top>
 					<width>490</width>
 					<height>25</height>
-					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(videodecoder)]$INFO[Player.Process(pixformat), • ]$VAR[VideoHWDecoder, (,)]</label> 
+					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(videodecoder)]$INFO[Player.Process(pixformat), • ]$VAR[VideoHWDecoder, (,)]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 				</control>
 				<control type="label">
@@ -99,7 +99,7 @@
 					<top>90</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[16020]: </label> 
+					<label>$LOCALIZE[16020]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -110,11 +110,11 @@
 					<top>90</top>
 					<width>490</width>
 					<height>25</height>
-					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(deintmethod)]</label> 
+					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(deintmethod)]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 				</control>
 				<control type="label">
@@ -123,7 +123,7 @@
 					<top>115</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[21805]: </label> 
+					<label>$LOCALIZE[21805]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -134,11 +134,11 @@
 					<top>115</top>
 					<width>490</width>
 					<height>25</height>
-					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(videowidth),,x]$INFO[Player.Process(videoheight),, px]$INFO[Player.Process(videodar), • , AR]$INFO[Player.Process(videofps), • , FPS]</label> 
+					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(videowidth),,x]$INFO[Player.Process(videoheight),, px]$INFO[Player.Process(videodar), • , AR]$INFO[Player.Process(videofps), • , FPS]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 				</control>
 				<control type="label">
@@ -147,11 +147,11 @@
 					<top>145</top>
 					<width>565</width>
 					<height>25</height>
-					<label>$LOCALIZE[31785]</label> 
+					<label>$LOCALIZE[31785]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Bold26</font>
-					<textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 				</control>
 				<control type="label">
 					<description>Decoder</description>
@@ -159,7 +159,7 @@
 					<top>175</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[31784]: </label> 
+					<label>$LOCALIZE[31784]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -170,11 +170,11 @@
 					<top>175</top>
 					<width>490</width>
 					<height>25</height>
-					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(audiodecoder)]$INFO[Player.Process(audiobitspersample), • , bit]$INFO[Player.Process(audiosamplerate), • , Hz]</label> 
+					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(audiodecoder)]$INFO[Player.Process(audiobitspersample), • , bit]$INFO[Player.Process(audiosamplerate), • , Hz]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 				</control>
 				<control type="label">
@@ -183,7 +183,7 @@
 					<top>200</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[14301]: </label> 
+					<label>$LOCALIZE[14301]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -194,11 +194,11 @@
 					<top>200</top>
 					<width>490</width>
 					<height>25</height>
-					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(audiochannels)]</label> 
+					<label fallback="$LOCALIZE[13205]">$INFO[Player.Process(audiochannels)]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 				</control>
 				<control type="label">
@@ -207,11 +207,11 @@
 					<top>230</top>
 					<width>565</width>
 					<height>25</height>
-					<label>$LOCALIZE[138]</label> 
+					<label>$LOCALIZE[138]</label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Bold26</font>
-					<textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 				</control>
 				<control type="label">
 					<description>CPU</description>
@@ -219,7 +219,7 @@
 					<top>260</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[13271] </label> 
+					<label>$LOCALIZE[13271] </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -242,7 +242,7 @@
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<scroll>yes</scroll>
 				</control>
 				<control type="label">
@@ -251,7 +251,7 @@
 					<top>285</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[31257]: </label> 
+					<label>$LOCALIZE[31257]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -274,7 +274,7 @@
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 				</control>
 				<control type="label">
 					<description>CacheLevel</description>
@@ -282,7 +282,7 @@
 					<top>310</top>
 					<width>250</width>
 					<height>25</height>
-					<label>$LOCALIZE[14200] $LOCALIZE[439]: </label> 
+					<label>$LOCALIZE[14200] $LOCALIZE[439]: </label>
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
@@ -305,7 +305,7 @@
 					<align>left</align>
 					<aligny>center</aligny>
 					<font>Reg26</font>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 				</control>
 			</control>
 			<control type="grouplist" id="5550">
@@ -323,7 +323,7 @@
 					<width>auto</width>
 					<height>100</height>
 					<textoffsetx>40</textoffsetx>
-					<label>$LOCALIZE[31786]</label> 
+					<label>$LOCALIZE[31786]</label>
 				</control>
 			</control>
 		</control>

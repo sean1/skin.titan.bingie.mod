@@ -2,26 +2,25 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">5000</defaultcontrol>
-	
+
 	<onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
-    <include>allViewIds</include>
+	    <include>genericViewIds</include>
     <controls>
         <!-- Video Background -->
         <include>GlobalBackground</include>
 		<!--Header-->
         <include>Header</include>
- 
+
 		<!--NowPlaying-->
 		<include>NowPlayingModern</include>
- 
+
 		<!-- all Views -->
         <include>allViews</include>
-	
+
         <!--Sub Menu-->
         <control type="group">
 			<visible>Integer.IsGreater(Container.NumItems,0)</visible>
-            <include condition="Skin.HasSetting(smallContextMenu)">SideBladeClassic</include>
-			<include condition="!Skin.HasSetting(smallContextMenu)">SideBladeModern</include>
+	            <include>SideBladeModern</include>
             <!--Grouplist 9000-->
             <control type="grouplist" id="9000">
                 <posx>21</posx>
@@ -47,7 +46,7 @@
 				<control type="togglebutton" id="4">
 					<description>Sort asc</description>
 					<include>SideBladeMenuButton</include>
-					<alttexturefocus border="10" colordiffuse="$INFO[Skin.String(ButtonFocusColor)]">diffuse/panel.png</alttexturefocus>
+					<alttexturefocus border="10" colordiffuse="cce0e0e0">diffuse/panel.png</alttexturefocus>
 					<alttexturenofocus/>
 					<label>585</label>
 					<altlabel>584</altlabel>
@@ -72,11 +71,10 @@
 					<onclick>right</onclick>
 					<onclick>Filter</onclick>
 				</control>
-				
+
 				<include>SideBladeViewCommands</include>
 
             </control>
         </control>
-		<include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>
     </controls>
 </window>

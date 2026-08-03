@@ -2,21 +2,20 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">5000</defaultcontrol>
-	<include>allViewIds</include>
+		<include>genericViewIds</include>
 	<onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
-	<include>DefaultSkinSettings</include>
     <controls>
         <!-- Video Background -->
         <include>GlobalBackground</include>
 		<!--Header-->
         <include>Header</include>
- 
+
 		<!-- all Views -->
         <include>allViews</include>
-		
+
 		<!--NowPlaying-->
 		<include>NowPlayingModern</include>
-		
+
         <!--Hidden Button-->
         <control type="radiobutton" id="19">
             <description>Filter (hidden)</description>
@@ -25,8 +24,7 @@
 
         <!--Sub Menu-->
         <control type="group">
-            <include condition="Skin.HasSetting(smallContextMenu)">SideBladeClassic</include>
-			<include condition="!Skin.HasSetting(smallContextMenu)">SideBladeModern</include>
+	            <include>SideBladeModern</include>
             <!--Grouplist 9000-->
             <control type="grouplist" id="9000">
                 <posx>21</posx>
@@ -43,7 +41,7 @@
                 <onup>9000</onup>
                 <ondown>9000</ondown>
                 <orientation>vertical</orientation>
-				
+
                 <control type="button" id="3">
                     <!--Sort-->
 					<label>103</label>
@@ -78,6 +76,5 @@
 				<include>SideBladeViewCommands</include>
             </control>
         </control>
-        <include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>
     </controls>
 </window>

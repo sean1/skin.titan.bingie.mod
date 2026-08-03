@@ -2,7 +2,6 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">1000</defaultcontrol>
-    <onload condition="Skin.HasSetting(BingieAutoTrailer) + System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
 	 <coordinates>
 		<system>1</system>
 		<left>0</left>
@@ -11,19 +10,19 @@
     <!--Normal "1" over DialogVideoInfo.xml-->
     <controls>
 		<include>DialogOverlayExtra</include>
-		
+
         <!--Dialog Select-->
         <control type="group" id="1000">
             <include>animation_window_open_close</include>
             <visible>!Window.IsVisible(yesnodialog) + !Window.IsVisible(virtualkeyboard) + !Window.IsVisible(numericinput) + ![Window.IsVisible(script-LibraryEditor-genre.xml) + String.IsEmpty(Window.Property(ShowDialog))] + !Window.IsVisible(script-LibraryEditor-dialogs.xml)</visible>
-     			<!-- background panel -->
+			<!-- background panel -->
 			<control type="image">
 				<posx>367</posx>
 				<posy>236</posy>
 				<width>1190</width>
 				<height>690</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
 			</control>
 			<control type="image">
 				<posx>367</posx>
@@ -32,10 +31,10 @@
 				<height>690</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
 				<bordersize>10</bordersize>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				
+				<colordiffuse>cc0a0a0a</colordiffuse>
+
 			</control>
-			
+
 			<!--Header-->
 			<control type="label" id="1">
 				<description>Heading</description>
@@ -48,7 +47,7 @@
 				<align>center</align>
 				<scroll>true</scroll>
 			</control>
-			
+
             <control type="group">
                 <!--Container 3 Small-->
                 <visible>Control.IsVisible(3)</visible>
@@ -107,7 +106,7 @@
                     <height>140</height>
                     <font>Reg22</font>
 					<label>$INFO[Container(6).ListItem.Label2,, ][CR]$INFO[Container(6).ListItem.AddonVersion,$LOCALIZE[24051] ]</label>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<shadowcolor>black</shadowcolor>
 					<align>left</align>
 					<aligny>top</aligny>
@@ -120,7 +119,7 @@
                     <height>140</height>
                     <font>Reg22</font>
 					<label>$INFO[Container(6).ListItem.AddonSummary,, ][CR]$INFO[Container(6).ListItem.AddonVersion,$LOCALIZE[24051] ]</label>
-					<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+					<textcolor>ffffffff</textcolor>
 					<shadowcolor>black</shadowcolor>
 					<align>left</align>
 					<aligny>top</aligny>
@@ -166,7 +165,7 @@
                         <width>40</width>
                         <height>40</height>
                         <texture>common/checkbox.png</texture>
-                        <colordiffuse>$INFO[Skin.String(ButtonTextColor)]</colordiffuse>
+                        <colordiffuse>ffffffff</colordiffuse>
                         <visible>ListItem.IsSelected</visible>
                     </control>
                 </itemlayout>
@@ -177,7 +176,7 @@
                             <width>1078</width>
                             <height>60</height>
                             <texture border="10">diffuse/panel.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+                            <colordiffuse>cce0e0e0</colordiffuse>
                         </control>
                         <control type="label">
                             <posx>30</posx>
@@ -197,20 +196,20 @@
                             <width>40</width>
                             <height>40</height>
                             <texture>common/checkbox.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                            <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
                     </control>
                 </focusedlayout>
 				<focusedlayout height="60" width="1100" condition="!Control.HasFocus(3)">
-                    <control type="group">                       
+                    <control type="group">
                         <control type="image">
 							<animation effect="fade" start="100" end="50" condition="!Control.HasFocus(3)">Conditional</animation>
 							<posx>11</posx>
                             <width>1078</width>
                             <height>60</height>
                             <texture border="10">diffuse/panel.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+                            <colordiffuse>cce0e0e0</colordiffuse>
                         </control>
                         <control type="label">
                             <posx>30</posx>
@@ -230,12 +229,12 @@
                             <width>40</width>
                             <height>40</height>
                             <texture>common/checkbox.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                            <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
                     </control>
                 </focusedlayout>
-				
+
 			</control>
 			<control type="scrollbar" id="60">
 				<visible>Control.IsVisible(3)</visible>
@@ -245,11 +244,11 @@
 				<onup>60</onup>
 				<ondown>60</ondown>
 				<onleft>3</onleft>
-				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)">Conditional</animation>
-				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
+				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling | false">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | false]">Conditional</animation>
 			</control>
 
-			
+
             <control type="list" id="6">
                 <!--Container 6 Big-->
                 <posx>423</posx>
@@ -321,17 +320,17 @@
                         <width>40</width>
                         <height>40</height>
                         <texture>common/checkbox.png</texture>
-                        <colordiffuse>$INFO[Skin.String(ButtonTextColor)]</colordiffuse>
+                        <colordiffuse>ffffffff</colordiffuse>
                         <visible>ListItem.IsSelected</visible>
                     </control>
                 </itemlayout>
                 <focusedlayout height="120" width="610" condition="Control.HasFocus(6)">
-                    <control type="group">                      
+                    <control type="group">
                         <control type="image">
                             <width>610</width>
                             <height>120</height>
                             <texture border="10">diffuse/panel.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+                            <colordiffuse>cce0e0e0</colordiffuse>
                         </control>
                             <control type="image">
                             <posx>10</posx>
@@ -384,7 +383,7 @@
                             <width>40</width>
                             <height>40</height>
                             <texture>common/checkbox.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                            <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
                     </control>
@@ -396,7 +395,7 @@
                             <width>610</width>
                             <height>120</height>
                             <texture border="10">diffuse/panel.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+                            <colordiffuse>cce0e0e0</colordiffuse>
                         </control>
                             <control type="image">
                             <posx>10</posx>
@@ -449,7 +448,7 @@
                             <width>40</width>
                             <height>40</height>
                             <texture>common/checkbox.png</texture>
-                            <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                            <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
                     </control>
@@ -463,10 +462,10 @@
 				<onleft>6</onleft>
                 <onup>661</onup>
                 <ondown>661</ondown>
-				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(1661) | Container.Scrolling  | String.IsEqual(Skin.String(scrollbar_visibility),always_show)">Conditional</animation>
-				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(1661) | Container.Scrolling  | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
+				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(1661) | Container.Scrolling  | false">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(1661) | Container.Scrolling  | false]">Conditional</animation>
 			</control>
-            
+
             <!--description -->
 			<control type="label">
                 <posx>423</posx>
@@ -480,7 +479,7 @@
                 <scroll>true</scroll>
                 <font>Reg22</font>
             </control>
-            
+
 			<!--Buttons-->
             <control type="grouplist" id="8000">
 				<posx>414</posx>

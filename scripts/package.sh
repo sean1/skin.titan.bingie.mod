@@ -34,8 +34,19 @@ tar -C "$project_dir" \
 	--exclude='./.git' \
 	--exclude='./.agents' \
 	--exclude='./.codex' \
+	--exclude='./.gitignore' \
+	--exclude='./.idea' \
 	--exclude='./build' \
 	--exclude='./dist' \
+	--exclude='./scripts' \
+	--exclude='./shortcuts' \
+	--exclude='./playlists' \
+	--exclude='./extras/categories' \
+	--exclude='./extras/media/pumpkin' \
+	--exclude='./extras/media/snow' \
+	--exclude='./extras/skinthemes' \
+	--exclude='./extras/viewthumbs' \
+	--exclude='./extras/widgetplaylists' \
 	-cf - . | tar -C "$temporary_dir/$addon_id" -xf -
 
 (

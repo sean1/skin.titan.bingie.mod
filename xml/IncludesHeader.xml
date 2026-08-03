@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
 <includes>
-    
+
     <include name="Header">
-        <include condition="!Skin.HasSetting(CompactHeader) + Skin.String(home_header,disable) | !Skin.HasSetting(CompactHeader) + !Skin.String(home_header,disable)">Header_Normal</include>
-        <include condition="Skin.HasSetting(CompactHeader) + Skin.String(home_header,disable) | Skin.HasSetting(CompactHeader) + !Skin.String(home_header,disable)">Header_Compact</include>
+        <include condition="!false + false | !false + !false">Header_Normal</include>
+        <include condition="false + false | false + !false">Header_Compact</include>
     </include>
-    
+
     <include name="Header_Normal">
         <!-- Header Normal -->
         <control type="group">
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(77551) + !Control.IsVisible(88888) + !Control.IsVisible(88883)</visible>
-            <visible>![[String.Contains(Skin.String(HomeLayout), 2) | String.Contains(Skin.String(HomeLayout), 1)] + !String.IsEmpty(Window(Home).Property(ShowWidget))]</visible>
             <visible>!Control.IsVisible(525) | !Control.IsVisible(527)</visible>
             <!-- header panel -->
             <control type="image">
@@ -20,56 +19,56 @@
 				<width>100%</width>
 				<height>145</height>
 				<texture border="5">diffuse/panel2.png</texture>
-				<colordiffuse>$INFO[Skin.String(HeaderPanelColor)]</colordiffuse>
+				<colordiffuse>None</colordiffuse>
                 <include>animation_fade_visible</include>
-                <visible>![[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + String.IsEqual(Skin.String(HomeLayout),bingie)]</visible>
+                <visible>![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]]</visible>
 			</control>
-            
+
             <!-- Header Logo left -->
             <control type="group">
-                <include condition="[!Window.IsActive(Home) + String.Contains(Skin.String(general_header),logo)] | [Window.IsActive(Home) + String.Contains(Skin.String(home_header),logo)]">HeaderLogo</include>
+                <include condition="[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]">HeaderLogo</include>
                 <include>animation_fade_visible</include>
                 <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882) | !String.IsEmpty(Control.GetLabel(29476))]</visible>
             </control>
-            
+
             <!-- Time right -->
             <control type="group">
-                <include condition="[![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + String.Contains(Skin.String(general_header),time)] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + String.Contains(Skin.String(home_header),time)]">TimeInfo</include>
+                <include condition="[![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false]">TimeInfo</include>
                 <include>animation_fade_visible</include>
                 <visible>![Window.IsActive(volumebar) | Control.IsVisible(881)]</visible>
             </control>
-            
+
             <!-- Title left -->
             <control type="group">
-                <include condition="[!Window.IsActive(Home) + String.Contains(Skin.String(general_header),title)] | [Window.IsActive(Home) + String.Contains(Skin.String(home_header),title)]">HeaderTitle</include>
+                <include condition="[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]">HeaderTitle</include>
                 <include>animation_fade_visible</include>
                 <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882) | !String.IsEmpty(Control.GetLabel(29476))]</visible>
             </control>
-            
+
             <!-- Profile right -->
             <control type="group">
                 <right>60</right>
-                <include condition="Window.IsActive(Home) + String.Contains(Skin.String(home_header),-profile)">ProfileInfo</include>
+                <include condition="Window.IsActive(Home) + false">ProfileInfo</include>
                 <include>animation_fade_visible</include>
                 <visible>![Window.IsActive(volumebar)]</visible>
             </control>
-            
+
             <!-- Profile left -->
             <control type="group">
                 <left>60</left>
                 <include>ProfileInfo</include>
                 <include>animation_fade_visible</include>
                 <visible>![Window.IsActive(volumebar) | !String.IsEmpty(Control.GetLabel(29476))]</visible>
-                <visible>Window.IsActive(Home) + String.Contains(Skin.String(home_header),profile-)</visible>
+                <visible>Window.IsActive(Home) + false</visible>
             </control>
-            
+
         </control>
-        
+
     </include>
     <include name="Header_Compact">
         <!-- Header Compact -->
         <control type="group">
-            <visible>Skin.HasSetting(CompactHeader)</visible>
+            <visible>false</visible>
             <include>animation_fade_visible</include>
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(77551) + !Control.IsVisible(88888) + !Control.IsVisible(88883)</visible>
             <visible>!Control.IsVisible(525) | !Control.IsVisible(527)</visible>
@@ -80,38 +79,38 @@
 				<width>100%</width>
 				<height>112</height>
 				<texture border="5">diffuse/panel2.png</texture>
-				<colordiffuse>$INFO[Skin.String(HeaderPanelColor)]</colordiffuse>
-                <visible>Skin.String(HeaderPanelColor) + !Skin.String(HeaderPanelColor,none)</visible>
-                <visible>![[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + String.IsEqual(Skin.String(HomeLayout),bingie)]</visible>
+				<colordiffuse>None</colordiffuse>
+                <visible>true + !true</visible>
+                <visible>![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]]</visible>
 			</control>
-            
+
             <!-- Header Logo left -->
             <control type="group">
-                <include condition="Skin.HasSetting(CompactHeader)">HeaderLogo</include>
+                <include condition="false">HeaderLogo</include>
                 <include>animation_fade_visible</include>
                 <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882)]</visible>
-                <visible>[!Window.IsActive(Home) + String.Contains(Skin.String(general_header),logo)] | [Window.IsActive(Home) + String.Contains(Skin.String(home_header),logo)]</visible>
+                <visible>[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]</visible>
             </control>
-            
+
             <!-- Time right -->
             <control type="group">
                 <include>TimeInfoCompact</include>
                 <include>animation_fade_visible</include>
                 <visible>![Window.IsActive(volumebar) | Control.IsVisible(881)]</visible>
-                <visible>[![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + String.Contains(Skin.String(general_header),time)] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + String.Contains(Skin.String(home_header),time)]</visible>
+                <visible>[![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false]</visible>
             </control>
-            
+
             <!-- Profile right -->
             <control type="group">
                 <include>ProfileInfoCompact</include>
                 <include>animation_fade_visible</include>
                 <visible>![Window.IsActive(volumebar)]</visible>
-                <visible>Window.IsActive(Home) + String.Contains(Skin.String(home_header),-profile)</visible>
+                <visible>Window.IsActive(Home) + false</visible>
             </control>
-            
+
             <control type="grouplist" id="5555">
                 <include>animation_fade_visible</include>
-                <include condition="String.IsEqual(Skin.String(HomeLayout),bingie)">BingieNoCircularWidgetHeaderAnim</include>
+                <include>BingieNoCircularWidgetHeaderAnim</include>
                 <orientation>horizontal</orientation>
                 <itemgap>25</itemgap>
                 <posx>-10</posx>
@@ -122,15 +121,15 @@
                 <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882)]</visible>
                 <!-- Title left -->
                 <control type="group" id="99226">
-                    <visible>[!Window.IsActive(Home) + String.Contains(Skin.String(general_header),title)] | [Window.IsActive(Home) + String.Contains(Skin.String(home_header),title)]</visible>
+                    <visible>[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]</visible>
                     <control type="label">
                         <top>-13</top>
                         <align>left</align>
                         <width>800</width>
                         <label>$VAR[value_header]</label>
                         <font>Bold30</font>
-                        <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-                        <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                        <textcolor>ffffffff</textcolor>
+                        <shadowcolor>None</shadowcolor>
                     </control>
                     <control type="label">
                         <top>17</top>
@@ -138,18 +137,18 @@
                         <width>800</width>
                         <label>$VAR[value_subheader]</label>
                         <font>Reg26</font>
-                        <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-                        <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                        <textcolor>ffffffff</textcolor>
+                        <shadowcolor>None</shadowcolor>
                     </control>
                 </control>
             </control>
-            
+
         </control>
 
     </include>
-	
+
     <include name="HeaderTitle">
-	
+
         <control type="group">
             <control type="label">
                 <posx>60</posx>
@@ -158,9 +157,9 @@
                 <height>100</height>
                 <font>Bold45</font>
                 <align>left</align>
-                <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
                 <label>$VAR[value_header]</label>
-                <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                <shadowcolor>None</shadowcolor>
             </control>
              <control type="label">
                 <posy>75</posy>
@@ -169,13 +168,13 @@
                 <height>50</height>
                 <label>$VAR[value_subheader]</label>
                 <font>Reg28</font>
-                <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                <textcolor>ffffffff</textcolor>
+                <shadowcolor>None</shadowcolor>
             </control>
         </control>
 
     </include>
-        
+
 	<include name="ClearLogo">
 		<!--clearlogo top right-->
 		<control type="image" id="881">
@@ -186,13 +185,13 @@
 			<fadetime>600</fadetime>
 			<aspectratio align="right" aligny="center">keep</aspectratio>
 			<texture background="true">$VAR[ListItemClearLogo]</texture>
-			<visible>!String.IsEmpty(Control.GetLabel(881)) + Skin.String(ClearLogoLocation, topright)</visible>
+			<visible>!String.IsEmpty(Control.GetLabel(881)) + false</visible>
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(88888)</visible>
 			<animation type="Conditional" condition="Window.IsActive(volumebar)">
                 <effect type="slide" start="0,0" end="-120,0" time="400" tween="cubic" easing="inout" delay="0" />
             </animation>
 		</control>
-		
+
 		<!--clearlogo top left-->
 		<control type="image" id="882">
 			<left>60</left>
@@ -202,10 +201,10 @@
 			<fadetime>600</fadetime>
 			<aspectratio align="left" aligny="center">keep</aspectratio>
 			<texture background="true">$VAR[ListItemClearLogo]</texture>
-			<visible>!String.IsEmpty(Control.GetLabel(882)) + Skin.String(ClearLogoLocation, topleft)</visible>
+			<visible>!String.IsEmpty(Control.GetLabel(882)) + false</visible>
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(88888)</visible>
 		</control>
-		
+
 		<!--clearlogo top center-->
 		<control type="image" id="883">
 			<left>792</left>
@@ -216,11 +215,11 @@
 			<aspectratio align="center" aligny="center">keep</aspectratio>
 			<texture background="true">$VAR[ListItemClearLogo]</texture>
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(88888)</visible>
-			<visible>!String.IsEmpty(Control.GetLabel(883)) + Skin.String(ClearLogoLocation, topcenter)</visible>
-		</control>		
-		
+			<visible>!String.IsEmpty(Control.GetLabel(883)) + false</visible>
+		</control>
+
 	</include>
-	
+
 	<include name="TimeInfo">
         <control type="group">
             <!--Time-->
@@ -232,8 +231,8 @@
                 <align>right</align>
                 <info>System.Time()</info>
                 <font>Bold55</font>
-                <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                <textcolor>ffffffff</textcolor>
+                <shadowcolor>None</shadowcolor>
             </control>
             <!--Date-->
             <control type="label">
@@ -244,13 +243,13 @@
                 <height>50</height>
                 <info>System.Date()</info>
                 <font>Reg30</font>
-                <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                <textcolor>ffffffff</textcolor>
+                <shadowcolor>None</shadowcolor>
             </control>
         </control>
 	</include>
-    
-    
+
+
     <include name="TimeInfoCompact">
         <control type="group">
             <control type="label">
@@ -260,8 +259,8 @@
                 <width>300</width>
                 <info>System.Time</info>
                 <font>Bold30</font>
-                <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                <textcolor>ffffffff</textcolor>
+                <shadowcolor>None</shadowcolor>
             </control>
             <control type="label">
                 <right>60</right>
@@ -270,12 +269,12 @@
                 <width>500</width>
                 <info>System.Date</info>
                 <font>Reg26</font>
-                <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-                <shadowcolor>$INFO[Skin.String(HeaderTextShadowColor)]</shadowcolor>
+                <textcolor>ffffffff</textcolor>
+                <shadowcolor>None</shadowcolor>
             </control>
         </control>
     </include>
-    
+
 	<include name="ProfileInfo">
 		<control type="group" id="891">
 			<defaultcontrol>890</defaultcontrol>
@@ -284,27 +283,27 @@
             <height>110</height>
 			<control type="image">
 				<texture diffuse="home/home_matte2.png">colors/color_white.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				<visible>!Control.HasFocus(890)</visible>	
+				<colordiffuse>cc0a0a0a</colordiffuse>
+				<visible>!Control.HasFocus(890)</visible>
 			</control>
 			<control type="image">
 				<texture diffuse="home/home_matte2.png">colors/color_white.png</texture>
-				<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
-				<visible>Control.HasFocus(890)</visible>	
+				<colordiffuse>cce0e0e0</colordiffuse>
+				<visible>Control.HasFocus(890)</visible>
 			</control>
-			<control type="image" id="888">	
+			<control type="image" id="888">
 				<bordersize>8</bordersize>
                 <height>75%</height>
 				<texture fallback="common/profil/avatar.png">$INFO[System.ProfileThumb]</texture>
 				<aspectratio align="center" aligny="top">keep</aspectratio>
-				<visible>!Control.HasFocus(890)</visible>	
+				<visible>!Control.HasFocus(890)</visible>
 			</control>
 			<control type="image" id="889">
 				<bordersize>8</bordersize>
                 <height>75%</height>
 				<texture fallback="common/profil/avatar.png">$INFO[System.ProfileThumb]</texture>
 				<aspectratio align="center" aligny="top">keep</aspectratio>
-				<visible>Control.HasFocus(890)</visible>			
+				<visible>Control.HasFocus(890)</visible>
 			</control>
 			<control type="button" id="890">
 				<ondown>900</ondown>
@@ -324,11 +323,11 @@
 				<align>center</align>
                 <aligny>center</aligny>
 				<font>Reg22</font>
-				<textcolor>$INFO[Skin.String(GeneralTextColor)]</textcolor>
+				<textcolor>ffffffff</textcolor>
 			</control>
 		</control>
 	</include>
-    
+
     <include name="ProfileInfoCompact">
         <control type="radiobutton" id="890">
             <right>30</right>
@@ -343,12 +342,12 @@
             <aligny>center</aligny>
             <font>Reg26</font>
             <label>$VAR[ProfileLabel]</label>
-            <textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
-            <focusedcolor>$INFO[Skin.String(MainMenuFocusTextColor)]</focusedcolor>
-            <textureradioonfocus colordiffuse="$INFO[Skin.String(MainMenuFocusTextColor)]">common/profil/avatar.png</textureradioonfocus>
-            <textureradioonnofocus colordiffuse="$INFO[Skin.String(HeaderTextColor)]">common/profil/avatar.png</textureradioonnofocus>
-            <textureradioofffocus colordiffuse="$INFO[Skin.String(MainMenuFocusTextColor)]">common/profil/avatar.png</textureradioofffocus>
-            <textureradiooffnofocus colordiffuse="$INFO[Skin.String(HeaderTextColor)]">common/profil/avatar.png</textureradiooffnofocus>
+            <textcolor>ffffffff</textcolor>
+            <focusedcolor>ffffffff</focusedcolor>
+            <textureradioonfocus colordiffuse="ffffffff">common/profil/avatar.png</textureradioonfocus>
+            <textureradioonnofocus colordiffuse="ffffffff">common/profil/avatar.png</textureradioonnofocus>
+            <textureradioofffocus colordiffuse="ffffffff">common/profil/avatar.png</textureradioofffocus>
+            <textureradiooffnofocus colordiffuse="ffffffff">common/profil/avatar.png</textureradiooffnofocus>
             <textoffsetx>70</textoffsetx>
             <radioposx>0</radioposx>
             <pulseonselect>false</pulseonselect>
@@ -358,7 +357,7 @@
             <selected>Control.HasFocus(890)</selected>
         </control>
     </include>
-    
+
     <include name="HeaderLogo">
         <!-- Kodi Logo image -->
         <control type="image">
@@ -367,10 +366,10 @@
             <height>196</height>
             <width></width>
             <aspectratio align="left">keep</aspectratio>
-            <colordiffuse>$INFO[Skin.String(HeaderTextColor)]</colordiffuse>
+            <colordiffuse>ffffffff</colordiffuse>
             <texture>bingie_mod_logo.png</texture>
             <visible>String.IsEmpty(Control.GetLabel(198754))</visible>
-            <visible>![Skin.HasSetting(CompactHeader)]</visible>
+            <visible>![false]</visible>
         </control>
 		<control type="image">
             <posx>43</posx>
@@ -378,11 +377,11 @@
             <height>132</height>
             <width></width>
             <aspectratio align="left">keep</aspectratio>
-            <colordiffuse>$INFO[Skin.String(HeaderTextColor)]</colordiffuse>
+            <colordiffuse>ffffffff</colordiffuse>
             <texture>home/bingie_mod_logo.png</texture>
             <visible>String.IsEmpty(Control.GetLabel(198754))</visible>
-            <visible>![!Skin.HasSetting(CompactHeader)]</visible>
-        </control>   
+            <visible>![!false]</visible>
+        </control>
     </include>
-    
+
 </includes>

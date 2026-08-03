@@ -5,7 +5,7 @@
 	<onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
 	<onload condition="Player.HasVideo + !Window.IsVisible(videoosd) + !Player.Paused">SetProperty(DialogMPAATopBar,1,home)</onload>
 	<onunload condition="!String.IsEmpty(Window(Home).Property(BaseWindow)) + !Window.Previous(videos) + !Player.HasVideo">AlarmClock(loadinfo,Action(Info),00:00,silent)</onunload>
-	<onunload condition="$EXP[IsPlayingUnrecognizedContent] | [Player.HasVideo + Skin.HasSetting(ForceVideoPlaybackStop) + ![Skin.HasSetting(EnableOSDInfo)]]">AlarmClock(StopPlayback,PlayerControl(Stop),00:00,silent)</onunload>
+	<onunload condition="$EXP[IsPlayingUnrecognizedContent] | [Player.HasVideo + true + ![false]]">AlarmClock(StopPlayback,PlayerControl(Stop),00:00,silent)</onunload>
 
 	<controls>
 		<control type="image">
@@ -14,7 +14,7 @@
 			<width>100%</width>
 			<height>275</height>
 			<texture border="10">diffuse/panel.png</texture>
-			<colordiffuse>$INFO[Skin.String(OSDPanelColor)]</colordiffuse>
+			<colordiffuse>cc000000</colordiffuse>
 		</control>
 
 		<!-- Aspect Ratio / Zoom Info Overlay -->
@@ -61,9 +61,9 @@
 
 		<!-- Buffering Progress Overlay -->
 		<control type="group" id="2">
-			<visible>Player.Caching + Skin.HasSetting(EnableBufferingProgressOSD)</visible>
-			<animation end="-850,-230" time="0" effect="slide" condition="Skin.HasSetting(UseBingieOSD)">Conditional</animation>
-			<animation end="-850,-230" time="0" effect="slide" condition="!Skin.HasSetting(UseBingieOSD)">Conditional</animation>
+			<visible>Player.Caching + true</visible>
+			<animation end="-850,-230" time="0" effect="slide" condition="true">Conditional</animation>
+			<animation end="-850,-230" time="0" effect="slide" condition="!true">Conditional</animation>
 			<animation delay="300" effect="fade" time="200">Visible</animation>
 			<animation effect="fade" delay="200" time="150">Hidden</animation>
 			<control type="image" id="22">
@@ -72,7 +72,7 @@
 				<width>120</width>
 				<height>120</height>
 				<animation effect="fade" end="30" time="0" condition="true">Conditional</animation>
-				<colordiffuse>$INFO[Skin.String(OSDPanelColor)]</colordiffuse>
+				<colordiffuse>cc000000</colordiffuse>
 				<texture>dialogs/buffer-progress/bottom-panel.png</texture>
 			</control>
 			<control type="image" id="23">
@@ -88,7 +88,7 @@
 				<top>710</top>
 				<width>120</width>
 				<height>120</height>
-				<colordiffuse>$INFO[Skin.String(OSDBufferingSpinnerColor)]</colordiffuse>
+				<colordiffuse>ffe50914</colordiffuse>
 				<texture>dialogs/buffer-progress/p$INFO[Player.CacheLevel].png</texture>
 			</control>
 			<control type="label" id="25">
@@ -101,8 +101,8 @@
 				<aligny>center</aligny>
 				<align>center</align>
 				<font>Bold26</font>
-				<textcolor>$INFO[Skin.String(OSDSecondaryTextColor)]</textcolor>
-				<shadowcolor>$INFO[Skin.String(OSDSecondaryTextShadowColor)]</shadowcolor>
+				<textcolor>ffffffff</textcolor>
+				<shadowcolor>None</shadowcolor>
 			</control>
 			<control type="label" id="26">
 				<description>buffering label</description>
@@ -116,7 +116,7 @@
 				<font>Bold20</font>
 				<textcolor>white</textcolor>
 				<shadowcolor>black</shadowcolor>
-				<visible>!Skin.HasSetting(UseBingieOSD)</visible>
+				<visible>!true</visible>
 			</control>
 		</control>
 	</controls>

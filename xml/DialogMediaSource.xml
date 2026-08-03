@@ -2,11 +2,11 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">9002</defaultcontrol>
-	
+
     <controls>
         <!--Dialog Overlay-->
         <include>DialogOverlayExtra</include>
-		
+
         <!--Dialog Media Source-->
         <control type="group">
            <include>animation_window_open_close</include>
@@ -19,8 +19,8 @@
                 <width>1030</width>
                 <height>531</height>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				
+				<colordiffuse>cc0a0a0a</colordiffuse>
+
             </control>
 			<control type="image">
                 <!--Panel-->
@@ -30,11 +30,11 @@
                 <height>531</height>
 				<texture border="15">diffuse/bgpanel.png</texture>
 				<bordersize>10</bordersize>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
-				
+				<colordiffuse>cc0a0a0a</colordiffuse>
+
             </control>
-			
-			
+
+
             <control type="image">
                 <posx>478</posx>
                 <posy>412</posy>
@@ -104,7 +104,7 @@
                             <width>74</width>
                             <height>60</height>
                             <texture>dialogs/mediasource/rules-nf.png</texture>
-                            <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+                            <colordiffuse>ffffffff</colordiffuse>
                         </control>
                     </itemlayout>
                     <focusedlayout height="60">
@@ -130,7 +130,7 @@
                                 <width>74</width>
                                 <height>60</height>
                                 <texture>dialogs/mediasource/rules-nf.png</texture>
-                                <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+                                <colordiffuse>ffffffff</colordiffuse>
                                 <visible>!Control.HasFocus(14)</visible>
                             </control>
                         </control>
@@ -140,7 +140,7 @@
                                 <width>690</width>
                                 <height>60</height>
                                 <texture border="10">diffuse/panel.png</texture>
-                                <colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+                                <colordiffuse>cce0e0e0</colordiffuse>
                             </control>
                             <control type="label">
                                 <posx>20</posx>
@@ -155,7 +155,7 @@
                                 <width>74</width>
                                 <height>60</height>
                                 <texture>dialogs/mediasource/rules-nf.png</texture>
-                                <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                                <colordiffuse>ff000000</colordiffuse>
                                 <visible>!Control.HasFocus(14)</visible>
                             </control>
                         </control>
@@ -165,7 +165,7 @@
                             <width>40</width>
                             <height>40</height>
                             <texture>common/checkbox.png</texture>
-							<colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+							<colordiffuse>ffffffff</colordiffuse>
                             <visible>Control.HasFocus(14)</visible>
                         </control>
                     </focusedlayout>
@@ -252,7 +252,7 @@
 					<textoffsety>8</textoffsety>
                     <onup>9002</onup>
                     <ondown>9001</ondown>
-                    
+
                     <animation effect="fade" start="100" end="50" time="0" condition="!Control.IsEnabled(12)" reversible="false">Conditional</animation>
                 </control>
                 <!-- <control type="image"> -->
@@ -261,7 +261,7 @@
                     <!-- <width>74</width> -->
                     <!-- <height>60</height> -->
                     <!-- <texture>dialogs/mediasource/keyboard-nf.png</texture> -->
-                    <!-- <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse> -->
+                    <!-- <colordiffuse>ffffffff</colordiffuse> -->
                     <!-- <visible>!Control.HasFocus(12)</visible> -->
                 <!-- </control> -->
                 <!-- <control type="image"> -->
@@ -270,7 +270,7 @@
                     <!-- <width>74</width> -->
                     <!-- <height>60</height> -->
                     <!-- <texture>dialogs/mediasource/keyboard-nf.png</texture> -->
-                    <!-- <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse> -->
+                    <!-- <colordiffuse>ff000000</colordiffuse> -->
                     <!-- <visible>Control.HasFocus(12)</visible> -->
                 <!-- </control> -->
             </control>

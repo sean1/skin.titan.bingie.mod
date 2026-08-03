@@ -26,9 +26,9 @@
 					<top>11</top>
                     <font>Bold31</font>
                     <align>left</align>
-                    <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>
+                    <textcolor>ffffffff</textcolor>
                     <label>$VAR[BingieMainContentHeader] $INFO[Window(Home).Property(TVshows.Count),(,)]</label>
-                    <visible>!Skin.HasSetting(DisableMediaCount) + Integer.IsGreater(Container(523).NumItems,0)</visible>
+                    <visible>!false + Integer.IsGreater(Container(523).NumItems,0)</visible>
 					<visible>String.IsEqual(Container.FolderPath, videodb://tvshows/titles/)</visible>
                 </control>
 				<control type="label">
@@ -38,9 +38,9 @@
 					<top>11</top>
                     <font>Bold31</font>
                     <align>left</align>
-                    <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>
+                    <textcolor>ffffffff</textcolor>
                     <label>$VAR[BingieMainContentHeader] $INFO[Window(Home).Property(Movies.Count),(,)]</label>
-                    <visible>!Skin.HasSetting(DisableMediaCount) + Integer.IsGreater(Container(523).NumItems,0)</visible>
+                    <visible>!false + Integer.IsGreater(Container(523).NumItems,0)</visible>
 					<visible>String.IsEqual(Container.FolderPath, videodb://movies/titles/)</visible>
                 </control>
 
@@ -48,15 +48,15 @@
                     <param name="containerType" value="panel" />
                 </include>
             </control>
-			
+
 		   <!-- scrollbar -->
             <control type="group">
                 <control type="scrollbar" id="60">
-					<texturesliderbackground border="5" colordiffuse="$INFO[Skin.String(ScrollbarBackgroundColor)]">scrollbar/texturesliderbar_small.png</texturesliderbackground>
-					<texturesliderbar colordiffuse="$INFO[Skin.String(ScrollbarUnfocusedColor)]" border="5">scrollbar/texturesliderbar_small.png</texturesliderbar>
-					<texturesliderbarfocus colordiffuse="$INFO[Skin.String(ScrollbarFocusedColor)]" border="5">scrollbar/texturesliderbar_small.png</texturesliderbarfocus>
-					<textureslidernib colordiffuse="$INFO[Skin.String(ScrollbarUnfocusedColor)]">scrollbar/texturesliderbar_nib.png</textureslidernib>
-					<textureslidernibfocus colordiffuse="$INFO[Skin.String(ScrollbarFocusedColor)]">scrollbar/texturesliderbar_nib.png</textureslidernibfocus>
+					<texturesliderbackground border="5" colordiffuse="ff141414">scrollbar/texturesliderbar_small.png</texturesliderbackground>
+					<texturesliderbar colordiffuse="ff646464" border="5">scrollbar/texturesliderbar_small.png</texturesliderbar>
+					<texturesliderbarfocus colordiffuse="ffcc0000" border="5">scrollbar/texturesliderbar_small.png</texturesliderbarfocus>
+					<textureslidernib colordiffuse="ff646464">scrollbar/texturesliderbar_nib.png</textureslidernib>
+					<textureslidernibfocus colordiffuse="ffcc0000">scrollbar/texturesliderbar_nib.png</textureslidernibfocus>
                     <visible>Control.IsVisible(523) + Integer.IsGreater(Container.NumItems,0)</visible>
                     <width>10</width>
 					<height>461</height>
@@ -64,8 +64,8 @@
                     <bottom>0</bottom>
                     <onleft>523</onleft>
                     <orientation>vertical</orientation>
-                    <animation effect="fade" start="0" end="100" time="400" condition="[Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
-                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
+                    <animation effect="fade" start="0" end="100" time="400" condition="[Control.HasFocus(60) | Container.Scrolling | false]">Conditional</animation>
+                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | false]">Conditional</animation>
                 </control>
             </control>
         </control>
@@ -74,6 +74,7 @@
     <!-- Container -->
     <include name="Bingie_Main_Landscape_View">
         <control type="$PARAM[containerType]" id="523">
+			<visible>!Container.Content(episodes) + !Container.Content(seasons)</visible>
             <viewtype label="31018">panel</viewtype>
             <focusedposition>0</focusedposition>
             <top>51</top>
@@ -84,16 +85,14 @@
             <preloaditems>4</preloaditems>
             <pagecontrol>60</pagecontrol>
             <include>ScrollTime</include>
-            <onright condition="Skin.HasSetting(EnableQuickJump) + Control.IsVisible(6002)">6000</onright>
-            <onright condition="Skin.HasSetting(EnableQuickJump) + !Control.IsVisible(6002)">noop</onright>
-            <onright condition="!Skin.HasSetting(EnableQuickJump)">60</onright>
+            <onright condition="false + Control.IsVisible(6002)">6000</onright>
+            <onright condition="false + !Control.IsVisible(6002)">noop</onright>
+            <onright condition="!false">60</onright>
 			<onleft>9000</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
 			<onleft>CancelAlarm(preview_delay,silent)</onleft>
-			<onleft condition="$EXP[IsPlayingUnrecognizedContent] + Skin.HasSetting(DetailsAutoTrailer) + [!String.IsEmpty(ListItem.Trailer) | !String.IsEmpty(Window(Home).Property(TrailerPlaying))] + !String.IsEqual(Window(Home).Property(TrailerPlaying),fullscreen)">PlayerControl(Stop)</onleft>
 			<onback>CancelAlarm(preview_delay,silent)</onback>
-			<onback condition="$EXP[IsPlayingUnrecognizedContent] + Skin.HasSetting(DetailsAutoTrailer) + [!String.IsEmpty(ListItem.Trailer) | !String.IsEmpty(Window(Home).Property(TrailerPlaying))] + !String.IsEqual(Window(Home).Property(TrailerPlaying),fullscreen)">PlayerControl(Stop)</onback>
             <itemlayout height="193" width="333">
                 <control type="group">
                     <width>335</width>
@@ -110,7 +109,7 @@
 						<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
 						<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
 						<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-						<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
+						<visible>false</visible>
 					</control>
                 </control>
             </itemlayout>
@@ -121,7 +120,7 @@
                     <control type="image">
                         <!--Panel Normal-->
                         <texture background="true">home/home_matte3.png</texture>
-                        <colordiffuse>$INFO[Skin.String(ViewDetailsBorderFocusColor)]</colordiffuse>
+                        <colordiffuse>ffffffff</colordiffuse>
                         <include>thumbsborder_focused</include>
                     </control>
                     <include>ThumbsViewItemBingieLayout</include>
@@ -136,19 +135,15 @@
 						<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
 						<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
 						<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-						<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
+						<visible>false</visible>
 					</control>
-                    <include condition="Skin.HasSetting(DetailsAutoTrailer)">LibraryAutoTrailerStopButton</include>
-						<include content="LibraryAutoTrailerStartButton" condition="Skin.HasSetting(DetailsAutoTrailer)">
-							<param name="interval" value="3" />
-						</include>
-                    <animation effect="zoom" end="103,103" center="auto" time="100" condition="Skin.HasSetting(View523_DisableFixedBingieFrame) + Skin.HasSetting(View523_EnableZoomEffect)">focus</animation>
+                    <animation effect="zoom" end="103,103" center="auto" time="100" condition="false + false">focus</animation>
                 </control>
 				<!--Top 250 1-->
 				<control type="image">
-				<visible>!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !Skin.HasSetting(DisableTop250Indicator) + !Skin.HasSetting(View523_DisableFixedBingieFrame) + !Skin.HasSetting(View523_EnableZoomEffect) | 
-				!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !Skin.HasSetting(DisableTop250Indicator) + Skin.HasSetting(View523_DisableFixedBingieFrame) + !Skin.HasSetting(View523_EnableZoomEffect) | 
-				!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !Skin.HasSetting(DisableTop250Indicator) + !Skin.HasSetting(View523_DisableFixedBingieFrame) + Skin.HasSetting(View523_EnableZoomEffect)
+				<visible>!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !false + !false + !false |
+				!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !false + false + !false |
+				!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !false + !false + false
 				</visible>
 				<posy>8</posy>
 				<left>8</left>
@@ -159,7 +154,7 @@
 		        </control>
 				<!--Top 250 2-->
 				<control type="image">
-				<visible>!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !Skin.HasSetting(DisableTop250Indicator) + Skin.HasSetting(View523_DisableFixedBingieFrame) + Skin.HasSetting(View523_EnableZoomEffect)</visible>
+				<visible>!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !false + false + false</visible>
 				<posy>5</posy>
 				<left>3</left>
                 <height>60</height>

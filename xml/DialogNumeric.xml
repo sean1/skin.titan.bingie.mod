@@ -2,11 +2,11 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">21</defaultcontrol>
-	
+
     <controls>
         <!--Dialog Overlay-->
         <include>DialogOverlayExtra</include>
-		
+
         <!--Numeric-->
         <control type="group">
             <posx>600</posx>
@@ -18,15 +18,15 @@
 			<control type="image">
                 <!--Panel-->
                 <texture border="10">diffuse/panel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 			<control type="image">
                 <!--Panel-->
 				<bordersize>5</bordersize>
                 <texture border="10">diffuse/panel.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-			
+
             <control type="label" id="1">
                 <posx>0</posx>
                 <posy>60</posy>

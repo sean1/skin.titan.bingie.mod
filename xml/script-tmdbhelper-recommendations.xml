@@ -3,8 +3,8 @@
     <defaultcontrol always="true">6000</defaultcontrol>
 <controls>
 
-		<control type="group">	
-			<animation effect="fade" end="100" time="300" condition="String.IsEmpty(Window(Home).Property(TMDBHelper.Recommendations.HideInfo))">WindowOpen</animation>		
+		<control type="group">
+			<animation effect="fade" end="100" time="300" condition="String.IsEmpty(Window(Home).Property(TMDBHelper.Recommendations.HideInfo))">WindowOpen</animation>
 			<animation effect="fade" end="100" time="300" condition="!String.IsEmpty(Window(Home).Property(TMDBHelper.Recommendations.HideInfo))">WindowOpen</animation>
 			<animation effect="fade" start="100" end="0" time="300" condition="String.IsEmpty(Window(Home).Property(TMDBHelper.Recommendations.HideRecs))">WindowClose</animation>
 			<animation effect="fade" start="100" end="0" time="300" condition="!String.IsEmpty(Window(Home).Property(TMDBHelper.Recommendations.HideRecs))">WindowClose</animation>
@@ -18,9 +18,9 @@
 				<colordiffuse>$VAR[BingiePanelColor]</colordiffuse>
 				<aspectratio>stretch</aspectratio>
 			</control>
-			
+
 			<control type="image">
-				<visible>Skin.HasSetting(ShowExtendedInfoFanart)</visible>
+				<visible>false</visible>
                 <include>FullscreenDimensions</include>
 				<texture background="true" fallback="special://skin/extras/media/background.jpg">$INFO[Window.Property(Fanart)]</texture>
 				<colordiffuse>26ffffff</colordiffuse>
@@ -28,20 +28,20 @@
 				<fadetime>400</fadetime>
 			</control>
 		</control>
-		
-	    <control type="group">	
-				<include>Animation_Recommendations_Window</include>			
+
+	    <control type="group">
+				<include>Animation_Recommendations_Window</include>
 				<control type="image" id="9005">
 					<posy>20</posy>
 					<posx>75</posx>
-					<height>120</height>                                     
+					<height>120</height>
 					<width>310</width>
 					<align>center</align>
 					<fadetime>350</fadetime>
 					<aspectratio align="center" aligny="center">keep</aspectratio>
 					<texture background="true" fallback="colors/color_transparent.png">$INFO[Window.Property(Clearlogo)]</texture>
 				</control>
-				
+
 			<control type="label">
 				<visible>String.EndsWith(Control.GetLabel(9005),color_transparent.png)</visible>
 				<posx>75</posx>
@@ -50,13 +50,13 @@
 				<height>100</height>
 				<font>Reg50</font>
 				<align>left</align>
-				<textcolor>$INFO[Skin.String(HeaderTextColor)]</textcolor>
+				<textcolor>ffffffff</textcolor>
 				<label>$INFO[Window.Property(Title)]</label>
-				<shadowcolor>$INFO[Skin.String(BingieLabelTextColor)]</shadowcolor>
-			</control>			 
-			
-			<include condition="!String.IsEqual(Skin.String(general_header),disable)">TimeInfo</include>
-     
+				<shadowcolor>ffffffff</shadowcolor>
+			</control>
+
+			<include condition="!false">TimeInfo</include>
+
                 <control type="grouplist" id="6000">
                     <orientation>vertical</orientation>
                     <scrolltime tween="sine">400</scrolltime>
@@ -78,7 +78,7 @@
 								<posy>0</posy>
 								<width>1560</width>
 								<height>1</height>
-								<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+								<colordiffuse>a6ffffff</colordiffuse>
 								<texture>dialogs/videoinfo/info/infopanel_line.png</texture>
 							</control>
 							<control type="image">
@@ -86,7 +86,7 @@
 								<posy>82</posy>
 								<width>1560</width>
 								<height>1</height>
-								<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+								<colordiffuse>a6ffffff</colordiffuse>
 								<texture>dialogs/videoinfo/info/infopanel_line.png</texture>
 							</control>
 							<control type="grouplist">
@@ -105,7 +105,7 @@
 										<posy>1</posy>
 										<height>81</height>
 										<width>1</width>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
 									</control>
 									<control type="label">
@@ -115,7 +115,7 @@
 										<height>38</height>
 										<align>center</align>
 										<label fallback="?">$INFO[Window.Property(Rating)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold30</font>
 									</control>
 									<control type="label">
@@ -126,12 +126,12 @@
 										<align>center</align>
 										<aligny>center</aligny>
 										<label fallback="Rating">$INFO[Window.Property(Votes),, $LOCALIZE[320203]]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Reg24</font>
 										<textoffsetx>10</textoffsetx>
 										<scroll>true</scroll>
 									</control>
-								</control>								
+								</control>
 								<control type="group">
 									<posx>0</posx>
 									<width>220</width>
@@ -141,7 +141,7 @@
 										<posy>1</posy>
 										<height>81</height>
 										<width>1</width>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
 									</control>
 									<control type="label">
@@ -151,7 +151,7 @@
 										<height>38</height>
 										<align>center</align>
 										<label fallback="?">$INFO[Window.Property(Premiered)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold30</font>
 									</control>
 									<control type="label">
@@ -162,7 +162,7 @@
 										<align>center</align>
 										<aligny>center</aligny>
 										<label fallback="Premiered">$LOCALIZE[320204]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Reg24</font>
 									</control>
 								</control>
@@ -175,7 +175,7 @@
 										<posy>1</posy>
 										<height>81</height>
 										<width>1</width>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
 									</control>
 									<control type="label">
@@ -185,7 +185,7 @@
 										<height>38</height>
 										<align>center</align>
 										<label fallback="?">$INFO[Window.Property(LastAired)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold30</font>
 									</control>
 									<control type="label">
@@ -196,7 +196,7 @@
 										<align>center</align>
 										<aligny>center</aligny>
 										<label fallback="Last Air Date">$LOCALIZE[320205]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Reg24</font>
 									</control>
 								</control>
@@ -209,7 +209,7 @@
 										<posy>1</posy>
 										<height>81</height>
 										<width>1</width>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
 									</control>
 									<control type="label">
@@ -220,9 +220,9 @@
 										<align>center</align>
 										<textoffsetx>10</textoffsetx>
 										<label fallback="?">$INFO[Window.Property(mpaa)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold30</font>
-										<scroll>true</scroll>										
+										<scroll>true</scroll>
 										</control>
                                     <control type="label">
 										<posx>0</posx>
@@ -232,8 +232,8 @@
 										<align>center</align>
 										<aligny>center</aligny>
 										<label fallback="Rating">$LOCALIZE[320206]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
-										<font>Reg24</font>										
+										<textcolor>a6ffffff</textcolor>
+										<font>Reg24</font>
 									</control>
 								</control>
 								<control type="group">
@@ -246,7 +246,7 @@
 										<height>81</height>
 										<width>1</width>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 									</control>
 									<control type="label">
 										<posx>0</posx>
@@ -255,7 +255,7 @@
 										<height>38</height>
 										<align>center</align>
 										<label fallback="?">$INFO[Window.Property(Season)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold31</font>
 									</control>
 									<control type="label">
@@ -267,7 +267,7 @@
 										<aligny>center</aligny>
 										<label>$LOCALIZE[320207]</label>
 										<font>Reg24</font>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 									</control>
 								</control>
 								<control type="group">
@@ -280,7 +280,7 @@
 										<posy>1</posy>
 										<height>81</height>
 										<width>1</width>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
 									</control>
 									<control type="label">
@@ -290,7 +290,7 @@
 										<height>38</height>
 										<align>center</align>
 										<label fallback="?">$INFO[Window.Property(Duration)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold30</font>
 									</control>
 									<control type="label">
@@ -301,7 +301,7 @@
 										<align>center</align>
 										<aligny>center</aligny>
 										<label fallback="Minutes">$LOCALIZE[320208]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Reg24</font>
 									</control>
 								</control>
@@ -315,7 +315,7 @@
 										<height>81</height>
 										<width>1</width>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 									</control>
 									<control type="label">
 										<posx>0</posx>
@@ -324,7 +324,7 @@
 										<height>38</height>
 										<align>center</align>
 										<label>$INFO[Window.Property(Budget)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold31</font>
 										<textoffsetx>10</textoffsetx>
 										<scroll>true</scroll>
@@ -338,7 +338,7 @@
 										<aligny>center</aligny>
 										<label>$LOCALIZE[31379]</label>
 										<font>Reg24</font>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 									</control>
 								</control>
 								<control type="group">
@@ -351,7 +351,7 @@
 										<height>81</height>
 										<width>1</width>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 									</control>
 									<control type="label">
 										<posx>0</posx>
@@ -360,7 +360,7 @@
 										<height>38</height>
 										<align>center</align>
 										<label fallback="?">$INFO[Window.Property(Revenue)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold31</font>
 										<textoffsetx>10</textoffsetx>
 										<scroll>true</scroll>
@@ -374,7 +374,7 @@
 										<aligny>center</aligny>
 										<label>$LOCALIZE[31380]</label>
 										<font>Reg24</font>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 									</control>
 								</control>
 								<control type="group">
@@ -388,7 +388,7 @@
 										<height>81</height>
 										<width>1</width>
 										<texture>dialogs/videoinfo/info/upright.png</texture>
-										<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+										<colordiffuse>a6ffffff</colordiffuse>
 									</control>
 									<control type="label">
 										<posx>0</posx>
@@ -398,7 +398,7 @@
 										<align>center</align>
 										<textoffsetx>10</textoffsetx>
 										<label fallback="?">$INFO[Window.Property(Status)]</label>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 										<font>Bold31</font>
 										<scroll>true</scroll>
 									</control>
@@ -411,7 +411,7 @@
 										<aligny>center</aligny>
 										<label>$LOCALIZE[320209]</label>
 										<font>Reg24</font>
-										<textcolor>$INFO[Skin.String(BingieDeatailsTextColor)]</textcolor>
+										<textcolor>a6ffffff</textcolor>
 									</control>
 								</control>
 								<control type="image">
@@ -420,12 +420,12 @@
 									<height>81</height>
 									<width>1</width>
 									<texture>dialogs/videoinfo/info/upright.png</texture>
-									<colordiffuse>$INFO[Skin.String(BingieDeatailsTextColor)]</colordiffuse>
+									<colordiffuse>a6ffffff</colordiffuse>
 								</control>
 							</control>
 						</control>
 					</control>
-				
+
 					<!-- normal info -->
                     <control type="group" id="140">
 						<height>340</height>
@@ -446,7 +446,7 @@
 							<height>30</height>
 							<label>$INFO[Window.Property(Tagline)]</label>
 							<font>Bold26</font>
-							<textcolor>$INFO[Skin.String(BingieSubLabelTextColor)]</textcolor>
+							<textcolor>ffffffff</textcolor>
 							<visible>!String.IsEmpty(Window.Property(Tagline))</visible>
 						</control>
 						<control type="textbox" id="800">
@@ -454,7 +454,7 @@
 							<width>1417</width>
 							<height>230</height>
 							<label fallback="19055">$INFO[Window.Property(Plot)]</label>
-							<textcolor>$INFO[Skin.String(BingiePlotTextColor)]</textcolor>
+							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Reg26</font>
 							<visible>!String.IsEmpty(Window.Property(Plot))</visible>
@@ -470,11 +470,11 @@
 							<texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultVideo.png" border="5">$INFO[Window.Property(Poster)]</texture>
 						</control>
                     </control>
-                    				
+
 					<!-- cast panel -->
 					<control type="group" id="5100">
                         <visible>[!String.IsEmpty(Window.Property(List_5000_Visible)) | !String.IsEmpty(Window.Property(List_5000_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_cast)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -483,10 +483,10 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[206]</label>
                         </control>
-						<control type="group">	
+						<control type="group">
 							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5000</onup>
@@ -494,7 +494,7 @@
 								<param name="id">5000</param>
 								<param name="groupid">5100</param>
 								<param name="visible">[!String.IsEmpty(Window.Property(List_5000_Visible)) | !String.IsEmpty(Window.Property(List_5000_IsUpdating))]</param>
-								<param name="altvisible">[!String.IsEmpty(Window.Property(List_5000_Visible)) | !String.IsEmpty(Window.Property(List_5000_IsUpdating))]</param>								
+								<param name="altvisible">[!String.IsEmpty(Window.Property(List_5000_Visible)) | !String.IsEmpty(Window.Property(List_5000_IsUpdating))]</param>
 							</include>
 						</control>
 						<!-- Loading Suggestions -->
@@ -503,11 +503,11 @@
 							<param name="top" value="155"/>
 						</include>
 					</control>
-					
+
 					<!-- crew panel -->
 					<control type="group" id="5110">
                         <visible>[!String.IsEmpty(Window.Property(List_5010_Visible)) | !String.IsEmpty(Window.Property(List_5010_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_crew)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -516,11 +516,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[31089]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5000</onup>
 								<ondown>5008</ondown>
@@ -536,11 +536,11 @@
 							<param name="top" value="155"/>
 						</include>
 					</control>
-					
+
 					<!-- director -->
 					<control type="group" id="5108">
                         <visible>[!String.IsEmpty(Window.Property(List_5008_Visible)) | !String.IsEmpty(Window.Property(List_5008_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_director)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -549,11 +549,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Director),$LOCALIZE[320071] ,]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5010</onup>
 								<ondown>5009</ondown>
@@ -569,11 +569,11 @@
 							<param name="top" value="155"/>
 						</include>
 					</control>
-					
+
 					<!-- writer -->
 					<control type="group" id="5109">
                         <visible>[!String.IsEmpty(Window.Property(List_5009_Visible)) | !String.IsEmpty(Window.Property(List_5009_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_writer)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -582,11 +582,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Writer),$LOCALIZE[320072] ,]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5008</onup>
 								<ondown>5014</ondown>
@@ -601,12 +601,12 @@
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5009_IsUpdating))"/>
 							<param name="top" value="155"/>
 						</include>
-					</control>				
-					
+					</control>
+
                     <!-- creator -->
 					<control type="group" id="5114">
                         <visible>[!String.IsEmpty(Window.Property(List_5014_Visible)) | !String.IsEmpty(Window.Property(List_5014_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_creator)</visible>
+						<visible>false</visible>
 						<visible>String.IsEqual(Window.Property(dbtype),tvshow) | String.IsEqual(Window.Property(dbtype),episode)</visible>
                         <height>462</height>
                         <control type="label">
@@ -616,11 +616,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Creator),$LOCALIZE[320080] ,]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5009</onup>
 								<ondown>5001</ondown>
@@ -635,12 +635,12 @@
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5014_IsUpdating))"/>
 							<param name="top" value="155"/>
 						</include>
-					</control>					
+					</control>
 
 					<!-- seasons-->
 					<control type="group" id="5101">
                         <visible>[!String.IsEmpty(Window.Property(List_5001_Visible)) | !String.IsEmpty(Window.Property(List_5001_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_seasons)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -649,11 +649,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[320207]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5014</onup>
 								<ondown>5011</ondown>
@@ -673,7 +673,7 @@
 					<!-- upnext -->
 					<control type="group" id="5111">
                         <visible>[!String.IsEmpty(Window.Property(List_5011_Visible)) | !String.IsEmpty(Window.Property(List_5011_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_upnext)</visible>
+						<visible>false</visible>
                         <height>330</height>
                         <control type="label">
                             <posx>7</posx>
@@ -682,11 +682,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[31065]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5001</onup>
 								<ondown>5002</ondown>
@@ -703,12 +703,12 @@
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5011_IsUpdating))"/>
 							<param name="top" value="104"/>
 						</include>
-					</control>					
+					</control>
 
 					<!-- movie sets-->
 					<control type="group" id="5102">
                         <visible>[!String.IsEmpty(Window.Property(List_5002_Visible)) | !String.IsEmpty(Window.Property(List_5002_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_collection)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -717,11 +717,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Collection)]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5011</onup>
 								<ondown>5007</ondown>
@@ -736,12 +736,12 @@
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5002_IsUpdating))"/>
 							<param name="top" value="155"/>
 						</include>
-					</control>										
-					
+					</control>
+
 					<!-- studios-->
 					<control type="group" id="5107">
                         <visible>[!String.IsEmpty(Window.Property(List_5007_Visible)) | !String.IsEmpty(Window.Property(List_5007_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_studios)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -750,7 +750,7 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Studio)]</label>
 							<visible>String.IsEqual(Window.Property(dbtype),movie)</visible>
                         </control>
@@ -761,12 +761,12 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Network)]</label>
 							<visible>String.IsEqual(Window.Property(dbtype),tvshow) | String.IsEqual(Window.Property(dbtype),episode)</visible>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5002</onup>
 								<ondown>5006</ondown>
@@ -782,11 +782,11 @@
 							<param name="top" value="155"/>
 						</include>
 					</control>
-					
+
 					<!-- Genres-->
 					<control type="group" id="5106">
                         <visible>[!String.IsEmpty(Window.Property(List_5006_Visible)) | !String.IsEmpty(Window.Property(List_5006_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_genres)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -795,11 +795,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Genre)]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5007</onup>
 								<ondown>5005</ondown>
@@ -815,11 +815,11 @@
 							<param name="top" value="155"/>
 						</include>
 					</control>
-					
+
 					<!-- Years-->
 					<control type="group" id="5105">
                         <visible>[!String.IsEmpty(Window.Property(List_5005_Visible)) | !String.IsEmpty(Window.Property(List_5005_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_year)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -828,11 +828,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$INFO[Window.Property(Year),$LOCALIZE[320076] ,]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5006</onup>
 								<ondown>5093</ondown>
@@ -847,12 +847,12 @@
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5005_IsUpdating))"/>
 							<param name="top" value="155"/>
 						</include>
-					</control>										
-					
+					</control>
+
 					<!-- reviews -->
 					<control type="group" id="5193">
                         <visible>[!String.IsEmpty(Window.Property(List_5093_Visible)) | !String.IsEmpty(Window.Property(List_5093_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_reviews)</visible>
+						<visible>false</visible>
                         <height>407</height>
                         <control type="label">
                             <posx>7</posx>
@@ -861,11 +861,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[31120]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5005</onup>
 								<ondown>5003</ondown>
@@ -882,12 +882,12 @@
 							<param name="visibility" value="!String.IsEmpty(Window.Property(List_5093_IsUpdating))"/>
 							<param name="top" value="155"/>
 						</include>
-					</control>					
-					
+					</control>
+
 					<!-- recommended-->
 					<control type="group" id="5103">
                         <visible>[!String.IsEmpty(Window.Property(List_5003_Visible)) | !String.IsEmpty(Window.Property(List_5003_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_recommended)</visible>
+						<visible>false</visible>
                         <height>462</height>
                         <control type="label">
                             <posx>7</posx>
@@ -896,11 +896,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[320069]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5093</onup>
 								<ondown>5091</ondown>
@@ -916,11 +916,11 @@
 							<param name="top" value="155"/>
 						</include>
 					</control>
-					
+
 					<!-- artwork (posters)-->
 					<control type="group" id="5191">
                         <visible>[!String.IsEmpty(Window.Property(List_5091_Visible)) | !String.IsEmpty(Window.Property(List_5091_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_posters)</visible>
+						<visible>false</visible>
                         <height>437</height>
                         <control type="label">
                             <posx>7</posx>
@@ -929,11 +929,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[320078]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5003</onup>
 								<ondown>5092</ondown>
@@ -949,11 +949,11 @@
 							<param name="top" value="155"/>
 						</include>
 					</control>
-					
+
 					<!-- fanart -->
 					<control type="group" id="5192">
                         <visible>[!String.IsEmpty(Window.Property(List_5092_Visible)) | !String.IsEmpty(Window.Property(List_5092_IsUpdating))]</visible>
-						<visible>Skin.HasSetting(extendedinfo_details_fanart)</visible>
+						<visible>false</visible>
                         <height>330</height>
                         <control type="label">
                             <posx>7</posx>
@@ -962,11 +962,11 @@
                             <height>25</height>
                             <aligny>center</aligny>
                             <font>Bold31</font>
-                            <textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+                            <textcolor>ffffffff</textcolor>
                             <label>$LOCALIZE[320210]</label>
                         </control>
-						<control type="group">	
-							<posy>-166</posy>				
+						<control type="group">
+							<posy>-166</posy>
 							<include content="Widget_Poster">
 								<onup>5091</onup>
 								<ondown>noop</ondown>
@@ -983,8 +983,8 @@
 							<param name="top" value="104"/>
 						</include>
 					</control>
-				</control>																		
-        </control>		
+				</control>
+        </control>
 		<include content="Dialog_ImageViewer">
             <param name="buttonid" value="5292" />
             <param name="listid" value="5092" />

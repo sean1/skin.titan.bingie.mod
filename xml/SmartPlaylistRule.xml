@@ -15,7 +15,7 @@
                     <width>1030</width>
                     <height>360</height>
 					<texture border="15">diffuse/bgpanel.png</texture>
-					<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+					<colordiffuse>cc0a0a0a</colordiffuse>
 				</control>
 				<control type="image">
 					<!--Panel-->
@@ -25,10 +25,10 @@
                     <height>360</height>
 					<bordersize>10</bordersize>
 					<texture border="15">diffuse/bgpanel.png</texture>
-					<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+					<colordiffuse>cc0a0a0a</colordiffuse>
 				</control>
-				
-				
+
+
                 <control type="label">
                     <description>Heading</description>
                     <posx>473</posx>
@@ -123,7 +123,7 @@
                         <width>74</width>
                         <height>60</height>
                         <texture>dialogs/mediasource/keyboard-nf.png</texture>
-                        <colordiffuse>$INFO[Skin.String(GeneralTextColor)]</colordiffuse>
+                        <colordiffuse>ffffffff</colordiffuse>
                         <visible>!Control.HasFocus(17)</visible>
                     </control>
                     <control type="image">
@@ -132,7 +132,7 @@
                         <width>74</width>
                         <height>60</height>
                         <texture>dialogs/mediasource/keyboard-nf.png</texture>
-                        <colordiffuse>$INFO[Skin.String(ButtonFocusTextColor)]</colordiffuse>
+                        <colordiffuse>ff000000</colordiffuse>
                         <visible>Control.HasFocus(17)</visible>
                     </control>
                     <control type="radiobutton" id="20">

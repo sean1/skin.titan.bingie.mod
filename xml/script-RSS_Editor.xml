@@ -1,6 +1,6 @@
 <window id="129">
     <defaultcontrol always="true">10</defaultcontrol>
-	
+
     <controls>
 		<!--Dialog Overlay-->
 		<include>DialogOverlayExtra</include>
@@ -18,8 +18,8 @@
                 <width>1100</width>
                 <height>520</height>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 			<control type="image">
                 <!--Panel-->
@@ -29,8 +29,8 @@
                 <height>520</height>
 				<bordersize>10</bordersize>
                 <texture border="15">diffuse/bgpanel.png</texture>
-				
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 
 			<control type="label" id="2">
@@ -81,7 +81,7 @@
 						<width>600</width>
 						<height>60</height>
 						<texture border="10">diffuse/panel.png</texture>
-						<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+						<colordiffuse>cce0e0e0</colordiffuse>
 					</control>
 					<control type="label">
 						<posx>10</posx>

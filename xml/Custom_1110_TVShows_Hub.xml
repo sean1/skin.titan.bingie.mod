@@ -17,8 +17,7 @@
         <!--NowPlaying-->
         <include>NowPlayingBackground</include>
         <!-- hidden submenu for count calculations -->
-        <include condition="!Skin.HasSetting(DisableAllSubmenus)">hiddenSubmenu</include>
+        <include>hiddenSubmenu</include>
         <include>HomeBingie</include>
-        <include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>
     </controls>
 </window>

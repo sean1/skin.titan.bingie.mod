@@ -2,25 +2,24 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">5000</defaultcontrol>
-    <include>allViewIds</include>
-	
+	    <include>genericViewIds</include>
+
 	<onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
     <controls>
         <!-- Video Background -->
         <include>GlobalBackground</include>
 		<!--Header-->
         <include>Header</include>
- 
+
 		<!--NowPlaying-->
 		<include>NowPlayingModern</include>
-		
+
 		<!-- all Views -->
         <include>allViews</include>
-		
+
         <!--Sub Menu-->
         <control type="group">
-            <include condition="Skin.HasSetting(smallContextMenu)">SideBladeClassic</include>
-			<include condition="!Skin.HasSetting(smallContextMenu)">SideBladeModern</include>
+	            <include>SideBladeModern</include>
            <!--Grouplist 9000-->
             <control type="grouplist" id="9000">
                 <posx>21</posx>
@@ -73,7 +72,7 @@
                     <include>SideBladeMenuButton</include>
                     <align>left</align>
                 </control>
-				
+
 				<control type="image" id="6201">
                     <!--Seperator-->
                     <width>458</width>
@@ -81,10 +80,9 @@
                     <align>left</align>
                     <texture>common/menu-separator.png</texture>
                 </control>
-							
+
 				<include>SideBladeViewCommands</include>
             </control>
         </control>
-        <include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>
     </controls>
 </window>

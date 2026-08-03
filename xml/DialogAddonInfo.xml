@@ -10,7 +10,7 @@
 			<include>DialogOverlayExtra</include>
 			<animation effect="fade" time="250" start="0" end="100" reversible="false">WindowOpen</animation>
         </control>
-		
+
         <!-- Dialog Add-on Info -->
         <control type="group">
             <visible>!Window.IsVisible(AddonSettings) + !Window.IsActive(TextViewer)</visible>
@@ -27,7 +27,7 @@
                 <width>1340</width>
                 <height>100%</height>
 				<texture>diffuse/panel2.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 			<control type="image">
                 <posx>630</posx>
@@ -35,9 +35,9 @@
                 <width>1340</width>
                 <height>100%</height>
 				<texture>diffuse/panel2.png</texture>
-				<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+				<colordiffuse>cc0a0a0a</colordiffuse>
             </control>
-			
+
            <!--Header-->
             <control type="label">
                 <description>Heading</description>
@@ -45,7 +45,7 @@
                 <posy>10</posy>
                 <width>1200</width>
 				<font>Bold45</font>
-                <textcolor>$INFO[Skin.String(GeneralHighlightTextColor)]</textcolor>
+                <textcolor>ffffffff</textcolor>
 				<shadowcolor>black</shadowcolor>
                 <align>left</align>
 				<height>100</height>
@@ -61,7 +61,7 @@
 				<label>$INFO[ListItem.AddonName]</label>
             </control>
 
-			
+
 			<control type="image">
 				<posx>675</posx>
                 <posy>220</posy>
@@ -69,7 +69,7 @@
 				<height>250</height>
 				<texture border="5">dialogs/default/inner.png</texture>
 			</control>
-			
+
 			<!--Icon-->
             <control type="image">
                 <right>65</right>
@@ -80,7 +80,7 @@
 				<aspectratio align="right" aligny="center" scalediffuse="true">keep</aspectratio>
 				<texture background="true" diffuse="diffuse/panel2.png" fallback="DefaultVideo.png" border="5">$INFO[ListItem.Icon]</texture>
             </control>
-			
+
             <control type="grouplist">
                 <posx>675</posx>
                 <posy>220</posy>
@@ -96,7 +96,7 @@
                     <label>$LOCALIZE[146]</label>
                     <label2>$INFO[ListItem.AddonType]</label2>
                     <enable>false</enable>
-					<disabledcolor>$INFO[Skin.String(GeneralTextColor)]</disabledcolor>
+					<disabledcolor>ffffffff</disabledcolor>
                 </control>
                 <control type="button">
                     <!--Author-->
@@ -109,7 +109,7 @@
                     <label>$LOCALIZE[21863]:</label>
                     <label2>$INFO[ListItem.AddonCreator]</label2>
                     <enable>false</enable>
-					<disabledcolor>$INFO[Skin.String(GeneralTextColor)]</disabledcolor>
+					<disabledcolor>ffffffff</disabledcolor>
                 </control>
                 <control type="button">
                     <!--Version-->
@@ -122,7 +122,7 @@
                     <label>$LOCALIZE[24051]</label>
                     <label2>$INFO[ListItem.AddonVersion]</label2>
                     <enable>false</enable>
-					<disabledcolor>$INFO[Skin.String(GeneralTextColor)]</disabledcolor>
+					<disabledcolor>ffffffff</disabledcolor>
                 </control>
                 <control type="label">
                     <!--Disclaimer-->
@@ -164,7 +164,7 @@
                 <label fallback="19055">$INFO[ListItem.AddonNews]</label>
                 <visible>String.IsEqual(Window.Property(showinfo),news)</visible>
             </control>
-            
+
             <!-- screenshots -->
             <control type="panel" id="50">
                 <posx>676</posx>
@@ -186,7 +186,7 @@
                     <control type="image">
                         <!--focus image-->
                         <texture diffuse="home/home_matte2.png">diffuse/panel2.png</texture>
-                        <colordiffuse>$INFO[Skin.String(GeneralHighlightTextColor)]</colordiffuse>
+                        <colordiffuse>ffffffff</colordiffuse>
                     </control>
                     <control type="image">
                         <bordersize>4</bordersize>
@@ -194,7 +194,7 @@
                     </control>
                 </focusedlayout>
             </control>
-      
+
 			<!--Button Group-->
             <control type="grouplist" id="9000">
                 <posx>675</posx>
@@ -203,7 +203,7 @@
 				<itemgap>5</itemgap>
 				<onup>50</onup>
 				<width>1200</width>
-				
+
                 <control type="button" id="11111">
                     <!--Close-->
                     <width>296</width>
@@ -214,7 +214,7 @@
                     <onclick>Close</onclick>
                     <visible>Control.IsEnabled(11111)</visible>
                 </control>
-                
+
                 <control type="togglebutton" id="22111">
                     <!--screenshots-->
                     <width>296</width>
@@ -228,7 +228,7 @@
                     <onclick condition="String.IsEqual(Window.Property(showinfo),screenshots)">ClearProperty(showinfo)</onclick>
                     <visible>Integer.IsGreater(Container(50).NumItems,0)</visible>
                 </control>
-                
+
                 <control type="togglebutton" id="22112">
                     <!--news-->
                     <width>296</width>
@@ -241,7 +241,7 @@
                     <onclick condition="String.IsEqual(Window.Property(showinfo),news)">ClearProperty(showinfo)</onclick>
 					<include>DialogButtonOther</include>
                 </control>
-                
+
                 <control type="button" id="12">
                   <!--Launch Addon button-->
                     <width>296</width>
@@ -251,7 +251,7 @@
 					<include>DialogButtonOther</include>
 					<visible>Control.IsEnabled(12)</visible>
                 </control>
-				
+
 				<control type="button" id="8">
                   <!--Update Addon button-->
                     <width>296</width>
@@ -299,7 +299,7 @@
                     <include>DialogButtonOther</include>
                     <visible>Control.IsEnabled(10)</visible>
                 </control>
-                
+
                 <control type="radiobutton" id="13">
                     <!--enable auto update-->
                     <width>400</width>
@@ -311,7 +311,7 @@
 					<include>DialogButtonOther</include>
                     <visible>Control.IsEnabled(13)</visible>
                 </control>
-				
+
 				<control type="button" id="14">
                     <!--version-->
                     <width>296</width>
@@ -321,7 +321,7 @@
                     <include>DialogButtonOther</include>
                     <visible>Control.IsEnabled(14)</visible>
                 </control>
-                
+
             </control>
             <!--Arrows-->
             <control type="image">

@@ -2,8 +2,7 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">5000</defaultcontrol>
-    <include>allViewIds</include>
-	<onload condition="System.HasAddon(script.tv.show.next.aired)">RunScript(script.tv.show.next.aired,backend=True)</onload>
+	    <include>videoViewIds</include>
     <onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
 	<onload>ClearProperty(ShowViewSubMenu,Home)</onload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
@@ -24,8 +23,7 @@
         <include>allViews</include>
         <!--Sub Menu-->
         <control type="group">
-            <include condition="Skin.HasSetting(smallContextMenu)">SideBladeClassic</include>
-			<include condition="!Skin.HasSetting(smallContextMenu)">SideBladeModern</include>
+	            <include>SideBladeModern</include>
             <!--Grouplist 9000-->
             <control type="grouplist" id="9000">
                 <posx>21</posx>
@@ -42,7 +40,7 @@
                 <onup>9000</onup>
                 <ondown>9000</ondown>
                 <orientation>vertical</orientation>
-				
+
                 <control type="radiobutton" id="14">
                     <!--Button Watched Toggle-->
                     <include>SideBladeMenuButton</include>
@@ -57,7 +55,7 @@
 				<control type="togglebutton" id="4">
 					<description>Sort asc</description>
 					<include>SideBladeMenuButton</include>
-					<alttexturefocus border="10" colordiffuse="$INFO[Skin.String(ButtonFocusColor)]">diffuse/panel.png</alttexturefocus>
+					<alttexturefocus border="10" colordiffuse="cce0e0e0">diffuse/panel.png</alttexturefocus>
 					<alttexturenofocus/>
 					<label>584</label>
 					<altlabel>585</altlabel>
@@ -87,7 +85,7 @@
 					<include>SideBladeMenuButton</include>
 					<label>653</label>
 					<altlabel>13353</altlabel>
-					<alttexturefocus border="5" colordiffuse="$INFO[Skin.String(ButtonFocusColor)]">colors/color_white.png</alttexturefocus>
+					<alttexturefocus border="5" colordiffuse="cce0e0e0">colors/color_white.png</alttexturefocus>
 					<alttexturenofocus/>
 					<usealttexture>library.isscanningvideo</usealttexture>
 					<visible>!String.Contains(Container.FolderPath,plugin://plugin.video)</visible>
@@ -96,14 +94,14 @@
                     <!--Button Movie Search-->
                     <include>SideBladeMenuButton</include>
                     <label>137</label>
-					<onclick>ActivateWindow(1108,return)</onclick>
+					<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=movie,return)</onclick>
 					<visible>!String.Contains(Container.FolderPath,plugin://plugin.video) + [$EXP[IsMovieDBType] + !String.IsEmpty(ListItem.DBID)]</visible>
                 </control>
 				<control type="button" id="389">
                     <!--Button TVShow Search-->
                     <include>SideBladeMenuButton</include>
                     <label>137</label>
-					<onclick>ActivateWindow(1106,return)</onclick>
+					<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=get_search_term&amp;mediatype=tv_show,return)</onclick>
 					<visible>!String.Contains(Container.FolderPath,plugin://plugin.video) + [$EXP[IsTvShowDBType] + !String.IsEmpty(ListItem.DBID)]</visible>
                 </control>
 				<control type="button" id="4401">
@@ -119,9 +117,9 @@
                     <label>20012</label>
 					<onclick>ActivateWindow(Videos,special://videoplaylists/,return)</onclick>
                 </control>
-				
+
 				<include>SideBladeViewCommands</include>
-				
+
 				<control type="radiobutton" id="4406">
 					<description>Unlock Shares</description>
 					<include>SideBladeMenuButton</include>
@@ -132,9 +130,8 @@
 				</control>
              </control>
         </control>
-		
+
 		<!--Header-->
         <include>Header</include>
-        <include condition="Skin.HasSetting(DebugGrid) | Skin.HasSetting(DebugInfo)">DebugInfo</include>
 	</controls>
 </window>

@@ -2,40 +2,12 @@
 <!-- BINGIE -->
 <includes>
     <include name="widget_layout_default">
-        <!-- Poster -->
-		<include content="widget_layout_poster" condition="String.IsEqual(Skin.String(widgetstyle),poster)">
-            <param name="widgetid" value="$PARAM[widgetid]"/>
-            <param name="widgetTags" value="$PARAM[widgetTags]"/>
-            <param name="multiRows" value="$PARAM[multiRows]" />
-        </include>
-        <!-- Landscape -->
-		<include content="widget_layout_landscape" condition="String.IsEqual(Skin.String(widgetstyle),landscape)">
-            <param name="widgetid" value="$PARAM[widgetid]"/>
-            <param name="widgetTags" value="$PARAM[widgetTags]"/>
-            <param name="multiRows" value="$PARAM[multiRows]" />
-        </include>
-        
-        <!-- Landscape Large -->
-        <include content="widget_layout_landscapelarge" condition="String.IsEqual(Skin.String(widgetstyle),landscapelarge)">
-            <param name="widgetid" value="$PARAM[widgetid]"/>
-            <param name="widgetTags" value="$PARAM[widgetTags]"/>
-            <param name="multiRows" value="$PARAM[multiRows]" />
-        </include>
-        <!-- Highlight -->
-        <include content="widget_layout_highlight" condition="String.IsEqual(Skin.String(widgetstyle),highlight)">
-            <param name="widgetid" value="$PARAM[widgetid]"/>
-            <param name="widgetTags" value="$PARAM[widgetTags]"/>
-            <param name="multiRows" value="$PARAM[multiRows]" />
-        </include>
+		<include content="widget_layout_landscape">
+			<param name="widgetid" value="$PARAM[widgetid]"/>
+			<param name="widgetTags" value="$PARAM[widgetTags]"/>
+			<param name="multiRows" value="$PARAM[multiRows]" />
+		</include>
     </include>
-    <include name="widget_layout_None">
-        <include content="widget_layout_default">
-            <param name="widgetid" value="$PARAM[widgetid]"/>
-            <param name="widgetTags" value="$PARAM[widgetTags]"/>
-            <param name="multiRows" value="$PARAM[multiRows]" />
-        </include>
-    </include>
-
 	<!-- Play Something Widget -->
 	<include name="PlaySomething_Widget">
         <focusedposition>0</focusedposition>
@@ -55,10 +27,10 @@
             </include>
 		</focusedlayout>
     </include>
-	
+
 	<!-- Play Something -->
 	<include name="PlaySomething_Widget_Base">
-        <control type="group" id="9005"> 
+        <control type="group" id="9005">
 				<!-- trailer video preview -->
 				<control type="group">
 					<include>FullscreenDimensions</include>
@@ -89,14 +61,14 @@
                 <height>20</height>
                 <aspectratio>keep</aspectratio>
                 <texture>bingie/something_arrow_up.png</texture>
-				<colordiffuse>$INFO[Skin.String(BingiePrimaryTextColor)]</colordiffuse>
+				<colordiffuse>ffffffff</colordiffuse>
                 <visible>Container(1510).HasNext | Container(1510).HasPrevious</visible>
 			</control>
 			<control type="label">
 				<posx>185</posx>
 				<top>98</top>
-				<font>reg30</font> 
-				<textcolor>$INFO[Skin.String(BingiePrimaryTextColor)]</textcolor>
+				<font>reg30</font>
+				<textcolor>ffffffff</textcolor>
 				<label>$LOCALIZE[320094]</label>
 				<visible>Container(1510).HasNext | Container(1510).HasPrevious</visible>
 			</control>
@@ -123,7 +95,7 @@
 				<width>39</width>
                 <height>39</height>
                 <aspectratio>keep</aspectratio>
-                <texture colordiffuse="$INFO[Skin.String(BingiePrimaryTextColor)]">shortcuts/something.png</texture>
+                <texture colordiffuse="ffffffff">shortcuts/something.png</texture>
             </control>
 			<control type="label">
 				<width>auto</width>
@@ -132,9 +104,9 @@
                 <font>reg30</font>
 				<align>right</align>
 				<label>$LOCALIZE[320093]</label>
-				<textcolor>$INFO[Skin.String(BingiePrimaryTextColor)]</textcolor>
+				<textcolor>ffffffff</textcolor>
 			</control>
-			</control>		
+			</control>
 			<control type="image">
 				<width>100%</width>
                 <height>100%</height>
@@ -181,130 +153,34 @@
 				</control>
 				<control type="label" id="823155">
 					<top>270</top>
-					<font>reg30</font> 
-					<textcolor>$INFO[Skin.String(BingieSubLabelTextColor)]</textcolor>
+					<font>reg30</font>
+					<textcolor>ffffffff</textcolor>
 					<label>$INFO[ListItem.Tagline]</label>
 					<visible>!String.IsEmpty(Control.GetLabel(823156)) | !String.IsEmpty(Control.GetLabel(823157))</visible>
 				</control>
 				<control type="label" id="823156">
 					<top>270</top>
-					<font>reg30</font> 
-					<textcolor>$INFO[Skin.String(BingieSubLabelTextColor)]</textcolor>
+					<font>reg30</font>
+					<textcolor>ffffffff</textcolor>
 					<label>$LOCALIZE[320198] [LOWERCASE]$INFO[Container(99950).ListItem.Property(Genre.1.Name)][/LOWERCASE] $LOCALIZE[320199]</label>
 					<visible>[String.IsEmpty(Control.GetLabel(823155)) | String.IsEmpty(Control.GetLabel(823157))] + $EXP[IsMovieDBType] + !String.IsEmpty(Container(99950).ListItem.Property(Genre.1.Name))</visible>
 				</control>
 				<control type="label" id="823157">
 					<top>270</top>
-					<font>reg30</font> 
-					<textcolor>$INFO[Skin.String(BingieSubLabelTextColor)]</textcolor>
+					<font>reg30</font>
+					<textcolor>ffffffff</textcolor>
 					<label>$LOCALIZE[320198] [LOWERCASE]$INFO[Container(99950).ListItem.Property(Genre.1.Name)][/LOWERCASE] $LOCALIZE[320200]</label>
 					<visible>[String.IsEmpty(Control.GetLabel(823155)) | String.IsEmpty(Control.GetLabel(823156))] + $EXP[IsTvShowDBType] + !String.IsEmpty(Container(99950).ListItem.Property(Genre.1.Name))</visible>
 				</control>
-			</control>			
+			</control>
             <!-- Widgets -->
-            <control type="grouplist" id="77777">  
+            <control type="grouplist" id="77777">
 				<onup>back</onup>
 				<include condition="Window.IsActive(1118)">bingie_items_something</include>
             </control>
 		</control>
     </include>
 
-    <!-- Poster Layout -->
-    <include name="widget_layout_poster">
-        <include condition="$PARAM[multiRows]">widget_layout_poster_multi</include>
-        <height>331</height>
-        <itemlayout height="330" width="238">
-            <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
-                    <param name="left" value="bingie_no_circular_posx"/>
-                </include>
-                <width>240</width>
-                <height>330</height>
-                <include>PosterPanelBingieLayout</include>
-                <control type="group">
-                    <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">PosterTagOverlayBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Poster"/>
-                    </include>
-                </control>
-               <include>Poster_New_Episodes_Tag_Overlay</include>
-            </control>
-        </itemlayout>
-        <focusedlayout height="330" width="238" condition="Control.HasFocus($PARAM[widgetid])">
-            <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
-                    <param name="left" value="bingie_no_circular_posx"/>
-                </include>
-                <width>240</width>
-                <height>330</height>
-                <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
-                    <visible>Control.HasFocus($PARAM[widgetid])</visible>
-                    <include>PosterThumbFO_DefsBingie</include>
-                    <include>thumbsborder_focused</include>
-                </control>
-                <include>PosterThumbBingieLayout</include>
-                <control type="group">
-                    <!--Watched Overlay-->
-                    <right>8</right>
-                    <top>8</top>
-                    <include>WatchedIndicatorNormal</include>
-                </control>
-				<include>Top250Indicator</include>
-                <control type="group">
-                    <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">PosterTagOverlayBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Poster"/>
-                    </include>
-                </control>
-                <include>Poster_New_Episodes_Tag_Overlay</include>
-                <include content="HiddenWidgetButton">
-                    <param name="widgetstyle" value="poster"/>
-                    <param name="widgetid" value="$PARAM[widgetid]"/>
-                </include>
-            </control>
-        </focusedlayout>
-		        <focusedlayout height="330" width="238" condition="!Control.HasFocus($PARAM[widgetid])">
-            <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
-                    <param name="left" value="bingie_no_circular_posx"/>
-                </include>
-                <width>240</width>
-                <height>330</height>
-                <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
-                    <visible>Control.HasFocus($PARAM[widgetid])</visible>
-                    <include>PosterThumbFO_DefsBingie</include>
-                    <include>thumbsborder_focused</include>
-                </control>
-                <include>PosterThumbBingieLayout</include>
-                <control type="group">
-                    <!--Watched Overlay-->
-                    <right>8</right>
-                    <top>8</top>
-                    <include>WatchedIndicatorNormal</include>
-                </control>
-                <control type="group">
-                    <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">PosterTagOverlayBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Poster"/>
-                    </include>
-                </control>
-                <include>Poster_New_Episodes_Tag_Overlay</include>
-				<include content="HiddenWidgetButton">
-                    <param name="widgetstyle" value="poster"/>
-                    <param name="widgetid" value="$PARAM[widgetid]"/>
-                </include>
-            </control>
-        </focusedlayout>
-    </include>
-    <include name="widget_layout_poster_multi">
-        <height>760</height>
-    </include>
-    
     <!-- Widget Landscape -->
     <include name="widget_layout_landscape">
         <include content="widget_layout_landscape_not_vertical_layout">
@@ -318,68 +194,30 @@
         <height>212</height>
         <itemlayout width="364" height="212">
             <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+                <include content="left">
                     <param name="left" value="bingie_no_circular_posx"/>
                 </include>
                 <width>landscape_width</width>
                 <height>210</height>
                 <include>ThumbsViewBingieLayout</include>
-			<control type="image">
-				<!-- fallback logo image -->
-				<width>366</width>
-				<height>210</height>
-				<bottom>-46</bottom>
-				<left>0</left>
-				<bordersize>54</bordersize>
-				<texture background="true">$VAR[ClearLogoFallback]</texture>
-				<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-				<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-				<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-				<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
-			</control>
                 <control type="group">
                     <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">ThumbsTagOverlayBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Landscape"/>
-                    </include>
+                    <include>ThumbsTagOverlayBingie</include>
                 </control>
                 <include>New_Episodes_Tag_Overlay</include>
             </control>
         </itemlayout>
         <focusedlayout width="364" height="212" condition="Control.HasFocus($PARAM[widgetid])">
             <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+                <include content="left">
                     <param name="left" value="bingie_no_circular_posx"/>
                 </include>
                 <width>landscape_width</width>
                 <height>210</height>
-                <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
-                    <visible>Control.HasFocus($PARAM[widgetid])</visible>
-                    <include>ThumbsFO_DefsBingie</include>
-                    <include>thumbsborder_focused</include>
-                </control>
                 <include>ThumbsViewItemBingieLayout</include>
-				<control type="image">
-					<!-- fallback logo image -->
-					<width>366</width>
-					<height>210</height>
-					<bottom>-46</bottom>
-					<left>0</left>
-					<bordersize>54</bordersize>
-					<texture background="true">$VAR[ClearLogoFallback]</texture>
-					<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-					<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-					<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-					<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
-				</control>
                 <control type="group">
                     <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">ThumbsTagOverlayBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Landscape"/>
-                    </include>
+                    <include>ThumbsTagOverlayBingie</include>
                 </control>
 				<include>Top250Indicator</include>
                 <include>New_Episodes_Tag_Overlay</include>
@@ -391,37 +229,15 @@
         </focusedlayout>
 		<focusedlayout width="364" height="212" condition="!Control.HasFocus($PARAM[widgetid])">
             <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+                <include content="left">
                     <param name="left" value="bingie_no_circular_posx"/>
                 </include>
                 <width>landscape_width</width>
                 <height>210</height>
-                <control type="image">
-                    <visible>![String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(EnableFixedFrameWidgets) + [[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]]</visible>
-                    <visible>Control.HasFocus($PARAM[widgetid])</visible>
-                    <include>ThumbsFO_DefsBingie</include>
-                    <include>thumbsborder_focused</include>
-                </control>
                 <include>ThumbsViewItemBingieLayout</include>
-			<control type="image">
-				<!-- fallback logo image -->
-				<width>366</width>
-				<height>210</height>
-				<bottom>-46</bottom>
-				<left>0</left>
-				<bordersize>54</bordersize>
-				<texture background="true">$VAR[ClearLogoFallback]</texture>
-				<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-				<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-				<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-				<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
-			</control>
                 <control type="group">
                     <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">ThumbsTagOverlayBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Landscape"/>
-                    </include>
+                    <include>ThumbsTagOverlayBingie</include>
                 </control>
                 <include>New_Episodes_Tag_Overlay</include>
 				<include content="HiddenWidgetButton">
@@ -432,351 +248,30 @@
         </focusedlayout>
     </include>
 
-    <!-- Highlight Layout -->
-    <include name="widget_layout_highlight">
-        <height>724</height>
-        <orientation>horizontal</orientation>
-		<onunfocus>ClearProperty(highlightfocus,home)</onunfocus>
-		<onunfocus>CancelAlarm(FocusHighlightWidget,silent)</onunfocus>
-		<onunfocus condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onunfocus>
-        <onunfocus condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onunfocus>			
-		<onfocus condition="String.IsEmpty(Window(Home).Property(Animation))">SetProperty(Animation,1,Home)</onfocus>
-		<onunfocus>ClearProperty(Animation,home)</onunfocus>
-        <itemlayout height="720" width="359">
-            <control type="group">
-                <left>130</left>
-                <width>361</width>
-                <height>720</height>
-                <include>PosterPanelHighlightLayout</include>
-					<control type="image">
-						<top>525</top>
-						<left>30</left>
-                        <height>116</height>
-                        <width>300</width>
-                        <align>center</align>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                        <texture background="true" fallback="colors/color_transparent.png">$VAR[BingieInfoClearlogo]</texture>
-                    </control>
-					<control type="textbox">
-						<visible>String.IsEmpty(ListItem.Art(clearlogo))</visible>
-						<top>490</top>
-						<left>30</left>
-                        <height>160</height>
-                        <width>300</width>
-                        <align>center</align>
-						<aligny>center</aligny>
-						<font>Reg60</font> 
-						<textcolor>$INFO[Skin.String(BingieLabelTextColor)]</textcolor>
-						<label>$VAR[BingieInfoLabel]</label>
-					</control>
-					<control type="image">
-						<texture background="true">diffuse/panel2.png</texture>
-						<aspectratio scalediffuse="true" aligny="center" align="center">scale</aspectratio>
-						<colordiffuse>80000000</colordiffuse>
-						<bordersize>8</bordersize>
-						<visible>String.IsEqual(Window(home).property(highlightfocus),Container($PARAM[widgetid]).CurrentItem)</visible>
-					</control>					
-            </control>
-        </itemlayout>
-        <focusedlayout width="359" height="720" condition="[ControlGroup(77777).HasFocus() + !Control.HasFocus($PARAM[widgetid])] | !String.IsEqual(Window(home).property(highlightfocus),Container($PARAM[widgetid]).CurrentItem)">
-            <control type="group">
-                <left>130</left>
-                <width>361</width>
-                <height>720</height>
-				<control type="image">
-                    <texture background="true" border="12" colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]">$INFO[Skin.String(thumbsborder_focused),bingie/border/poster_fo_,.png]</texture>
-					<visible>Control.HasFocus($PARAM[widgetid]) + !Skin.HasSetting(EnableFixedFrameWidgets)</visible>
-					<bordersize>2</bordersize>
-                </control>
-                <include>PosterPanelHighlightLayout</include>
-				<control type="image">
-						<top>525</top>
-						<left>30</left>
-                        <height>116</height>
-                        <width>300</width>
-                        <align>center</align>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                        <texture background="true" fallback="colors/color_transparent.png">$VAR[BingieInfoClearlogo]</texture>
-                </control>
-				<control type="textbox">
-						<visible>String.IsEmpty(ListItem.Art(clearlogo))</visible>
-						<top>490</top>
-						<left>30</left>
-                        <height>160</height>
-                        <width>300</width>
-                        <align>center</align>
-						<aligny>center</aligny>
-						<font>Reg60</font> 
-						<textcolor>$INFO[Skin.String(BingieLabelTextColor)]</textcolor>
-						<label>$VAR[BingieInfoLabel]</label>
-						<autoscroll delay="4000" time="2000" repeat="6000">true</autoscroll>
-					</control>
-				<control type="group">
-					<visible>Control.HasFocus($PARAM[widgetid])</visible>
-					<include>Top250Indicator</include>
-				</control>	
-            </control>
-            <control type="button">
-                <visible>false</visible>
-				<onfocus condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onfocus>
-                <onfocus condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onfocus>			
-                <onfocus>ClearProperty(highlightfocus,home)</onfocus>
-                <onfocus>AlarmClock(FocusHighlightWidget,SetProperty(highlightfocus,$INFO[Container($PARAM[widgetid]).CurrentItem],Home),00:02,silent)</onfocus>                         
-            </control>
-			<include content="HighlightHiddenWidgetButton">
-                <param name="widgetstyle" value="highlight" />
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>				
-        </focusedlayout>
-        <focusedlayout width="1268" height="720" condition="[ControlGroup(77777).HasFocus() + Control.HasFocus($PARAM[widgetid])] + String.IsEqual(Window(home).property(highlightfocus),Container($PARAM[widgetid]).CurrentItem)">
-            <control type="group">
-                <left>130</left>
-                <width>1270</width>
-                <height>720</height>
-                <control type="group">
-                    <width>1270</width>
-                    <height>720</height>
-					<control type="image">
-                        <bordersize>8</bordersize>
-                        <texture background="true">diffuse/panel2.png</texture>
-						<colordiffuse>ff000000</colordiffuse>
-                        <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
-                    </control>
-                </control>                
-				<control type="group">
-                    <visible>Control.HasFocus($PARAM[widgetid]) + $EXP[IsPlayingUnrecognizedContent]</visible>
-                    <left>6</left>
-                    <top>5</top>
-                    <control type="videowindow">
-                        <height>710</height>
-                        <width>1258</width>
-                    </control>
-                </control>		
-                <control type="image">
-					<texture background="true" border="10" colordiffuse="$INFO[Skin.String(ViewDetailsBorderFocusColor)]">$INFO[Skin.String(thumbsborder_focused),bingie/border/thumb_fo_,.png]</texture>
-					<bordersize>2</bordersize>
-                </control>
-                <control type="group">
-                    <visible>!$EXP[IsPlayingUnrecognizedContent]</visible>
-                    <width>1270</width>
-                    <height>720</height>
-                    <control type="image">
-                        <bordersize>8</bordersize>
-                        <texture background="true">$INFO[ListItem.Art(fanart)]</texture>
-                        <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
-                        <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
-                        <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-						<fadetime>300</fadetime>
-                    </control>
-					<control type="image">
-                        <bordersize>8</bordersize>
-                        <texture background="true">overlays/gradient_fanart.png</texture>
-                        <aspectratio scalediffuse="false" align="center" aligny="bottom">scale</aspectratio>
-                        <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
-                        <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-                    </control>
-                </control>
-				<control type="group">
-					<visible>Control.HasFocus($PARAM[widgetid])</visible>
-					<include>Top250Indicator</include>
-				</control>
-				<control type="group">
-					<right>8</right>
-					<top>8</top>
-					<include>WatchedIndicatorNormal</include>
-				</control>
-                <control type="group">
-                    <height>170</height>
-					<width>335</width>
-                    <bottom>30</bottom>
-                    <left>30</left>
-                    <control type="image">
-						<posy>5</posy>
-                        <height>116</height>
-                        <width>300</width>
-                        <align>center</align>
-                        <aspectratio align="center" aligny="center">keep</aspectratio>
-                        <texture background="true" fallback="colors/color_transparent.png">$VAR[BingieInfoClearlogo]</texture>
-                    </control>
-					<control type="textbox">
-						<visible>String.IsEmpty(ListItem.Art(clearlogo))</visible>
-						<posy>-30</posy>
-                        <height>160</height>
-                        <width>300</width>
-                        <align>center</align>
-						<aligny>center</aligny>
-						<font>Reg60</font> 
-						<textcolor>$INFO[Skin.String(BingieLabelTextColor)]</textcolor>
-						<label>$VAR[BingieInfoLabel]</label>
-						<autoscroll delay="4000" time="2000" repeat="6000">true</autoscroll>
-					</control>
-                    <control type="label">
-						<visible>!Skin.HasSetting(enableUKIcons)</visible>
-                        <visible>!$EXP[IsTVShowInLastEpisodes] + !$EXP[IsNewMovie]</visible>
-						<top>141</top>
-						<left>-6</left>
-                        <height>35</height>
-                        <width>310</width>
-						<align>center</align>
-                        <aligny>center</aligny>
-                        <font>bold23</font>
-                        <textcolor>$INFO[Skin.String(ViewDetailsTextColor)]</textcolor>
-                        <label>$VAR[YearOrPremiered,,    ]$VAR[GetMPAA,,    ]$VAR[DurationOrTotalSECount]</label>
-                    </control>
-					<control type="group">
-						<left>30</left>
-						<bottom>-30</bottom>
-						<include>Poster_New_Episodes_Tag_Overlay</include>
-					</control>
-                </control>
-            </control>
-			<control type="button">
-                <visible>false</visible>
-                <onfocus condition="[!String.IsEmpty(ListItem.Trailer) + [String.IsEqual(Skin.String(AutoYoutubeTrailer),true) | !String.Contains(ListItem.Trailer,plugin)]] | [String.IsEmpty(ListItem.Trailer) + String.IsEqual(ListItem.DBType,movie) + String.IsEqual(Skin.String(AutoYoutubeTrailer),true)] | [String.IsEmpty(ListItem.Trailer) + [String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,episode)] + String.IsEqual(Skin.String(AutoYoutubeTrailer),true)]">SetProperty(highlightfocus,$INFO[Container($PARAM[widgetid]).CurrentItem],Home)</onfocus>                     
-            </control>
-        </focusedlayout>
-    </include>
-    
-    <!-- Widget Landscape Large -->
-    <include name="widget_layout_landscapelarge">
-        <height>248</height>
-        <itemlayout width="428" height="260">
-            <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
-                    <param name="left" value="bingie_no_circular_posx"/>
-                </include>
-                <width>430</width>
-                <height>248</height>
-                <include>ThumbsViewBingieLayout</include>
-				<control type="image">
-					<!-- fallback logo image -->
-					<width>430</width>
-					<height>248</height>
-					<bottom>-56</bottom>
-					<left>0</left>
-					<bordersize>63</bordersize>
-					<texture background="true">$VAR[ClearLogoFallback]</texture>
-					<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-					<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-					<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-					<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
-				</control>
-                <control type="group">
-                    <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">ThumbsTagOverlayLargeBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Landscape" />
-                    </include>
-                    <include>New_Episodes_Tag_Overlay</include>
-                </control>
-            </control>
-        </itemlayout>
-        <focusedlayout width="428" height="260" condition="Control.HasFocus($PARAM[widgetid])">
-            <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
-                    <param name="left" value="bingie_no_circular_posx"/>
-                </include>
-                <width>430</width>
-                <height>248</height>
-                <include>ThumbsViewBingieLayoutFocus</include>
-				<control type="image">
-					<!-- fallback logo image -->
-					<width>430</width>
-					<height>248</height>
-					<bottom>-56</bottom>
-					<left>0</left>
-					<bordersize>63</bordersize>
-					<texture background="true">$VAR[ClearLogoFallback]</texture>
-					<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-					<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-					<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-					<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
-				</control>
-                <control type="group">
-                    <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">ThumbsTagOverlayLargeBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Landscape" />
-                    </include>
-                    <include>New_Episodes_Tag_Overlay</include>
-                </control>
-                <include content="HiddenWidgetButton">
-                    <param name="widgetstyle" value="landscapelarge" />
-                    <param name="widgetid" value="$PARAM[widgetid]" />
-                </include>
-            </control>
-        </focusedlayout>
-        <focusedlayout width="428" height="260" condition="!Control.HasFocus($PARAM[widgetid])">
-            <control type="group">
-                <include content="left" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
-                    <param name="left" value="bingie_no_circular_posx"/>
-                </include>
-                <width>430</width>
-                <height>248</height>
-                <include>ThumbsViewBingieLayout</include>
-				<control type="image">
-					<!-- fallback logo image -->
-					<width>430</width>
-					<height>248</height>
-					<bottom>-56</bottom>
-					<left>0</left>
-					<bordersize>63</bordersize>
-					<texture background="true">$VAR[ClearLogoFallback]</texture>
-					<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-					<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-					<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-					<visible>Skin.HasSetting(ShowClearLogoOnLandscape)</visible>
-				</control>
-                <control type="group">
-                    <description>widget label overlay</description>
-                    <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable) | [String.IsEqual(Skin.String(Widgets_DisplayTags),disable) + Skin.HasSetting(ShowLabelsPosterEpisodes)]">ThumbsTagOverlayBingie</include>
-                    <include content="$PARAM[widgetTags]" condition="String.IsEqual(Skin.String(Widgets_DisplayTags),override)">
-                        <param name="prefix" value="Landscape" />
-                    </include>
-                    <include>New_Episodes_Tag_Overlay</include>
-                </control>
-				<include content="HiddenWidgetButton">
-                    <param name="widgetstyle" value="landscapelarge" />
-                    <param name="widgetid" value="$PARAM[widgetid]" />
-                </include>
-            </control>
-        </focusedlayout>
-    </include>
-    
-	<!-- Widget header width -->
-	<include name="FooterON">
-		<width>560</width>
-	</include>
-		
-	<include name="FooterOFF">
-		<width>100%</width>
-	</include>
-
     <include name="widget_header_multi">
         <control type="group" id="20$PARAM[widgetid]">
             <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
-            <include condition="String.IsEqual(Skin.String(HomeLayout),bingie)">BingieNoCircularWidgetHeaderAnim</include>
-            <include content="BingieUnfocusedWidgetFade" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+            <include>BingieNoCircularWidgetHeaderAnim</include>
+            <include content="BingieUnfocusedWidgetFade">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>
-            <include condition="Skin.HasSetting(EnableRatingsOnHome)">FooterON</include>
-			<include condition="!Skin.HasSetting(EnableRatingsOnHome)">FooterOFF</include>
+            <width>100%</width>
             <height>40</height>
             <!-- fixed focus navigation -->
-            <include content="SetFixedVerticalNavigationProps" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+            <include content="SetFixedVerticalNavigationProps">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
-            <include content="Fixed_Focus_Navigation_Factory" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+            <include content="Fixed_Focus_Navigation_Factory">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
-            <visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid]) | Skin.HasSetting(ShowAllWidgets)</visible>
+            <visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid])</visible>
             <control type="label">
                 <height>100%</height>
                 <width>100%</width>
 				<left>67</left>
                 <font>Bold31</font>
                 <include>widget_header_leftalign</include>
-				<textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+				<textcolor>ffffffff</textcolor>
                 <label>$PARAM[widgetName]</label>
                 <animation effect="slide" end="50" time="0" condition="Container($PARAM[widgetid]).IsUpdating + Integer.IsEqual(Container($PARAM[widgetid]).NumItems,0)">Conditional</animation>
                 <visible>String.IsEmpty(Container($PARAM[widgetid]).ListItem.Property(similartitle)) + String.IsEmpty(Container($PARAM[widgetid]).ListItem.Property(genretitle))</visible>
@@ -787,7 +282,7 @@
 				<left>67</left>
                 <font>Bold31</font>
                 <include>widget_header_leftalign</include>
-				<textcolor>$INFO[Skin.String(BingieHeaderTextColor)]</textcolor>
+				<textcolor>ffffffff</textcolor>
                 <label>$INFO[Container($PARAM[widgetid]).ListItem.Property(similartitle),$LOCALIZE[31543] ,]$INFO[Container($PARAM[widgetid]).ListItem.Property(genretitle)]</label>
                 <animation effect="slide" end="50" time="0" condition="Container($PARAM[widgetid]).IsUpdating + Integer.IsEqual(Container($PARAM[widgetid]).NumItems,0)">Conditional</animation>
                 <visible>!String.IsEmpty(Container($PARAM[widgetid]).ListItem.Property(similartitle)) | !String.IsEmpty(Container($PARAM[widgetid]).ListItem.Property(genretitle))</visible>
@@ -801,7 +296,7 @@
                 <aspectratio align="left">keep</aspectratio>
                 <imagepath background="true">$VAR[WidgetBusySpinnerPath]</imagepath>
                 <timeperimage>85</timeperimage>
-                <colordiffuse>$INFO[Skin.String(WidgetSpinnerTexture.Color)]</colordiffuse>
+                <colordiffuse>ffffffff</colordiffuse>
                 <fadetime>0</fadetime>
                 <visible>Container($PARAM[widgetid]).IsUpdating + Integer.IsEqual(Container($PARAM[widgetid]).NumItems,0)</visible>
             </control>
@@ -814,25 +309,8 @@
     </include>
 
     <include name="widget_base">
-        <!-- Bingie  + Not Circular + Fixed -->
-        <include content="widget_base_normal" condition="String.IsEqual(Skin.String(HomeLayout),bingie) + !Skin.HasSetting(New_Circular)">
-            <param name="containerType" value="fixedlist" />  <!-- Change to wraplist to make continuous scrolling -->
-            <param name="contentStyle" value="$PARAM[contentStyle]" />
-            <param name="widgetid" value="$PARAM[widgetid]" />
-            <param name="submenuid" value="$PARAM[submenuid]" />
-            <param name="widgetTags" value="$PARAM[widgetTags]" />
-            <param name="widgetTarget" value="$PARAM[widgetTarget]" />
-            <param name="widgetPath" value="$PARAM[widgetPath]" />
-            <param name="widgetSortBy" value="$PARAM[widgetSortBy]" />
-            <param name="widgetSortOrder" value="$PARAM[widgetSortOrder]" />
-            <param name="widgetLimit" value="$PARAM[widgetLimit]" />
-            <param name="widgetStyle" value="$PARAM[widgetStyle]" />
-            <param name="visibility" value="$PARAM[visibility]" />
-            <param name="multiRows" value="$PARAM[multiRows]" />
-        </include>
-		 <!-- Bingie  + New Circular + Fixed -->
-        <include content="widget_base_normal" condition="String.IsEqual(Skin.String(HomeLayout),bingie) + Skin.HasSetting(New_Circular)">
-            <param name="containerType" value="wraplist" />
+        <include content="widget_base_normal">
+            <param name="containerType" value="fixedlist" />
             <param name="contentStyle" value="$PARAM[contentStyle]" />
             <param name="widgetid" value="$PARAM[widgetid]" />
             <param name="submenuid" value="$PARAM[submenuid]" />
@@ -850,12 +328,11 @@
 
     <include name="WidgetBaseBingieIncludes">
         <onunfocus condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onunfocus>
-        <onunfocus condition="Skin.HasSetting(BingieAutoTrailer) + $EXP[IsPlayingUnrecognizedContent] + String.IsEmpty(Window(Home).Property(KeepPlayingPreview))">PlayerControl(Stop)</onunfocus>
         <onfocus condition="!String.IsEmpty(Window(Home).Property(KeepPlayingPreview))">ClearProperty(KeepPlayingPreview,home)</onfocus>
-        <include content="ContainerShowInfoOnclick" condition="Skin.HasSetting(ShowInformationBypass)">
+        <include content="ContainerShowInfoOnclick">
             <param name="widgetid" value="$PARAM[widgetid]" />
         </include>
-        <include content="SetFixedVerticalNavigationProps" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+        <include content="SetFixedVerticalNavigationProps">
             <param name="widgetid" value="$PARAM[widgetid]"/>
         </include>
         <include content="Fixed_Focus_Navigation_Factory">
@@ -869,14 +346,14 @@
     <include name="widget_base_normal">
         <control type="$PARAM[containerType]" id="$PARAM[widgetid]">
             <visible>$PARAM[visibility]</visible>
-            <visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid]) | Skin.HasSetting(ShowAllWidgets)</visible>
+            <visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid])</visible>
             <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
             <include condition="$PARAM[multiRows]">widget_base_vertical</include>
             <orientation>horizontal</orientation>
             <width>100%</width>
             <include>ScrollTime</include>
             <preloaditems>5</preloaditems>
-            <include content="WidgetBaseBingieIncludes" condition="String.IsEqual(Skin.String(HomeLayout),bingie)">
+            <include content="WidgetBaseBingieIncludes">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>
             <include>WidgetsBaseAnimation</include>
@@ -903,750 +380,20 @@
         <width>102%</width>
         <orientation>vertical</orientation>
     </include>
-    
+
     <include name="widget_base_content_normal">
         <content sortby="$PARAM[widgetSortBy]" sortorder="$PARAM[widgetSortOrder]" limit="$PARAM[widgetLimit]" target="$PARAM[widgetTarget]" browse="never">$PARAM[widgetPath]</content>
-    </include>
-    <include name="widget_base_content_refresh">
-        <content browse="never" target="$PARAM[widgetTarget]">$VAR[$PARAM[widgetid]-refresh]</content>
-    </include>
-    <include name="widget_base_content_submenu">
-        <content><include>skinshortcuts-group-$PARAM[submenuid]</include></content>
-    </include>
-    <include name="widget_base_content_systeminfo">
-        <content><include>StaticWidget_SystemInfo</include></content>
-    </include>
-    <include name="widget_base_content_categories">
-        <include>StaticWidget_Categories</include>
-    </include>
-    <include name="widget_base_content_mylist">
-        <content browse="never" sortby="$PARAM[widgetSortBy]" sortorder="$PARAM[widgetSortOrder]" limit="$PARAM[widgetLimit]" target="$PARAM[widgetTarget]">special://skin/playlists/mylistshows.xsp</content>
-        <content browse="never" sortby="$PARAM[widgetSortBy]" sortorder="$PARAM[widgetSortOrder]" limit="$PARAM[widgetLimit]" target="$PARAM[widgetTarget]">special://skin/playlists/mylistmovies.xsp</content>
-    </include>
-    
-	<!-- Static Widget Caregories -->
-    <include name="StaticWidget_Categories">
-        <content>			
-            <!-- Library lists -->
-            <item id="1">
-                <label>$LOCALIZE[320101]</label>
-				<thumb>bingie/categories/actionadventure.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/actionadventure.xsp</property>
-                <onclick>SetProperty(category,action &amp; adventure,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_action)</visible>
-            </item>
-            <item id="2">
-                <label>$LOCALIZE[320102]</label>
-				<thumb>bingie/categories/dramas.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/dramas.xsp</property>
-                <onclick>SetProperty(category,dramas,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_dramas)</visible>
-            </item>
-            <item id="3">
-                <label>$LOCALIZE[320103]</label>
-				<thumb>bingie/categories/comedies.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/comedies.xsp</property>
-                <onclick>SetProperty(category,comedies,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_comedies)</visible>
-            </item>
-			<item id="4">
-                <label>$LOCALIZE[320104]</label>
-				<thumb>bingie/categories/kidsfamily.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/kidsandfamily.xsp</property>
-                <onclick>SetProperty(category,kids &amp; family,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_family)</visible>
-            </item>
-            <item id="5">
-                <label>$LOCALIZE[320105]</label>
-				<thumb>bingie/categories/horror.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/horror.xsp</property>
-                <onclick>SetProperty(category,horror,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_horror)</visible>
-            </item>
-            <item id="6">
-                <label>$LOCALIZE[31159]</label>
-				<thumb>bingie/categories/documentaries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/documentaries.xsp</property>
-                <onclick>SetProperty(category,documentaries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_documentaries)</visible>
-            </item>
-            <item id="7">
-                <label>$LOCALIZE[31046]</label>
-				<thumb>bingie/categories/anime.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/anime.xsp</property>
-                <onclick>SetProperty(category,anime,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_anime)</visible>
-            </item>
-            <item id="8">
-                <label>$LOCALIZE[320108]</label>
-				<thumb>bingie/categories/crime.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/crime.xsp</property>
-                <onclick>SetProperty(category,crime,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_crime)</visible>
-            </item>
-            <item id="9">
-                <label>$LOCALIZE[320109]</label>
-				<thumb>bingie/categories/fantasy.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/fantasy.xsp</property>
-                <onclick>SetProperty(category,fantasy,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_fantasy)</visible>
-            </item>
-			<item id="10">
-                <label>$LOCALIZE[320110]</label>
-				<thumb>bingie/categories/historywar.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/historywar.xsp</property>
-                <onclick>SetProperty(category,history &amp; war,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_history)</visible>
-            </item>
-			<item id="11">
-                <label>$LOCALIZE[320111]</label>
-				<thumb>bingie/categories/animations.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/animations.xsp</property>
-                <onclick>SetProperty(category,animations,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_animations)</visible>
-            </item>
-            <item id="12">
-                <label>$LOCALIZE[31049]</label>
-				<thumb>bingie/categories/musicals.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/musicandmusical.xsp</property>               
-                <onclick>SetProperty(category,music &amp; musicals,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_musicals)</visible>
-            </item>
-            <item id="13">
-                <label>$LOCALIZE[320113]</label>
-				<thumb>bingie/categories/romance.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/romance.xsp</property>
-                <onclick>SetProperty(category,romance,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_romance)</visible>
-            </item>
-			<item id="14">
-                <label>$LOCALIZE[320114]</label>
-				<thumb>bingie/categories/scifi.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/scifi.xsp</property>
-                <onclick>SetProperty(category,sci-fi,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_sci-fi)</visible>
-            </item>
-			<item id="15">
-                <label>$LOCALIZE[320115]</label>
-				<thumb>bingie/categories/mysteries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/mysteries.xsp</property>
-                <onclick>SetProperty(category,mysteries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_mysteries)</visible>
-            </item>
-			<item id="16">
-                <label>$LOCALIZE[320116]</label>
-				<thumb>bingie/categories/thriller.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/thriller.xsp</property>
-                <onclick>SetProperty(category,thriller,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_thriller)</visible>
-            </item>
-			<item id="17">
-                <label>$LOCALIZE[320117]</label>
-				<thumb>bingie/categories/westerns.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/westerns.xsp</property>
-                <onclick>SetProperty(category,westerns,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_westerns)</visible>
-            </item>
-			<item id="18">
-                <label>$LOCALIZE[320118]</label>
-				<thumb>bingie/categories/tvactionadventure.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvactionadventure.xsp</property>
-                <onclick>SetProperty(category,TV action &amp; adventure,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvaction)</visible>
-            </item>
-			<item id="19">
-                <label>$LOCALIZE[320119]</label>
-				<thumb>bingie/categories/tvdramas.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvdramas.xsp</property>
-                <onclick>SetProperty(category,TV dramas,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvdramas)</visible>
-            </item>
-			<item id="20">
-                <label>$LOCALIZE[320120]</label>
-				<thumb>bingie/categories/tvcomedies.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvcomedies.xsp</property>
-                <onclick>SetProperty(category,TV comedies,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvcomedies)</visible>
-            </item>
-			<item id="21">
-                <label>$LOCALIZE[320121]</label>
-				<thumb>bingie/categories/tvkidsfamily.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvkidsandfamily.xsp</property>
-                <onclick>SetProperty(category,TV kids &amp; family,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvfamily)</visible>
-            </item>
-			<item id="22">
-                <label>$LOCALIZE[320122]</label>
-				<thumb>bingie/categories/tvdocumentaries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvdocumentaries.xsp</property>
-                <onclick>SetProperty(category,TV documentaries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvdocumentaries)</visible>
-            </item>
-			<item id="23">
-                <label>$LOCALIZE[320123]</label>
-				<thumb>bingie/categories/tvcrime.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvcrime.xsp</property>
-                <onclick>SetProperty(TV category,crime,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvcrime)</visible>
-            </item>
-			<item id="24">
-                <label>$LOCALIZE[320124]</label>
-				<thumb>bingie/categories/tvscififantasy.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvscififantasy.xsp</property>
-                <onclick>SetProperty(category,TV sci-fi &amp; fantasy,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvfantasy)</visible>
-            </item>
-			<item id="25">
-                <label>$LOCALIZE[320125]</label>
-				<thumb>bingie/categories/tvwarpolitics.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvwarpolitics.xsp</property>
-                <onclick>SetProperty(category,TV war &amp; politics,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvwar)</visible>
-            </item>
-			<item id="26">
-                <label>$LOCALIZE[320126]</label>
-				<thumb>bingie/categories/tvanimations.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvanimations.xsp</property>
-                <onclick>SetProperty(category,TV animations,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvanimations)</visible>
-            </item>
-			<item id="27">
-                <label>$LOCALIZE[320127]</label>
-				<thumb>bingie/categories/tvmysteries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvmysteries.xsp</property>
-                <onclick>SetProperty(category,TV mysteries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvmysteries)</visible>
-            </item>
-			<item id="28">
-                <label>$LOCALIZE[320128]</label>
-				<thumb>bingie/categories/tvwesterns.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">special://skin/extras/categories/tvwesterns.xsp</property>
-                <onclick>SetProperty(category,TV westerns,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),LibraryList) + Skin.HasSetting(categories_list_tvwesterns)</visible>
-            </item>
-			
-			<!-- TMDb Helper lists -->
-			<item id="1">
-                <label>$LOCALIZE[320101]</label>
-				<thumb>bingie/categories/actionadventure.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=28%20%2f%2012&amp;with_id=True&amp;with_separator=OR&amp;without_genres=16$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,action &amp; adventure,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_action)</visible>
-            </item>
-			<item id="2">
-                <label>$LOCALIZE[320102]</label>
-				<thumb>bingie/categories/dramas.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=18&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,dramas,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_dramas)</visible>
-            </item>
-			<item id="3">
-                <label>$LOCALIZE[320103]</label>
-				<thumb>bingie/categories/comedies.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=35&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,comedies,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_comedies)</visible>
-            </item>
-			<item id="4">
-                <label>$LOCALIZE[320104]</label>
-				<thumb>bingie/categories/kidsfamily.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=10751&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,kids &amp; family,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_family)</visible>
-            </item>
-			<item id="5">
-                <label>$LOCALIZE[320105]</label>
-				<thumb>bingie/categories/horror.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=27&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,horror,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_horror)</visible>
-            </item>
-			<item id="6">
-                <label>$LOCALIZE[31159]</label>
-				<thumb>bingie/categories/documentaries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=99&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,documentaries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_documentaries)</visible>
-            </item>
-			<item id="7">
-                <label>$LOCALIZE[31046]</label>
-				<thumb>bingie/categories/anime.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_id=True&amp;with_keywords=210024&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,anime,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_anime)</visible>
-            </item>
-			<item id="8">
-                <label>$LOCALIZE[320108]</label>
-				<thumb>bingie/categories/crime.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=80&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,crime,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_crime)</visible>
-            </item>
-			<item id="9">
-                <label>$LOCALIZE[320109]</label>
-				<thumb>bingie/categories/fantasy.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=14&amp;with_id=True&amp;with_separator=AND&amp;without_genres=16$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,fantasy,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_fantasy)</visible>
-            </item>
-			<item id="10">
-                <label>$LOCALIZE[320110]</label>
-				<thumb>bingie/categories/historywar.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=36%20%2f%2010752&amp;with_id=True&amp;with_separator=OR$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,history &amp; war,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_history)</visible>
-            </item>
-			<item id="11">
-                <label>$LOCALIZE[320111]</label>
-				<thumb>bingie/categories/animations.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=16&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,animations,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_animations)</visible>
-            </item>
-			<item id="12">
-                <label>$LOCALIZE[31049]</label>
-				<thumb>bingie/categories/musicals.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=10402&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,music &amp; musicals,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_musicals)</visible>
-            </item>
-			<item id="13">
-                <label>$LOCALIZE[320113]</label>
-				<thumb>bingie/categories/romance.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=10749&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,romance,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_romance)</visible>
-            </item>
-			<item id="14">
-                <label>$LOCALIZE[320114]</label>
-				<thumb>bingie/categories/scifi.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=878&amp;with_id=True&amp;with_separator=AND&amp;without_genres=16$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,sci-fi,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_sci-fi)</visible>
-            </item>
-			<item id="15">
-                <label>$LOCALIZE[320115]</label>
-				<thumb>bingie/categories/mysteries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=9648&amp;with_id=True&amp;with_separator=AND&amp;without_genres=16$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,mysteries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_mysteries)</visible>
-            </item>
-			<item id="16">
-                <label>$LOCALIZE[320116]</label>
-				<thumb>bingie/categories/thriller.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=53&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,thriller,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_thriller)</visible>
-            </item>
-			<item id="17">
-                <label>$LOCALIZE[320117]</label>
-				<thumb>bingie/categories/westerns.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=movie&amp;with_genres=37&amp;with_id=True&amp;with_separator=AND&amp;without_genres=16$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,westerns,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_westerns)</visible>
-            </item>
-			<item id="18">
-                <label>$LOCALIZE[320118]</label>
-				<thumb>bingie/categories/tvactionadventure.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=10759&amp;with_id=True&amp;with_separator=AND&amp;without_genres=16%20%2f%2010766$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV action &amp; adventure,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvaction)</visible>
-            </item>
-			<item id="19">
-                <label>$LOCALIZE[320119]</label>
-				<thumb>bingie/categories/tvdramas.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=18&amp;with_id=True&amp;with_separator=AND&amp;without_genres=10766$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV dramas,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvdramas)</visible>
-            </item>
-			<item id="20">
-                <label>$LOCALIZE[320120]</label>
-				<thumb>bingie/categories/tvcomedies.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=35&amp;with_id=True&amp;with_separator=AND&amp;without_genres=10766$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV comedies,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvcomedies)</visible>
-            </item>
-			<item id="21">
-                <label>$LOCALIZE[320121]</label>
-				<thumb>bingie/categories/tvkidsfamily.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=10751%20%2f%2010762&amp;with_id=True&amp;with_separator=OR&amp;without_genres=10766$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV kids &amp; family,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvfamily)</visible>
-            </item>
-			<item id="22">
-                <label>$LOCALIZE[320122]</label>
-				<thumb>bingie/categories/tvdocumentaries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=99&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV documentaries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvdocumentaries)</visible>
-            </item>
-			<item id="23">
-                <label>$LOCALIZE[320123]</label>
-				<thumb>bingie/categories/tvcrime.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=80&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV crime,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvcrime)</visible>
-            </item>
-			<item id="24">
-                <label>$LOCALIZE[320124]</label>
-				<thumb>bingie/categories/tvscififantasy.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=10765&amp;with_id=True&amp;with_separator=AND&amp;without_genres=16$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV sci-fi &amp; fantasy,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvfantasy)</visible>
-            </item>
-			<item id="25">
-                <label>$LOCALIZE[320125]</label>
-				<thumb>bingie/categories/tvwarpolitics.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=10768&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV war &amp; politics,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvwar)</visible>
-            </item>
-			<item id="26">
-                <label>$LOCALIZE[320126]</label>
-				<thumb>bingie/categories/tvanimations.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=16&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV animations,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvanimations)</visible>
-            </item>
-			<item id="27">
-                <label>$LOCALIZE[320127]</label>
-				<thumb>bingie/categories/tvmysteries.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=9648&amp;with_id=True&amp;with_separator=AND&amp;without_genres=16$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV mysteries,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvmysteries)</visible>
-            </item>
-			<item id="28">
-                <label>$LOCALIZE[320128]</label>
-				<thumb>bingie/categories/tvwesterns.png</thumb>
-                <property name="DBTYPE">category</property>
-                <property name="path">plugin://plugin.video.themoviedb.helper/?info=discover&amp;sort_by=popularity.desc&amp;tmdb_id=None&amp;tmdb_type=tv&amp;with_genres=37&amp;with_id=True&amp;with_separator=AND$VAR[Path_Param_Categories_Digital_Release]</property>
-                <onclick>SetProperty(category,TV westerns,home)</onclick>
-                <onclick>ActivateWindow(1117,return)</onclick>
-				<visible>String.IsEqual(Skin.String(categories_types),TMDbHelperList) + Skin.HasSetting(categories_list_tvwesterns)</visible>
-            </item>
-        </content>
-    </include>
-
-    <include name="StaticWidget_SystemInfo">
-        <!--systeminfo widgets -->
-        <item>
-            <label>$LOCALIZE[155]</label>
-            <label2>[CR]$INFO[System.UsedSpacePercent]</label2>
-            <thumb>resource://resource.images.skinicons.wide/disk2.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/disk_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/settings.jpg</property>
-            <property name="plot">[CR]$INFO[System.TotalSpace] • $INFO[System.UsedSpace][CR]$INFO[System.HddTemperature]</property>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[13271]</label>
-            <label2>[CR]$INFO[System.CpuUsage] • $INFO[System.CpuFrequency]</label2>
-            <thumb>resource://resource.images.skinicons.wide/cpu2.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/cpu_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/cpu.jpg</property>
-            <property name="plot">[CR]$LOCALIZE[401]: $INFO[System.CPUTemperature] • $LOCALIZE[13300]: $INFO[System.FanSpeed][CR]$LOCALIZE[12390]: $INFO[System.Uptime]</property>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[31257]</label>
-            <label2>[CR]$INFO[System.Memory(used.percent)]</label2>
-            <thumb>resource://resource.images.skinicons.wide/memory2.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/memory_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/memory.jpg</property>
-            <property name="plot">[CR]$LOCALIZE[22012]: $INFO[System.Memory(total)] • $LOCALIZE[158]: $INFO[System.Memory(free)]</property>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[1006]</label>
-            <label2>[CR]$INFO[Network.IPAddress]</label2>
-            <thumb>resource://resource.images.skinicons.wide/network2.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/network_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/networking.jpg</property>
-            <property name="plot">$INFO[Network.LinkState][CR]$LOCALIZE[443]: $INFO[System.InternetState]</property>
-            <visible>System.HasNetwork</visible>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[1006]</label>
-            <label2>[CR][COLOR red]$LOCALIZE[221][/COLOR]</label2>
-            <thumb>resource://resource.images.skinicons.wide/network-down.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/network_poster_down.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/networking-down.jpg</property>
-            <property name="plot">[COLOR red]$INFO[Network.LinkState][CR]$LOCALIZE[443]: $INFO[System.InternetState][/COLOR]</property>
-            <visible>!System.HasNetwork</visible>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[131]</label>
-            <label2>[CR]$INFO[System.ScreenWidth]x$INFO[System.ScreenHeight]</label2>
-            <thumb>resource://resource.images.skinicons.wide/display2.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/display_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/display.jpg</property>
-            <property name="plot">[CR]$INFO[System.ScreenResolution]</property>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[12395]</label>
-            <label2>[CR][COLOR green]$INFO[System.BatteryLevel][/COLOR]</label2>
-            <thumb>resource://resource.images.skinicons.wide/battery_good.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/battery_good_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/battery_good.jpg</property>
-            <property name="plot">[CR][COLOR green]$LOCALIZE[12395]: $LOCALIZE[12321][/COLOR]</property>
-            <visible>Integer.IsGreater(System.BatteryLevel,60)</visible>
-            <visible>Skin.HasSetting(SysInfoWidgetShowBattery)</visible>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[12395]</label>
-            <label2>[CR][COLOR yellow]$INFO[System.BatteryLevel][/COLOR]</label2>
-            <thumb>resource://resource.images.skinicons.wide/battery_low.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/battery_low_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/battery_low.jpg</property>
-            <property name="plot">[CR][COLOR yellow]$LOCALIZE[13050][/COLOR]</property>
-            <visible>Integer.IsGreater(System.BatteryLevel,20) + !Integer.IsGreater(System.BatteryLevel,60)</visible>
-            <visible>Skin.HasSetting(SysInfoWidgetShowBattery)</visible>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-        <item>
-            <label>$LOCALIZE[12395]</label>
-            <label2>[CR][COLOR red]$INFO[System.BatteryLevel][/COLOR]</label2>
-            <thumb>resource://resource.images.skinicons.wide/battery_critical.png</thumb>
-            <property name="poster">resource://resource.images.skinicons.wide/battery_critical_poster.png</property>
-            <property name="DBTYPE">systeminfo</property>
-            <property name="fanart">resource://resource.images.skinbackgrounds.titanium/battery_critical.jpg</property>
-            <property name="plot">[CR][COLOR red]$LOCALIZE[13050][/COLOR]</property>
-            <visible>!Integer.IsGreater(System.BatteryLevel,20)</visible>
-            <visible>Skin.HasSetting(SysInfoWidgetShowBattery)</visible>
-            <onclick>ActivateWindow(systeminfo)</onclick>
-        </item>
-    </include>
-    <include name="WidgetTagOverlayEnable">
-        <visible>true</visible>
-    </include>
-    <include name="WidgetTagOverlayDisable">
-        <visible>false</visible>
     </include>
     <include name="WidgetTagOverlayAuto">
         <include>$PARAM[prefix]TagOverlayVisibility</include>
     </include>
 
-    <!-- BINGIE WIDGETS -->
-    <include name="Category_Widget">
-        <param name="id" default="117" />
-        <param name="limit" default="250" />
-        <param name="target" default="videos" />
-        <definition>
-            <control type="panel" id="$PARAM[id]">
-                <visible>Container($PARAM[id]).IsUpdating | Integer.IsGreater(Container($PARAM[id]).NumItems,0)</visible>				
-                <viewtype label="31018">panel</viewtype>
-                <focusedposition>0</focusedposition>
-                <itemgap>0</itemgap>
-                <width>1666</width>
-				<include condition="[String.IsEqual(Skin.String(widgetstyle),landscape) | String.IsEqual(Skin.String(widgetstyle),landscapelarge)] | Window.IsActive(1115) + [String.IsEqual(Skin.String(widgetstyle),landscape) | String.IsEqual(Skin.String(widgetstyle),landscapelarge)]" content="height">
-                    <param name="height" value="390" />
-				</include>
-                <height>469</height>
-                <orientation>vertical</orientation>
-                <itemgap>0</itemgap>
-                <preloaditems>4</preloaditems>
-                <pagecontrol>60</pagecontrol>
-                <include>ScrollTime</include>
-                <include content="ContainerShowInfoOnclick" condition="Skin.HasSetting(ShowInformationBypass)">
-                    <param name="widgetid" value="117" />
-                </include>
-                <onright condition="Control.IsVisible(60)">60</onright>
-                <onright condition="!Control.IsVisible(60)">noop</onright>
-                <onleft>back</onleft>
-				<onback condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onback>
-				<onup condition="Skin.HasSetting(BingieAutoTrailer)">noop</onup>
-				<ondown condition="Skin.HasSetting(BingieAutoTrailer)">noop</ondown>
-                <itemlayout height="330" width="238" condition="String.IsEqual(Skin.String(widgetstyle),poster)">
-                    <control type="group">
-                        <width>240</width>
-                        <height>330</height>
-                        <include>PosterPanelBingieLayout</include>
-                        <control type="group">
-                            <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable)">PosterTagOverlayBingie</include>
-							<include>Poster_New_Episodes_Tag_Overlay</include>
-                        </control>
-                    </control>
-                </itemlayout>
-                <!-- Poster -->
-				<focusedlayout height="330" width="238" condition="String.IsEqual(Skin.String(widgetstyle),poster)">
-                    <control type="group">
-                        <width>240</width>
-                        <height>330</height>
-                        <include>PosterPanelBingieLayout</include>
-						<include>Top250Indicator</include>
-                        <control type="group">
-                            <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable)">PosterTagOverlayBingie</include>
-							<include>Poster_New_Episodes_Tag_Overlay</include>
-                        </control>
-                    </control>
-					<include content="HiddenWidgetButton">
-						<param name="widgetstyle" value="poster"/>
-						<param name="widgetid" value="$PARAM[widgetid]"/>
-					</include>
-                </focusedlayout>
-				<!-- Landscape -->
-				<itemlayout height="196" width="333" condition="String.IsEqual(Skin.String(widgetstyle),landscape) | String.IsEqual(Skin.String(widgetstyle),landscapelarge)">
-                    <control type="group">
-                        <width>335</width>
-                        <height>198</height>
-                        <include>ThumbsViewBingieLayout</include>
-                        <control type="group">
-                            <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable)">ThumbsTagOverlayBingie</include>
-							<include>New_Episodes_Tag_Overlay</include>
-                        </control>
-                    </control>
-                </itemlayout>
-                <focusedlayout height="196" width="333" condition="String.IsEqual(Skin.String(widgetstyle),landscape) | String.IsEqual(Skin.String(widgetstyle),landscapelarge)">
-                    <control type="group">
-                        <width>335</width>
-                        <height>198</height>
-                        <include>ThumbsViewBingieLayout</include>
-						<include>Top250Indicator</include>
-                        <control type="group">
-                            <include condition="!String.IsEqual(Skin.String(Widgets_DisplayTags),disable)">ThumbsTagOverlayBingie</include>
-							<include>New_Episodes_Tag_Overlay</include>
-                        </control>
-                    </control>
-                    <include content="HiddenWidgetButton">
-						<param name="widgetstyle" value="landscape"/>
-						<param name="widgetid" value="$PARAM[widgetid]"/>
-					</include>
-                </focusedlayout>
-				<content sortby="$PARAM[sortBy]" sortorder="$PARAM[sortOrder]" limit="$PARAM[limit]" target="$PARAM[target]">$PARAM[content]</content>
-            </control>
-        </definition>
-    </include>
     <!-- Spotlight Dummy Landscape Widget -->
     <include name="SpotlightDummyLandscapeWidget">
         <control type="grouplist">
             <visible>Control.IsVisible(1508)</visible>
             <visible>Integer.IsGreater(Container(77777).NumItems,1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)</visible>
             <animation effect="fade" start="0" end="55" time="250">VisibleChange</animation>
-			<animation effect="slide" start="0,0" end="0,120" time="0" condition="String.IsEqual(window(home).Property(widgetstyle),poster)">Conditional</animation>
-			<animation effect="slide" start="0,0" end="0,38" time="0" condition="String.IsEqual(window(home).Property(widgetstyle),landscapelarge)">Conditional</animation>
-			<animation effect="slide" start="0,0" end="0,-11" time="0" condition="String.IsEqual(window(home).Property(widgetstyle),highlight)">Conditional</animation>
             <animation effect="slide" start="0,-252" end="0,0" time="300" condition="!String.IsEqual(Window(Home).Property(CurrentWidgetPos),1)">Conditional</animation>
             <animation effect="slide" start="0,252" end="0,0" time="300" condition="String.IsEqual(Window(Home).Property(CurrentWidgetPos),1) | String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>
             <orientation>vertical</orientation>
@@ -1662,7 +409,7 @@
                 <width>99%</width>
                 <font>Bold31</font>
 				<textcolor>white</textcolor>
-                <textcolor>$INFO[Skin.String(BingieSecondaryTextColor)]</textcolor>
+                <textcolor>73ffffff</textcolor>
                 <label>$LOCALIZE[31185]</label>
             </control>
             <control type="image">
@@ -1675,55 +422,4 @@
             </control>
         </control>
     </include>
-	<!-- Spotlight Dummy Poster Widetet -->
-	<include name="SpotlightDummyPosterWidget">
-        <control type="grouplist">
-            <visible>Control.IsVisible(1508)</visible>
-            <visible>Integer.IsGreater(Container(77777).NumItems,1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)</visible>
-            <animation effect="fade" start="0" end="55" time="250">VisibleChange</animation>
-			<animation effect="slide" start="0,0" end="0,-120" time="0" condition="String.IsEqual(window(home).Property(widgetstyle),landscape)">Conditional
-			</animation>
-			<animation effect="slide" start="0,0" end="0,-82" time="0" condition="String.IsEqual(window(home).Property(widgetstyle),landscapelarge)">Conditional</animation>
-			<animation effect="slide" start="0,0" end="0,-91" time="0" condition="String.IsEqual(window(home).Property(widgetstyle),highlight)">Conditional</animation>
-			<animation effect="slide" start="0,-371" end="0,0" time="300" condition="!String.IsEqual(Window(Home).Property(CurrentWidgetPos),1)">Conditional</animation>
-            <animation effect="slide" start="0,371" end="0,0" time="300" condition="String.IsEqual(Window(Home).Property(CurrentWidgetPos),1) | String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>
-            <orientation>vertical</orientation>
-            <itemgap>0</itemgap>
-            <usecontrolcoords>true</usecontrolcoords>
-            <height>370</height>
-            <include>No_Circular_Left</include>
-            <left>0</left>
-            <top>942</top>
-            <control type="textbox">
-                <left>8</left>
-                <height>40</height>
-                <width>99%</width>
-                <font>Bold31</font>
-				<textcolor>white</textcolor>
-                <textcolor>$INFO[Skin.String(BingieSecondaryTextColor)]</textcolor>
-                <label>$LOCALIZE[31185]</label>
-            </control>
-            <control type="image">
-                <left>0</left>
-                <height>330</height>
-                <width>240</width>
-                <bordersize>8</bordersize>
-                <texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultVideo.png">$VAR[SpotlightPosterImage]</texture>
-                <aspectratio scalediffuse="false" align="center" aligny="center">stretch</aspectratio>
-				<visible>!String.IsEmpty(ListItem.Art(poster)) | !String.IsEmpty(ListItem.Art(tvshow.poster))</visible>
-            </control>
-			<control type="image">
-                <left>0</left>
-                <height>330</height>
-                <width>240</width>
-                <bordersize>8</bordersize>
-                <texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultVideo.png">$VAR[SpotlightPosterImage]</texture>
-                <aspectratio scalediffuse="false" aligny="center" align="center">scale</aspectratio>
-				<visible>String.IsEmpty(ListItem.Art(poster)) + String.IsEmpty(ListItem.Art(tvshow.poster))</visible>
-            </control>
-        </control>
-    </include>
-
-
-    
 </includes>

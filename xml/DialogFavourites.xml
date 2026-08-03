@@ -5,9 +5,9 @@
 	<onunload>AlarmClock(pro1,SetProperty(favwidgetrefresh,refresh,Home),00:00,silent)</onunload>
     <onunload>AlarmClock(prop2,ClearProperty(favwidgetrefresh,Home),00:01,silent)</onunload>
     <controls>
-		
+
 		<include>DialogOverlayExtra</include>
-		
+
 			<control type="group">
                 <control type="image">
                     <posx>367</posx>
@@ -15,7 +15,7 @@
                     <width>1190</width>
                     <height>690</height>
                     <texture border="15">diffuse/bgpanel.png</texture>
-					<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+					<colordiffuse>cc0a0a0a</colordiffuse>
                 </control>
 				<control type="image">
                     <posx>367</posx>
@@ -24,7 +24,7 @@
                     <height>690</height>
                     <texture border="15">diffuse/bgpanel.png</texture>
 					<bordersize>10</bordersize>
-					<colordiffuse>$INFO[Skin.String(GeneralPanelsColor)]</colordiffuse>
+					<colordiffuse>cc0a0a0a</colordiffuse>
                 </control>
                 <control type="image">
                     <posx>421</posx>
@@ -50,7 +50,7 @@
                     <texture background="true" fallback="DefaultAddon.png">$INFO[Container(450).ListItem.Icon]</texture>
                 </control>
             </control>
-			
+
 			 <!--Header-->
             <control type="label" id="20">
                 <description>Heading</description>
@@ -61,7 +61,7 @@
                 <align>left</align>
                 <include>DialogHeader</include>
             </control>
-     			<control type="list" id="450">
+			<control type="list" id="450">
                 <posx>421</posx>
                 <posy>350</posy>
                 <width>600</width>
@@ -153,7 +153,7 @@
                             <width>644</width>
                             <height>60</height>
                             <texture border="10">diffuse/panel.png</texture>
-							<colordiffuse>$INFO[Skin.String(ButtonFocusColor)]</colordiffuse>
+							<colordiffuse>cce0e0e0</colordiffuse>
                         </control>
                         <control type="label">
                             <posx>80</posx>
@@ -187,15 +187,15 @@
                     </control>
                 </focusedlayout>
             </control>
-            		
+
 			<control type="scrollbar" id="60"> <!--scrollbar-->
 				<left>1040</left>
 				<top>350</top>
 				<height>545</height>
 				<onleft>450</onleft>
 				<showonepage>false</showonepage>
-				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)">Conditional</animation>
-				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | String.IsEqual(Skin.String(scrollbar_visibility),always_show)]">Conditional</animation>
-			</control>				
+				<animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) | Container.Scrolling | false">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling | false]">Conditional</animation>
+			</control>
 	</controls>
 </window>

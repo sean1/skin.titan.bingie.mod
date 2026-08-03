@@ -2,7 +2,7 @@
 <!-- BINGIE -->
 <includes>
     <include name="videoViewIds">
-        <views>523,525,527</views>
+        <views>50,523,525,527</views>
         <menucontrol>9000</menucontrol>
     </include>
 

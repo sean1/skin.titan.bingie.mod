@@ -75,6 +75,7 @@
     <include name="Bingie_Main_Landscape_View">
         <control type="$PARAM[containerType]" id="523">
 			<visible>!Container.Content(episodes) + !Container.Content(seasons)</visible>
+            <visible>!String.Contains(Container.FolderPath,mode=navigator.genres)</visible>
             <viewtype label="31018">panel</viewtype>
             <focusedposition>0</focusedposition>
             <top>51</top>

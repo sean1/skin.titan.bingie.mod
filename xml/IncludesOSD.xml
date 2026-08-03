@@ -1762,7 +1762,6 @@
 					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]subtitles.png</texturenofocus>
 					<onclick>ActivateWindow(osdsubtitlesettings)</onclick>
 					<include>Top_OSD_Button_Zoom_Anim</include>
-					<visible>false</visible>
 				</control>
                 <control type="button" id="101">
                     <description>Audio Settings</description>
@@ -1774,7 +1773,6 @@
                     <texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]audio.png</texturenofocus>
                     <onclick>ActivateWindow(124)</onclick>
                     <include>Top_OSD_Button_Zoom_Anim</include>
-					<visible>false</visible>
                 </control>
                 <control type="button" id="102">
                     <description>Video Settings</description>

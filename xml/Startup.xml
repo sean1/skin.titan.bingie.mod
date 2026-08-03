@@ -8,4 +8,5 @@
 	<!-- Start TMDbH service -->
     <onload>Skin.SetBool(TMDbHelper.Service)</onload>
 	<onload>Skin.SetString(TMDbHelper.MonitorContainer,99950)</onload>
+	<onload>ReplaceWindow(Home)</onload>
 </window>

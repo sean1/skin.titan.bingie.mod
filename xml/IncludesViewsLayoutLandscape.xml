@@ -20,7 +20,7 @@
             <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
         </control>
-        <include condition="!$EXP[IsBingieViewsActive]">ThumbsTagOverlayBingie</include>
+        <include condition="!$EXP[IsBingieViewsActive] | Control.IsVisible(523)">ThumbsTagOverlayBingie</include>
         <include condition="!$EXP[IsBingieViewsActive]">New_Episodes_Tag_Overlay</include>
         <control type="group">
             <!--Watched Overlay-->
@@ -73,7 +73,7 @@
 			<bottom>0</bottom>
             <height>78</height>
             <texture>diffuse/home_overlay_bingie.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>
             <colordiffuse>dd000000</colordiffuse>
         </control>
         <control type="textbox">
@@ -90,7 +90,7 @@
 			<autoscroll>false</autoscroll>
 			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>
         </control>
 		<control type="textbox">
             <!--Label-->
@@ -106,7 +106,7 @@
 			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
 

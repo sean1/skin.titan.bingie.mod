@@ -32,19 +32,105 @@
 					<content sortorder="ascending" sortby="playcount" limit="1">$VAR[InfoDialogNextUpContent]</content>
 				</control>
 
-				<!-- Normal Cast Details as Hidden List -->
-				<control type="list" id="50">
-					<posx>1</posx>
-					<posy>1</posy>
-					<width>1</width>
-					<height>1</height>
-					<itemlayout />
-					<focusedlayout />
+				<!-- Native Kodi cast row populated by POV metadata -->
+				<control type="label">
+					<visible>Integer.IsGreater(Container(50).NumItems,0)</visible>
+					<left>126</left>
+					<top>680</top>
+					<width>1668</width>
+					<height>45</height>
+					<font>Bold31</font>
+					<textcolor>ffffffff</textcolor>
+					<label>$LOCALIZE[206]</label>
+				</control>
+				<control type="panel" id="50">
+					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
+					<left>126</left>
+					<top>730</top>
+					<width>1668</width>
+					<height>330</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>4</preloaditems>
+					<scrolltime tween="quadratic">400</scrolltime>
+					<itemlayout width="238" height="320">
+						<control type="image">
+							<width>230</width>
+							<height>310</height>
+							<texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultActorPoster.png">$INFO[ListItem.Icon]</texture>
+							<aspectratio scalediffuse="true" align="center" aligny="top">scale</aspectratio>
+							<bordersize>8</bordersize>
+						</control>
+						<control type="image">
+							<left>8</left>
+							<bottom>10</bottom>
+							<width>214</width>
+							<height>82</height>
+							<texture>diffuse/poster_tag2.png</texture>
+							<colordiffuse>dd000000</colordiffuse>
+						</control>
+						<control type="label">
+							<left>20</left>
+							<right>20</right>
+							<bottom>47</bottom>
+							<height>30</height>
+							<font>Reg22</font>
+							<textcolor>ffffffff</textcolor>
+							<label>$INFO[ListItem.Label]</label>
+						</control>
+						<control type="label">
+							<left>20</left>
+							<right>20</right>
+							<bottom>18</bottom>
+							<height>28</height>
+							<font>Reg20</font>
+							<textcolor>a6ffffff</textcolor>
+							<label>$INFO[ListItem.Label2]</label>
+						</control>
+					</itemlayout>
+					<focusedlayout width="238" height="320">
+						<control type="image">
+							<width>230</width>
+							<height>310</height>
+							<texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultActorPoster.png">$INFO[ListItem.Icon]</texture>
+							<aspectratio scalediffuse="true" align="center" aligny="top">scale</aspectratio>
+							<bordersize>8</bordersize>
+						</control>
+						<control type="image">
+							<width>230</width>
+							<height>310</height>
+							<texture background="true" border="12">bingie/border/poster_fo_4.png</texture>
+						</control>
+						<control type="image">
+							<left>8</left>
+							<bottom>10</bottom>
+							<width>214</width>
+							<height>82</height>
+							<texture>diffuse/poster_tag2.png</texture>
+							<colordiffuse>dd000000</colordiffuse>
+						</control>
+						<control type="label">
+							<left>20</left>
+							<right>20</right>
+							<bottom>47</bottom>
+							<height>30</height>
+							<font>Reg22</font>
+							<textcolor>ffffffff</textcolor>
+							<label>$INFO[ListItem.Label]</label>
+						</control>
+						<control type="label">
+							<left>20</left>
+							<right>20</right>
+							<bottom>18</bottom>
+							<height>28</height>
+							<font>Reg20</font>
+							<textcolor>a6ffffff</textcolor>
+							<label>$INFO[ListItem.Label2]</label>
+						</control>
+					</focusedlayout>
 					<onup>8000</onup>
-					<onleft>8000</onleft>
-					<onright>8000</onright>
-					<ondown>8000</ondown>
-					<visible allowhiddenfocus="true">false</visible>
+					<onleft>50</onleft>
+					<onright>50</onright>
+					<ondown>50</ondown>
 				</control>
 
 				<!-- Fanart Background Image -->
@@ -374,8 +460,8 @@
                             <orientation>vertical</orientation>
 							<itemgap>0</itemgap>
                             <onup>noop</onup>
-                            <ondown condition="!Player.HasVideo">noop</ondown>
-							<ondown condition="Player.HasVideo">noop</ondown>
+	                            <ondown condition="Integer.IsGreater(Container(50).NumItems,0)">50</ondown>
+								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0)">noop</ondown>
                             <scrolltime tween="sine" easing="inout">200</scrolltime>
 							<pagecontrol>300</pagecontrol>
 

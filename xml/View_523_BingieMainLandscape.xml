@@ -100,6 +100,7 @@
                     <width>335</width>
                     <height>195</height>
                     <include>ThumbsViewItemBingieLayout</include>
+                    <include>Bingie_Main_Landscape_Title</include>
                 </control>
             </itemlayout>
             <focusedlayout height="193" width="333">
@@ -113,6 +114,7 @@
                         <include>thumbsborder_focused</include>
                     </control>
                     <include>ThumbsViewItemBingieLayout</include>
+                    <include>Bingie_Main_Landscape_Title</include>
                     <animation effect="zoom" end="103,103" center="auto" time="100" condition="false + false">focus</animation>
                 </control>
 				<!--Top 250 1-->
@@ -139,6 +141,29 @@
                 <texture>bingie/top250p.png</texture>
 		        </control>
             </focusedlayout>
+        </control>
+    </include>
+
+    <include name="Bingie_Main_Landscape_Title">
+        <control type="image">
+            <visible>!String.IsEqual(ListItem.Label,..)</visible>
+            <bordersize>8</bordersize>
+            <bottom>0</bottom>
+            <height>78</height>
+            <texture>diffuse/home_overlay_bingie.png</texture>
+            <colordiffuse>dd000000</colordiffuse>
+        </control>
+        <control type="label">
+            <visible>!String.IsEqual(ListItem.Label,..)</visible>
+            <left>16</left>
+            <right>16</right>
+            <bottom>18</bottom>
+            <height>40</height>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label>$INFO[ListItem.Label]</label>
+            <font>Reg20</font>
+            <textcolor>ffffffff</textcolor>
         </control>
     </include>
 </includes>

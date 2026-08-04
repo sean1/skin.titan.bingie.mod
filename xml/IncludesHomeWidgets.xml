@@ -238,7 +238,7 @@
             <include content="Fixed_Focus_Navigation_Factory">
                 <param name="widgetid" value="$PARAM[widgetid]"/>
             </include>
-            <visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid])</visible>
+            <visible>Window.IsActive(Home) | String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid])</visible>
             <control type="label">
                 <height>100%</height>
                 <width>100%</width>
@@ -318,7 +318,7 @@
     <include name="widget_base_normal">
         <control type="$PARAM[containerType]" id="$PARAM[widgetid]">
             <visible>$PARAM[visibility]</visible>
-            <visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid])</visible>
+            <visible>Window.IsActive(Home) | String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid])</visible>
             <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
             <include condition="$PARAM[multiRows]">widget_base_vertical</include>
             <orientation>horizontal</orientation>

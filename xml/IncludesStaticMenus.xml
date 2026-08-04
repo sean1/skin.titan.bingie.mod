@@ -138,6 +138,21 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">False</property>
 		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<label>Discover</label>
+			<label2>Discover</label2>
+			<icon>special://home/addons/plugin.video.pov.lite/resources/skins/Default/media/discover.png</icon>
+			<thumb />
+			<property name="labelID">discover</property>
+			<property name="defaultID">discover</property>
+			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.discover_main,return)</onclick>
+			<property name="list">plugin://plugin.video.pov.lite/?mode=navigator.discover_main</property>
+			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<property name="submenuVisibility">num-10000</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
 	</include>
 	<include name="StaticSubmenu">
 		<item id="1">

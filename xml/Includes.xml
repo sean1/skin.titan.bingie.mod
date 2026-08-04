@@ -92,7 +92,7 @@
 		String.IsEqual(Container.FolderPath,plugin://plugin.video.pov.lite/) |
 		String.IsEqual(Container.FolderPath,plugin://plugin.video.pov.lite) |
 		[String.Contains(Container.FolderPath,plugin://plugin.video.pov.lite/) +
-		[String.Contains(Container.FolderPath,mode=navigator.) | String.Contains(Container.FolderPath,mode=search_history)]]
+		[String.Contains(Container.FolderPath,mode=navigator.) | String.Contains(Container.FolderPath,mode=search_history) | String.Contains(Container.FolderPath,mode=discover.)]]
 	</expression>
 	<expression name="IsMovieOrTvShowListItem">
 		String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) |

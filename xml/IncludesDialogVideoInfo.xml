@@ -32,6 +32,12 @@
 					<content sortorder="ascending" sortby="playcount" limit="1">$VAR[InfoDialogNextUpContent]</content>
 				</control>
 
+				<!-- Gradient-free fanart behind all More Info content. -->
+				<include content="BingieSpotlightFullImage">
+					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]]" />
+					<param name="image" value="$VAR[fanartBackground]" />
+				</include>
+
 				<!-- Native Kodi cast row populated by POV metadata -->
 				<control type="label">
 					<visible>Integer.IsGreater(Container(50).NumItems,0)</visible>
@@ -155,22 +161,6 @@
 					</content>
 				</control>
 
-				<!-- Fanart Background Image -->
-				<include content="BingieSpotlightCornerImage">
-					<animation effect="fade" start="100" end="50" time="300" condition="String.IsEmpty(Window(Home).Property(FullImage))">WindowOpen</animation>
-					<animation effect="fade" start="50" end="50" time="300" condition="String.IsEmpty(Window(Home).Property(FullImage))">WindowClose</animation>
-					<animation effect="fade" end="0" time="0" condition="!String.IsEmpty(Window(Home).Property(FullImage))">WindowOpen</animation>
-					<animation effect="fade" end="0" time="0" condition="!String.IsEmpty(Window(Home).Property(FullImage))">WindowClose</animation>
-					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]]" />
-					<param name="image" value="$VAR[fanartBackground]" />
-				</include>
-
-				<!-- Spotlight Fanart Background Image -->
-				<include content="BingieSpotlightFullImage">
-					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)] | String.IsEmpty(Window(Home).Property(FullImage))]" />
-					<param name="image" value="$VAR[fanartBackground]" />
-				</include>
-
 				<!-- Additional Info Overlay -->
 				<control type="image">
 					<visible>!String.IsEmpty(Window.Property(AdditionalInfo)) + !String.IsEqual(Window.Property(AdditionalInfo),set)</visible>
@@ -243,29 +233,37 @@
 						<label>$VAR[BingieDialogEpisodeInfoLabel]</label>
 					</control>
 
-					<!-- Plot -->
-					<control type="textbox">
-						<visible>[String.IsEmpty(ListItem.Set) + !false] | false</visible>
+					<!-- Plot with a 50%-opaque background for readability over light fanart. -->
+					<control type="group">
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
-						<width>820</width>
-						<top>19</top>
-						<height min="50" max="120">auto</height>
-						<textcolor>b3ffffff</textcolor>
-						<align>left</align>
-						<font>Plots</font>
-						<label>$VAR[BingieDialogInfoPlot]</label>   <!-- BingieInfoDialogPlot -->
-					</control>
-
-					<control type="textbox">
-						<visible>[!String.IsEmpty(ListItem.Set) + !false]</visible>
-						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
-						<width>820</width>
 						<top>19</top>
 						<height>120</height>
-						<textcolor>b3ffffff</textcolor>
-						<align>left</align>
-						<font>Plots</font>
-						<label>$VAR[BingieDialogInfoPlot]</label>   <!-- BingieInfoDialogPlot -->
+						<width>820</width>
+						<control type="image">
+							<left>-10</left>
+							<top>-10</top>
+							<width>840</width>
+							<height>140</height>
+							<texture colordiffuse="80ffffff">colors/color_black.png</texture>
+						</control>
+						<control type="textbox">
+							<visible>[String.IsEmpty(ListItem.Set) + !false] | false</visible>
+							<width>820</width>
+							<height>120</height>
+							<textcolor>b3ffffff</textcolor>
+							<align>left</align>
+							<font>Plots</font>
+							<label>$VAR[BingieDialogInfoPlot]</label>
+						</control>
+						<control type="textbox">
+							<visible>[!String.IsEmpty(ListItem.Set) + !false]</visible>
+							<width>820</width>
+							<height>120</height>
+							<textcolor>b3ffffff</textcolor>
+							<align>left</align>
+							<font>Plots</font>
+							<label>$VAR[BingieDialogInfoPlot]</label>
+						</control>
 					</control>
 
 					<!-- buttons -->

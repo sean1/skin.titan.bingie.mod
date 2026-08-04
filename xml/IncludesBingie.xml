@@ -1848,18 +1848,9 @@
                 <height>$PARAM[height]</height>
                 <texture background="true">$PARAM[image]</texture>
                 <aspectratio>scale</aspectratio>
-				<animation effect="fade" start="100" end="50" time="300" condition="true">WindowOpen</animation>
-				<animation effect="fade" start="50" end="50" time="300" condition="true">WindowClose</animation>
+				<animation effect="fade" start="100" end="100" time="300" condition="true">WindowOpen</animation>
+				<animation effect="fade" start="100" end="100" time="300" condition="true">WindowClose</animation>
             </control>
-			<control type="image">
-                <visible>$PARAM[visibility]</visible>
-                <top>$PARAM[top]</top>
-                <right>$PARAM[right]</right>
-                <width>$PARAM[width]</width>
-                <height>$PARAM[height]</height>
-				<texture background="true">overlays/gradient_videoinfo.png</texture>
-				<colordiffuse>$VAR[BingiePanelColor]</colordiffuse>
-			</control>
 	    </definition>
     </include>
 

@@ -204,9 +204,5 @@
 
             </control>
         </control>
-		<!--Footer-->
-		<!--BINGIE Version-->
-        <include>BingieLogo</include>
-
     </controls>
 </window>

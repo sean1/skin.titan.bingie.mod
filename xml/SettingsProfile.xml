@@ -11,10 +11,6 @@
 
         <!--Header-->
         <include>Header</include>
-         <!--Footer-->
-		<!--BINGIE Version-->
-        <include>BingieLogo</include>
-
 		<control type="group">
 		<include>animation_window_open_close</include>
 		<bottom>125</bottom>

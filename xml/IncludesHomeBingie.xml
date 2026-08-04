@@ -246,33 +246,6 @@
                 <include>Bingie_Left_Gradient</include>
             </control>
 
-			<!--Netflix Diffuse Logo-->
-			<control type="image">
-					<visible>Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112)</visible>
-<description>diffuse behind Netflix logo</description>
-				<animation effect="slide" end="-66" time="0" condition="Window.IsActive(1110) | Window.IsActive(1111)">Conditional</animation>
-				<right>470</right>
-				<bottom>0</bottom>
-				<width>0</width>
-				<height>223</height>
-				<align>right</align>
-				<aspectratio align="right">keep</aspectratio>
-				<colordiffuse>4d000000</colordiffuse>
-                <texture background="true">home/netflix_diffuse.png</texture>
-			</control>
-			<!--Netflix Logo-->
-			<control type="image">
-					<visible>!Window.IsActive(1110) + !Window.IsActive(1111)</visible>
-				<description>Netflix logo</description>
-				<right>325</right>
-				<bottom>10</bottom>
-				<width>0</width>
-				<height>165</height>
-				<align>right</align>
-				<aspectratio align="right">keep</aspectratio>
-				<texture>home/bingie_mod_logo.png</texture>
-			</control>
-
 			<control type="grouplist">
 				<visible>Window.IsActive(1110) | Window.IsActive(1111)</visible>
 				<orientation>horizontal</orientation>

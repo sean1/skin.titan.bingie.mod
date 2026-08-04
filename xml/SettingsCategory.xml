@@ -183,7 +183,5 @@
             <visible>False</visible>
         </control>
 
-		<!--BINGIE Version-->
-        <include>BingieLogo</include>
     </controls>
 </window>

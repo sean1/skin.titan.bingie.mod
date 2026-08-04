@@ -7,8 +7,6 @@
     <!-- Defaults -->
 	<!-- BINGIE -->
     <onload>SetProperty(bingieviews,1,Home)</onload>
-    <onload>Skin.SetString(TMDbHelper.MonitorContainer,99950)</onload>
-
     <onunload>SetProperty(SectionBackground,$ESCINFO[Control.GetLabel(99004)])</onunload>
     <onunload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onunload>
     <onunload>ClearProperty(submenu,Home)</onunload>
@@ -18,7 +16,6 @@
     <include>BingieViews_WindowOpen_Fade</include>
 
 	<controls>
-		<include>Defs_TMDbHelper_Loader</include>
 		<!-- Global Background -->
         <include>GlobalBackground</include>
         <control type="button" id="1000">

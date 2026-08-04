@@ -8,7 +8,6 @@
 	<onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
 	<onload condition="System.HasAlarm(StopPlayback)">CancelAlarm(StopPlayback,silent)</onload>
     <controls>
-		<include>Defs_TMDbHelper_Loader</include>
         <!-- fake go-to-fullscreen button -->
         <control type="button" id="509">
             <visible allowhiddenfocus="true">false</visible>

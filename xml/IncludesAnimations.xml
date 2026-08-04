@@ -260,11 +260,11 @@
 	</include>
 
 	<include name="Animation_Right_Delay_2">
-		<animation type="WindowOpen" reversible="false" condition="!String.IsEmpty(Window(Home).Property(FullImage)) | !String.IsEmpty(Window(Home).Property(Animation)) | true + Integer.IsGreater(ListItem.PercentPlayed,1) | Window.IsActive(Custom_1190_TMDbHelperCast.xml) | Window.IsActive(Custom_1191_TMDbHelper.xml)">
+		<animation type="WindowOpen" reversible="false" condition="!String.IsEmpty(Window(Home).Property(FullImage)) | !String.IsEmpty(Window(Home).Property(Animation)) | true + Integer.IsGreater(ListItem.PercentPlayed,1)">
 		  <effect type="fade" start="0" end="100" time="500" delay="200" tween="sine" easing="out" />
 		  <effect type="slide" start="150" end="0" time="500" delay="200" tween="cubic" easing="out" />
 		</animation>
-		<animation type="WindowClose" reversible="false" condition="!String.IsEmpty(Window(Home).Property(FullImage)) | !String.IsEmpty(Window(Home).Property(Animation)) | true + Integer.IsGreater(ListItem.PercentPlayed,1) | Window.IsActive(Custom_1190_TMDbHelperCast.xml) | Window.IsActive(Custom_1191_TMDbHelper.xml)">
+		<animation type="WindowClose" reversible="false" condition="!String.IsEmpty(Window(Home).Property(FullImage)) | !String.IsEmpty(Window(Home).Property(Animation)) | true + Integer.IsGreater(ListItem.PercentPlayed,1)">
 		  <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out" />
 		  <effect type="slide" start="0" end="150" time="300" tween="cubic" easing="out" />
 		</animation>
@@ -303,67 +303,6 @@
 		<animation type="Visible" reversible="false">
 		  <effect type="fade" start="0" end="100" time="500" delay="400" tween="sine" easing="out" />
 		  <effect type="slide" start="-150" end="0" time="500" delay="200" tween="cubic" easing="out" />
-		</animation>
-	</include>
-
-	<include name="Animation_Recommendations_Window">
-        <animation type="WindowOpen" reversible="false" condition="String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideInfo))">
-            <effect type="fade" start="0" end="100" delay="100" time="500" tween="sine" easing="out"/>
-            <effect type="slide" start="-150,0" end="0" delay="100" time="500" tween="cubic" easing="out" />
-        </animation>
-        <animation type="WindowOpen" reversible="false" condition="!String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideInfo))">
-            <effect type="fade" start="0" end="100" delay="100" time="500" tween="sine" easing="out"/>
-            <effect type="slide" start="-150,0" end="0" delay="100" time="500" tween="cubic" easing="out" />
-        </animation>
-        <animation type="WindowClose" reversible="false" condition="String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideRecs))">
-            <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out"/>
-            <effect type="slide" start="0" end="-150" time="300" tween="cubic" easing="out" />
-        </animation>
-        <animation type="WindowClose" reversible="false" condition="!String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideRecs))">
-            <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out"/>
-            <effect type="slide" start="0" end="-150" time="300" tween="cubic" easing="out" />
-        </animation>
-    </include>
-
-	<include name="Animation_Recommendations_Window_2">
-	    <animation type="WindowOpen" reversible="false" condition="!Window.IsActive(Custom_1191_TMDbHelper.xml)">
-            <effect type="fade" start="0" end="100" delay="400" time="500" tween="sine" easing="out"/>
-            <effect type="slide" start="-150,0" end="0" delay="400" time="500" tween="cubic" easing="out" />
-        </animation>
-        <animation type="WindowOpen" reversible="false" condition="String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideInfo))">
-            <effect type="fade" start="0" end="100" delay="400" time="500" tween="sine" easing="out"/>
-            <effect type="slide" start="150,0" end="0" delay="400" time="500" tween="cubic" easing="out" />
-        </animation>
-        <animation type="WindowOpen" reversible="false" condition="!String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideInfo))">
-            <effect type="fade" start="0" end="100" delay="400" time="500" tween="sine" easing="out"/>
-            <effect type="slide" start="150,0" end="0" delay="400" time="500" tween="cubic" easing="out" />
-        </animation>
-        <animation type="WindowClose" reversible="false" condition="!Window.IsActive(Custom_1191_TMDbHelper.xml)">
-            <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out"/>
-            <effect type="slide" start="0" end="-150" time="300" tween="cubic" easing="out" />
-        </animation>
-		<animation type="WindowClose" reversible="false" condition="String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideRecs))">
-            <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out"/>
-            <effect type="slide" start="0" end="150" time="300" tween="cubic" easing="out" />
-        </animation>
-        <animation type="WindowClose" reversible="false" condition="!String.IsEmpty(Window(Home).Property(TMDbHelper.Recommendations.HideRecs))">
-            <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out"/>
-            <effect type="slide" start="0" end="150" time="300" tween="cubic" easing="out" />
-        </animation>
-    </include>
-
-	<include name="Animation_Common">
-        <animation type="WindowClose" reversible="false" condition="Window.IsActive(Custom_1191_TMDbHelper.xml)">
-			<effect type="slide" start="0" end="150" time="300" tween="cubic" easing="out" />
-        </animation>
-    </include>
-
-	<include name="Animation_Common_2">
-		<animation type="WindowOpen" reversible="false" condition="Window.IsActive(Custom_1191_TMDbHelper.xml)">
-			<effect type="fade" start="0" end="100" time="300" tween="sine" easing="out" />
-		</animation>
-		<animation type="WindowClose" reversible="false" condition="Window.IsActive(Custom_1191_TMDbHelper.xml)">
-			<effect type="fade" start="100" end="0" time="300" tween="sine" easing="out" />
 		</animation>
 	</include>
 

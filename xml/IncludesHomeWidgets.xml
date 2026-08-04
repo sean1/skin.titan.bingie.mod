@@ -34,7 +34,7 @@
 				<!-- trailer video preview -->
 				<control type="group">
 					<include>FullscreenDimensions</include>
-					<visible>$EXP[IsPlayingUnrecognizedContent] + [!Window.IsActive(DialogVideoInfo.xml) | !Window.IsActive(Custom_1190_TMDbHelperCast.xml) | !Window.IsActive(Custom_1191_TMDbHelper.xml)]</visible>
+					<visible>$EXP[IsPlayingUnrecognizedContent] + !Window.IsActive(DialogVideoInfo.xml)</visible>
 					<!-- bg -->
 					<control type="image">
 						<texture colordiffuse="ff000000" background="true">diffuse/panel2.png</texture>
@@ -156,21 +156,7 @@
 					<font>reg30</font>
 					<textcolor>ffffffff</textcolor>
 					<label>$INFO[ListItem.Tagline]</label>
-					<visible>!String.IsEmpty(Control.GetLabel(823156)) | !String.IsEmpty(Control.GetLabel(823157))</visible>
-				</control>
-				<control type="label" id="823156">
-					<top>270</top>
-					<font>reg30</font>
-					<textcolor>ffffffff</textcolor>
-					<label>$LOCALIZE[320198] [LOWERCASE]$INFO[Container(99950).ListItem.Property(Genre.1.Name)][/LOWERCASE] $LOCALIZE[320199]</label>
-					<visible>[String.IsEmpty(Control.GetLabel(823155)) | String.IsEmpty(Control.GetLabel(823157))] + $EXP[IsMovieDBType] + !String.IsEmpty(Container(99950).ListItem.Property(Genre.1.Name))</visible>
-				</control>
-				<control type="label" id="823157">
-					<top>270</top>
-					<font>reg30</font>
-					<textcolor>ffffffff</textcolor>
-					<label>$LOCALIZE[320198] [LOWERCASE]$INFO[Container(99950).ListItem.Property(Genre.1.Name)][/LOWERCASE] $LOCALIZE[320200]</label>
-					<visible>[String.IsEmpty(Control.GetLabel(823155)) | String.IsEmpty(Control.GetLabel(823156))] + $EXP[IsTvShowDBType] + !String.IsEmpty(Container(99950).ListItem.Property(Genre.1.Name))</visible>
+					<visible>!String.IsEmpty(ListItem.Tagline)</visible>
 				</control>
 			</control>
             <!-- Widgets -->

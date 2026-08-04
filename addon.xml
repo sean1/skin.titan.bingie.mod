@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.2.10" name="BINGIE Lite" provider-name="AchillesPunks, Matke">
+<addon id="skin.titan.bingie.lite" version="2.2.11" name="BINGIE Lite" provider-name="AchillesPunks, Matke">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
 		<import addon="plugin.video.pov" version="6.08.02"/>
         <import addon="resource.images.skinicons.wide" version="1.0.5"/>
         <import addon="resource.images.backgroundoverlays.basic" version="1.0.0"/>
 		<import addon="resource.images.studios.coloured" version="0.0.23" />
-		<import addon="plugin.video.themoviedb.helper" version="5.2.12" />
 		<import addon="plugin.video.youtube" version="7.0.2.2" />
 	</requires>
 	<extension point="xbmc.gui.skin" debugging="false">

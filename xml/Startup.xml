@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
 <window>
-    <defaultcontrol always="true">10</defaultcontrol>
-    <onload>SetProperty(Random,$INFO[System.Time(ss)],Home)</onload>
+	    <onload>SetProperty(Random,$INFO[System.Time(ss)],Home)</onload>
     <onunload condition="Player.HasVideo">PlayerControl(Stop)</onunload>
 
-	<!-- Start TMDbH service -->
-    <onload>Skin.SetBool(TMDbHelper.Service)</onload>
-	<onload>Skin.SetString(TMDbHelper.MonitorContainer,99950)</onload>
 	<onload>ReplaceWindow(Home)</onload>
 </window>

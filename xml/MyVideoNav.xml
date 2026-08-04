@@ -17,7 +17,6 @@
 	<onload>ClearProperty(FullImage,home)</onload>
 
     <controls>
-		<include>Defs_TMDbHelper_Loader</include>
         <!-- Video Background -->
         <include>GlobalBackground</include>
 		<!--NowPlaying-->

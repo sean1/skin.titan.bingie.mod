@@ -27,7 +27,6 @@
 	<include file="IncludesBackgroundBuilding.xml" />
     <include file="IncludesHeader.xml" />
     <include file="IncludesFooter.xml" />
-	<include file="IncludesPaths.xml" />
 	<include file="IncludesStaticMenus.xml"/>
 
     <!-- Constants -->
@@ -98,8 +97,6 @@
     <expression name="IsActualKeyboardActive">Window.IsActive(virtualkeyboard) + String.IsEmpty(Window(Home).Property(SpaceSearchTerm)) + String.IsEmpty(Window(Home).Property(BackspaceSearchTerm))</expression>
 
     <expression name="IsCurrentWidgetSpotlight">Control.HasFocus(1508) | [Control.IsVisible(1508) + Container(77777).Position(0)]</expression>
-
-	<expression name="Exp_IsPersonInfo">[String.IsEqual(ListItem.Property(item.type),person) | String.IsEqual(ListItem.Property(tmdb_type),person)]</expression>
 
 	<expression name="Exp_InfoDialog_IsFolder">[String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,season) | String.IsEqual(ListItem.DBType,set)]</expression>
     <!--Common-->
@@ -1268,16 +1265,6 @@
 				<ondown condition="Player.HasVideo">StepBack</ondown>
             </control>
         </definition>
-    </include>
-
-	<include name="Defs_TMDbHelper_Loader">
-        <control type="list" id="99950">
-            <width>1</width>
-            <height>1</height>
-            <itemlayout />
-            <focusedlayout />
-            <left>-1920</left>
-        </control>
     </include>
 
 </includes>

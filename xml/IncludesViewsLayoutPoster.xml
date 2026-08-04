@@ -56,7 +56,7 @@
 	<!-- POSTER LAYOUT FOR BINGIE VIEWS -->
     <include name="PosterPanelBingieLayout">
         <include>PosterThumbBingieLayout</include>
-        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + [Window.IsActive(1190) | Window.IsActive(1191) | !Window.IsActive(DialogVideoInfo.xml)]">PosterTagOverlayBingie</include>
+        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml)">PosterTagOverlayBingie</include>
         <control type="group">
             <!--Watched Overlay-->
             <right>8</right>
@@ -67,7 +67,7 @@
     <include name="PosterPanelBingieLayoutFocus">
         <include condition="![[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]] | Window.IsActive(movieinformation)">PosterThumbFOBingie</include>
         <include>PosterThumbBingieLayout</include>
-        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + [Window.IsActive(1190) | Window.IsActive(1191) | !Window.IsActive(DialogVideoInfo.xml)]">PosterTagOverlayBingie</include>
+        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml)">PosterTagOverlayBingie</include>
         <control type="group">
             <!--Watched Overlay-->
             <right>8</right>
@@ -240,7 +240,7 @@
             [Control.IsVisible(520) + false] |
             [Control.IsVisible(526) + false] |
             [[String.Contains(Window.Property(xmlfile),Nav) | Window.IsActive(Home)] + String.IsEmpty(ListItem.Art(poster)) + String.IsEmpty(ListItem.Art(tvshow.poster)) + !false] |
-            [String.IsEmpty(ListItem.Art(poster)) + String.IsEmpty(ListItem.Art(tvshow.poster)) + [Window.IsActive(1190) | Window.IsActive(1191) | Window.IsActive(DialogVideoInfo.xml)]]] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
+            [String.IsEmpty(ListItem.Art(poster)) + String.IsEmpty(ListItem.Art(tvshow.poster)) + Window.IsActive(DialogVideoInfo.xml)]] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
         </visible>
     </include>
     <include name="PosterTagOverlay">
@@ -286,9 +286,9 @@
     </include>
 	<include name="PosterTagOverlayBingie">
         <control type="group">
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(1190) + !Window.IsActive(1191) + !Window.IsActive(DialogVideoInfo.xml) + !Window.IsActive(videoosd) | [false + false]">PosterTagOverlayVisibility</include>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml) + !Window.IsActive(videoosd) | [false + false]">PosterTagOverlayVisibility</include>
 			<visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-			<visible>![!String.IsEmpty(ListItem.Art(poster)) + [Window.IsActive(1190) | Window.IsActive(1191) | Window.IsActive(DialogVideoInfo.xml)] + [$EXP[IsMovieDBType] | $EXP[IsTvShowDBType] | ListItem.IsCollection] + !false] | [false + false]</visible>
+			<visible>![!String.IsEmpty(ListItem.Art(poster)) + Window.IsActive(DialogVideoInfo.xml) + [$EXP[IsMovieDBType] | $EXP[IsTvShowDBType] | ListItem.IsCollection] + !false] | [false + false]</visible>
             <!--Panel-->
             <control type="image">
                 <bottom>0</bottom>
@@ -420,7 +420,6 @@
             <height>30</height>
             <left>45</left>
             <bottom>7</bottom>
-			<animation effect="slide" end="-7" time="0" condition="Window.IsActive(1190) | Window.IsActive(1191)">Conditional</animation>
 			<animation effect="slide" end="14" time="0" condition="Window.IsActive(DialogVideoInfo.xml)">Conditional</animation>
             <control type="button">
                 <width>150</width>
@@ -483,10 +482,10 @@
         <value condition="[Container.Content(studios) | String.IsEqual(ListItem.DBTYPE,studio)]">resource://resource.images.studios.white/$INFO[ListItem.Label,,.png]</value>
         <value condition="Container.Content(actors) + !String.IsEmpty(ListItem.Art(characterart))">$INFO[ListItem.Art(characterart)]</value>
         <value condition="Container.Content(actors) + !String.IsEmpty(ListItem.Label)">http://localhost:52307/getthumb&amp;title=$INFO[ListItem.Label] IMDB Actor</value>
-        <value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb)) + !Window.IsActive(1190) + !Window.IsActive(1191) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
-		<value condition="Container.Content(directors) + String.IsEmpty(ListItem.Art(thumb)) + !Window.IsActive(1190) + !Window.IsActive(1191) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
-        <value condition="!String.IsEmpty(ListItem.Property(character)) + String.IsEmpty(ListItem.Art(thumb)) + !Window.IsActive(1190) + !Window.IsActive(1191) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
-        <value condition="!String.IsEmpty(ListItem.Property(job)) + String.IsEmpty(ListItem.Art(thumb)) + !Window.IsActive(1190) + !Window.IsActive(1191) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
+        <value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb)) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
+		<value condition="Container.Content(directors) + String.IsEmpty(ListItem.Art(thumb)) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
+        <value condition="!String.IsEmpty(ListItem.Property(character)) + String.IsEmpty(ListItem.Art(thumb)) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
+        <value condition="!String.IsEmpty(ListItem.Property(job)) + String.IsEmpty(ListItem.Art(thumb)) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>
 		<value condition="Container.Content(years)">DefaultYear.png</value>
 		<value condition="Container.Content(countries)">DefaultCountry.png</value>
 		<value condition="Container.Content(tags)">DefaultTags.png</value>

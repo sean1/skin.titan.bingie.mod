@@ -181,7 +181,6 @@
 						<!-- Home Spotlight Additional Details White Icon -->
 						<control type="image">
 						<visible>!String.IsEmpty(Control.GetLabel(31002))</visible>
-						<visible>[String.IsEmpty(Container(99950).ListItem.Property(Cast.1.Thumb)) + [[String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),9)]]] | ![[String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),9)]]</visible>
 						<posy>14</posy>
 						<left>1</left>
 						<height>70</height>
@@ -190,34 +189,9 @@
 						<colordiffuse>ffffffff</colordiffuse>
 						<texture>$VAR[BingieMoreDetailsImageSpotlight,bingie/detailsspotlight/white/,.png]</texture>
 					</control>
-					<!-- Cast Thumb -->
-					<control type="group">
-						<visible>!String.IsEmpty(Container(99950).ListItem.Property(Cast.1.Thumb)) + [[String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),9)]]</visible>
-						<height>70</height>
-						<width>70</width>
-					<control type="image">
-						<visible>!String.IsEmpty(Control.GetLabel(31002))</visible>
-						<posy>14</posy>
-						<left>1</left>
-						<height>70</height>
-						<width>70</width>
-						<colordiffuse>ffffffff</colordiffuse>
-                        <texture>bingie/circle_back.png</texture>
-					</control>
-					<control type="image">
-						<visible>!String.IsEmpty(Control.GetLabel(31002))</visible>
-						<posy>17</posy>
-						<left>4</left>
-						<height>64</height>
-						<width>64</width>
-						<aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
-                        <texture diffuse="diffuse/circle_diffuse.png">$INFO[Container(99950).ListItem.Property(Cast.1.Thumb)]</texture>
-					</control>
-					</control>
 					<!-- Home Spotlight Additional Details Text -->
 					<control type="textbox" id="31002">
 						<visible>!String.IsEmpty(Control.GetLabel(31002))</visible>
-						<visible>[String.IsEmpty(Container(99950).ListItem.Property(Cast.1.Thumb)) + [[String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),9)]]] | ![[String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),9)]]</visible>
 						<height>115</height>
 						<width>650</width>
 						<left>10</left>
@@ -226,20 +200,6 @@
 						<aligny>center</aligny>
 						<font>Reg28</font>
 						<textcolor>ffffffff</textcolor>
-						<autoscroll>false</autoscroll>
-						<label>$VAR[BingieMoreDetailsSpotlight]</label>
-					</control>
-					<control type="textbox" id="31002">
-						<visible>!String.IsEmpty(Control.GetLabel(31002))</visible>
-						<visible>!String.IsEmpty(Container(99950).ListItem.Property(Cast.1.Thumb)) + [[String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(TMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(IMDb_Rating),9)] + [String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),8) | String.StartsWith(Container(99950).ListItem.Property(Trakt_Rating),9)]]</visible>
-						<height>115</height>
-						<width>650</width>
-						<left>10</left>
-						<bottom>8</bottom>
-						<align>left</align>
-						<aligny>center</aligny>
-						<font>Reg28</font>
-						<label>$INFO[Container(99950).ListItem.Property(Cast.1.Name),$LOCALIZE[320223] ]</label>
 						<autoscroll>false</autoscroll>
 						<label>$VAR[BingieMoreDetailsSpotlight]</label>
 					</control>

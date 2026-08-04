@@ -237,75 +237,75 @@
 
 	<!-- US MPAA / Movie Ratings - DETAILS ROW -->
 	<variable name="MPAAColors">
-        <value condition="String.Contains(ListItem.mpaa,US:G) | String.Contains(ListItem.mpaa,USA:G) | String.Contains(ListItem.mpaa,Rated G) | String.IsEqual(ListItem.Mpaa,G) | String.Contains(Container(99950).ListItem.mpaa,US:G) | String.Contains(Container(99950).ListItem.mpaa,USA:G) | String.Contains(Container(99950).ListItem.mpaa,Rated G) | String.IsEqual(Container(99950).ListItem.mpaa,G)">ff008000</value>
-		<value condition="String.Contains(ListItem.mpaa,US:PG-13) | String.Contains(ListItem.mpaa,USA:PG-13) | String.Contains(ListItem.mpaa,Rated PG-13) | String.IsEqual(ListItem.Mpaa,PG-13) | String.Contains(Container(99950).ListItem.mpaa,US:PG-13) | String.Contains(Container(99950).ListItem.mpaa,USA:PG-13) | String.Contains(Container(99950).ListItem.mpaa,Rated PG-13) | String.IsEqual(Container(99950).ListItem.mpaa,PG-13)">ffff7d13</value>
-		<value condition="String.IsEqual(ListItem.mpaa,US:PG) | String.IsEqual(ListItem.mpaa,USA:PG) | String.IsEqual(ListItem.mpaa,Rated PG) | String.IsEqual(ListItem.Mpaa,PG) | String.IsEqual(Container(99950).ListItem.mpaa,US:PG) | String.IsEqual(Container(99950).ListItem.mpaa,USA:PG) | String.IsEqual(Container(99950).ListItem.mpaa,Rated PG) | String.IsEqual(Container(99950).ListItem.mpaa,PG)">fffbad00</value>
-		<value condition="String.Contains(ListItem.mpaa,US:R) | String.Contains(ListItem.mpaa,USA:R) | String.Contains(ListItem.mpaa,Rated R) | String.IsEqual(ListItem.Mpaa,R) | String.Contains(Container(99950).ListItem.mpaa,US:R) | String.Contains(Container(99950).ListItem.mpaa,USA:R) | String.Contains(Container(99950).ListItem.mpaa,Rated R) | String.IsEqual(Container(99950).ListItem.mpaa,R)">ffdc0a0a</value>
-		<value condition="String.Contains(ListItem.mpaa,NC-17) | String.Contains(Container(99950).ListItem.mpaa,NC-17)">ffFB4F93</value>
-		<value condition="String.Contains(ListItem.mpaa,NR) | String.Contains(Container(99950).ListItem.mpaa,NR) | String.Contains(Container(99950).ListItem.mpaa,Not) | String.Contains(Container(99950).ListItem.mpaa,Unrated) | String.Contains(Container(99950).ListItem.mpaa,Passed) | String.Contains(Container(99950).ListItem.mpaa,Approved)">ff0000ff</value>
+		<value condition="String.Contains(ListItem.mpaa,US:G) | String.Contains(ListItem.mpaa,USA:G) | String.Contains(ListItem.mpaa,Rated G) | String.IsEqual(ListItem.mpaa,G)">ff008000</value>
+		<value condition="String.Contains(ListItem.mpaa,US:PG-13) | String.Contains(ListItem.mpaa,USA:PG-13) | String.Contains(ListItem.mpaa,Rated PG-13) | String.IsEqual(ListItem.mpaa,PG-13)">ffff7d13</value>
+		<value condition="String.IsEqual(ListItem.mpaa,US:PG) | String.IsEqual(ListItem.mpaa,USA:PG) | String.IsEqual(ListItem.mpaa,Rated PG) | String.IsEqual(ListItem.mpaa,PG)">fffbad00</value>
+		<value condition="String.Contains(ListItem.mpaa,US:R) | String.Contains(ListItem.mpaa,USA:R) | String.Contains(ListItem.mpaa,Rated R) | String.IsEqual(ListItem.mpaa,R)">ffdc0a0a</value>
+		<value condition="String.Contains(ListItem.mpaa,NC-17)">ffFB4F93</value>
+		<value condition="String.Contains(ListItem.mpaa,NR)">ff0000ff</value>
 		<!-- US MPAA / TV Ratings -->
-		<value condition="String.IsEqual(ListItem.mpaa,TV-Y) | String.IsEqual(Container(99950).ListItem.mpaa,TV-Y)">ff008000</value>
-		<value condition="String.Contains(ListItem.mpaa,TV-Y7) | String.Contains(Container(99950).ListItem.mpaa,TV-Y7)">ff008000</value>
-		<value condition="String.Contains(ListItem.mpaa,TV-G) | String.Contains(Container(99950).ListItem.mpaa,TV-G)">ff008000</value>
-		<value condition="String.Contains(ListItem.mpaa,TV-PG) | String.Contains(Container(99950).ListItem.mpaa,TV-PG)">fffbad00</value>
-		<value condition="String.Contains(ListItem.mpaa,TV-14) | String.Contains(Container(99950).ListItem.mpaa,TV-14)">ffff7d13</value>
-		<value condition="String.Contains(ListItem.mpaa,TV-MA) | String.Contains(ListItem.mpaa,USA:TV-MA) | String.Contains(Container(99950).ListItem.mpaa,TV-MA) | String.Contains(Container(99950).ListItem.mpaa,USA:TV-MA)">ffdc0a0a</value>
+		<value condition="String.IsEqual(ListItem.mpaa,TV-Y)">ff008000</value>
+		<value condition="String.Contains(ListItem.mpaa,TV-Y7)">ff008000</value>
+		<value condition="String.Contains(ListItem.mpaa,TV-G)">ff008000</value>
+		<value condition="String.Contains(ListItem.mpaa,TV-PG)">fffbad00</value>
+		<value condition="String.Contains(ListItem.mpaa,TV-14)">ffff7d13</value>
+		<value condition="String.Contains(ListItem.mpaa,TV-MA) | String.Contains(ListItem.mpaa,USA:TV-MA)">ffdc0a0a</value>
 		<!-- UK classifcations using UK or Rated prefix -->
-		<value condition="String.Contains(ListItem.mpaa,UK:U) | String.Contains(ListItem.mpaa,GB-U) | String.Contains(ListItem.mpaa,Rated U) | String.IsEqual(ListItem.mpaa,U) | String.Contains(Container(99950).ListItem.mpaa,UK:U) | String.Contains(Container(99950).ListItem.mpaa,GB-U) | String.Contains(Container(99950).ListItem.mpaa,Rated U) | String.IsEqual(Container(99950).ListItem.mpaa,U)">ff008000</value>
-		<value condition="String.Contains(ListItem.mpaa,UK:PG) | String.Contains(ListItem.mpaa,GB-PG) | String.Contains(ListItem.mpaa,Guidance) | String.Contains(Container(99950).ListItem.mpaa,UK:PG) | String.Contains(Container(99950).ListItem.mpaa,GB-PG) | String.Contains(Container(99950).ListItem.mpaa,Guidance)">fffbad00</value>
-		<value condition="String.Contains(ListItem.mpaa,UK:12A) | String.Contains(ListItem.mpaa,GB-12A) | String.Contains(ListItem.mpaa,Rated 12A) | String.IsEqual(ListItem.mpaa,12A) | String.Contains(Container(99950).ListItem.mpaa,UK:12A) | String.Contains(Container(99950).ListItem.mpaa,GB-12A) | String.Contains(Container(99950).ListItem.mpaa,Rated 12A) | String.IsEqual(Container(99950).ListItem.mpaa,12A)">ffff7d13</value>
-		<value condition="String.IsEqual(ListItem.mpaa,UK:12) | String.IsEqual(ListItem.mpaa,GB-12) | String.IsEqual(ListItem.mpaa,Rated 12) | String.IsEqual(ListItem.mpaa,12) | String.IsEqual(Container(99950).ListItem.mpaa,UK:12) | String.IsEqual(Container(99950).ListItem.mpaa,GB-12) | String.IsEqual(Container(99950).ListItem.mpaa,Rated 12) | String.IsEqual(Container(99950).ListItem.mpaa,12)">ffff7d13</value>
-		<value condition="String.Contains(ListItem.mpaa,UK:15) | String.Contains(ListItem.mpaa,GB-15) | String.Contains(ListItem.mpaa,Rated 15) | String.IsEqual(ListItem.mpaa,15) | String.Contains(ListItem.mpaa,Mature) | String.Contains(Container(99950).ListItem.mpaa,UK:15) | String.Contains(Container(99950).ListItem.mpaa,GB-15) | String.Contains(Container(99950).ListItem.mpaa,Rated 15) | String.IsEqual(Container(99950).ListItem.mpaa,15) | String.Contains(Container(99950).ListItem.mpaa,Mature)">ffFB4F93</value>
-		<value condition="String.Contains(ListItem.mpaa,UK:18) | String.Contains(ListItem.mpaa,GB-18) | String.Contains(ListItem.mpaa,Rated 18) | String.IsEqual(ListItem.mpaa,18) | String.Contains(Container(99950).ListItem.mpaa,UK:18) | String.Contains(Container(99950).ListItem.mpaa,GB-18) | String.Contains(Container(99950).ListItem.mpaa,Rated 18) | String.IsEqual(Container(99950).ListItem.mpaa,18)">ffdc0a0a</value>
+		<value condition="String.Contains(ListItem.mpaa,UK:U) | String.Contains(ListItem.mpaa,GB-U) | String.Contains(ListItem.mpaa,Rated U) | String.IsEqual(ListItem.mpaa,U)">ff008000</value>
+		<value condition="String.Contains(ListItem.mpaa,UK:PG) | String.Contains(ListItem.mpaa,GB-PG) | String.Contains(ListItem.mpaa,Guidance)">fffbad00</value>
+		<value condition="String.Contains(ListItem.mpaa,UK:12A) | String.Contains(ListItem.mpaa,GB-12A) | String.Contains(ListItem.mpaa,Rated 12A) | String.IsEqual(ListItem.mpaa,12A)">ffff7d13</value>
+		<value condition="String.IsEqual(ListItem.mpaa,UK:12) | String.IsEqual(ListItem.mpaa,GB-12) | String.IsEqual(ListItem.mpaa,Rated 12) | String.IsEqual(ListItem.mpaa,12)">ffff7d13</value>
+		<value condition="String.Contains(ListItem.mpaa,UK:15) | String.Contains(ListItem.mpaa,GB-15) | String.Contains(ListItem.mpaa,Rated 15) | String.IsEqual(ListItem.mpaa,15) | String.Contains(ListItem.mpaa,Mature)">ffFB4F93</value>
+		<value condition="String.Contains(ListItem.mpaa,UK:18) | String.Contains(ListItem.mpaa,GB-18) | String.Contains(ListItem.mpaa,Rated 18) | String.IsEqual(ListItem.mpaa,18)">ffdc0a0a</value>
 		<!-- Australia classifcations -->
-		<value condition="String.Contains(ListItem.mpaa,Rated M) | String.IsEqual(ListItem.mpaa,M) | String.Contains(Container(99950).ListItem.mpaa,Rated M) | String.IsEqual(Container(99950).ListItem.mpaa,M)">ffff7d13</value>
-		<value condition="String.Contains(ListItem.mpaa,Rated MA15) | String.Contains(ListItem.mpaa,MA15) | String.Contains(Container(99950).ListItem.mpaa,Rated MA15) | String.Contains(Container(99950).ListItem.mpaa,MA15)">ffFB4F93</value>
-		<value condition="String.Contains(ListItem.mpaa,Rated R18) | String.Contains(ListItem.mpaa,R18) | String.Contains(Container(99950).ListItem.mpaa,Rated R18) | String.Contains(Container(99950).ListItem.mpaa,R18)">ffdc0a0a</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated M) | String.IsEqual(ListItem.mpaa,M)">ffff7d13</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated MA15) | String.Contains(ListItem.mpaa,MA15)">ffFB4F93</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated R18) | String.Contains(ListItem.mpaa,R18)">ffdc0a0a</value>
 		<!-- Canada classifcations -->
-		<value condition="String.Contains(ListItem.mpaa,Rated 14A) | String.IsEqual(ListItem.mpaa,14A) | String.Contains(Container(99950).ListItem.mpaa,Rated 14A) | String.IsEqual(Container(99950).ListItem.mpaa,14A)">ffff7d13</value>
-		<value condition="String.Contains(ListItem.mpaa,Rated 18A) | String.IsEqual(ListItem.mpaa,18A) | String.Contains(Container(99950).ListItem.mpaa,Rated 18A) | String.IsEqual(Container(99950).ListItem.mpaa,18A)">ffdc0a0a</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated 14A) | String.IsEqual(ListItem.mpaa,14A)">ffff7d13</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated 18A) | String.IsEqual(ListItem.mpaa,18A)">ffdc0a0a</value>
 		<!-- Central Europe classifcations -->
-		<value condition="String.Contains(ListItem.mpaa,Rated 0) | String.IsEqual(ListItem.mpaa,0) | String.Contains(Container(99950).ListItem.mpaa,Rated 0) | String.IsEqual(Container(99950).ListItem.mpaa,0)">ff008000</value>
-		<value condition="String.Contains(ListItem.mpaa,Rated 6) | String.IsEqual(ListItem.mpaa,6) | String.Contains(Container(99950).ListItem.mpaa,Rated 6) | String.IsEqual(Container(99950).ListItem.mpaa,6)">ff008000</value>
-		<value condition="String.Contains(ListItem.mpaa,Rated 10) | String.IsEqual(ListItem.mpaa,10) | String.Contains(Container(99950).ListItem.mpaa,Rated 10) | String.IsEqual(Container(99950).ListItem.mpaa,10)">fffbad00</value>
-		<value condition="String.Contains(ListItem.mpaa,Rated 16) | String.IsEqual(ListItem.mpaa,16) | String.Contains(Container(99950).ListItem.mpaa,Rated 16) | String.IsEqual(Container(99950).ListItem.mpaa,16)">ffFB4F93</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated 0) | String.IsEqual(ListItem.mpaa,0)">ff008000</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated 6) | String.IsEqual(ListItem.mpaa,6)">ff008000</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated 10) | String.IsEqual(ListItem.mpaa,10)">fffbad00</value>
+		<value condition="String.Contains(ListItem.mpaa,Rated 16) | String.IsEqual(ListItem.mpaa,16)">ffFB4F93</value>
 		<value>ff414141</value>
 	</variable>
 
 	<!-- US MPAA / Movie Ratings - OSD -->
 	<variable name="MPAAColorsOSD">
-        <value condition="String.Contains(videoplayer.mpaa,US:G) | String.Contains(videoplayer.mpaa,USA:G) | String.Contains(videoplayer.mpaa,Rated G) | String.IsEqual(videoplayer.Mpaa,G) | String.Contains(Container(99950).Player.mpaa,US:G) | String.Contains(Container(99950).Player.mpaa,USA:G) | String.Contains(Container(99950).Player.mpaa,Rated G) | String.IsEqual(Container(99950).Player.mpaa,G)">ff008000</value>
-		<value condition="String.Contains(videoplayer.mpaa,US:PG-13) | String.Contains(videoplayer.mpaa,USA:PG-13) | String.Contains(videoplayer.mpaa,Rated PG-13) | String.IsEqual(videoplayer.Mpaa,PG-13) | String.Contains(Container(99950).Player.mpaa,US:PG-13) | String.Contains(Container(99950).Player.mpaa,USA:PG-13) | String.Contains(Container(99950).Player.mpaa,Rated PG-13) | String.IsEqual(Container(99950).Player.mpaa,PG-13)">ffff7d13</value>
-		<value condition="String.IsEqual(videoplayer.mpaa,US:PG) | String.IsEqual(videoplayer.mpaa,USA:PG) | String.IsEqual(videoplayer.mpaa,Rated PG) | String.IsEqual(videoplayer.Mpaa,PG) | String.IsEqual(Container(99950).Player.mpaa,US:PG) | String.IsEqual(Container(99950).Player.mpaa,USA:PG) | String.IsEqual(Container(99950).Player.mpaa,Rated PG) | String.IsEqual(Container(99950).Player.mpaa,PG)">fffbad00</value>
-		<value condition="String.Contains(videoplayer.mpaa,US:R) | String.Contains(videoplayer.mpaa,USA:R) | String.Contains(videoplayer.mpaa,Rated R) | String.IsEqual(videoplayer.Mpaa,R) | String.Contains(Container(99950).Player.mpaa,US:R) | String.Contains(Container(99950).Player.mpaa,USA:R) | String.Contains(Container(99950).Player.mpaa,Rated R) | String.IsEqual(Container(99950).Player.mpaa,R)">ffdc0a0a</value>
-		<value condition="String.Contains(videoplayer.mpaa,NC-17) | String.Contains(Container(99950).Player.mpaa,NC-17)">ffFB4F93</value>
-		<value condition="String.Contains(videoplayer.mpaa,NR) | String.Contains(Container(99950).Player.mpaa,NR) | String.Contains(Container(99950).Player.mpaa,Not) | String.Contains(Container(99950).Player.mpaa,Unrated) | String.Contains(Container(99950).Player.mpaa,Passed) | String.Contains(Container(99950).Player.mpaa,Approved)">ff0000ff</value>
+		<value condition="String.Contains(videoplayer.mpaa,US:G) | String.Contains(videoplayer.mpaa,USA:G) | String.Contains(videoplayer.mpaa,Rated G) | String.IsEqual(videoplayer.mpaa,G)">ff008000</value>
+		<value condition="String.Contains(videoplayer.mpaa,US:PG-13) | String.Contains(videoplayer.mpaa,USA:PG-13) | String.Contains(videoplayer.mpaa,Rated PG-13) | String.IsEqual(videoplayer.mpaa,PG-13)">ffff7d13</value>
+		<value condition="String.IsEqual(videoplayer.mpaa,US:PG) | String.IsEqual(videoplayer.mpaa,USA:PG) | String.IsEqual(videoplayer.mpaa,Rated PG) | String.IsEqual(videoplayer.mpaa,PG)">fffbad00</value>
+		<value condition="String.Contains(videoplayer.mpaa,US:R) | String.Contains(videoplayer.mpaa,USA:R) | String.Contains(videoplayer.mpaa,Rated R) | String.IsEqual(videoplayer.mpaa,R)">ffdc0a0a</value>
+		<value condition="String.Contains(videoplayer.mpaa,NC-17)">ffFB4F93</value>
+		<value condition="String.Contains(videoplayer.mpaa,NR)">ff0000ff</value>
 		<!-- US MPAA / TV Ratings -->
-		<value condition="String.IsEqual(videoplayer.mpaa,TV-Y) | String.IsEqual(Container(99950).Player.mpaa,TV-Y)">ff008000</value>
-		<value condition="String.Contains(videoplayer.mpaa,TV-Y7) | String.Contains(Container(99950).Player.mpaa,TV-Y7)">ff008000</value>
-		<value condition="String.Contains(videoplayer.mpaa,TV-G) | String.Contains(Container(99950).Player.mpaa,TV-G)">ff008000</value>
-		<value condition="String.Contains(videoplayer.mpaa,TV-PG) | String.Contains(Container(99950).Player.mpaa,TV-PG)">fffbad00</value>
-		<value condition="String.Contains(videoplayer.mpaa,TV-14) | String.Contains(Container(99950).Player.mpaa,TV-14)">ffff7d13</value>
-		<value condition="String.Contains(videoplayer.mpaa,TV-MA) | String.Contains(videoplayer.mpaa,USA:TV-MA) | String.Contains(Container(99950).Player.mpaa,TV-MA) | String.Contains(Container(99950).Player.mpaa,USA:TV-MA)">ffdc0a0a</value>
+		<value condition="String.IsEqual(videoplayer.mpaa,TV-Y)">ff008000</value>
+		<value condition="String.Contains(videoplayer.mpaa,TV-Y7)">ff008000</value>
+		<value condition="String.Contains(videoplayer.mpaa,TV-G)">ff008000</value>
+		<value condition="String.Contains(videoplayer.mpaa,TV-PG)">fffbad00</value>
+		<value condition="String.Contains(videoplayer.mpaa,TV-14)">ffff7d13</value>
+		<value condition="String.Contains(videoplayer.mpaa,TV-MA) | String.Contains(videoplayer.mpaa,USA:TV-MA)">ffdc0a0a</value>
 		<!-- UK classifcations using UK or Rated prefix -->
-		<value condition="String.Contains(videoplayer.mpaa,UK:U) | String.Contains(videoplayer.mpaa,GB-U) | String.Contains(videoplayer.mpaa,Rated U) | String.IsEqual(videoplayer.mpaa,U) | String.Contains(Container(99950).Player.mpaa,UK:U) | String.Contains(Container(99950).Player.mpaa,GB-U) | String.Contains(Container(99950).Player.mpaa,Rated U) | String.IsEqual(Container(99950).Player.mpaa,U)">ff008000</value>
-		<value condition="String.Contains(videoplayer.mpaa,UK:PG) | String.Contains(videoplayer.mpaa,GB-PG) | String.Contains(videoplayer.mpaa,Guidance) | String.Contains(Container(99950).Player.mpaa,UK:PG) | String.Contains(Container(99950).Player.mpaa,GB-PG) | String.Contains(Container(99950).Player.mpaa,Guidance)">fffbad00</value>
-		<value condition="String.Contains(videoplayer.mpaa,UK:12A) | String.Contains(videoplayer.mpaa,GB-12A) | String.Contains(videoplayer.mpaa,Rated 12A) | String.IsEqual(videoplayer.mpaa,12A) | String.Contains(Container(99950).Player.mpaa,UK:12A) | String.Contains(Container(99950).Player.mpaa,GB-12A) | String.Contains(Container(99950).Player.mpaa,Rated 12A) | String.IsEqual(Container(99950).Player.mpaa,12A)">ffff7d13</value>
-		<value condition="String.IsEqual(videoplayer.mpaa,UK:12) | String.IsEqual(videoplayer.mpaa,GB-12) | String.IsEqual(videoplayer.mpaa,Rated 12) | String.IsEqual(videoplayer.mpaa,12) | String.IsEqual(Container(99950).Player.mpaa,UK:12) | String.IsEqual(Container(99950).Player.mpaa,GB-12) | String.IsEqual(Container(99950).Player.mpaa,Rated 12) | String.IsEqual(Container(99950).Player.mpaa,12)">ffff7d13</value>
-		<value condition="String.Contains(videoplayer.mpaa,UK:15) | String.Contains(videoplayer.mpaa,GB-15) | String.Contains(videoplayer.mpaa,Rated 15) | String.IsEqual(videoplayer.mpaa,15) | String.Contains(videoplayer.mpaa,Mature) | String.Contains(Container(99950).Player.mpaa,UK:15) | String.Contains(Container(99950).Player.mpaa,GB-15) | String.Contains(Container(99950).Player.mpaa,Rated 15) | String.IsEqual(Container(99950).Player.mpaa,15) | String.Contains(Container(99950).Player.mpaa,Mature)">ffFB4F93</value>
-		<value condition="String.Contains(videoplayer.mpaa,UK:18) | String.Contains(videoplayer.mpaa,GB-18) | String.Contains(videoplayer.mpaa,Rated 18) | String.IsEqual(videoplayer.mpaa,18) | String.Contains(Container(99950).Player.mpaa,UK:18) | String.Contains(Container(99950).Player.mpaa,GB-18) | String.Contains(Container(99950).Player.mpaa,Rated 18) | String.IsEqual(Container(99950).Player.mpaa,18)">ffdc0a0a</value>
+		<value condition="String.Contains(videoplayer.mpaa,UK:U) | String.Contains(videoplayer.mpaa,GB-U) | String.Contains(videoplayer.mpaa,Rated U) | String.IsEqual(videoplayer.mpaa,U)">ff008000</value>
+		<value condition="String.Contains(videoplayer.mpaa,UK:PG) | String.Contains(videoplayer.mpaa,GB-PG) | String.Contains(videoplayer.mpaa,Guidance)">fffbad00</value>
+		<value condition="String.Contains(videoplayer.mpaa,UK:12A) | String.Contains(videoplayer.mpaa,GB-12A) | String.Contains(videoplayer.mpaa,Rated 12A) | String.IsEqual(videoplayer.mpaa,12A)">ffff7d13</value>
+		<value condition="String.IsEqual(videoplayer.mpaa,UK:12) | String.IsEqual(videoplayer.mpaa,GB-12) | String.IsEqual(videoplayer.mpaa,Rated 12) | String.IsEqual(videoplayer.mpaa,12)">ffff7d13</value>
+		<value condition="String.Contains(videoplayer.mpaa,UK:15) | String.Contains(videoplayer.mpaa,GB-15) | String.Contains(videoplayer.mpaa,Rated 15) | String.IsEqual(videoplayer.mpaa,15) | String.Contains(videoplayer.mpaa,Mature)">ffFB4F93</value>
+		<value condition="String.Contains(videoplayer.mpaa,UK:18) | String.Contains(videoplayer.mpaa,GB-18) | String.Contains(videoplayer.mpaa,Rated 18) | String.IsEqual(videoplayer.mpaa,18)">ffdc0a0a</value>
 		<!-- Australia classifcations -->
-		<value condition="String.Contains(videoplayer.mpaa,Rated M) | String.IsEqual(videoplayer.mpaa,M) | String.Contains(Container(99950).Player.mpaa,Rated M) | String.IsEqual(Container(99950).Player.mpaa,M)">ffff7d13</value>
-		<value condition="String.Contains(videoplayer.mpaa,Rated MA15) | String.Contains(videoplayer.mpaa,MA15) | String.Contains(Container(99950).Player.mpaa,Rated MA15) | String.Contains(Container(99950).Player.mpaa,MA15)">ffFB4F93</value>
-		<value condition="String.Contains(videoplayer.mpaa,Rated R18) | String.Contains(videoplayer.mpaa,R18) | String.Contains(Container(99950).Player.mpaa,Rated R18) | String.Contains(Container(99950).Player.mpaa,R18)">ffdc0a0a</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated M) | String.IsEqual(videoplayer.mpaa,M)">ffff7d13</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated MA15) | String.Contains(videoplayer.mpaa,MA15)">ffFB4F93</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated R18) | String.Contains(videoplayer.mpaa,R18)">ffdc0a0a</value>
 		<!-- Canada classifcations -->
-		<value condition="String.Contains(videoplayer.mpaa,Rated 14A) | String.IsEqual(videoplayer.mpaa,14A) | String.Contains(Container(99950).Player.mpaa,Rated 14A) | String.IsEqual(Container(99950).Player.mpaa,14A)">ffff7d13</value>
-		<value condition="String.Contains(videoplayer.mpaa,Rated 18A) | String.IsEqual(videoplayer.mpaa,18A) | String.Contains(Container(99950).Player.mpaa,Rated 18A) | String.IsEqual(Container(99950).Player.mpaa,18A)">ffdc0a0a</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated 14A) | String.IsEqual(videoplayer.mpaa,14A)">ffff7d13</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated 18A) | String.IsEqual(videoplayer.mpaa,18A)">ffdc0a0a</value>
 		<!-- Central Europe classifcations -->
-		<value condition="String.Contains(videoplayer.mpaa,Rated 0) | String.IsEqual(videoplayer.mpaa,0) | String.Contains(Container(99950).Player.mpaa,Rated 0) | String.IsEqual(Container(99950).Player.mpaa,0)">ff008000</value>
-		<value condition="String.Contains(videoplayer.mpaa,Rated 6) | String.IsEqual(videoplayer.mpaa,6) | String.Contains(Container(99950).Player.mpaa,Rated 6) | String.IsEqual(Container(99950).Player.mpaa,6)">ff008000</value>
-		<value condition="String.Contains(videoplayer.mpaa,Rated 10) | String.IsEqual(videoplayer.mpaa,10) | String.Contains(Container(99950).Player.mpaa,Rated 10) | String.IsEqual(Container(99950).Player.mpaa,10)">fffbad00</value>
-		<value condition="String.Contains(videoplayer.mpaa,Rated 16) | String.IsEqual(videoplayer.mpaa,16) | String.Contains(Container(99950).Player.mpaa,Rated 16) | String.IsEqual(Container(99950).Player.mpaa,16)">ffFB4F93</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated 0) | String.IsEqual(videoplayer.mpaa,0)">ff008000</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated 6) | String.IsEqual(videoplayer.mpaa,6)">ff008000</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated 10) | String.IsEqual(videoplayer.mpaa,10)">fffbad00</value>
+		<value condition="String.Contains(videoplayer.mpaa,Rated 16) | String.IsEqual(videoplayer.mpaa,16)">ffFB4F93</value>
 		<value>ff414141</value>
 	</variable>
 
@@ -563,7 +563,7 @@
 	<include>Default_Visible_Fade</include>
 	<!-- Icon display -->
 	<control type="button" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(Container(99950).ListItem.mpaa)</visible>
+			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
 				<posy>17</posy>
 				<posx>0</posx>
 				<height>46</height>
@@ -594,15 +594,11 @@
 			String.IsEqual(ListItem.mpaa,US:PG) | String.IsEqual(ListItem.mpaa,USA:PG) | String.IsEqual(ListItem.mpaa,Rated PG) | String.IsEqual(ListItem.Mpaa,PG) |
 			String.Contains(ListItem.mpaa,US:R) | String.Contains(ListItem.mpaa,USA:R) | String.Contains(ListItem.mpaa,Rated R) | String.IsEqual(ListItem.Mpaa,R) | String.Contains(ListItem.mpaa,NC-17) | String.Contains(ListItem.mpaa,NR) |
 			String.IsEqual(ListItem.mpaa,TV-Y) | String.Contains(ListItem.mpaa,TV-Y7) | String.Contains(ListItem.mpaa,TV-G) |String.Contains(ListItem.mpaa,TV-PG) | String.Contains(ListItem.mpaa,TV-14) | String.Contains(ListItem.mpaa,TV-MA) | String.Contains(ListItem.mpaa,USA:TV-MA)]]
-			| [!String.IsEmpty(Container(99950).ListItem.mpaa) + [String.Contains(Container(99950).ListItem.mpaa,US:G) | String.Contains(Container(99950).ListItem.mpaa,USA:G) | String.Contains(Container(99950).ListItem.mpaa,Rated G) | String.IsEqual(Container(99950).ListItem.mpaa,G) |
-			String.Contains(Container(99950).ListItem.mpaa,US:PG-13) | String.Contains(Container(99950).ListItem.mpaa,USA:PG-13) | String.Contains(Container(99950).ListItem.mpaa,Rated PG-13) | String.IsEqual(Container(99950).ListItem.mpaa,PG-13) |
-			String.IsEqual(Container(99950).ListItem.mpaa,US:PG) | String.IsEqual(Container(99950).ListItem.mpaa,USA:PG) | String.IsEqual(Container(99950).ListItem.mpaa,Rated PG) | String.IsEqual(Container(99950).ListItem.mpaa,PG) |
-			String.Contains(Container(99950).ListItem.mpaa,US:R) | String.Contains(Container(99950).ListItem.mpaa,USA:R) | String.Contains(Container(99950).ListItem.mpaa,Rated R) | String.IsEqual(Container(99950).ListItem.mpaa,R) | String.Contains(Container(99950).ListItem.mpaa,NC-17) | String.Contains(Container(99950).ListItem.mpaa,NR) | String.Contains(Container(99950).ListItem.mpaa,Not) | String.Contains(Container(99950).ListItem.mpaa,Unrated) | String.Contains(Container(99950).ListItem.mpaa,Passed) | String.Contains(Container(99950).ListItem.mpaa,Approved) |
-			String.IsEqual(Container(99950).ListItem.mpaa,TV-Y) | String.Contains(Container(99950).ListItem.mpaa,TV-Y7) | String.Contains(Container(99950).ListItem.mpaa,TV-G) |String.Contains(Container(99950).ListItem.mpaa,TV-PG) | String.Contains(Container(99950).ListItem.mpaa,TV-14) | String.Contains(Container(99950).ListItem.mpaa,TV-MA) | String.Contains(Container(99950).ListItem.mpaa,USA:TV-MA)]]</visible>
+			</visible>
 			<height>46</height>
             <width>97</width>
 	<control type="image" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(Container(99950).ListItem.mpaa)</visible>
+			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
 			<top>17</top>
 			<width>97</width>
 			<height>46</height>
@@ -612,7 +608,7 @@
 			<include>Default_Visible_Fade</include>
     </control>
 	<control type="image" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(Container(99950).ListItem.mpaa)</visible>
+			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
 			<right>3</right>
 			<top>20</top>
 			<width>91</width>
@@ -623,7 +619,7 @@
 			<include>Default_Visible_Fade</include>
     </control>
 	<control type="label" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(Container(99950).ListItem.mpaa)</visible>
+			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
 				<posy>17</posy>
 				<posx>0</posx>
 				<align>center</align>
@@ -644,7 +640,7 @@
 	<include>Default_Visible_Fade</include>
 	<!-- Icon display -->
 	<control type="button" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(Container(99950).ListItem.mpaa)</visible>
+			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
 				<posy>17</posy>
 				<posx>0</posx>
 				<height>46</height>
@@ -669,7 +665,7 @@
 	<include>Default_Visible_Fade</include>
 	<!-- Icon display -->
 	<control type="button" id="123456">
-			<visible>!String.IsEmpty(VideoPlayer.MPAA) | !String.IsEmpty(Container(99950).Player.mpaa)</visible>
+			<visible>!String.IsEmpty(VideoPlayer.MPAA)</visible>
 				<posy>17</posy>
 				<posx>0</posx>
 				<height>46</height>
@@ -700,15 +696,11 @@
 			String.IsEqual(videoplayer.mpaa,US:PG) | String.IsEqual(videoplayer.mpaa,USA:PG) | String.IsEqual(videoplayer.mpaa,Rated PG) | String.IsEqual(videoplayer.Mpaa,PG) |
 			String.Contains(videoplayer.mpaa,US:R) | String.Contains(videoplayer.mpaa,USA:R) | String.Contains(videoplayer.mpaa,Rated R) | String.IsEqual(videoplayer.Mpaa,R) | String.Contains(videoplayer.mpaa,NC-17) | String.Contains(videoplayer.mpaa,NR) |
 			String.IsEqual(videoplayer.mpaa,TV-Y) | String.Contains(videoplayer.mpaa,TV-Y7) | String.Contains(videoplayer.mpaa,TV-G) |String.Contains(videoplayer.mpaa,TV-PG) | String.Contains(videoplayer.mpaa,TV-14) | String.Contains(videoplayer.mpaa,TV-MA) | String.Contains(videoplayer.mpaa,USA:TV-MA)]]
-			| [!String.IsEmpty(Container(99950).Player.mpaa) + [String.Contains(Container(99950).Player.mpaa,US:G) | String.Contains(Container(99950).Player.mpaa,USA:G) | String.Contains(Container(99950).Player.mpaa,Rated G) | String.IsEqual(Container(99950).Player.mpaa,G) |
-			String.Contains(Container(99950).Player.mpaa,US:PG-13) | String.Contains(Container(99950).Player.mpaa,USA:PG-13) | String.Contains(Container(99950).Player.mpaa,Rated PG-13) | String.IsEqual(Container(99950).Player.mpaa,PG-13) |
-			String.IsEqual(Container(99950).Player.mpaa,US:PG) | String.IsEqual(Container(99950).Player.mpaa,USA:PG) | String.IsEqual(Container(99950).Player.mpaa,Rated PG) | String.IsEqual(Container(99950).Player.mpaa,PG) |
-			String.Contains(Container(99950).Player.mpaa,US:R) | String.Contains(Container(99950).Player.mpaa,USA:R) | String.Contains(Container(99950).Player.mpaa,Rated R) | String.IsEqual(Container(99950).Player.mpaa,R) | String.Contains(Container(99950).Player.mpaa,NC-17) | String.Contains(Container(99950).Player.mpaa,NR) | String.Contains(Container(99950).Player.mpaa,Not) | String.Contains(Container(99950).Player.mpaa,Unrated) | String.Contains(Container(99950).Player.mpaa,Passed) | String.Contains(Container(99950).Player.mpaa,Approved) |
-			String.IsEqual(Container(99950).Player.mpaa,TV-Y) | String.Contains(Container(99950).Player.mpaa,TV-Y7) | String.Contains(Container(99950).Player.mpaa,TV-G) |String.Contains(Container(99950).Player.mpaa,TV-PG) | String.Contains(Container(99950).Player.mpaa,TV-14) | String.Contains(Container(99950).Player.mpaa,TV-MA) | String.Contains(Container(99950).Player.mpaa,USA:TV-MA)]]</visible>
+			</visible>
 			<height>46</height>
             <width>97</width>
 	<control type="image" id="123456">
-			<visible>!String.IsEmpty(VideoPlayer.MPAA) | !String.IsEmpty(Container(99950).Player.mpaa)</visible>
+			<visible>!String.IsEmpty(VideoPlayer.MPAA)</visible>
 			<top>17</top>
 			<width>97</width>
 			<height>46</height>
@@ -718,7 +710,7 @@
 			<include>Default_Visible_Fade</include>
     </control>
 	<control type="image" id="123456">
-			<visible>!String.IsEmpty(VideoPlayer.MPAA) | !String.IsEmpty(Container(99950).Player.mpaa)</visible>
+			<visible>!String.IsEmpty(VideoPlayer.MPAA)</visible>
 			<right>3</right>
 			<top>20</top>
 			<width>91</width>
@@ -729,7 +721,7 @@
 			<include>Default_Visible_Fade</include>
     </control>
 	<control type="label" id="123456">
-			<visible>!String.IsEmpty(VideoPlayer.MPAA) | !String.IsEmpty(Container(99950).Player.mpaa)</visible>
+			<visible>!String.IsEmpty(VideoPlayer.MPAA)</visible>
 				<posy>17</posy>
 				<posx>0</posx>
 				<align>center</align>
@@ -750,7 +742,7 @@
 	<include>Default_Visible_Fade</include>
 	<!-- Icon display -->
 	<control type="button" id="123456">
-			<visible>!String.IsEmpty(VideoPlayer.MPAA) | !String.IsEmpty(Container(99950).Player.mpaa)</visible>
+			<visible>!String.IsEmpty(VideoPlayer.MPAA)</visible>
 				<posy>17</posy>
 				<posx>0</posx>
 				<height>46</height>

@@ -8,7 +8,6 @@
             <onfocus>SetProperty(ShowViewSubMenu,show,Home)</onfocus>
             <onfocus>SetProperty(submenupos,$INFO[Container(900).Position],Home)</onfocus>
             <onfocus>ClearProperty(submenu,Home)</onfocus>
-            <onfocus condition="!String.IsEmpty(Window(Home).Property(KeepPlayingPreview))">ClearProperty(KeepPlayingPreview,Home)</onfocus>
         </control>
     </include>
 
@@ -69,7 +68,6 @@
         <onfocus>SetProperty(ListItem.TagLine, $ESCINFO[Container($PARAM[widgetid]).ListItem.TagLine],Home)</onfocus>
         <onfocus>SetProperty(ListItem.Rating, $ESCINFO[Container($PARAM[widgetid]).ListItem.Rating],Home)</onfocus>
         <onfocus>SetProperty(ListItem.UserRating, $ESCINFO[Container($PARAM[widgetid]).ListItem.UserRating],Home)</onfocus>
-		<onfocus>SetProperty(ListItem.Trailer, $ESCINFO[Container($PARAM[widgetid]).ListItem.Trailer],Home)</onfocus>
         <onfocus>SetProperty(ListItem.Season, $ESCINFO[Container($PARAM[widgetid]).ListItem.Season],Home)</onfocus>
         <onfocus>SetProperty(ListItem.Episode, $ESCINFO[Container($PARAM[widgetid]).ListItem.Episode],Home)</onfocus>
         <onfocus>SetProperty(ListItem.Artist, $ESCINFO[Container($PARAM[widgetid]).ListItem.Artist],Home)</onfocus>

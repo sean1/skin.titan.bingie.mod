@@ -5,13 +5,10 @@
 	<onload condition="!String.IsEmpty(Window.Property(AdditionalInfo))">ClearProperty(AdditionalInfo)</onload>
     <onload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">ClearProperty(ListItem.TVShowID,Home)</onload>
     <onload condition="!String.IsEmpty(Window(Home).Property(BaseWindow))">ClearProperty(BaseWindow,Home)</onload>
-	<onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,true)</onload>
     <onunload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID)) + String.IsEmpty(Window(Home).Property(KeepTVShowID))">ClearProperty(ListItem.TVShowID,Home)</onunload>
     <onunload condition="!String.IsEmpty(Window(Home).Property(RateTitle))">ClearProperty(RateTitle,Home)</onunload>
     <onunload condition="!String.IsEmpty(Window(Home).Property(RateTitle.Action))">ClearProperty(RateTitle.Action,Home)</onunload>
 	<onunload condition="!String.IsEmpty(Window.Property(AdditionalInfo))">ClearProperty(AdditionalInfo)</onunload>
-	<onunload condition="!String.IsEmpty(Window.Property(TrailerPlayIcon))">ClearProperty(TrailerPlayIcon)</onunload>
-	<onunload condition="!String.IsEmpty(Window.Property(TrailerClipIcon))">ClearProperty(TrailerClipIcon)</onunload>
     <controls>
         <include condition="true">BingieInfo</include>
 	</controls>

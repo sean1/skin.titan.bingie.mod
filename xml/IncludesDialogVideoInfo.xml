@@ -47,25 +47,6 @@
 					<visible allowhiddenfocus="true">false</visible>
 				</control>
 
-				<!-- Trailer Video Preview -->
-				<control type="group">
-					<include>FullscreenDimensions</include>
-					<visible>[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]] + [!String.IsEmpty(ListItem.Trailer) | !String.IsEqual(Window(Home).Property(TrailerPlaying))]</visible>
-					<!-- BG -->
-					<control type="image">
-						<texture colordiffuse="ff000000" background="true">diffuse/panel2.png</texture>
-					</control>
-					<control type="videowindow"/>
-					<control type="image">
-						<visible>!Control.HasFocus(70011)</visible>
-						<texture background="true">overlays/gradient_videoinfo.png</texture>
-						<colordiffuse>$VAR[BingiePanelColor]</colordiffuse>
-					</control>
-					<include content="DialogInfo_VideoTrailerControl">
-						<param name="onback">8000</param>
-					</include>
-				</control>
-
 				<!-- Fanart Background Image -->
 				<include content="BingieSpotlightCornerImage">
 					<animation effect="fade" start="100" end="50" time="300" condition="String.IsEmpty(Window(Home).Property(FullImage))">WindowOpen</animation>
@@ -101,7 +82,6 @@
                     <orientation>vertical</orientation>
                     <usecontrolcoords>true</usecontrolcoords>
                     <itemgap>10</itemgap>
-					<animation effect="fade" start="100" end="0" time="500" delay="0" condition="[Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]] + Control.HasFocus(70011)">Conditional</animation>
 				<control type="grouplist">
 					<include>Animation_Right_Delay_2</include>
 					<usecontrolcoords>true</usecontrolcoords>
@@ -168,7 +148,7 @@
 					<!-- Plot -->
 					<control type="textbox">
 						<visible>[String.IsEmpty(ListItem.Set) + !false] | false</visible>
-						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), trailers) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
+						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
 						<width>820</width>
 						<top>19</top>
 						<height min="50" max="120">auto</height>
@@ -180,7 +160,7 @@
 
 					<control type="textbox">
 						<visible>[!String.IsEmpty(ListItem.Set) + !false]</visible>
-						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), trailers) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
+						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
 						<width>820</width>
 						<top>19</top>
 						<height>120</height>
@@ -195,7 +175,7 @@
 						<top>33</top>
 						<width>550</width>
 						<posx>1</posx>
-						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), trailers) | String.IsEqual(Window.Property(AdditionalInfo), plot) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)">Conditional</animation>
+						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), plot) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)">Conditional</animation>
 						<animation effect="slide" start="0,0" end="0,41" time="0" delay="0" condition="String.IsEqual(Window.Property(AdditionalInfo),set)">Conditional</animation>
 						<!-- progress bar for resume buttons -->
 						<control type="group">
@@ -231,7 +211,7 @@
 						<!-- fixed frame -->
 						<control type="image">
 							<visible>Window.IsActive(movieinformation)</visible>
-							<visible>ControlGroup(8000).HasFocus() + !ControlGroup(700).HasFocus() | Control.HasFocus(70011)</visible>
+							<visible>ControlGroup(8000).HasFocus() + !ControlGroup(700).HasFocus()</visible>
 							<animation effect="fade" start="0" end="100" time="0" delay="250">Visible</animation>
 							<width>550</width>
 							<height>65</height>
@@ -516,28 +496,6 @@
 								<onclick condition="String.IsEqual(ListItem.DBTYPE,tvshow) + !String.IsEmpty(ListItem.DBID)">ActivateWindow(Videos,videodb://tvshows/titles/$INFO[ListItem.DBID]/-2/,return)</onclick>
                                 <!-- from tvshow infodialog for non-library content -->
 								<onclick condition="String.IsEmpty(ListItem.DBID)">ActivateWindow(Videos,$ESCINFO[ListItem.FileNameAndPath],return)</onclick>
-							</control>
-
-							<!-- Trailer -->
-                            <control type="radiobutton" id="54">
-                                <visible>false</visible>
-								<visible>!String.IsEmpty(ListItem.Trailer) | !String.IsEqual(Window(Home).Property(TrailerPlaying))</visible>
-								<visible>[[true | !String.Contains(ListItem.Trailer,plugin)] + [$EXP[IsTvShowDBTypeNoFallback] | $EXP[IsMovieDBTypeNoFallback] | $EXP[IsEpisodeDBTypeNoFallback]]]</visible>
-                                <visible>!$EXP[IsEpisodeDBType]</visible>
-								<include>Bingie_InfoDialog_Button_Default_Defs</include>
-                                <include content="Bingie_InfoDialog_Button_Texture">
-                                    <param name="radiotexture" value="dialogs/videoinfo/info/play2.png"/>
-                                </include>
-                                <label>$LOCALIZE[31868]</label>
-								<radioposx>17</radioposx>
-                                <radiowidth>22</radiowidth>
-                                <radioheight>22</radioheight>
-                                <!-- Set InfoDialog as BaseWindow in case of activating videofullscreen -->
-                                <onclick>SetProperty(BaseWindow,1,Home)</onclick>
-								<!-- movie trailer local -->
-                                <onclick condition="[!String.IsEmpty(ListItem.Trailer) + [true | !String.Contains(ListItem.Trailer,plugin)]]">
-									PlayMedia($ESCINFO[ListItem.Trailer],1)</onclick>
-								<onclick>SetFocus(70011)</onclick>
 							</control>
 
 							<!-- Rate this title -->

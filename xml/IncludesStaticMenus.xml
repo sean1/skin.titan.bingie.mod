@@ -38,7 +38,6 @@
 			<property name="widgetType.5">tvshows</property>
 			<property name="widgetPath.5">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
 			<property name="widgetName.5">Popular TV Shows</property>
-			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(home,return)</onclick>
 			<property name="path">ActivateWindow(home,return)</property>
 			<property name="list">home</property>
@@ -57,7 +56,6 @@
 			<thumb />
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
-			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.search,return)</onclick>
 			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov/?mode=navigator.search,return)</property>
 			<property name="list">plugin://plugin.video.pov/?mode=navigator.search</property>
@@ -76,7 +74,6 @@
 			<thumb />
 			<property name="labelID">320032</property>
 			<property name="defaultID">320032</property>
-			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(1112,return)</onclick>
 			<property name="path">ActivateWindow(1112,return)</property>
 			<property name="list">1112</property>
@@ -95,7 +92,6 @@
 			<thumb />
 			<property name="labelID">tvshows</property>
 			<property name="defaultID">tvshows</property>
-			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(1110,return)</onclick>
 			<property name="path">ActivateWindow(1110,return)</property>
 			<property name="list">1110</property>
@@ -114,7 +110,6 @@
 			<thumb />
 			<property name="labelID">movies</property>
 			<property name="defaultID">movies</property>
-			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(1111,return)</onclick>
 			<property name="path">ActivateWindow(1111,return)</property>
 			<property name="list">1111</property>
@@ -133,7 +128,6 @@
 			<thumb />
 			<property name="labelID">31025</property>
 			<property name="defaultID">31025</property>
-			<onclick condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onclick>
 			<onclick>ActivateWindow(1119,return)</onclick>
 			<property name="path">ActivateWindow(1119,return)</property>
 			<property name="list">1119</property>

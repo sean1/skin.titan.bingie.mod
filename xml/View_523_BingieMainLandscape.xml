@@ -95,8 +95,6 @@
 			<onleft>9000</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
-			<onleft>CancelAlarm(preview_delay,silent)</onleft>
-			<onback>CancelAlarm(preview_delay,silent)</onback>
             <itemlayout height="193" width="333">
                 <control type="group">
                     <width>335</width>

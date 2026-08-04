@@ -8,7 +8,6 @@
 	<!-- BINGIE -->
     <onload>SetProperty(bingieviews,1,Home)</onload>
     <onunload>SetProperty(SectionBackground,$ESCINFO[Control.GetLabel(99004)])</onunload>
-    <onunload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onunload>
     <onunload>ClearProperty(submenu,Home)</onunload>
     <onunload>ClearProperty(ShowWidget,Home)</onunload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>

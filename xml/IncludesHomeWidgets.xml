@@ -31,16 +31,6 @@
 	<!-- Play Something -->
 	<include name="PlaySomething_Widget_Base">
         <control type="group" id="9005">
-				<!-- trailer video preview -->
-				<control type="group">
-					<include>FullscreenDimensions</include>
-					<visible>$EXP[IsPlayingUnrecognizedContent] + !Window.IsActive(DialogVideoInfo.xml)</visible>
-					<!-- bg -->
-					<control type="image">
-						<texture colordiffuse="ff000000" background="true">diffuse/panel2.png</texture>
-					</control>
-					<control type="videowindow"/>
-				</control>
 			<control type="image">
                 <include>FullscreenDimensions</include>
                 <texture background="true">$VAR[fanartBackground_something]</texture>
@@ -138,8 +128,6 @@
 			<control type="group">
 				<animation effect="slide" start="0,0" end="0,-450" tween="sine" easing="in" time="300" delay="0" reversible="false" condition="System.IdleTime(1)">Conditional</animation>
 				<animation effect="fade" start="0" end="100" tween="sine" easing="in" time="300" delay="0" reversible="false" condition="System.IdleTime(1)">Conditional</animation>
-				<animation effect="slide" start="0,0" end="-650,0" tween="sine" easing="out" time="300" delay="0" reversible="false" condition="$EXP[IsPlayingUnrecognizedContent]">Conditional</animation>
-				<animation effect="fade" start="100" end="0" tween="sine" easing="out" time="300" delay="0" reversible="false" condition="$EXP[IsPlayingUnrecognizedContent]">Conditional</animation>
 				<top>1100</top>
 				<left>150</left>
 				<include content="Bingie_Headline_Item_2">
@@ -313,8 +301,6 @@
     </include>
 
     <include name="WidgetBaseBingieIncludes">
-        <onunfocus condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onunfocus>
-        <onfocus condition="!String.IsEmpty(Window(Home).Property(KeepPlayingPreview))">ClearProperty(KeepPlayingPreview,home)</onfocus>
         <include content="ContainerShowInfoOnclick">
             <param name="widgetid" value="$PARAM[widgetid]" />
         </include>

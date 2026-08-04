@@ -2,8 +2,6 @@
 <!-- BINGIE -->
 <window>
     <defaultcontrol always="true">9000</defaultcontrol>
-    <!--set trailer alarm off-->
-    <onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
     <controls>
         <!--Global Background-->
         <include>GlobalBackground</include>

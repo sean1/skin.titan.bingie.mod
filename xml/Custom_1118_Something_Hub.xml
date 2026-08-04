@@ -5,7 +5,6 @@
     <menucontrol>900</menucontrol>
     <include>CustomBingieWinProps</include>
     <include>BingieViews_WindowOpen_Fade</include>
-	<onload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onload>
 	<onload condition="System.HasAlarm(StopPlayback)">CancelAlarm(StopPlayback,silent)</onload>
     <controls>
         <!-- fake go-to-fullscreen button -->

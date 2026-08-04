@@ -1399,8 +1399,6 @@
 			<control type="grouplist">
 				<!-- Animation to Move Whole Control to the Left when Playtime hits> 1 hour -->
 				<animation end="-45,0" time="0" effect="slide" condition="[Player.Seeking + [!String.IsEqual(Player.SeekTime(hh),00)]] | !String.IsEqual(Player.Time(hh),00)">Conditional</animation>
-				<!-- hide for trailers -->
-				<visible>!String.Contains(VideoPlayer.Title, -trailer.)</visible>
 				<animation end="-250,0" time="0" effect="slide" condition="String.Contains(Control.GetLabel(39623),DefaultVideo)">Conditional</animation>
 				<posx>581</posx>
 				<posy>270</posy>
@@ -1590,8 +1588,7 @@
 	<variable name="OSDLabel4">
 		<value condition="Player.HasVideo + Player.IsInternetStream + !String.IsEmpty(Window(Home).Property(SkinHelper.Player.AddonName)) + String.IsEmpty(VideoPlayer.TvShowTitle)">$INFO[Window(Home).Property(SkinHelper.Player.AddonName)]</value>
 		<value condition="Player.HasVideo + VideoPlayer.Content(episodes) + !String.IsEmpty(VideoPlayer.TvShowTitle)">$INFO[VideoPlayer.TVShowTitle]</value>
-		<value condition="Player.HasVideo + ![String.Contains(VideoPlayer.Title,movie-trailer) | String.Contains(VideoPlayer.Title,tvshow-trailer)]">$INFO[VideoPlayer.Title]</value>
-		<value condition="Player.HasVideo + [String.Contains(VideoPlayer.Title,movie-trailer) | String.Contains(VideoPlayer.Title,tvshow-trailer)]"/>
+		<value condition="Player.HasVideo">$INFO[VideoPlayer.Title]</value>
 		<value>$LOCALIZE[31040]</value>
 	</variable>
 

@@ -62,10 +62,6 @@ msgctxt "#31059"
 msgid "remaining"
 msgstr ""
 
-msgctxt "#31062"
-msgid "YouTube"
-msgstr ""
-
 msgctxt "#31065"
 msgid "Up Next"
 msgstr ""
@@ -290,10 +286,6 @@ msgctxt "#31445"
 msgid "Horizontal Panel"
 msgstr ""
 
-msgctxt "#31523"
-msgid "Trailer"
-msgstr ""
-
 msgctxt "#31535"
 msgid "Continue Watching"
 msgstr ""
@@ -358,10 +350,6 @@ msgctxt "#31787"
 msgid "Software"
 msgstr ""
 
-msgctxt "#31797"
-msgid "Youtube videos"
-msgstr ""
-
 msgctxt "#31806"
 msgid "Jump to a specific time (hh:mm:ss)"
 msgstr ""
@@ -412,10 +400,6 @@ msgstr ""
 
 msgctxt "#31867"
 msgid "Episodes"
-msgstr ""
-
-msgctxt "#31868"
-msgid "Play Trailer"
 msgstr ""
 
 #. first letter of 'Season'
@@ -545,10 +529,6 @@ msgctxt "#320080"
 msgid "Created by"
 msgstr ""
 
-msgctxt "#320081"
-msgid "Trailers"
-msgstr ""
-
 msgctxt "#320082"
 msgid "Cast in Movies"
 msgstr ""
@@ -591,10 +571,6 @@ msgstr ""
 
 msgctxt "#320158"
 msgid "General"
-msgstr ""
-
-msgctxt "#320192"
-msgid "Trailers & More"
 msgstr ""
 
 msgctxt "#320193"

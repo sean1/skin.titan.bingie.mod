@@ -150,7 +150,6 @@
         <onload>ClearProperty(ShowViewSubMenu,Home)</onload>
         <onload>SetProperty(bingieviews,1,Home)</onload>
         <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
-        <onunload condition="System.HasAlarm(preview_delay)">CancelAlarm(preview_delay,silent)</onunload>
     </include>
 
     <!-- DETAILS ROW INCLUDES -->
@@ -605,7 +604,7 @@
 				<include>Default_Visible_Fade</include>
 			<control type="button" id="6117">
 				<visible>!String.IsEmpty(Control.GetLabel(6117))</visible>
-				<visible>![true + [String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),trailers)]]</visible>
+				<visible>![true + [String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)]]</visible>
 				<posy>7</posy>
                 <height>36</height>
                 <width>auto</width>
@@ -629,7 +628,7 @@
 				<include>Default_Visible_Fade</include>
 			<control type="button" id="61171">
 				<visible>String.IsEqual(Listitem.HdrType,hdr10) | String.IsEqual(Listitem.HdrType,dolbyvision) | String.IsEqual(Listitem.HdrType,hlg)</visible>
-				<visible>![true + [String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),trailers)]]</visible>
+				<visible>![true + [String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)]]</visible>
 				<posy>7</posy>
                 <height>36</height>
                 <width>auto</width>
@@ -653,7 +652,7 @@
 				<include>Default_Visible_Fade</include>
 			<control type="button" id="6118">
 				<visible>!String.IsEmpty(Control.GetLabel(6118))</visible>
-				<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast) + !String.IsEqual(Window.Property(AdditionalInfo),trailers)</visible>
+				<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast)</visible>
 				<posy>7</posy>
                 <height>36</height>
                 <width>auto</width>
@@ -681,7 +680,7 @@
 		<width>159</width>
 		<control type="image" id="54321">
 		<visible>!String.IsEmpty(ListItem.AudioCodec)</visible>
-		<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast) + !String.IsEqual(Window.Property(AdditionalInfo),trailers)</visible>
+		<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast)</visible>
 				<width>130</width>
                 <height>36</height>
 				<texture fallback="colors/color_transparent.png" colordiffuse="ff414141" border="10">$VAR[AudioCodecVar,bingie/,.png]</texture>
@@ -700,7 +699,7 @@
 		<!-- Fallback Audio Codec flag/text -->
 		<control type="button" id="54227">
 				<visible>!false + !String.IsEmpty(Control.GetLabel(54227)) + String.EndsWith(Control.GetLabel(54321),color_transparent.png)</visible>
-				<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast) + !String.IsEqual(Window.Property(AdditionalInfo),trailers)</visible>
+				<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast)</visible>
 				<posy>0</posy>
                 <height>36</height>
                 <width>auto</width>
@@ -725,7 +724,7 @@
 				<include>Default_Visible_Fade</include>
 		<control type="group">
 		<visible>!String.IsEmpty(Control.GetLabel(6111161)) + $EXP[IsTvShowDBType]</visible>
-		<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast) + !String.IsEqual(Window.Property(AdditionalInfo),trailers)</visible>
+		<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast)</visible>
 				<visible>String.IsEmpty(ListItem.AudioCodec)</visible>
 			<control type="button" id="6111161">
 				<posy>7</posy>
@@ -2077,12 +2076,10 @@
             </include>
             <onright condition="String.IsEmpty(Window(Home).Property(spotlightinfo))">SetProperty(spotlightinfo,1,Home)</onright>
             <onleft condition="!String.IsEmpty(Window(Home).Property(spotlightinfo))">ClearProperty(spotlightinfo,Home)</onleft>
-            <onleft condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) + $EXP[IsPlayingUnrecognizedContent]">SetProperty(KeepPlayingPreview,1,Home)</onleft>
             <onleft condition="String.IsEmpty(Window(Home).Property(spotlightinfo))">900</onleft>
             <onunfocus>ClearProperty(spotlightinfo,home)</onunfocus>
 			<onfocus>SetProperty(FullImage,1,Home)</onfocus>
 			<onunfocus>ClearProperty(FullImage,home)</onunfocus>
-            <onback condition="$EXP[IsPlayingUnrecognizedContent]">SetProperty(KeepPlayingPreview,1,Home)</onback>
             <onback>900</onback>
 
 			<onclick condition="String.IsEmpty(Window(Home).Property(FullImage))">SetProperty(FullImage,1,Home)</onclick>
@@ -2342,47 +2339,6 @@
         </definition>
     </include>
 
-    <!-- Trailer Window -->
-    <include name="Preview_Window">
-        <param name="top" default="0"/>
-        <param name="right" default="0"/>
-        <param name="width" default="1200"/>
-        <param name="height" default="675"/>
-        <param name="overlaywidth" default="1200"/>
-        <param name="overlayheight" default="675"/>
-        <param name="videowindowVisibility" default="!$EXP[IsRecognizedVideoContent] + !Window.IsActive(DialogVideoInfo.xml)" />
-        <param name="isFullscreen" default="false" />
-        <param name="overlay_animation" default="Bingie_Preview_Window_Overlay_Anim" />
-        <definition>
-            <control type="group" id="$PARAM[id]">
-                <visible>$PARAM[visibility]</visible>
-                <top>$PARAM[top]</top>
-                <right>$PARAM[right]</right>
-                <width>$PARAM[width]</width>
-                <height>$PARAM[height]</height>
-                <control type="videowindow">
-                    <visible>$PARAM[videowindowVisibility]</visible>
-                </control>
-                <control type="image">
-                    <visible>!$PARAM[isFullscreen]</visible>
-                    <texture background="true" colordiffuse="$VAR[BingiePanelColor]" border="20">overlays/bingie_corner.png</texture>
-                </control>
-            </control>
-            <control type="image">
-                <visible>Control.IsVisible($PARAM[id])</visible>
-                <top>$PARAM[top]</top>
-                <right>$PARAM[right]</right>
-                <width>$PARAM[overlaywidth]</width>
-                <height>$PARAM[overlayheight]</height>
-                <aligny>top</aligny>
-                <aspectratio>scale</aspectratio>
-                <colordiffuse>$VAR[BingiePanelColor]</colordiffuse>
-                <texture background="true">diffuse/panel2.png</texture>
-                <include>$PARAM[overlay_animation]</include>
-            </control>
-        </definition>
-    </include>
-
 	<!-- MPAA Flag on Spotlight Rightside of Window -->
 
 	<!-- US Spotlight MPAA Label -->
@@ -2493,15 +2449,11 @@
         <include content="Bingie_Base_BG">
             <param name="visibility" value="!$EXP[IsPlayingRecognizedContent]" />
         </include>
-        <include content="Preview_Window">
-            <param name="id" value="$PARAM[id]01" />
-            <param name="visibility" value="false" />
-        </include>
         <control type="group">
             <width>1920</width>
             <height>600</height>
 			<include content="BingieSpotlightCornerImage">
-                <param name="visibility" value="!$EXP[IsPlayingRecognizedContent] + !Control.IsVisible($PARAM[id]01) | $EXP[IsPlayingRecognizedContent] + Control.HasFocus(526) + !false | $EXP[IsPlayingRecognizedContent] + Control.HasFocus(523) + !false" />
+                <param name="visibility" value="!$EXP[IsPlayingRecognizedContent] | $EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]" />
                 <param name="image" value="$VAR[bingieThumb]" />
             </include>
 

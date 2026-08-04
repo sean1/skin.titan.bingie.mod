@@ -30,8 +30,6 @@
 
         <value condition="!String.IsEmpty(Container.Property(FolderName))">$INFO[Container.Foldername] • $INFO[Container.Property(FolderName)]</value>
 
-        <value condition="String.Contains(Container.FolderPath,plugin://plugin.video.youtube)">[UPPERCASE]$LOCALIZE[31062][/UPPERCASE]</value>
-
 		<value condition="String.IsEqual(Container.FolderPath,library://video/movies/)">[UPPERCASE]$LOCALIZE[342][/UPPERCASE]</value>
 		<value condition="String.IsEqual(Container.FolderPath,library://video/tvshows/)">[UPPERCASE]$LOCALIZE[20343][/UPPERCASE]</value>
 

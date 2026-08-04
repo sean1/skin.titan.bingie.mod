@@ -60,14 +60,6 @@
 		<value>$INFO[ListItem.Art(tvshow.fanart)]</value>
 	</variable>
 
-    <!-- hidden button to stop trailer & extract tvshowid -->
-    <include name="View525_Hidden_Button">
-        <control type="button">
-            <visible allowhiddenfocus="true">false</visible>
-            <onfocus condition="$EXP[IsPlayingUnrecognizedContent]">PlayerControl(Stop)</onfocus>
-        </control>
-    </include>
-
     <!-- view525 landscape layout -->
     <include name="View_525_Landscape_Defs">
         <control type="group">
@@ -802,8 +794,6 @@
                         <!-- details content -->
                         <include condition="!false">View_525_Details_Defs_Focus</include>
 						<include condition="false">View_525_Details_Defs_Focus_2</include>
-                        <!-- hidden button -->
-                        <include>View525_Hidden_Button</include>
                     </focusedlayout>
                 </control>
 

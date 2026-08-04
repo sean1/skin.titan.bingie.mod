@@ -74,18 +74,6 @@
         <animation effect="slide" start="0" end="100" delay="300" reversible="false" condition="[Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + !String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + !String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)">Conditional</animation>
     </include>
 
-    <!-- Trailer Window Animation -->
-    <include name="Bingie_Preview_Window_Overlay_Anim">
-        <animation type="Visible">
-            <effect type="fade" start="100" end="100" time="600"/>
-            <effect type="fade" start="100" end="0" time="1200" delay="800"/>
-        </animation>
-    </include>
-    <include name="Bingie_Trailer_Fullscreen_Overlay_Anim">
-        <animation effect="fade" start="100" end="0" delay="0" time="3000">Visible</animation>
-        <animation effect="fade" start="50" end="0" delay="0" time="1500">Hidden</animation>
-    </include>
-
     <!-- Title Animations -->
     <include name="Bingie_TextTitle_Adjust_Genre_Anim">
         <animation type="Conditional" condition="$EXP[IsCategoryDBType] | [Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)]">

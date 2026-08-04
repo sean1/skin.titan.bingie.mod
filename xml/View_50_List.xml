@@ -508,7 +508,7 @@
 					<height>220</height>
 				<control type="image">
 					<aspectratio align="center" aligny="center" scalediffuse="true">keep</aspectratio>
-					<texture background="true" diffuse="diffuse/landscape.png" fallback="resource://resource.images.skinicons.wide/video.png">$VAR[LandscapeImage]</texture>
+					<texture background="true" diffuse="diffuse/landscape.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
 				</control>
 				<control type="group">
 					<include>WatchedIndicatorSmall</include>

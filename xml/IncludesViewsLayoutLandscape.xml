@@ -13,7 +13,7 @@
         <control type="image">
             <!--thumb image-->
             <bordersize>8</bordersize>
-            <texture background="true" diffuse="diffuse/landscape.png" fallback="resource://resource.images.skinicons.wide/video.png">$VAR[LandscapeImage]</texture>
+            <texture background="true" diffuse="diffuse/landscape.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
@@ -57,7 +57,7 @@
         <control type="image">
             <!--thumb image-->
             <bordersize>8</bordersize>
-            <texture background="true" diffuse="diffuse/landscape.png" fallback="resource://resource.images.skinicons.wide/video.png">$VAR[LandscapeImage]</texture>
+            <texture background="true" diffuse="diffuse/landscape.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
@@ -119,7 +119,7 @@
         <control type="image">
             <!--thumb image-->
             <bordersize>8</bordersize>
-            <texture background="true" diffuse="home/home_matte3.png" fallback="resource://resource.images.skinicons.wide/video.png">$VAR[LandscapeImage]</texture>
+            <texture background="true" diffuse="home/home_matte3.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
@@ -170,7 +170,7 @@
         <control type="image">
             <!--Panel icon image-->
 			<bordersize>8</bordersize>
-            <texture background="true" diffuse="home/home_matte2.png" fallback="resource://resource.images.skinicons.wide/video.png">$VAR[LandscapeImage]</texture>
+            <texture background="true" diffuse="home/home_matte2.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
             <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
@@ -498,11 +498,11 @@
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),genre)">$VAR[BingieGenreIconVarList]</value>
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),categorie)">$VAR[CategoriesBricks]</value>
 		<value condition="Container.Content(studios)">$INFO[ListItem.Label,special://skin/extras/flags/studios/,.png]</value>
-		<value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb))">resource://resource.images.skinicons.wide/ActorPoster.png</value>
-		<value condition="Container.Content(directors) + String.IsEmpty(ListItem.Art(thumb))">resource://resource.images.skinicons.wide/ActorPoster.png</value>
-        <value condition="Container.Content(years)">resource://resource.images.skinicons.wide/year.png</value>
-		<value condition="Container.Content(countries)">resource://resource.images.skinicons.wide/Country.png</value>
-		<value condition="Container.Content(tags)">resource://resource.images.skinicons.wide/Tags.png</value>
+		<value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb))">DefaultActorPoster.png</value>
+		<value condition="Container.Content(directors) + String.IsEmpty(ListItem.Art(thumb))">DefaultActorPoster.png</value>
+		<value condition="Container.Content(years)">DefaultYear.png</value>
+		<value condition="Container.Content(countries)">DefaultCountry.png</value>
+		<value condition="Container.Content(tags)">DefaultTags.png</value>
         <value condition="!String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
 		<value condition="!String.IsEmpty(ListItem.Icon)">$INFO[ListItem.Icon]</value>
     </variable>

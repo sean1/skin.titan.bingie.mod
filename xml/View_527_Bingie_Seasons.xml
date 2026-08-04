@@ -100,7 +100,7 @@
                 <width>episodes_thumb_width</width>
                 <height>episodes_thumb_height</height>
                 <bordersize>8</bordersize>
-                <texture diffuse="diffuse/wide.png" fallback="resource://resource.images.skinicons.wide/video.png">$VAR[LandscapeImage]</texture>
+                <texture diffuse="diffuse/wide.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
                 <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
             </control>
             <!-- gradient overlay -->

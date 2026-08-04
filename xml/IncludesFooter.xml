@@ -366,37 +366,6 @@
         </include>
     </include>
 
-    <!-- Studio Logo Image -->
-    <include name="StudioLogo">
-            <control type="image" id="6990">
-                <visible>!String.IsEmpty(Control.GetLabel(6990))</visible>
-				<visible>String.IsEmpty(ListItem.DBID)</visible>
-                <width>102</width>
-                <height>66</height>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">$VAR[ViewsStudioLogoImg]</texture>
-            </control>
-			<control type="image" id="69900">
-                <visible>!String.IsEmpty(Control.GetLabel(69900)) + String.IsEmpty(Control.GetLabel(6990))</visible>
-				<visible>String.IsEmpty(ListItem.DBID)</visible>
-                <width>102</width>
-                <height>66</height>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">$VAR[ViewsStudioLogoImg2]</texture>
-            </control>
-			<control type="image" id="69901">
-				<visible>!String.IsEmpty(Control.GetLabel(69901))</visible>
-                <visible>!String.IsEmpty(ListItem.DBID)</visible>
-                <width>102</width>
-                <height>66</height>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">$VAR[ViewsStudioLogoImg3]</texture>
-            </control>
-    </include>
-
     <include name="Footer_RatingAndStudio_Hor">
         <control type="group">
             <bottom>23</bottom>
@@ -410,7 +379,6 @@
                 <align>right</align>
                 <include condition="false">Rating_Monochrome_Hor</include>
                 <include condition="!false">Rating_Color_Hor</include>
-                <include condition="true">StudioLogo</include>
             </control>
         </control>
     </include>
@@ -1327,21 +1295,5 @@
 
 	<variable name="RottenTomatoesUserRatingValue">
 		<value condition="!String.IsEmpty(ListItem.Rating(tomatometerallaudience))">$INFO[ListItem.Rating(tomatometerallaudience)]</value>
-    </variable>
-
-    <!-- Studio Logo Image -->
-    <variable name="StudioLogoImg">
-        <value condition="!String.IsEmpty(ListItem.Studio)">$INFO[ListItem.Studio,resource://resource.images.studios.coloured/,.png]</value>
-    </variable>
-	<variable name="StudioLogoImg2">
-    </variable>
-
-	<variable name="ViewsStudioLogoImg">
-        <value condition="!String.IsEmpty(ListItem.Studio)">$INFO[ListItem.Studio,resource://resource.images.studios.coloured/,.png]</value>
-    </variable>
-	<variable name="ViewsStudioLogoImg2">
-    </variable>
-	<variable name="ViewsStudioLogoImg3">
-        <value condition="!String.IsEmpty(ListItem.Studio)">$INFO[ListItem.Studio,resource://resource.images.studios.coloured/,.png]</value>
     </variable>
 </includes>

@@ -479,7 +479,6 @@
 		<value condition="String.IsEqual(ListItem.Label,..)">dialogs/filebrowser/DefaultFolderBack.png</value>
 		<value condition="String.IsEqual(ListItem.Label,$LOCALIZE[21452])">dialogs/filebrowser/DefaultAddSource.png</value>
         <value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)]">$VAR[MovieGenreIconVarList]</value>
-        <value condition="[Container.Content(studios) | String.IsEqual(ListItem.DBTYPE,studio)]">resource://resource.images.studios.white/$INFO[ListItem.Label,,.png]</value>
         <value condition="Container.Content(actors) + !String.IsEmpty(ListItem.Art(characterart))">$INFO[ListItem.Art(characterart)]</value>
         <value condition="Container.Content(actors) + !String.IsEmpty(ListItem.Label)">http://localhost:52307/getthumb&amp;title=$INFO[ListItem.Label] IMDB Actor</value>
         <value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb)) + !String.IsEqual(Window.Property(AdditionalInfo),cast)">DefaultActorPoster.png</value>

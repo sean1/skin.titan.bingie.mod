@@ -15,7 +15,6 @@
 	<include>DialogOverlayExtra</include>
 
 	<!--NowPlaying-->
-	<include>NowPlayingModern</include>
 
 		<control type="group">
 			<left>585</left>

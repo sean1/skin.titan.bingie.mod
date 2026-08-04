@@ -4,7 +4,6 @@
 
     <include name="Header">
         <include condition="!false + false | !false + !false">Header_Normal</include>
-        <include condition="false + false | false + !false">Header_Compact</include>
     </include>
 
     <include name="Header_Normal">
@@ -65,77 +64,6 @@
         </control>
 
     </include>
-    <include name="Header_Compact">
-        <!-- Header Compact -->
-        <control type="group">
-            <visible>false</visible>
-            <include>animation_fade_visible</include>
-            <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(77551) + !Control.IsVisible(88888) + !Control.IsVisible(88883)</visible>
-            <visible>!Control.IsVisible(525) | !Control.IsVisible(527)</visible>
-            <!-- header panel -->
-
-            <!-- Header Logo left -->
-            <control type="group">
-                <include>animation_fade_visible</include>
-                <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882)]</visible>
-                <visible>[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]</visible>
-            </control>
-
-            <!-- Time right -->
-            <control type="group">
-                <include>TimeInfoCompact</include>
-                <include>animation_fade_visible</include>
-                <visible>![Window.IsActive(volumebar) | Control.IsVisible(881)]</visible>
-                <visible>[![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false]</visible>
-            </control>
-
-            <!-- Profile right -->
-            <control type="group">
-                <include>ProfileInfoCompact</include>
-                <include>animation_fade_visible</include>
-                <visible>![Window.IsActive(volumebar)]</visible>
-                <visible>Window.IsActive(Home) + false</visible>
-            </control>
-
-            <control type="grouplist" id="5555">
-                <include>animation_fade_visible</include>
-                <include>BingieNoCircularWidgetHeaderAnim</include>
-                <orientation>horizontal</orientation>
-                <itemgap>25</itemgap>
-                <posx>-10</posx>
-                <top>25</top>
-                <onright>890</onright>
-                <ondown>9000</ondown>
-                <onup>9000</onup>
-                <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882)]</visible>
-                <!-- Title left -->
-                <control type="group" id="99226">
-                    <visible>[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]</visible>
-                    <control type="label">
-                        <top>-13</top>
-                        <align>left</align>
-                        <width>800</width>
-                        <label>$VAR[value_header]</label>
-                        <font>Bold30</font>
-                        <textcolor>ffffffff</textcolor>
-                        <shadowcolor>None</shadowcolor>
-                    </control>
-                    <control type="label">
-                        <top>17</top>
-                        <align>left</align>
-                        <width>800</width>
-                        <label>$VAR[value_subheader]</label>
-                        <font>Reg26</font>
-                        <textcolor>ffffffff</textcolor>
-                        <shadowcolor>None</shadowcolor>
-                    </control>
-                </control>
-            </control>
-
-        </control>
-
-    </include>
-
     <include name="HeaderTitle">
 
         <control type="group">
@@ -195,31 +123,6 @@
 	</include>
 
 
-    <include name="TimeInfoCompact">
-        <control type="group">
-            <control type="label">
-                <right>60</right>
-                <top>12</top>
-                <align>right</align>
-                <width>300</width>
-                <info>System.Time</info>
-                <font>Bold30</font>
-                <textcolor>ffffffff</textcolor>
-                <shadowcolor>None</shadowcolor>
-            </control>
-            <control type="label">
-                <right>60</right>
-                <top>42</top>
-                <align>right</align>
-                <width>500</width>
-                <info>System.Date</info>
-                <font>Reg26</font>
-                <textcolor>ffffffff</textcolor>
-                <shadowcolor>None</shadowcolor>
-            </control>
-        </control>
-    </include>
-
 	<include name="ProfileInfo">
 		<control type="group" id="891">
 			<defaultcontrol>890</defaultcontrol>
@@ -272,36 +175,6 @@
 			</control>
 		</control>
 	</include>
-
-    <include name="ProfileInfoCompact">
-        <control type="radiobutton" id="890">
-            <right>30</right>
-            <top>20</top>
-            <ondown>9000</ondown>
-            <onleft>5555</onleft>
-            <width>600</width>
-            <height>60</height>
-            <radiowidth>60</radiowidth>
-            <radioheight>60</radioheight>
-            <align>right</align>
-            <aligny>center</aligny>
-            <font>Reg26</font>
-            <label>$VAR[ProfileLabel]</label>
-            <textcolor>ffffffff</textcolor>
-            <focusedcolor>ffffffff</focusedcolor>
-            <textureradioonfocus colordiffuse="ffffffff">common/profil/avatar.png</textureradioonfocus>
-            <textureradioonnofocus colordiffuse="ffffffff">common/profil/avatar.png</textureradioonnofocus>
-            <textureradioofffocus colordiffuse="ffffffff">common/profil/avatar.png</textureradioofffocus>
-            <textureradiooffnofocus colordiffuse="ffffffff">common/profil/avatar.png</textureradiooffnofocus>
-            <textoffsetx>70</textoffsetx>
-            <radioposx>0</radioposx>
-            <pulseonselect>false</pulseonselect>
-            <texturefocus/>
-            <texturenofocus/>
-            <onclick>System.LogOff</onclick>
-            <selected>Control.HasFocus(890)</selected>
-        </control>
-    </include>
 
     <include name="HeaderLogo">
         <!-- Kodi Logo image -->

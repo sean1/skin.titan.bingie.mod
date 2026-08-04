@@ -12,7 +12,6 @@
         <include>Header</include>
 
 		<!--NowPlaying-->
-		<include>NowPlayingModern</include>
 
 		<!-- all Views -->
         <include>allViews</include>

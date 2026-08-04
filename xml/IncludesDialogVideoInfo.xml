@@ -419,10 +419,8 @@
                                 <onclick condition="!Control.IsVisible(5050) + String.IsEqual(ListItem.DBTYPE,movie) + !String.IsEmpty(ListItem.DBID)">AlarmClock(PlayMovie,PlayMedia(videodb://movies/$INFO[ListItem.DBID]),00:01,silent)</onclick>
                                 <!-- fallback to native play button -->
                                 <onclick condition="[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.DBTYPE,movie)] + String.IsEmpty(ListItem.DBID)">AlarmClock(PlayMovie,PlayMedia($INFO[ListItem.FileNameAndPath],noresume),00:01,silent)</onclick>
-                                <!-- only if FILE FOLDERS structured with seasons folders -->
-                                <onclick condition="Control.IsVisible(5050) + String.IsEqual(Container(5050).ListItem.Path)">AlarmClock(PlayMovie,PlayMedia($ESCINFO[Container(5050).ListItem.Path],isdir,playoffset=$VAR[NextUpEpisodeMinusOne]),00:01,silent)</onclick>
-								<!-- seasons folders -->
-								<onclick condition="Control.IsVisible(5050) + !String.IsEqual(Container(5050).ListItem.Path)">AlarmClock(PlayMovie,PlayMedia($ESCINFO[Container(5050).ListItem.FileNameAndPath],noresume),00:01,silent)</onclick>
+									<!-- Hidden next-up list contains a concrete episode; bypass its resume point. -->
+									<onclick condition="Control.IsVisible(5050)">AlarmClock(PlayMovie,PlayMedia($ESCINFO[Container(5050).ListItem.FileNameAndPath],noresume),00:01,silent)</onclick>
                             </control>
 
 

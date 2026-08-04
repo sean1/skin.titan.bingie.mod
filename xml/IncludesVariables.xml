@@ -90,9 +90,6 @@
 		<value condition="String.Contains(ListItem.Path,videodb://movies/sets/)">$INFO[Window(Home).Property(SkinHelper.ListItem.Duration.Hours),,h ]$INFO[Window(Home).Property(SkinHelper.ListItem.Duration.Minutes),,m ]</value>
 		<value condition="Container.Content(tvshows)">$INFO[ListItem.Property(TotalEpisodes)] ($LOCALIZE[16101]: $INFO[ListItem.Property(UnwatchedEpisodes)])</value>
     </variable>
-    <variable name="value_ground3_label">
-        <!-- Genre -->
-    </variable>
     <variable name="value_ground3_value">
 		<value condition="String.Contains(ListItem.Path,videodb://movies/sets/)">$INFO[Window(Home).Property(SkinHelper.ListItem.Genre)]</value>
     </variable>
@@ -104,21 +101,6 @@
 		<value condition="String.Contains(ListItem.Path,videodb://movies/sets/)">$INFO[Window(Home).Property(SkinHelper.ListItem.Director)]</value>
 		<value condition="Container.Content(tvshows) | Container.Content(seasons)">$INFO[ListItem.Studio]</value>
     </variable>
-
-
-
-
-
-
-
-
-
-
-
-	<variable name="ListItemDuration">
-    </variable>
-
-
 
     <variable name="ListTitle">
         <value condition="Container.Content(addons) + String.Contains(ListItem.Label2,%)">$INFO[ListItem.Label]$INFO[ListItem.Label2, (,)]</value>
@@ -177,11 +159,11 @@
 	<variable name="ListDetails">
 		<value condition="[Container.Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + ListItem.Property(season_finale)">$INFO[ListItem.Premiered,, • ]$INFO[ListItem.Duration,, min. • ]$LOCALIZE[31336]</value>
 		<value condition="[Container.Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + ListItem.Property(series_finale)">$INFO[ListItem.Premiered,, • ]$INFO[ListItem.Duration,, min. • ]$LOCALIZE[31335]</value>
-		<value condition="[Container.Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)]">$INFO[ListItem.Premiered]$VAR[ListItemDuration, • ]$INFO[ListItem.Rating, • ]</value> <!--  FIXED-->
+		<value condition="[Container.Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)]">$INFO[ListItem.Premiered]$INFO[ListItem.Rating, • ]</value>
 		<value condition="Container.Content(addons) + !String.IsEmpty(ListItem.AddonVersion) + String.IsEmpty(ListItem.Label2)">$LOCALIZE[24051] $INFO[ListItem.AddonVersion] - $LOCALIZE[21863]: $INFO[ListItem.AddonCreator]</value>
         <value condition="Container.Content(addons) + !String.IsEmpty(ListItem.AddonVersion) + !String.IsEmpty(ListItem.Label2)">$LOCALIZE[24051] $INFO[ListItem.AddonVersion] - $LOCALIZE[21863]: $INFO[ListItem.AddonCreator] - $INFO[ListItem.Label2]</value>
 		<value condition="Container.Content(Sets)">$INFO[ListItem.Year]</value>
-		<value condition="Container.Content(Movies) + [!String.IsEmpty(ListItem.Duration) | !String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Genre)]">$INFO[ListItem.Year]$VAR[ListItemDuration, • ]$INFO[ListItem.Genre, • ]</value>	 <!-- FIXED, but interesting is , if !String.IsEmpty(ListItem.Duration) its strange result in label (director etc) -->
+		<value condition="Container.Content(Movies) + [!String.IsEmpty(ListItem.Duration) | !String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Genre)]">$INFO[ListItem.Year]$INFO[ListItem.Genre, • ]</value>
 		<value condition="Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0) + [Container.Content(Seasons) | Container.Content(TVShows)] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(ListItem.Property(TotalEpisodes))]">$INFO[ListItem.Year,, • ]$INFO[ListItem.MPAA,, • ]$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360]: ] $INFO[ListItem.Property(UnWatchedEpisodes),(,)]</value>
 		<value condition="!Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0) + [Container.Content(Seasons) | Container.Content(TVShows)] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(ListItem.Property(TotalEpisodes))]">$INFO[ListItem.Year,, • ]$INFO[ListItem.MPAA,, • ]$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360]: ]</value>
 

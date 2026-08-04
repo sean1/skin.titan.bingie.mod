@@ -21,11 +21,7 @@
         <onright>noop</onright>
         <onleft>noop</onleft>
         <itemlayout></itemlayout>
-        <focusedlayout>
-			<include content="HiddenWidgetButton">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>
-		</focusedlayout>
+	        <focusedlayout />
     </include>
 
 	<!-- Play Something -->
@@ -195,10 +191,6 @@
                 </control>
 				<include>Top250Indicator</include>
                 <include>New_Episodes_Tag_Overlay</include>
-                <include content="HiddenWidgetButton">
-                    <param name="widgetstyle" value="landscape"/>
-                    <param name="widgetid" value="$PARAM[widgetid]"/>
-                </include>
             </control>
         </focusedlayout>
 		<focusedlayout width="364" height="212" condition="!Control.HasFocus($PARAM[widgetid])">
@@ -214,10 +206,6 @@
                     <include>ThumbsTagOverlayBingie</include>
                 </control>
                 <include>New_Episodes_Tag_Overlay</include>
-				<include content="HiddenWidgetButton">
-                    <param name="widgetstyle" value="landscape"/>
-                    <param name="widgetid" value="$PARAM[widgetid]"/>
-                </include>
             </control>
         </focusedlayout>
     </include>

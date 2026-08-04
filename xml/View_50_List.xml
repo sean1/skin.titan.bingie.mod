@@ -21,7 +21,6 @@
 				<imagepath background="true">$VAR[backgroundVar]</imagepath>
                 <aspectratio>scale</aspectratio>
                 <fadetime>350</fadetime>
-                <include>fanartSpeed</include>
                 <randomize>true</randomize>
                 <loop>yes</loop>
 				<!-- Background Animation -->
@@ -84,7 +83,7 @@
                     <height>40</height>
                     <textcolor>ffffffff</textcolor>
                     <shadowcolor>None</shadowcolor>
-                    <label>[B]$VAR[value_ground3_label][/B] $VAR[value_ground3_value]</label>
+                    <label>$VAR[value_ground3_value]</label>
                     <visible>!String.IsEmpty(Control.GetLabel(5303))</visible>
                 </control>
                 <control type="label">
@@ -135,7 +134,7 @@
                     <height>40</height>
                     <textcolor>ffffffff</textcolor>
                     <shadowcolor>None</shadowcolor>
-                    <label>[B]$VAR[value_ground3_label][/B] $VAR[value_ground3_value]</label>
+                    <label>$VAR[value_ground3_value]</label>
                     <visible>!String.IsEmpty(Control.GetLabel(5303))</visible>
                 </control>
                 <control type="label">
@@ -196,10 +195,6 @@
                 <control type="label" id="5202">
                     <include>HiddenObject</include>
                     <label>$VAR[value_ground2_label]</label>
-                </control>
-                <control type="label" id="5203">
-                    <include>HiddenObject</include>
-                    <label>$VAR[value_ground3_label]</label>
                 </control>
                 <control type="label" id="5204">
                     <include>HiddenObject</include>

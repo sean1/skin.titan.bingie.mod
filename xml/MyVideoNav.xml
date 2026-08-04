@@ -17,7 +17,6 @@
         <!-- Video Background -->
         <include>GlobalBackground</include>
 		<!--NowPlaying-->
-		<include>NowPlayingModern</include>
 		<!-- all Views -->
         <include>allViews</include>
         <!--Sub Menu-->

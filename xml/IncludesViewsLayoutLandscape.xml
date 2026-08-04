@@ -189,7 +189,6 @@
         <value condition="[Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre)] + String.Contains(ListItem.FolderPath,video)">$VAR[MovieGenreIconVarList]</value>
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),genre)">$VAR[BingieGenreIconVarList]</value>
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),categorie)">$VAR[CategoriesBricks]</value>
-		<value condition="Container.Content(studios)">$INFO[ListItem.Label,special://skin/extras/flags/studios/,.png]</value>
 		<value condition="Container.Content(actors) + String.IsEmpty(ListItem.Art(thumb))">DefaultActorPoster.png</value>
 		<value condition="Container.Content(directors) + String.IsEmpty(ListItem.Art(thumb))">DefaultActorPoster.png</value>
 		<value condition="Container.Content(years)">DefaultYear.png</value>

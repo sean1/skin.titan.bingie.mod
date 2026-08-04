@@ -150,6 +150,10 @@ msgctxt "#31366"
 msgid "You're watching"
 msgstr ""
 
+msgctxt "#31372"
+msgid "No items in hub."
+msgstr ""
+
 msgctxt "#31379"
 msgid "Budget"
 msgstr ""

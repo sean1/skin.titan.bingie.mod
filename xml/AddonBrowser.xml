@@ -14,7 +14,6 @@
         <include>allViews</include>
 
 		<!--NowPlaying-->
-		<include>NowPlayingModern</include>
 
         <!--Hidden Button-->
         <control type="radiobutton" id="19">

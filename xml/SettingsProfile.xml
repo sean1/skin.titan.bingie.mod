@@ -7,7 +7,6 @@
          <!--Global Background-->
         <include>GlobalBackground</include>
 		<!-- Now playing - causing loading issues -->
-		<!-- <include condition="!Skin.HasTheme(classic)">NowPlayingModern</include> -->
 
         <!--Header-->
         <include>Header</include>

@@ -2,26 +2,6 @@
 <!-- BINGIE -->
 <includes>
 
-	<!-- Footer -->
-	<include name="Footer">
-		<control type="group">
-			<!--Footer Background-->
-			<control type="group">
-			</control>
-
-            <!-- codec info normal-->
-			<control type="group">
-				<posx>20</posx>
-				<height>60</height>
-				<bottom>20</bottom>
-				<include condition="[Window.IsActive(Videos) | Window.IsActive(videoplaylist)]">mediaflags</include>
-            </control>
-
-			<!--Rating normal-->
-            <include condition="[Window.IsActive(Videos) | Window.IsActive(videoplaylist)]">Footer_RatingAndStudio_Hor</include>
-		</control>
-	</include>
-
 	<!-- Bingie Layout Footer Ratings -->
 	<include name="Footer2">
 		<control type="group">

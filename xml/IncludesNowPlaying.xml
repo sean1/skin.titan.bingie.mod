@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
 <includes>
-	<include name="NowPlayingModern">
-    </include>
-
-
     <include name="NowPlayingBackground">
         <control type="group">
 			<visible>Player.HasMedia + !Control.IsVisible(507) + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>

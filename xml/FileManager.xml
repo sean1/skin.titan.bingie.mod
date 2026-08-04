@@ -7,7 +7,6 @@
         <include>GlobalBackground</include>
 
 		<!--NowPlaying-->
-		<include>NowPlayingModern</include>
 
         <!--Header-->
         <include>Header</include>

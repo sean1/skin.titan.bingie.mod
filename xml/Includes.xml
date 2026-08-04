@@ -5,7 +5,6 @@
     <include file="IncludesVariables.xml" />
     <include file="IncludesBingie.xml" />
     <include file="IncludesHomeWidgets.xml" />
-    <include file="IncludesFunctions.xml" />
     <include file="IncludesAnimations.xml" />
     <include file="IncludesNowPlaying.xml" />
     <include file="IncludesDialogVideoInfo.xml" />
@@ -61,16 +60,14 @@
 
 	<expression name="IsTVShowInLastEpisodesBasedOnProps">String.IsEqual(Window(Home).Property(LatestEpisode.10.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.9.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.8.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.7.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.6.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.5.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.4.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.3.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.2.ShowTitle),Window(Home).Property(ListItem.Title)) | String.IsEqual(Window(Home).Property(LatestEpisode.1.ShowTitle),Window(Home).Property(ListItem.Title))</expression>
 
-    <expression name="IsTvShowDBType">String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,tvshow)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),tvshow)</expression>
+    <expression name="IsTvShowDBType">String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE),tvshow) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),tvshow)</expression>
 
     <expression name="IsTvShowDBTypeNoFallback">String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.Property(DBTYPE),tvshow)</expression>
 
-    <expression name="IsMovieDBType">String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,movie)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),movie)</expression>
+    <expression name="IsMovieDBType">String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE),movie) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),movie)</expression>
 
 
-    <expression name="IsEpisodeDBType">String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,episode)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),episode)</expression>
-
-    <expression name="IsEpisodeDBTypeNoFallback">String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)</expression>
+    <expression name="IsEpisodeDBType">String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE),episode) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),episode)</expression>
 
     <expression name="IsCategoryDBType">String.IsEmpty(ListItem.DBType) + [String.IsEqual(ListItem.Property(DBTYPE),genre) | String.IsEqual(ListItem.Property(DBTYPE),category) | String.IsEqual(ListItem.Property(DBTYPE),categorie) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE),category)]</expression>
 

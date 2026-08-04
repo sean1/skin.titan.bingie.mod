@@ -3,7 +3,6 @@
 <window>
     <zorder>2</zorder>
     <onload>SetFocus(200)</onload>
-	<onload condition="![false + !Player.PauseEnabled] + ![[false | false] + !Player.SeekEnabled]">SetFocus()</onload>
     <onload condition="true + !Player.PauseEnabled">SetFocus(300)</onload>
     <onload condition="!Player.Paused + true + !false">Pause</onload>
 	<onload>ClearProperty(DialogMPAATopBar,home)</onload>

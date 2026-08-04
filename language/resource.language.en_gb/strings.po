@@ -382,14 +382,6 @@ msgctxt "#31853"
 msgid "More Episodes"
 msgstr ""
 
-msgctxt "#31854"
-msgid "Rate This Title"
-msgstr ""
-
-msgctxt "#31855"
-msgid "Change rating"
-msgstr ""
-
 msgctxt "#31856"
 msgid "Who's watching Netflix?"
 msgstr ""

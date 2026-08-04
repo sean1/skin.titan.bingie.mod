@@ -265,7 +265,6 @@
             <height>50</height>
             <itemgap>15</itemgap>
 
-            <include condition="!false">Thumbs_Up_Down_Details_Row</include>
             <include condition="!false">Percentage_Rating_Details_Row</include>
 
             <!-- Year -->

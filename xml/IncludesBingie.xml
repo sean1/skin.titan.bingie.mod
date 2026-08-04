@@ -4,7 +4,6 @@
     <!-- includes -->
     <!-- Fixed Focus Navigation -->
     <include name="Fixed_Focus_Navigation">
-        <animation effect="slide" end="0,-250" time="300" condition="Control.IsVisible(1508) + Integer.IsGreater(Container(77777).Position,0)">Conditional</animation>
 			<animation effect="slide" end="0,$PARAM[FixedAnimationHeight]" time="300" condition="Integer.IsGreater(Container(77777).Position,2)">Conditional</animation>
 			<animation effect="slide" end="0,$PARAM[FixedAnimationHeight]" time="300" condition="Integer.IsGreater(Container(77777).Position,4)">Conditional</animation>
 		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight]" time="300" condition="Integer.IsGreater(Container(77777).Position,6)">Conditional</animation>
@@ -63,8 +62,7 @@
 
 	<!-- Fixed Focus Navigation for Hubs -->
 	 <include name="Fixed_Focus_Navigation1">
-        <animation effect="slide" end="0,-250" time="300" condition="Control.IsVisible(1508) + Integer.IsGreater(Container(77777).Position,0)">Conditional</animation>
-        <animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,2)">Conditional</animation>
+		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,2)">Conditional</animation>
         <animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,4)">Conditional</animation>
 		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,6)">Conditional</animation>
 		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,8)">Conditional</animation>
@@ -171,38 +169,10 @@
         </control>
     </include>
 
-    <!-- Thumbs Up/Down -->
-    <include name="Thumbs_Up_Down_Details_Row">
-        <control type="group" id="6111">
-            <visible>Control.IsVisible(61111) | Control.IsVisible(61112)</visible>
-            <include>Default_Visible_Fade</include>
-            <width>25</width>
-            <height>30</height>
-            <!-- Thumbs Up -->
-            <control type="image" id="61111">
-                <posy>9</posy>
-                <width>25</width>
-                <height>30</height>
-                <aspectratio align="left" aligny="center">keep</aspectratio>
-                <colordiffuse>a6ffffff</colordiffuse>
-                <texture>dialogs/videoinfo/info/thumbs-up.png</texture>
-            </control>
-            <!-- Thumbs Down -->
-            <control type="image" id="61112">
-                <posy>10</posy>
-                <width>25</width>
-                <height>30</height>
-                <aspectratio align="left" aligny="center">keep</aspectratio>
-                <colordiffuse>a6ffffff</colordiffuse>
-                <texture flipy="true">dialogs/videoinfo/info/thumbs-up.png</texture>
-            </control>
-        </control>
-    </include>
-
     <!-- Percentage Based Rating -->
     <include name="Percentage_Rating_Details_Row">
         <control type="label" id="6113">
-            <visible>!String.IsEmpty(Control.GetLabel(6113)) + !Control.IsVisible(6111)</visible>
+            <visible>!String.IsEmpty(Control.GetLabel(6113))</visible>
             <posy>7</posy>
             <height>35</height>
             <width>auto</width>
@@ -217,7 +187,7 @@
 	<!-- Percentage Based Rating for Episodes in Bingie Season View -->
     <include name="Percentage_Rating_Details_Row_Seasons">
         <control type="label" id="61132">
-            <visible>!String.IsEmpty(Control.GetLabel(61132)) + !Control.IsVisible(6111)</visible>
+            <visible>!String.IsEmpty(Control.GetLabel(61132))</visible>
             <posy>7</posy>
             <height>35</height>
             <width>auto</width>
@@ -451,7 +421,6 @@
 			<top>10</top>
 			<height>50</height>
 			<itemgap>15</itemgap>
-			<include condition="!false">Thumbs_Up_Down_Details_Row</include>
 			<include condition="!false">New_Tag_Details_Row</include>
             <include condition="!false">Percentage_Rating_Details_Row</include>
 			<include>Year_Premiered_Details_Row</include>
@@ -885,28 +854,6 @@
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.ChannelLogo))">$INFO[Window(Home).Property(ListItem.ChannelLogo)]</value>
     </variable>
 
-    <variable name="BingieSpotlightBackground">
-		<value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(season.fanart))">$INFO[Container(1508).ListItem.Art(season.fanart)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(tvshow.fanart))">$INFO[Container(1508).ListItem.Art(tvshow.fanart)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(fanart))">$INFO[Container(1508).ListItem.Art(fanart)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(artist.fanart))">$INFO[Container(1508).ListItem.Art(artist.fanart)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(albumartist.fanart))">$INFO[Container(1508).ListItem.Art(albumartist.fanart)]</value>
-
-    </variable>
-
-    <variable name="BingieSpotlightLogo">
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(tvshow.clearlogo))">$INFO[Container(1508).ListItem.Art(tvshow.clearlogo)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(clearlogo))">$INFO[Container(1508).ListItem.Art(clearlogo)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Property(ChannelLogo))">$INFO[Container(1508).ListItem.Property(ChannelLogo)]</value>
-    </variable>
-
-    <variable name="BingieSpotlightTitle">
-        <value condition="!String.IsEmpty(Container(1508).ListItem.TVShowTitle)">$INFO[Container(1508).ListItem.TVShowTitle]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Title)">$INFO[Container(1508).ListItem.Title]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Label)">$INFO[Container(1508).ListItem.Label]</value>
-    </variable>
-
     <variable name="BingieInfoLabel">
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Label)) + $EXP[IsCategoryDBType]">[B]$INFO[Window(Home).Property(ListItem.Label)][/B]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.ChannelName)) + String.Contains(Window(Home).Property(ListItem.ChannelName),unknown) + !String.IsEmpty(Window(Home).Property(ListItem.ChannelNumberLabel))">[B]$INFO[Window(Home).Property(ListItem.ChannelNumberLabel),$LOCALIZE[19029] ,][/B]</value>
@@ -966,19 +913,6 @@
     </variable>
 
 
-    <variable name="SpotlightTVShowEpisodesPath">
-        <value condition="!String.IsEmpty(Container(1508).ListItem.DBID)">videodb://tvshows/titles/$INFO[Container(1508).ListItem.DBID]/-2/</value>
-    </variable>
-
-    <variable name="SpotlightLandscapeImage">
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(tvshow.landscape))">$INFO[Container(1508).ListItem.Art(tvshow.landscape)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(landscape))">$INFO[Container(1508).ListItem.Art(landscape)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(tvshow.fanart))">$INFO[Container(1508).ListItem.Art(tvshow.fanart)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(fanart))">$INFO[Container(1508).ListItem.Art(fanart)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(thumb))">$INFO[Container(1508).ListItem.Art(thumb)]</value>
-    </variable>
-
-
     <!-- Bingie More Details (pseudo-random) -->
     <variable name="BingieMoreDetails">
 		<value condition="Integer.IsLessOrEqual(System.Time(ss),45) + !String.IsEmpty(ListItem.Tagline)">$INFO[ListItem.Tagline]</value>
@@ -988,18 +922,6 @@
     <!-- Bingie More Details Image (pseudo-random) -->
     <variable name="BingieMoreDetailsImage">
 		<value condition="Integer.IsLessOrEqual(System.Time(ss),45) + !String.IsEmpty(ListItem.Tagline)">tags</value>
-        <value condition="!String.IsEmpty(ListItem.Genre) + Integer.IsLessOrEqual(System.Time(ss),60) + !String.Contains(ListItem.Genre,unknown)">genre</value>
-    </variable>
-
-	<!-- Bingie More Details Spotlight(pseudo-random) -->
-    <variable name="BingieMoreDetailsSpotlight">
-		<value condition="Integer.IsLessOrEqual(System.Time(ss),40) + !String.IsEmpty(ListItem.Tagline)">$INFO[ListItem.Tagline]</value>
-        <value condition="!String.IsEmpty(ListItem.Genre) + Integer.IsLessOrEqual(System.Time(ss),60) + !String.Contains(ListItem.Genre,unknown)">$INFO[ListItem.Genre]</value>
-    </variable>
-
-	<!-- Bingie More Details Image Spotlight (pseudo-random) -->
-    <variable name="BingieMoreDetailsImageSpotlight">
-		<value condition="Integer.IsLessOrEqual(System.Time(ss),40) + !String.IsEmpty(ListItem.Tagline)">tags</value>
         <value condition="!String.IsEmpty(ListItem.Genre) + Integer.IsLessOrEqual(System.Time(ss),60) + !String.Contains(ListItem.Genre,unknown)">genre</value>
     </variable>
 
@@ -1062,12 +984,6 @@
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PictureDesc))">$INFO[Window(Home).Property(ListItem.PictureDesc)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PictureComment))">$INFO[Window(Home).Property(ListItem.PictureComment)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PictureKeywords))">$INFO[Window(Home).Property(ListItem.PictureKeywords)]</value>
-    </variable>
-
-    <variable name="BingieSpotlightPlot">
-        <value condition="true + !String.IsEmpty(Container(1508).ListItem.PlotOutline)">$INFO[Container(1508).ListItem.PlotOutline]</value>
-        <value condition="$EXP[IsMainMenuOpened] + true + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline))">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Plot)">$INFO[Container(1508).ListItem.Plot]</value>
     </variable>
 
     <!-- Plot Outline Prioritized and Per-Episode Plot -->
@@ -1573,7 +1489,6 @@
 <!-- Bingie Elements / Footer on Home Transparent-->
     <include name="Bingie_Footer">
         <control type="group">
-            <animation effect="slide" end="0,283" time="300" condition="$EXP[IsCurrentWidgetSpotlight]">Conditional</animation>
             <top>520</top>
             <width>100%</width>
 			<visible>!$EXP[IsMainMenuOpened]</visible>
@@ -1603,7 +1518,7 @@
             <texture border="2" background="true">bingie/sidediffuse.png</texture>
             <colordiffuse>ff000000</colordiffuse>
 			<!-- Never Change or Remove / It will give everything a Grey Effect on Screen. It's very Hard to see on Smaller TV but Very Noticable on a Larger One -->
-			<visible>!$EXP[IsRecognizedVideoContent] + !$EXP[IsCurrentWidgetSpotlight]</visible>
+			<visible>!$EXP[IsRecognizedVideoContent]</visible>
 		</control>
     </include>
 
@@ -1627,7 +1542,7 @@
 
     <include name="Bingie_Screens_Fixed_Focus_Frame">
         <include content="Bingie_Screens_Fixed_Focus_Frame_Base">
-            <param name="visibility" value="ControlGroup(77777).HasFocus() + !String.IsEmpty(Container(77777).CurrentItem) + !String.IsEmpty(ListItem.Label) + !$EXP[IsCurrentWidgetSpotlight]" />
+            <param name="visibility" value="ControlGroup(77777).HasFocus() + !String.IsEmpty(Container(77777).CurrentItem) + !String.IsEmpty(ListItem.Label)" />
             <param name="width" value="landscape_width" />
             <param name="height" value="210" />
             <texture background="true" border="10">bingie/border/thumb_fo_4.png</texture>
@@ -1644,161 +1559,10 @@
         <itemgap>0</itemgap>
     </include>
 
-<!-- BINGIE SPOTLIGHT -->
-    <!-- bingie spotlight widget -->
-    <include name="BingieSpotlightWidget">
-        <control type="list" id="$PARAM[widgetid]">
-            <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
-            <orientation>horizontal</orientation>
-            <height>250</height> <!--Spotlight widget height. Moving this changes widget height in includeshomebingie.xml!-->
-            <preloaditems>1</preloaditems>
-            <include content="SetFixedVerticalNavigationProps">
-                <param name="widgetid" value="$PARAM[widgetid]"/>
-            </include>
-            <onright condition="String.IsEmpty(Window(Home).Property(spotlightinfo))">SetProperty(spotlightinfo,1,Home)</onright>
-            <onleft condition="!String.IsEmpty(Window(Home).Property(spotlightinfo))">ClearProperty(spotlightinfo,Home)</onleft>
-            <onleft condition="String.IsEmpty(Window(Home).Property(spotlightinfo))">900</onleft>
-            <onunfocus>ClearProperty(spotlightinfo,home)</onunfocus>
-			<onfocus>SetProperty(FullImage,1,Home)</onfocus>
-			<onunfocus>ClearProperty(FullImage,home)</onunfocus>
-            <onback>900</onback>
-
-			<onclick condition="String.IsEmpty(Window(Home).Property(FullImage))">SetProperty(FullImage,1,Home)</onclick>
-			<onclick>Action(Info)</onclick>
-
-			<!-- HOME SPOTLIGHT SCROLLING -->
-            <itemlayout width="1920" height="210"></itemlayout>
-            <focusedlayout width="1920" height="210">
-                <include content="HiddenWidgetButton">
-                    <param name="widgetstyle" value="spotlight" />
-                    <param name="widgetid" value="$PARAM[widgetid]" />
-                    <param name="widget" value="Spotlight" />
-                </include>
-            </focusedlayout>
-            <content target="videos" limit="1" browse="never">$VAR[BingieHomeSpotlightWidgetContent]</content>
-        </control>
-    </include>
-    <!-- SPOTLIGHT LOADING SPINNER -->
-    <include name="SpotlightLoadingSpinner">
-        <param name="spotlightid" default="1508" />
-        <definition>
-            <control type="grouplist">
-                <visible>$PARAM[visibility]</visible>
-                <visible>Container($PARAM[spotlightid]).IsUpdating + Integer.IsEqual(Container($PARAM[spotlightid]).NumItems,0)</visible>
-                <orientation>horizontal</orientation>
-                <left>141</left>
-                <top>23</top>
-                <width>500</width>
-                <height>60</height>
-                <itemgap>20</itemgap>
-                <control type="multiimage">
-                    <width>25</width>
-                    <height>25</height>
-                    <aspectratio>keep</aspectratio>
-                    <imagepath>$VAR[WidgetBusySpinnerPath]</imagepath>
-                    <timeperimage>85</timeperimage>
-                    <colordiffuse>ffffffff</colordiffuse>
-                    <fadetime>0</fadetime>
-                </control>
-                <control type="label">
-                    <height>60</height>
-                    <aligny>top</aligny>
-                    <width>420</width>
-                    <label>[B]$LOCALIZE[31185]...[/B]</label>
-                    <font>Light22</font>
-                    <textcolor>ffffffff</textcolor>
-                </control>
-            </control>
-        </definition>
-    </include>
-
-<!-- Spotlight Buttons Bingie Home-->
-    <include name="Spotlight_Buttons">
-        <param name="spotlightid" default="1508"/>
-        <param name="top" default="0" />
-        <definition>
-		<control type="group">
-			<width>800</width>
-            <height>74</height>
-            <control type="grouplist">
-                <visible>Control.IsVisible($PARAM[spotlightid]) + Integer.IsGreater(Container($PARAM[spotlightid]).NumItems,0)</visible>
-                <visible>Control.HasFocus($PARAM[spotlightid]) | String.IsEqual(Container(77777).Position,0)</visible>
-                <orientation>horizontal</orientation>
-                <top>$PARAM[top]</top>
-                <width>800</width>
-                <height>64</height>
-				<left>1</left>
-                <itemgap>25</itemgap>
-                <control type="button">
-          <!-- PLAY Button Panel width -->
-					<description>Play</description>
-                    <height>100%</height>
-                    <width>auto</width>
-                    <textoffsetx>28</textoffsetx>
-                    <textwidth>auto</textwidth>
-                    <align>left</align>
-                    <textcolor>$VAR[SpotlightPlayTextButtonColor]</textcolor>
-                    <texturenofocus colordiffuse="$VAR[SpotlightPlayButtonColor]" border="10">diffuse/panel-spot.png</texturenofocus>
-                    <font>Reg30</font>
-                    <label>[CAPITALIZE][B]      $LOCALIZE[208][/B][/CAPITALIZE]</label>
-                </control>
-                <!-- Info Button Panel width -->
-				<control type="button">
-                    <width>auto</width>
-                    <height>100%</height>
-                    <align>center</align>
-					<textwidth>auto</textwidth>
-					<textoffsetx>28</textoffsetx>
-                    <textcolor>$VAR[SpotlightInfoTextButtonColor]</textcolor>
-                    <texturenofocus colordiffuse="$VAR[SpotlightInfoButtonColor]" border="10">diffuse/panel-spot.png</texturenofocus>
-					<font>Reg30</font>
-                    <label>[B]$LOCALIZE[31838][/B]</label>
-                </control>
-            </control>
-			<control type="image">
-			<posx>30</posx>
-			<posy>30</posy>
-            <width>24</width>
-            <height>24</height>
-			<texture colordiffuse="$VAR[SpotlightPlayTextButtonColor]">dialogs/videoinfo/info/play.png</texture>
-			</control>
-		</control>
-        </definition>
-    </include>
-
-    <!-- Play Button Spotlight Color -->
-    <variable name="SpotlightPlayButtonColor">
-        <value condition="!String.IsEmpty(Window(Home).Property(spotlightinfo))">cc707070</value>
-        <value>ffffffff</value>
-    </variable>
-    <!-- Spotlight Info Button Color -->
-	<variable name="SpotlightInfoButtonColor">
-        <value condition="!String.IsEmpty(Window(Home).Property(spotlightinfo))">ffffffff</value>
-        <value>cc707070</value>
-    </variable>
-    <!-- Spotlight Play Text Button Color -->
-    <variable name="SpotlightPlayTextButtonColor">
-        <value condition="!String.IsEmpty(Window(Home).Property(spotlightinfo))">ffffffff</value>
-        <value>ff000000</value>
-    </variable>
-    <!-- Spotlight Info Text Button Color -->
-	<variable name="SpotlightInfoTextButtonColor">
-        <value condition="String.IsEmpty(Window(Home).Property(spotlightinfo))">ffffffff</value>
-        <value>ff000000</value>
-    </variable>
 	<!-- Logon Button Color -->
 	<variable name="LogonColor">
         <value condition="Control.HasFocus(10034)">ff000000</value>
         <value condition="!Control.HasFocus(10034)">ffffffff</value>
-    </variable>
-
-    <!-- Bingie Spotlight Content -->
-    <variable name="BingieHomeSpotlightWidgetContent">
-        <value condition="Window.IsActive(Home)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</value>
-        <value condition="Window.IsActive(1111)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</value>
-        <value condition="Window.IsActive(1110)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</value>
-        <value condition="Window.IsActive(1112)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases</value>
-        <value condition="$EXP[IsBingieListsActive]"/>
     </variable>
 
 <!-- SPOTLIGHT IMAGE MAIN HOME-->
@@ -1906,90 +1670,6 @@
         </definition>
     </include>
 
-	<!-- MPAA Flag on Spotlight Rightside of Window -->
-
-	<!-- US Spotlight MPAA Label -->
-    <include name="Spotlight_MPAA_Flag_Object">
-	    <param name="right" default="-160" />
-        <param name="top" default="684" />
-        <param name="visibility" default="true" />
-        <definition>
-            <control type="group">
-				<visible>!false + !String.IsEmpty(Control.GetLabel($PARAM[id]))</visible>
-                <visible>$PARAM[visibility]</visible>
-                <right>$PARAM[right]</right>
-                <top>$PARAM[top]</top>
-                <height>54</height>
-                <width>160</width>
-                <animation type="VisibleChange">
-                    <effect type="slide" start="0" end="-160" delay="2000" time="400"/>
-                    <effect type="fade" start="0" end="100" delay="2000" time="400"/>
-                </animation>
-                <control type="image">
-                    <height>54</height>
-                    <width>160</width>
-                    <texture background="true" colordiffuse="9a343434">diffuse/panel2.png</texture>
-                </control>
-				<!-- White Line on Right Home Screen -->
-				<control type="image">
-                    <height>54</height>
-                    <width>6</width>
-                    <align>left</align>
-                    <texture background="true" colordiffuse="ffffffff">bingie/line.png</texture>
-                </control>
-				<!-- Text inside of Box Right Home Screen -->
-				<control type="label" id="$PARAM[id]">
-                    <left>30</left>
-                    <height>52</height>
-                    <width>134</width>
-                    <align>left</align>
-                    <font>Bold28</font>
-                    <textcolor>ffffffff</textcolor>
-                    <label>$VAR[GetMPAA]</label>
-                </control>
-            </control>
-        </definition>
-    </include>
-
-<!-- UK icon to replace MPAA flag on Spotlight-->
-    <include name="Spotlight_MPAA_Flag_Object1">
-        <param name="right" default="-160" />
-        <!-- <param name="top" default="690" /> -->
-        <param name="visibility" default="true" />
-        <definition>
-            <control type="group">
-                 <visible>false + !String.IsEmpty(Control.GetLabel($PARAM[id]))</visible>
-                <visible>$PARAM[visibility]</visible>
-                <right>$PARAM[right]</right>
-                <top>$PARAM[top]</top>
-                <height>55</height>
-                <width>160</width>
-                <animation type="VisibleChange">
-                    <effect type="slide" start="0" end="-160" delay="2000" time="400"/>
-                    <effect type="fade" start="0" end="100" delay="2000" time="400"/>
-                </animation>
-
-				<control type="label" id="$PARAM[id]">
-                    <left>30</left>
-                    <height>55</height>
-                    <width>130</width>
-                    <align>left</align>
-                    <font>Reg28</font>
-                    <textcolor>none</textcolor>
-                    <label>$VAR[GetMPAA]</label>
-                </control>
-
-				<control type="image">
-				<width>0</width>
-				<height>70</height>
-                <aspectratio align="center">keep</aspectratio>
-				<top>668</top>
-				<texture>$VAR[mediaflags_large_rating_UK_spotlight_icons]</texture>
-				</control>
-			</control>
-        </definition>
-    </include>
-
     <include name="Bingie_Base_BG">
         <control type="image">
             <visible>$PARAM[visibility]</visible>
@@ -2010,13 +1690,13 @@
     <include name="Bingie_Main_Spotlight_Section">
         <!-- spotlight section -->
         <include content="Bingie_Base_BG">
-            <param name="visibility" value="!$EXP[IsPlayingRecognizedContent] + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))" />
+            <param name="visibility" value="!$EXP[IsPlayingRecognizedContent]" />
         </include>
         <control type="group">
             <width>1920</width>
             <height>600</height>
 			<include content="BingieSpotlightCornerImage">
-                <param name="visibility" value="[!$EXP[IsPlayingRecognizedContent] | $EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]] + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))" />
+                <param name="visibility" value="!$EXP[IsPlayingRecognizedContent] | [$EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]]" />
                 <param name="image" value="$VAR[bingieThumb]" />
             </include>
 

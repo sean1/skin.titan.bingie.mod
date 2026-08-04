@@ -7,7 +7,7 @@
 
     <include name="NowPlayingBackground">
         <control type="group">
-			<visible>Player.HasMedia + !Control.IsVisible(507) + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
+			<visible>Player.HasMedia + !Control.IsVisible(507)</visible>
 			<include condition="Player.HasVideo">NowPlayingVideoBackground</include>
 
             <!--Background Overlay-->
@@ -33,33 +33,6 @@
 			</control>
 
 		</control>
-	</include>
-
-	<include name="BingieTrailerPreviewWindow">
-		<param name="visibility" default="true" />
-		<definition>
-		<control type="group">
-			<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + $PARAM[visibility]</visible>
-			<top>0</top>
-			<right>0</right>
-			<width>1200</width>
-			<height>675</height>
-			<control type="image">
-				<width>1200</width>
-				<height>675</height>
-				<texture>colors/color_black.png</texture>
-			</control>
-			<control type="videowindow">
-				<width>1200</width>
-				<height>675</height>
-			</control>
-			<control type="image">
-				<width>1200</width>
-				<height>675</height>
-				<texture background="true" colordiffuse="$VAR[BingiePanelColor]" border="20">overlays/bingie_corner.png</texture>
-			</control>
-		</control>
-		</definition>
 	</include>
 
 </includes>

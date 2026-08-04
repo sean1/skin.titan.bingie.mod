@@ -360,38 +360,4 @@
         <include>$PARAM[prefix]TagOverlayVisibility</include>
     </include>
 
-    <!-- Spotlight Dummy Landscape Widget -->
-    <include name="SpotlightDummyLandscapeWidget">
-        <control type="grouplist">
-            <visible>Control.IsVisible(1508)</visible>
-            <visible>Integer.IsGreater(Container(77777).NumItems,1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)</visible>
-            <animation effect="fade" start="0" end="55" time="250">VisibleChange</animation>
-            <animation effect="slide" start="0,-252" end="0,0" time="300" condition="!String.IsEqual(Window(Home).Property(CurrentWidgetPos),1)">Conditional</animation>
-            <animation effect="slide" start="0,252" end="0,0" time="300" condition="String.IsEqual(Window(Home).Property(CurrentWidgetPos),1) | String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>
-            <orientation>vertical</orientation>
-            <itemgap>0</itemgap>
-            <usecontrolcoords>true</usecontrolcoords>
-            <height>250</height>
-            <include>No_Circular_Left</include>
-            <left>0</left>
-            <top>863</top>
-            <control type="textbox">
-                <left>8</left>
-                <height>40</height>
-                <width>99%</width>
-                <font>Bold31</font>
-				<textcolor>white</textcolor>
-                <textcolor>73ffffff</textcolor>
-                <label>$LOCALIZE[31185]</label>
-            </control>
-            <control type="image">
-                <left>0</left>
-                <height>210</height>
-                <width>landscape_width</width>
-                <bordersize>8</bordersize>
-                <texture background="true" diffuse="home/home_matte3.png" fallback="DefaultVideo.png">$VAR[SpotlightLandscapeImage]</texture>
-                <aspectratio scalediffuse="false" align="center" aligny="center">stretch</aspectratio>
-            </control>
-        </control>
-    </include>
 </includes>

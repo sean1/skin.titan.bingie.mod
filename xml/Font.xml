@@ -1047,13 +1047,6 @@
 			<linespacing>0.8</linespacing>
             <size>80</size>
         </font>
-		<font>
-            <name>Title2</name> <!--Clearlogo Spotlight content fallback-->
-            <filename>Netflix-sans-Bold.ttf</filename>
-			<style>lighten</style>
-			<linespacing>0.8</linespacing>
-            <size>85</size>
-        </font>
         <font>
             <name>Bold68</name>
             <filename>Netflix-sans-Bold.ttf</filename>

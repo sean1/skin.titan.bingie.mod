@@ -18,14 +18,7 @@
             <control type="image">
                 <posx>60</posx>
                 <width>1800</width>
-                <texture border="15">diffuse/bgpanel.png</texture>
-            <colordiffuse>cc0a0a0a</colordiffuse>
-            </control>
-
-            <control type="image">
-                <posx>60</posx>
-                <width>556</width>
-                <texture border="15">diffuse/bgpanel.png</texture>
+                <texture>colors/color_white.png</texture>
                 <colordiffuse>cc0a0a0a</colordiffuse>
             </control>
 
@@ -67,14 +60,28 @@
                     <control type="group">
                         <width>280</width>
                         <height>240</height>
-                        <include>SquarePosterPanelLayout</include>
+                        <control type="image">
+                            <bordersize>8</bordersize>
+                            <texture background="true" fallback="DefaultVideo.png">$VAR[SquarePosterThumb]</texture>
+                            <aspectratio aligny="center">scale</aspectratio>
+                        </control>
+                        <include>SquarePosterTagOverlay</include>
                     </control>
                 </itemlayout>
                 <focusedlayout height="260" width="300">
                     <control type="group">
                         <width>280</width>
                         <height>240</height>
-                        <include>SquarePosterPanelLayoutFocus</include>
+                        <control type="image">
+                            <bordersize>4</bordersize>
+                            <texture>colors/color_white.png</texture>
+                        </control>
+                        <control type="image">
+                            <bordersize>8</bordersize>
+                            <texture background="true" fallback="DefaultVideo.png">$VAR[SquarePosterThumb]</texture>
+                            <aspectratio aligny="center">scale</aspectratio>
+                        </control>
+                        <include>SquarePosterTagOverlay</include>
                     </control>
                 </focusedlayout>
                 <content>

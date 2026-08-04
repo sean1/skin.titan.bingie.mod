@@ -2218,10 +2218,10 @@
 
     <!-- Bingie Spotlight Content -->
     <variable name="BingieHomeSpotlightWidgetContent">
-        <value condition="Window.IsActive(Home)">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending</value>
-        <value condition="Window.IsActive(1111)">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending</value>
-        <value condition="Window.IsActive(1110)">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</value>
-        <value condition="Window.IsActive(1112)">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases</value>
+        <value condition="Window.IsActive(Home)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</value>
+        <value condition="Window.IsActive(1111)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</value>
+        <value condition="Window.IsActive(1110)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</value>
+        <value condition="Window.IsActive(1112)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases</value>
         <value condition="$EXP[IsBingieListsActive]"/>
     </variable>
 

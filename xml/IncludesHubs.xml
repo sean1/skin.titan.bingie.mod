@@ -68,25 +68,25 @@
             <param name="widgetid" value="1510" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=in_progress_movies" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=in_progress_movies" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Trending Movies" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_trending" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Popular Movies" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1540" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="New Releases" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases" />
         </include>
     </include>
 
@@ -97,25 +97,25 @@
             <param name="widgetid" value="1510" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_in_progress_episode" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_in_progress_episode" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Trending TV Shows" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_trending" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Popular TV Shows" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1540" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="New TV Shows" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres" />
         </include>
     </include>
 
@@ -128,7 +128,7 @@
             <param name="widgetid" value="1510" />
             <param name="widgetStyle" value="PlaySomething_Widget" />
             <param name="label" value="Popular Movies" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
         </include>
     </include>
 
@@ -139,25 +139,25 @@
             <param name="widgetid" value="1510" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="New Movie Releases" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="New TV Shows" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Popular Movies" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1540" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Popular TV Shows" />
-            <param name="path" value="plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
         </include>
     </include>
 

@@ -127,10 +127,38 @@
 							<label>$INFO[ListItem.Label2]</label>
 						</control>
 					</focusedlayout>
+				</control>
+				<!-- Control 50 is reserved by Kodi, which intercepts Select and searches the local library.
+				     Keep it as the cast data source, but handle navigation and selection through POV here. -->
+				<control type="button" id="550">
+					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
+					<left>126</left>
+					<top>730</top>
+					<width>1668</width>
+					<height>330</height>
+					<texturefocus>colors/color_transparent.png</texturefocus>
+					<texturenofocus>colors/color_transparent.png</texturenofocus>
+					<label />
 					<onup>8000</onup>
-					<onleft>50</onleft>
-					<onright>50</onright>
-					<ondown>50</ondown>
+					<ondown>550</ondown>
+					<onleft>Control.Move(50,-1)</onleft>
+					<onright>Control.Move(50,1)</onright>
+					<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=person_data_dialog&amp;query=$INFO[Container(50).ListItem.Label])</onclick>
+				</control>
+				<!-- The native panel loses its focused layout while control 550 handles Select. -->
+				<control type="image">
+					<visible>Control.HasFocus(550)</visible>
+					<left>126</left>
+					<top>730</top>
+					<width>230</width>
+					<height>310</height>
+					<texture background="true" border="12">bingie/border/poster_fo_4.png</texture>
+					<animation effect="slide" end="238,0" time="0" condition="Integer.IsEqual(Container(50).Column,1)">Conditional</animation>
+					<animation effect="slide" end="476,0" time="0" condition="Integer.IsEqual(Container(50).Column,2)">Conditional</animation>
+					<animation effect="slide" end="714,0" time="0" condition="Integer.IsEqual(Container(50).Column,3)">Conditional</animation>
+					<animation effect="slide" end="952,0" time="0" condition="Integer.IsEqual(Container(50).Column,4)">Conditional</animation>
+					<animation effect="slide" end="1190,0" time="0" condition="Integer.IsEqual(Container(50).Column,5)">Conditional</animation>
+					<animation effect="slide" end="1428,0" time="0" condition="Integer.IsEqual(Container(50).Column,6)">Conditional</animation>
 				</control>
 
 				<!-- Fanart Background Image -->
@@ -460,7 +488,7 @@
                             <orientation>vertical</orientation>
 							<itemgap>0</itemgap>
                             <onup>noop</onup>
-	                            <ondown condition="Integer.IsGreater(Container(50).NumItems,0)">50</ondown>
+	                            <ondown condition="Integer.IsGreater(Container(50).NumItems,0)">550</ondown>
 								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0)">noop</ondown>
                             <scrolltime tween="sine" easing="inout">200</scrolltime>
 							<pagecontrol>300</pagecontrol>

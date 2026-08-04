@@ -518,6 +518,16 @@
 	<include name="StaticHomeWidgets">
 		<include>StaticHomeWidgetRows</include>
 	</include>
+	<!-- An empty dynamic content path defers its provider job; container visibility alone does not. -->
+	<variable name="BingieHomeTrendingTVPath">
+		<value condition="!String.IsEmpty(Window(Home).Property(BingieHomeTrendingReady))">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</value>
+	</variable>
+	<variable name="BingieHomePopularMoviesPath">
+		<value condition="!String.IsEmpty(Window(Home).Property(BingieHomePopularReady))">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</value>
+	</variable>
+	<variable name="BingieHomePopularTVPath">
+		<value condition="!String.IsEmpty(Window(Home).Property(BingieHomePopularReady))">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</value>
+	</variable>
 	<include name="StaticHomeWidgetRows">
 		<include content="widget_header_multi">
 			<param name="widgetid" value="2510" />
@@ -576,7 +586,7 @@
 			<param name="widgetTarget" value="videos" />
 			<param name="widgetPath" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending" />
 			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
+			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="30" />
 			<param name="widgetInfoPanel" value="top" />
@@ -595,9 +605,9 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending" />
+			<param name="widgetPath" value="$VAR[BingieHomeTrendingTVPath]" />
 			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
+			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="30" />
 			<param name="widgetInfoPanel" value="top" />
@@ -616,9 +626,9 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
+			<param name="widgetPath" value="$VAR[BingieHomePopularMoviesPath]" />
 			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
+			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="30" />
 			<param name="widgetInfoPanel" value="top" />
@@ -637,9 +647,9 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
+			<param name="widgetPath" value="$VAR[BingieHomePopularTVPath]" />
 			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
+			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="30" />
 			<param name="widgetInfoPanel" value="top" />

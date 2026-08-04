@@ -7,7 +7,15 @@
     <!-- Defaults -->
 	<!-- BINGIE -->
     <onload>SetProperty(bingieviews,1,Home)</onload>
+    <onload condition="String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">AlarmClock(BingieHomeTrendingWidgets,SetProperty(BingieHomeTrendingReady,1,Home),00:00:01,silent)</onload>
+    <onload condition="String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">AlarmClock(BingieHomePopularWidgets,SetProperty(BingieHomePopularReady,1,Home),00:00:02,silent)</onload>
+    <onload condition="!String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">SetProperty(BingieHomeTrendingReady,1,Home)</onload>
+    <onload condition="!String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">SetProperty(BingieHomePopularReady,1,Home)</onload>
     <onunload>SetProperty(SectionBackground,$ESCINFO[Control.GetLabel(99004)])</onunload>
+    <onunload condition="System.HasAlarm(BingieHomeTrendingWidgets)">CancelAlarm(BingieHomeTrendingWidgets,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieHomePopularWidgets)">CancelAlarm(BingieHomePopularWidgets,silent)</onunload>
+    <onunload>ClearProperty(BingieHomeTrendingReady,Home)</onunload>
+    <onunload>ClearProperty(BingieHomePopularReady,Home)</onunload>
     <onunload>ClearProperty(submenu,Home)</onunload>
     <onunload>ClearProperty(ShowWidget,Home)</onunload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>

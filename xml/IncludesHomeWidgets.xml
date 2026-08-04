@@ -307,12 +307,13 @@
         <control type="$PARAM[containerType]" id="$PARAM[widgetid]">
             <visible>$PARAM[visibility]</visible>
             <visible>Window.IsActive(Home) | String.IsEqual(Container(900).ListItem.Property(submenuVisibility),$PARAM[submenuid])</visible>
-            <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
+            <!-- Poll an empty dynamic provider while its row stays hidden so a staged path can become active. -->
+            <visible allowhiddenfocus="Integer.IsEqual(Container($PARAM[widgetid]).NumItems,0)">Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
             <include condition="$PARAM[multiRows]">widget_base_vertical</include>
             <orientation>horizontal</orientation>
             <width>100%</width>
             <include>ScrollTime</include>
-            <preloaditems>5</preloaditems>
+            <preloaditems>2</preloaditems>
             <include content="WidgetBaseBingieIncludes">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>

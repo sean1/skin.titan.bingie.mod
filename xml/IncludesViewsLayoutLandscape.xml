@@ -103,11 +103,11 @@
             <left>8</left>
             <right>8</right>
 			<bottom>8</bottom>
-            <height>112</height>
+            <height>128</height>
             <texture>overlays/gradient_episodes.png</texture>
             <aspectratio>stretch</aspectratio>
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>e6ffffff</colordiffuse>
+            <colordiffuse>ffffffff</colordiffuse>
         </control>
         <control type="textbox">
             <!--Label-->

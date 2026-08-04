@@ -79,10 +79,10 @@
 							<left>8</left>
 							<bottom>10</bottom>
 							<width>214</width>
-							<height>82</height>
+							<height>96</height>
 							<texture>overlays/gradient_episodes.png</texture>
 							<aspectratio>stretch</aspectratio>
-							<colordiffuse>e6ffffff</colordiffuse>
+							<colordiffuse>ffffffff</colordiffuse>
 						</control>
 						<control type="label">
 							<left>20</left>
@@ -120,10 +120,10 @@
 							<left>8</left>
 							<bottom>10</bottom>
 							<width>214</width>
-							<height>82</height>
+							<height>96</height>
 							<texture>overlays/gradient_episodes.png</texture>
 							<aspectratio>stretch</aspectratio>
-							<colordiffuse>e6ffffff</colordiffuse>
+							<colordiffuse>ffffffff</colordiffuse>
 						</control>
 						<control type="label">
 							<left>20</left>
@@ -711,10 +711,10 @@
 			<left>8</left>
 			<bottom>10</bottom>
 			<width>214</width>
-			<height>82</height>
+			<height>96</height>
 			<texture>overlays/gradient_episodes.png</texture>
 			<aspectratio>stretch</aspectratio>
-			<colordiffuse>e6ffffff</colordiffuse>
+			<colordiffuse>ffffffff</colordiffuse>
 		</control>
 		<control type="label">
 			<left>20</left>

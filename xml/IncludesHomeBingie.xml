@@ -3,7 +3,7 @@
 <includes>
     <include name="HomeBingie">
         <include content="Bingie_Base_BG">
-            <param name="visibility" value="!$EXP[IsPlayingRecognizedContent]" />
+            <param name="visibility" value="!$EXP[IsPlayingRecognizedContent] + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))" />
         </include>
 
         <control type="group" id="9000">
@@ -23,12 +23,15 @@
                     <content sortby="dateadded" sortorder="descending" limit="1">$VAR[SpotlightTVShowEpisodesPath]</content>
                 </control>
                 <control type="image">
-                    <visible>!Player.HasVideo</visible>
+                    <visible>!Player.HasVideo | !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
                     <fadetime>350</fadetime>
                     <texture background="true">$VAR[BingieSpotlightBackground]</texture>
                     <aspectratio aligny="top">scale</aspectratio>
                     <animation effect="fade" start="0" end="100" delay="0" time="1200">Visible</animation>
                 </control>
+				<include content="BingieTrailerPreviewWindow">
+					<param name="visibility" value="$EXP[IsCurrentWidgetSpotlight]" />
+				</include>
 				<!-- SPOTLIGHT DIFFUSE VIGNETTE -->
 				<control type="image">
                     <include>FullscreenDimensions</include>
@@ -50,7 +53,7 @@
             <control type="group">
                 <visible>!$EXP[IsCurrentWidgetSpotlight]</visible>
                 <control type="image">
-                    <visible>!$EXP[IsPlayingRecognizedContent]</visible>
+                    <visible>!$EXP[IsPlayingRecognizedContent] + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
                     <include>FullscreenDimensions</include>
                     <texture background="true" colordiffuse="$VAR[BingiePanelColor]">colors/color_white.png</texture>
                     <animation effect="fade" start="100" end="90" delay="0" time="400">Visible</animation>
@@ -62,6 +65,9 @@
             <control type="group">
                 <width>1920</width>
                 <height>525</height>
+				<include content="BingieTrailerPreviewWindow">
+					<param name="visibility" value="!$EXP[IsCurrentWidgetSpotlight]" />
+				</include>
                 <include content="BingieSpotlightCornerImage">
                     <param name="visibility" value="!$EXP[IsCurrentWidgetSpotlight] + !Player.HasVideo" />
                     <param name="image" value="$INFO[Control.GetLabel(99004)]" />

@@ -88,7 +88,10 @@
 
 		<include condition="true + false">Native_extraFanartBackground</include>
 
-        <include>DialogOverlay</include>
+		<include>DialogOverlay</include>
+		<include content="BingieTrailerPreviewWindow">
+			<param name="visibility" value="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112)]" />
+		</include>
 
 
     </include>

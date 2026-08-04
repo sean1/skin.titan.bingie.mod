@@ -2010,13 +2010,13 @@
     <include name="Bingie_Main_Spotlight_Section">
         <!-- spotlight section -->
         <include content="Bingie_Base_BG">
-            <param name="visibility" value="!$EXP[IsPlayingRecognizedContent]" />
+            <param name="visibility" value="!$EXP[IsPlayingRecognizedContent] + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))" />
         </include>
         <control type="group">
             <width>1920</width>
             <height>600</height>
 			<include content="BingieSpotlightCornerImage">
-                <param name="visibility" value="!$EXP[IsPlayingRecognizedContent] | $EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]" />
+                <param name="visibility" value="[!$EXP[IsPlayingRecognizedContent] | $EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]] + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))" />
                 <param name="image" value="$VAR[bingieThumb]" />
             </include>
 

@@ -100,12 +100,14 @@
         <control type="image">
             <!--Panel Ovelay-->
             <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-            <bordersize>8</bordersize>
-			<bottom>0</bottom>
-            <height>78</height>
-            <texture>diffuse/home_overlay_bingie.png</texture>
+            <left>8</left>
+            <right>8</right>
+			<bottom>8</bottom>
+            <height>112</height>
+            <texture>overlays/gradient_episodes.png</texture>
+            <aspectratio>stretch</aspectratio>
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>dd000000</colordiffuse>
+            <colordiffuse>e6ffffff</colordiffuse>
         </control>
         <control type="textbox">
             <!--Label-->

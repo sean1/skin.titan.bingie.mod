@@ -129,10 +129,18 @@
 
 
 
+    <variable name="CardYearRange">
+        <value condition="!String.IsEmpty(ListItem.Property(year_range))">$INFO[ListItem.Property(year_range)]</value>
+        <value condition="!String.IsEmpty(ListItem.Property(pov_lite_year_range))">$INFO[ListItem.Property(pov_lite_year_range)]</value>
+        <value condition="!String.IsEmpty(ListItem.Year) + [String.Contains(ListItem.Status,Returning) | String.Contains(ListItem.Status,Production)]">$INFO[ListItem.Year]–Present</value>
+        <value>$INFO[ListItem.Year]</value>
+    </variable>
+
     <variable name="ThumbListDetails">
         <!-- specials used in widgets -->
 		<value condition="String.IsEmpty(ListItem.Property(submenuVisibility)) + String.IsEqual(ListItem.Property(DBTYPE), systeminfo)">[B]$INFO[ListItem.label][/B] $INFO[ListItem.label2]</value>
 		<!-- normal items-->
+        <value condition="$EXP[IsTvShowDBType] + !String.IsEmpty(ListItem.Year)">$VAR[CardYearRange][CR]$INFO[ListItem.label]</value>
         <value condition="$EXP[IsTvShowDBType]">$INFO[ListItem.label]</value>
         <value condition="Container.Content(seasons)">$INFO[ListItem.label]</value>
 		<value condition="!String.IsEmpty(ListItem.TvShowTitle) + !String.IsEmpty(ListItem.Episode) + Integer.IsGreater(ListItem.Episode,9) + Integer.IsGreater(ListItem.Season,9)">$INFO[ListItem.Title][CR]$INFO[ListItem.TvShowTitle] • [UPPERCASE]S$INFO[ListItem.Season]E$INFO[ListItem.Episode][/UPPERCASE]</value>
@@ -140,7 +148,7 @@
         <value condition="!String.IsEmpty(ListItem.TvShowTitle) + !String.IsEmpty(ListItem.Episode) + Integer.IsGreater(ListItem.Season,9)">$INFO[ListItem.Title][CR]$INFO[ListItem.TvShowTitle] • [UPPERCASE]S$INFO[ListItem.Season]E0$INFO[ListItem.Episode][/UPPERCASE]</value>
         <value condition="!String.IsEmpty(ListItem.TvShowTitle) + !String.IsEmpty(ListItem.Episode)">$INFO[ListItem.Title][CR]$INFO[ListItem.TvShowTitle] • [UPPERCASE]S0$INFO[ListItem.Season]E0$INFO[ListItem.Episode][/UPPERCASE]</value>
 
-		<value condition="String.IsEmpty(ListItem.Property(submenuVisibility)) + !String.IsEmpty(ListItem.Year)">$INFO[ListItem.label][CR]$INFO[ListItem.Year]</value>
+		<value condition="String.IsEmpty(ListItem.Property(submenuVisibility)) + !String.IsEmpty(ListItem.Year)">$INFO[ListItem.Year][CR]$INFO[ListItem.label]</value>
         <value condition="String.IsEmpty(ListItem.Property(submenuVisibility))">$INFO[ListItem.label]</value>
 		<value>$INFO[ListItem.label]</value>
     </variable>
@@ -150,6 +158,7 @@
         <!-- specials used in widgets -->
 		<value condition="String.IsEmpty(ListItem.Property(submenuVisibility)) + String.IsEqual(ListItem.Property(DBTYPE), systeminfo)">[B]$INFO[ListItem.label][/B] $INFO[ListItem.label2]</value>
 		<!-- normal items-->
+        <value condition="$EXP[IsTvShowDBType] + !String.IsEmpty(ListItem.Year)">$VAR[CardYearRange][CR]$INFO[ListItem.label]</value>
         <value condition="$EXP[IsTvShowDBType]">$INFO[ListItem.label]</value>
         <value condition="Container.Content(seasons)">$INFO[ListItem.label]</value>
 		<value condition="!String.IsEmpty(ListItem.TvShowTitle) + !String.IsEmpty(ListItem.Episode) + Integer.IsGreater(ListItem.Episode,9) + Integer.IsGreater(ListItem.Season,9)">$INFO[ListItem.TvShowTitle] [UPPERCASE]S$INFO[ListItem.Season]E$INFO[ListItem.Episode][/UPPERCASE]</value>
@@ -159,7 +168,7 @@
 
         <value condition="!String.IsEmpty(ListItem.Property(character))">$INFO[ListItem.label] $INFO[ListItem.Property(character),(,)]</value>
         <value condition="!String.IsEmpty(ListItem.Property(job))">$INFO[ListItem.label] $INFO[ListItem.Property(job),(,)]</value>
-        <value condition="!String.IsEmpty(ListItem.Year)">$INFO[ListItem.label] $INFO[ListItem.Year,(,)]</value>
+        <value condition="!String.IsEmpty(ListItem.Year)">$INFO[ListItem.Year][CR]$INFO[ListItem.label]</value>
         <value condition="String.IsEmpty(ListItem.Property(submenuVisibility))">$INFO[ListItem.label]</value>
         <value condition="String.IsEmpty(ListItem.AddonName)">$INFO[ListItem.AddonName]</value>
 		<value>$INFO[ListItem.Label]</value>

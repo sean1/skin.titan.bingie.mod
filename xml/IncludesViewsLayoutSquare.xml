@@ -65,11 +65,13 @@
         <control type="group">
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml) | [false + false]">SquarePosterTagOverlayVisibility</include>
             <control type="image">
-                <bottom>0</bottom>
-                <height>74</height>
-                <bordersize>8</bordersize>
-                <texture>diffuse/poster_tag2.png</texture>
-                <colordiffuse>dd000000</colordiffuse>
+                <left>8</left>
+                <right>8</right>
+                <bottom>8</bottom>
+                <height>112</height>
+                <texture>overlays/gradient_episodes.png</texture>
+                <aspectratio>stretch</aspectratio>
+                <colordiffuse>e6ffffff</colordiffuse>
             </control>
             <control type="textbox">
                 <left>15</left>

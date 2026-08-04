@@ -152,22 +152,25 @@
     <include name="Bingie_Main_Landscape_Title">
         <control type="image">
             <visible>!String.IsEqual(ListItem.Label,..)</visible>
-            <bordersize>8</bordersize>
-            <bottom>0</bottom>
-            <height>78</height>
-            <texture>diffuse/home_overlay_bingie.png</texture>
-            <colordiffuse>dd000000</colordiffuse>
+            <left>8</left>
+            <right>8</right>
+            <bottom>8</bottom>
+            <height>112</height>
+            <texture>overlays/gradient_episodes.png</texture>
+            <aspectratio>stretch</aspectratio>
+            <colordiffuse>e6ffffff</colordiffuse>
         </control>
-        <control type="label">
+        <control type="textbox">
             <visible>!String.IsEqual(ListItem.Label,..)</visible>
             <left>16</left>
             <right>16</right>
-            <bottom>18</bottom>
-            <height>40</height>
+            <bottom>10</bottom>
+            <height>60</height>
             <align>left</align>
             <aligny>center</aligny>
-            <label>$INFO[ListItem.Label]</label>
+            <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
+            <autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
             <textcolor>ffffffff</textcolor>
         </control>
     </include>

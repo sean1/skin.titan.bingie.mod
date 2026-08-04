@@ -45,10 +45,10 @@
 				</control>
 				<control type="panel" id="50">
 					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
-					<left>126</left>
-					<top>730</top>
-					<width>1668</width>
-					<height>330</height>
+					<left>-2000</left>
+					<top>-2000</top>
+					<width>1</width>
+					<height>1</height>
 					<orientation>horizontal</orientation>
 					<preloaditems>4</preloaditems>
 					<scrolltime tween="quadratic">400</scrolltime>
@@ -128,37 +128,31 @@
 						</control>
 					</focusedlayout>
 				</control>
-				<!-- Control 50 is reserved by Kodi, which intercepts Select and searches the local library.
-				     Keep it as the cast data source, but handle navigation and selection through POV here. -->
-				<control type="button" id="550">
+				<!-- Control 50 is reserved by Kodi, so render its cast data in a normal panel that can route mouse and keyboard selection through POV. -->
+				<control type="panel" id="550">
 					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
 					<left>126</left>
 					<top>730</top>
 					<width>1668</width>
 					<height>330</height>
-					<texturefocus>colors/color_transparent.png</texturefocus>
-					<texturenofocus>colors/color_transparent.png</texturenofocus>
-					<label />
+					<orientation>horizontal</orientation>
+					<preloaditems>4</preloaditems>
+					<scrolltime tween="quadratic">400</scrolltime>
 					<onup>8000</onup>
 					<ondown>550</ondown>
-					<onleft>Control.Move(50,-1)</onleft>
-					<onright>Control.Move(50,1)</onright>
-					<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=person_data_dialog&amp;query=$INFO[Container(50).ListItem.Label])</onclick>
-				</control>
-				<!-- The native panel loses its focused layout while control 550 handles Select. -->
-				<control type="image">
-					<visible>Control.HasFocus(550)</visible>
-					<left>126</left>
-					<top>730</top>
-					<width>230</width>
-					<height>310</height>
-					<texture background="true" border="12">bingie/border/poster_fo_4.png</texture>
-					<animation effect="slide" end="238,0" time="0" condition="Integer.IsEqual(Container(50).Column,1)">Conditional</animation>
-					<animation effect="slide" end="476,0" time="0" condition="Integer.IsEqual(Container(50).Column,2)">Conditional</animation>
-					<animation effect="slide" end="714,0" time="0" condition="Integer.IsEqual(Container(50).Column,3)">Conditional</animation>
-					<animation effect="slide" end="952,0" time="0" condition="Integer.IsEqual(Container(50).Column,4)">Conditional</animation>
-					<animation effect="slide" end="1190,0" time="0" condition="Integer.IsEqual(Container(50).Column,5)">Conditional</animation>
-					<animation effect="slide" end="1428,0" time="0" condition="Integer.IsEqual(Container(50).Column,6)">Conditional</animation>
+					<itemlayout width="238" height="320">
+						<include content="PovCastCard">
+							<param name="focused" value="false" />
+						</include>
+					</itemlayout>
+					<focusedlayout width="238" height="320">
+						<include content="PovCastCard">
+							<param name="focused" value="true" />
+						</include>
+					</focusedlayout>
+					<content>
+						<include content="PovCastItems" />
+					</content>
 				</control>
 
 				<!-- Fanart Background Image -->
@@ -493,27 +487,42 @@
                             <scrolltime tween="sine" easing="inout">200</scrolltime>
 							<pagecontrol>300</pagecontrol>
 
-							<!-- Play/Resume via 5050 Container (next episode) -->
+							<!-- Play the next unwatched POV episode, or start with S01E01. -->
                             <control type="radiobutton" id="51">
-                                <visible>false</visible>
-								<visible>Control.IsVisible(5050) + String.IsEqual(ListItem.dbtype,tvshow)</visible>
+								<visible>$EXP[IsTvShowDBTypeNoFallback] + !String.IsEmpty(ListItem.UniqueID(tmdb))</visible>
                                 <include>Bingie_InfoDialog_Button_Default_Defs</include>
                                 <include content="Bingie_InfoDialog_Button_Texture">
                                     <param name="radiotexture" value="dialogs/videoinfo/info/play2.png"/>
                                 </include>
-                                <label>$VAR[PlayOrResumeSeasonEpisodeLabel]</label>
+								<label>$LOCALIZE[208]</label>
                                 <radioposx>17</radioposx>
                                 <radiowidth>22</radiowidth>
 								<radioheight>22</radioheight>
 								<onclick>SetProperty(BaseWindow,1,Home)</onclick>
 								<onclick>Dialog.Close(movieinformation)</onclick>
-								<onclick>AlarmClock(PlayMovie,PlayMedia($ESCINFO[Container(5050).ListItem.FileNameAndPath],resume),00:01,silent)</onclick>
+								<onclick>AlarmClock(PlayShow,RunPlugin(plugin://plugin.video.pov.lite/?mode=smart_play_media&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)]),00:01,silent)</onclick>
                             </control>
+
+							<!-- Play the selected POV season from its first episode. -->
+							<control type="radiobutton" id="54">
+								<visible>[String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.Property(DBTYPE),season)] + !String.IsEmpty(ListItem.UniqueID(tmdb)) + !String.IsEmpty(ListItem.Season)</visible>
+								<include>Bingie_InfoDialog_Button_Default_Defs</include>
+								<include content="Bingie_InfoDialog_Button_Texture">
+									<param name="radiotexture" value="dialogs/videoinfo/info/play2.png"/>
+								</include>
+								<label>$LOCALIZE[208]$INFO[ListItem.Season, $LOCALIZE[20373] ,]</label>
+								<radioposx>17</radioposx>
+								<radiowidth>22</radiowidth>
+								<radioheight>22</radioheight>
+								<onclick>SetProperty(BaseWindow,1,Home)</onclick>
+								<onclick>Dialog.Close(movieinformation)</onclick>
+								<onclick>AlarmClock(PlaySeason,RunPlugin(plugin://plugin.video.pov.lite/?mode=play_media&amp;mediatype=episode&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)]&amp;season=$INFO[ListItem.Season]&amp;episode=1),00:01,silent)</onclick>
+							</control>
 
                             <!-- Play -->
                             <control type="radiobutton" id="80">
                                 <!-- <visible>false</visible> -->
-								<visible>!Control.IsVisible(90) + !$EXP[IsTvShowDBTypeNoFallback]</visible>
+								<visible>!Control.IsVisible(90) + !$EXP[IsTvShowDBTypeNoFallback] + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
                                 <include>Bingie_InfoDialog_Button_Default_Defs</include>
                                 <include content="Bingie_InfoDialog_Button_Texture">
                                     <param name="radiotexture" value="dialogs/videoinfo/info/play2.png"/>
@@ -694,6 +703,91 @@
     <include name="Fade_Rate_Button">
         <animation effect="fade" start="100" end="0" time="250" condition="!String.IsEmpty(Window(Home).Property(showrateoptions)) | Window.IsVisible(1151) | Window.IsVisible(1152)">Conditional</animation>
     </include>
+
+	<include name="PovCastCard">
+		<control type="image">
+			<width>230</width>
+			<height>310</height>
+			<texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultActorPoster.png">$INFO[ListItem.Icon]</texture>
+			<aspectratio scalediffuse="true" align="center" aligny="top">scale</aspectratio>
+			<bordersize>8</bordersize>
+		</control>
+		<control type="image">
+			<visible>$PARAM[focused]</visible>
+			<width>230</width>
+			<height>310</height>
+			<texture background="true" border="12">bingie/border/poster_fo_4.png</texture>
+		</control>
+		<control type="image">
+			<left>8</left>
+			<bottom>10</bottom>
+			<width>214</width>
+			<height>82</height>
+			<texture>diffuse/poster_tag2.png</texture>
+			<colordiffuse>dd000000</colordiffuse>
+		</control>
+		<control type="label">
+			<left>20</left>
+			<right>20</right>
+			<bottom>47</bottom>
+			<height>30</height>
+			<font>Reg22</font>
+			<textcolor>ffffffff</textcolor>
+			<label>$INFO[ListItem.Label]</label>
+		</control>
+		<control type="label">
+			<left>20</left>
+			<right>20</right>
+			<bottom>18</bottom>
+			<height>28</height>
+			<font>Reg20</font>
+			<textcolor>a6ffffff</textcolor>
+			<label>$INFO[ListItem.Label2]</label>
+		</control>
+	</include>
+
+	<include name="PovCastItem">
+		<item>
+			<label>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label]</label>
+			<label2>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label2]</label2>
+			<icon>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Icon]</icon>
+			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=person_data_dialog&amp;query=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label])</onclick>
+			<visible>!String.IsEmpty(Container(50).ListItemAbsolute($PARAM[index]).Label)</visible>
+		</item>
+	</include>
+
+	<include name="PovCastItems">
+		<include content="PovCastItem"><param name="index" value="0" /></include>
+		<include content="PovCastItem"><param name="index" value="1" /></include>
+		<include content="PovCastItem"><param name="index" value="2" /></include>
+		<include content="PovCastItem"><param name="index" value="3" /></include>
+		<include content="PovCastItem"><param name="index" value="4" /></include>
+		<include content="PovCastItem"><param name="index" value="5" /></include>
+		<include content="PovCastItem"><param name="index" value="6" /></include>
+		<include content="PovCastItem"><param name="index" value="7" /></include>
+		<include content="PovCastItem"><param name="index" value="8" /></include>
+		<include content="PovCastItem"><param name="index" value="9" /></include>
+		<include content="PovCastItem"><param name="index" value="10" /></include>
+		<include content="PovCastItem"><param name="index" value="11" /></include>
+		<include content="PovCastItem"><param name="index" value="12" /></include>
+		<include content="PovCastItem"><param name="index" value="13" /></include>
+		<include content="PovCastItem"><param name="index" value="14" /></include>
+		<include content="PovCastItem"><param name="index" value="15" /></include>
+		<include content="PovCastItem"><param name="index" value="16" /></include>
+		<include content="PovCastItem"><param name="index" value="17" /></include>
+		<include content="PovCastItem"><param name="index" value="18" /></include>
+		<include content="PovCastItem"><param name="index" value="19" /></include>
+		<include content="PovCastItem"><param name="index" value="20" /></include>
+		<include content="PovCastItem"><param name="index" value="21" /></include>
+		<include content="PovCastItem"><param name="index" value="22" /></include>
+		<include content="PovCastItem"><param name="index" value="23" /></include>
+		<include content="PovCastItem"><param name="index" value="24" /></include>
+		<include content="PovCastItem"><param name="index" value="25" /></include>
+		<include content="PovCastItem"><param name="index" value="26" /></include>
+		<include content="PovCastItem"><param name="index" value="27" /></include>
+		<include content="PovCastItem"><param name="index" value="28" /></include>
+		<include content="PovCastItem"><param name="index" value="29" /></include>
+	</include>
 
     <!-- play/resume Sxx: ep. xx label -->
     <variable name="PlayOrResumeSeasonEpisodeLabel">

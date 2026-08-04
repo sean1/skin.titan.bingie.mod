@@ -32,11 +32,20 @@
 					<content sortorder="ascending" sortby="playcount" limit="1">$VAR[InfoDialogNextUpContent]</content>
 				</control>
 
-				<!-- Gradient-free fanart behind all More Info content. -->
+				<!-- Full fanart behind all More Info content. -->
 				<include content="BingieSpotlightFullImage">
 					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]]" />
 					<param name="image" value="$VAR[fanartBackground]" />
 				</include>
+				<!-- Darken the title and action column, then fade into the description column. -->
+				<control type="image">
+					<left>0</left>
+					<top>0</top>
+					<width>1050</width>
+					<height>100%</height>
+					<texture background="true">overlays/gradient_videoinfo.png</texture>
+					<colordiffuse>e6000000</colordiffuse>
+				</control>
 
 				<!-- Native Kodi cast row populated by POV metadata -->
 				<control type="label">
@@ -174,7 +183,7 @@
 
 				<!-- Dialog Info Details -->
 				<control type="grouplist">
-                    <width>1500</width>
+                    <width>1760</width>
                     <include>BingieLeftDefs</include>
                     <top>10</top>
                     <orientation>vertical</orientation>
@@ -236,39 +245,42 @@
 					<!-- Plot with a 50%-opaque background for readability over light fanart. -->
 					<control type="group">
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
+						<left>620</left>
 						<top>19</top>
-						<height>120</height>
-						<width>820</width>
+						<height>300</height>
+						<width>1130</width>
 						<control type="image">
 							<left>-10</left>
 							<top>-10</top>
-							<width>840</width>
-							<height>140</height>
+							<width>1150</width>
+							<height>320</height>
 							<texture colordiffuse="80ffffff">colors/color_black.png</texture>
 						</control>
 						<control type="textbox">
 							<visible>[String.IsEmpty(ListItem.Set) + !false] | false</visible>
-							<width>820</width>
-							<height>120</height>
+							<width>1130</width>
+							<height>300</height>
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
 							<label>$VAR[BingieDialogInfoPlot]</label>
+							<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
 						</control>
 						<control type="textbox">
 							<visible>[!String.IsEmpty(ListItem.Set) + !false]</visible>
-							<width>820</width>
-							<height>120</height>
+							<width>1130</width>
+							<height>300</height>
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
 							<label>$VAR[BingieDialogInfoPlot]</label>
+							<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
 						</control>
 					</control>
 
 					<!-- buttons -->
 					<control type="group">
-						<top>33</top>
+						<top>-310</top>
 						<width>550</width>
 						<posx>1</posx>
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), plot) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)">Conditional</animation>
@@ -304,19 +316,6 @@
 							</control>
 						</control>
 
-						<!-- fixed frame -->
-						<control type="image">
-							<visible>Window.IsActive(movieinformation)</visible>
-							<visible>ControlGroup(8000).HasFocus() + !ControlGroup(700).HasFocus()</visible>
-							<animation effect="fade" start="0" end="100" time="0" delay="250">Visible</animation>
-							<width>550</width>
-							<height>65</height>
-							<texture border="10" background="true" colordiffuse="ffffffff">bingie/border/default_button_fo_4.png</texture>
-							<animation effect="slide" end="0,65" time="150" tween="sine" easing="out" condition="Integer.IsGreater(Container(8000).Position, 0)">Conditional</animation>
-							<animation effect="slide" end="0,65" time="150" tween="sine" easing="out" condition="Integer.IsGreater(Container(8000).Position, 1)">Conditional</animation>
-							<animation effect="slide" end="0,65" time="150" tween="sine" easing="out" condition="Integer.IsGreater(Container(8000).Position, 2)">Conditional</animation>
-							<animation effect="slide" end="0,65" time="150" tween="sine" easing="out" condition="Integer.IsGreater(Container(8000).Position, 3)">Conditional</animation>
-						</control>
 					<control type="group">
 						<animation effect="fade" time="200" delay="300">Visible</animation>
 						<visible allowhiddenfocus="true">!String.IsEmpty(Window(Home).Property(showrateoptions)) | Window.IsVisible(1151) | Window.IsVisible(1152)</visible>
@@ -478,7 +477,7 @@
 							<width>550</width>
 							<height>325</height>
                             <orientation>vertical</orientation>
-							<itemgap>0</itemgap>
+							<itemgap>10</itemgap>
                             <onup>noop</onup>
 	                            <ondown condition="Integer.IsGreater(Container(50).NumItems,0)">550</ondown>
 								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0)">noop</ondown>
@@ -672,19 +671,20 @@
         <align>left</align>
         <font>Plots</font>
         <textoffsetx>55</textoffsetx>
-        <textoffsety>8</textoffsety>
-		<textcolor>a6ffffff</textcolor>
-		<focusedcolor>ffffffff</focusedcolor>
+		<textoffsety>0</textoffsety>
+		<radioposy>21</radioposy>
+		<textcolor>ffffffff</textcolor>
+		<focusedcolor>ff000000</focusedcolor>
 		<disabledcolor>ffaaaaaa</disabledcolor>
-		<texturenofocus/>
-        <texturefocus/>
+		<texturenofocus colordiffuse="ccffffff">colors/color_black.png</texturenofocus>
+		<texturefocus>colors/color_white.png</texturefocus>
     </include>
 
     <include name="Bingie_InfoDialog_Button_Texture">
-        <textureradioonfocus colordiffuse="ffffffff">$PARAM[radiotexture]</textureradioonfocus>
-        <textureradioofffocus colordiffuse="ffffffff">$PARAM[radiotexture]</textureradioofffocus>
-        <textureradioonnofocus colordiffuse="a6ffffff">$PARAM[radiotexture]</textureradioonnofocus>
-        <textureradiooffnofocus colordiffuse="a6ffffff">$PARAM[radiotexture]</textureradiooffnofocus>
+		<textureradioonfocus colordiffuse="ff000000">$PARAM[radiotexture]</textureradioonfocus>
+		<textureradioofffocus colordiffuse="ff000000">$PARAM[radiotexture]</textureradioofffocus>
+		<textureradioonnofocus colordiffuse="ffffffff">$PARAM[radiotexture]</textureradioonnofocus>
+		<textureradiooffnofocus colordiffuse="ffffffff">$PARAM[radiotexture]</textureradiooffnofocus>
 		<textureradiooffdisabled colordiffuse="ffaaaaaa">$PARAM[radiotexture]</textureradiooffdisabled>
     </include>
 

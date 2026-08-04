@@ -34,6 +34,27 @@
                 <param name="overlay_texture" value="diffuse/icon_overlay_landscape.png" />
             </include>
         </control>
+		<control type="group">
+			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Rating)</visible>
+			<left>8</left>
+			<top>8</top>
+			<width>58</width>
+			<height>38</height>
+			<control type="image">
+				<width>100%</width>
+				<height>100%</height>
+				<texture colordiffuse="80ffffff">colors/color_black.png</texture>
+			</control>
+			<control type="label">
+				<width>100%</width>
+				<height>100%</height>
+				<align>center</align>
+				<aligny>center</aligny>
+				<font>Reg20</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$INFO[ListItem.Rating]</label>
+			</control>
+		</control>
     </include>
 
 

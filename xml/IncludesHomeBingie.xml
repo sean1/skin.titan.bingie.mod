@@ -24,6 +24,7 @@
             <control type="group">
                 <width>1920</width>
                 <height>525</height>
+				<include>BingieRowTrailerPreviewWindow</include>
                 <include content="BingieSpotlightCornerImage">
                     <param name="visibility" value="!Player.HasVideo" />
                     <param name="image" value="$INFO[Control.GetLabel(99004)]" />

@@ -7,7 +7,7 @@
 
     <include name="NowPlayingBackground">
         <control type="group">
-			<visible>Player.HasMedia + !Control.IsVisible(507)</visible>
+			<visible>Player.HasMedia + !Control.IsVisible(507) + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
 			<include condition="Player.HasVideo">NowPlayingVideoBackground</include>
 
             <!--Background Overlay-->
@@ -20,7 +20,7 @@
 
 	<include name="NowPlayingVideoBackground">
 		<control type="group">
-            <visible>Player.HasVideo</visible>
+			<visible>Player.HasVideo + String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
 
             <!-- black background -->
             <control type="image">
@@ -29,9 +29,34 @@
             </control>
 
 			<control type="videowindow">
+				<visible>String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
 				<include>FullscreenDimensions</include>
 			</control>
 
+		</control>
+	</include>
+
+	<include name="BingieRowTrailerPreviewWindow">
+		<control type="group">
+			<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
+			<top>0</top>
+			<right>0</right>
+			<width>1200</width>
+			<height>675</height>
+			<control type="image">
+				<width>1200</width>
+				<height>675</height>
+				<texture>colors/color_black.png</texture>
+			</control>
+			<control type="videowindow">
+				<width>1200</width>
+				<height>675</height>
+			</control>
+			<control type="image">
+				<width>1200</width>
+				<height>675</height>
+				<texture background="true" colordiffuse="$VAR[BingiePanelColor]" border="20">overlays/bingie_corner.png</texture>
+			</control>
 		</control>
 	</include>
 

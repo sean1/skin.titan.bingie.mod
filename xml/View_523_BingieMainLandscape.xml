@@ -73,12 +73,9 @@
 
     <!-- Container -->
     <include name="Bingie_Main_Landscape_View">
-        <control type="$PARAM[containerType]" id="523">
+		<control type="$PARAM[containerType]" id="523">
 			<visible>!Container.Content(episodes) + !Container.Content(seasons)</visible>
-            <visible>
-                ![String.Contains(Container.FolderPath,mode=navigator.genres) | String.Contains(Container.FolderPath,mode=navigator.search) |
-                String.Contains(Container.FolderPath,mode=search_history)]
-            </visible>
+            <visible>!$EXP[IsPovLiteNavigationMenu]</visible>
             <viewtype label="31018">panel</viewtype>
             <focusedposition>0</focusedposition>
             <top>51</top>
@@ -95,6 +92,9 @@
 			<onleft>9000</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
+			<onclick condition="$EXP[IsMovieOrTvShowListItem]">Action(Info)</onclick>
+			<onclick condition="!$EXP[IsMovieOrTvShowListItem] + ListItem.IsFolder">Container.Update($ESCINFO[ListItem.FolderPath])</onclick>
+			<onclick condition="!$EXP[IsMovieOrTvShowListItem] + !ListItem.IsFolder">RunPlugin($ESCINFO[ListItem.FileNameAndPath])</onclick>
             <itemlayout height="193" width="333">
                 <control type="group">
                     <width>335</width>

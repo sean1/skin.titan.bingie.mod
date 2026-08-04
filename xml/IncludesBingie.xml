@@ -1664,12 +1664,12 @@
             <onback>900</onback>
 
 			<onclick condition="String.IsEmpty(Window(Home).Property(FullImage))">SetProperty(FullImage,1,Home)</onclick>
-            <onclick condition="!String.IsEmpty(Window(Home).Property(spotlightinfo))">Action(info)</onclick>
-            <onclick condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) + !String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">PlayMedia($ESCINFO[Container($PARAM[widgetid]).ListItem.FileNameAndPath],resume)</onclick>
-            <onclick condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) + !String.IsEmpty(Container($PARAM[widgetid]).ListItem.DBID) + String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">SetProperty(ListItem.TVShowID,$INFO[Container($PARAM[widgetid]).ListItem.DBID],Home)</onclick>
-            <onclick condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) + !String.IsEmpty(Container($PARAM[widgetid]).ListItem.DBID) + String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">SetProperty(KeepTVShowID,1,Home)</onclick>
-            <onclick condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) + !String.IsEmpty(Container($PARAM[widgetid]).ListItem.DBID) + String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">ActivateWindow(Videos,videodb://tvshows/titles/$INFO[Container($PARAM[widgetid]).ListItem.DBID]/-2/,return)</onclick>
-            <onclick condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) + String.IsEmpty(Container($PARAM[widgetid]).ListItem.DBID) + String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">ActivateWindow(Videos,$ESCINFO[Container($PARAM[widgetid]).ListItem.FileNameAndPath],return)</onclick>
+            <onclick condition="!String.IsEmpty(Window(Home).Property(spotlightinfo)) |
+				String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) |
+				String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">Action(Info)</onclick>
+            <onclick condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) +
+				!String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) +
+				!String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">PlayMedia($ESCINFO[Container($PARAM[widgetid]).ListItem.FileNameAndPath],resume)</onclick>
 
 			<!-- HOME SPOTLIGHT SCROLLING -->
             <itemlayout width="1920" height="210"></itemlayout>

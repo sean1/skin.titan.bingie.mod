@@ -52,6 +52,14 @@
             <include content="Fixed_Focus_Navigation_Factory1">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>
+			<onclick condition="String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) |
+				String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">Action(Info)</onclick>
+			<onclick condition="![String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) |
+				String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)] +
+				Container($PARAM[widgetid]).ListItem.IsFolder">Container.Update($ESCINFO[Container($PARAM[widgetid]).ListItem.FolderPath])</onclick>
+			<onclick condition="![String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) |
+				String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)] +
+				!Container($PARAM[widgetid]).ListItem.IsFolder">PlayMedia($ESCINFO[Container($PARAM[widgetid]).ListItem.FileNameAndPath],resume)</onclick>
             <include content="$PARAM[widgetStyle]">
                 <param name="widgetid" value="$PARAM[widgetid]" />
                 <param name="widgetTags" value="WidgetTagOverlayAuto" />

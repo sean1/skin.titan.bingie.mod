@@ -143,7 +143,7 @@
     </include>
 
     <include name="ContainerShowInfoOnclick">
-        <onclick condition="String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) | String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow) | String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,episode) | !String.IsEmpty(Container($PARAM[widgetid]).ListItem.AddonName)">Action(info)</onclick>
+		<onclick>Action(Info)</onclick>
     </include>
 
     <include name="CustomBingieWinProps">
@@ -1664,12 +1664,7 @@
             <onback>900</onback>
 
 			<onclick condition="String.IsEmpty(Window(Home).Property(FullImage))">SetProperty(FullImage,1,Home)</onclick>
-            <onclick condition="!String.IsEmpty(Window(Home).Property(spotlightinfo)) |
-				String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) |
-				String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">Action(Info)</onclick>
-            <onclick condition="String.IsEmpty(Window(Home).Property(spotlightinfo)) +
-				!String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,movie) +
-				!String.IsEqual(Container($PARAM[widgetid]).ListItem.DBType,tvshow)">PlayMedia($ESCINFO[Container($PARAM[widgetid]).ListItem.FileNameAndPath],resume)</onclick>
+			<onclick>Action(Info)</onclick>
 
 			<!-- HOME SPOTLIGHT SCROLLING -->
             <itemlayout width="1920" height="210"></itemlayout>

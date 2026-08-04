@@ -92,9 +92,8 @@
 			<onleft>9000</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
-			<onclick condition="$EXP[IsMovieOrTvShowListItem]">Action(Info)</onclick>
-			<onclick condition="!$EXP[IsMovieOrTvShowListItem] + ListItem.IsFolder">Container.Update($ESCINFO[ListItem.FolderPath])</onclick>
-			<onclick condition="!$EXP[IsMovieOrTvShowListItem] + !ListItem.IsFolder">RunPlugin($ESCINFO[ListItem.FileNameAndPath])</onclick>
+			<onclick condition="String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,season) | String.IsEqual(ListItem.DBType,episode)">Action(Info)</onclick>
+			<content target="videos">$INFO[Container.FolderPath]</content>
             <itemlayout height="193" width="333">
                 <control type="group">
                     <width>335</width>
@@ -109,10 +108,16 @@
                     <height>195</height>
                     <control type="image">
                         <!--Panel Normal-->
+						<visible>!$EXP[IsNextPageListItem]</visible>
                         <texture background="true">home/home_matte3.png</texture>
                         <colordiffuse>ffffffff</colordiffuse>
                         <include>thumbsborder_focused</include>
                     </control>
+					<control type="image">
+						<visible>$EXP[IsNextPageListItem]</visible>
+						<texture>colors/color_black.png</texture>
+						<include>thumbsborder_focused</include>
+					</control>
                     <include>ThumbsViewItemBingieLayout</include>
                     <include>Bingie_Main_Landscape_Title</include>
                     <animation effect="zoom" end="103,103" center="auto" time="100" condition="false + false">focus</animation>

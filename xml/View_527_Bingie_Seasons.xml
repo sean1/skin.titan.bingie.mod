@@ -464,6 +464,7 @@
 			<visible>Control.IsVisible(527)</visible>
 				<control type="fixedlist" id="5027">
 				<visible>Control.IsVisible(527) + !Container(527).ListItem.IsParentFolder</visible>
+				<onclick>Action(Info)</onclick>
 				<animation effect="fade" start="100" end="0" condition="Container(5027).IsUpdating">Conditional</animation>
 				<top>-153</top>
 				<posx>781</posx>

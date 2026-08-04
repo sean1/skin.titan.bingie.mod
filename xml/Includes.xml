@@ -98,6 +98,7 @@
 		String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) |
 		String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.Property(DBTYPE),tvshow)
 	</expression>
+	<expression name="IsNextPageListItem">String.StartsWith(ListItem.Label,Next Page)</expression>
 
 
 

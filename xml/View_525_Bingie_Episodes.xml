@@ -544,6 +544,7 @@
                 <!-- main container -->
                 <control type="fixedlist" id="525">
 					<visible>Container.Content(episodes)</visible>
+					<onclick>Action(Info)</onclick>
                     <viewtype label="31827">wide</viewtype>
                     <top>-153</top>
                     <posx>781</posx>

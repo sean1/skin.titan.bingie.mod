@@ -120,16 +120,6 @@
 					<usecontrolcoords>true</usecontrolcoords>
 					<orientation>vertical</orientation>
 					<!-- Media File Location -->
-				    <control type="label">
-					  <description>Show Media File Path BingiePoster/List/Panel</description>
-						<visible>false</visible>
-					    <top>34</top>
-						<height>12</height>
-						<width>100%</width>
-						<font>Plots</font>
-						<align>left</align>
-				       <label>$INFO[ListItem.Path]</label>
-		      	    </control>
 					<!-- Sublabel -->
 					<control type="label" id="823">
 						<visible>!String.IsEmpty(Control.GetLabel(823))</visible>

@@ -97,17 +97,6 @@
 						<scroll>false</scroll>
 					</control>
 					<!-- plot -->
-					<control type="textbox">
-						<animation effect="slide" end="0,-70" time="300" condition="VideoPlayer.Content(Movies)">Conditional</animation>
-						<height min="0" max="115">auto</height>
-						<width max="680">auto</width>
-						<label>$INFO[VideoPlayer.Plot]</label>
-						<textcolor>b3ffffff</textcolor>
-						<align>justify</align>
-						<font>Reg28</font>
-						<visible>!String.IsEmpty(VideoPlayer.Plot)</visible>
-						<visible>false</visible>
-					</control>
 				</control>
 			</control>
 
@@ -124,7 +113,6 @@
 					<effect type="fade" start="100" end="0" delay="0" time="350" reversible="false"/>
 				</animation>
                 <include condition="!false + !true">OSDPanelModern</include>
-                <include condition="false">OSDPanelModernSlim</include>
                 <include condition="true">OSDPanelBingie</include>
 				<include condition="true">OSDInfoPanelBingie2</include>
             </control>
@@ -144,7 +132,6 @@
                 <visible>!true + false</visible>
                 <visible>![Player.Paused + false + false]</visible>
                 <animation end="60,300" time="0" effect="slide" condition="true">Conditional</animation>
-                <animation end="0,0" time="0" effect="slide" condition="!true">Conditional</animation>
                 <include>HideOsdConditions</include>
             </control>
 

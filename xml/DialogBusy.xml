@@ -4,7 +4,6 @@
     <controls>
 		<control type="group">
             <visible>!Window.IsVisible(startup)</visible>
-			<include condition="false">DialogOverlayExtraBusy</include>
 		</control>
         <control type="group">
             <visible>!Window.IsVisible(startup)</visible>

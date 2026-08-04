@@ -10,17 +10,6 @@
             <include>animation_view_change</include>
 
 			<!-- Media File Location -->
-			<control type="label">
-			<description>Show Media File Path BingiePoster/List/Panel</description>
-				<visible>false</visible>
-				<posx>35</posx>
-				<posy>950</posy>
-				<posy>170</posy>
-				<width>100%</width>
-				<height>30</height>
-				<font>font13</font>
-				<label>$INFO[ListItem.Path]</label>
-			</control>
 
 
 			<!-- Fanart Image Added to View-->
@@ -36,8 +25,6 @@
                 <randomize>true</randomize>
                 <loop>yes</loop>
 				<!-- Background Animation -->
-                <animation effect="zoom" start="110" end="130" center="auto" time="12000" tween="cubic" easing="inout" pulse="true" condition="false">Conditional</animation>
-                <animation effect="slide" start="-10,-10" end="10,10" time="8000" tween="cubic" easing="inout" pulse="true" condition="false">Conditional</animation>
             </control>
 
 
@@ -48,15 +35,6 @@
             <height>736</height>
 
 			<!-- Background Panel-->
-			<control type="image">
-				<posx>50</posx>
-				<width>1820</width>
-				<height>742</height>
-				<texture border="15">diffuse/bgpanel.png</texture>
-				<colordiffuse>$VAR[ViewDetailsPanelColor]</colordiffuse>
-                <visible>false</visible>
-                <visible>Integer.IsGreater(Container.NumItems,0)</visible>
-			</control>
 
 			 <!--Info-->
             <control type="grouplist">
@@ -256,7 +234,6 @@
                 <width>1880</width>
                 <height>722</height>
                 <onleft>9000</onleft>
-                <onright condition="false">6000</onright>
                 <onright condition="!false">60</onright>
                 <onup>50</onup>
                 <ondown>50</ondown>

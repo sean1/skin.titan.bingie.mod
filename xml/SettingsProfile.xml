@@ -12,7 +12,6 @@
         <!--Header-->
         <include>Header</include>
          <!--Footer-->
-        <include condition="!true">Footer</include>
 		<!--BINGIE Version-->
         <include>BingieLogo</include>
 

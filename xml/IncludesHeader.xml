@@ -73,20 +73,9 @@
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(77551) + !Control.IsVisible(88888) + !Control.IsVisible(88883)</visible>
             <visible>!Control.IsVisible(525) | !Control.IsVisible(527)</visible>
             <!-- header panel -->
-            <control type="image">
-				<posx>0</posx>
-				<posy>-5</posy>
-				<width>100%</width>
-				<height>112</height>
-				<texture border="5">diffuse/panel2.png</texture>
-				<colordiffuse>None</colordiffuse>
-                <visible>true + !true</visible>
-                <visible>![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]]</visible>
-			</control>
 
             <!-- Header Logo left -->
             <control type="group">
-                <include condition="false">HeaderLogo</include>
                 <include>animation_fade_visible</include>
                 <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882)]</visible>
                 <visible>[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]</visible>
@@ -175,50 +164,6 @@
 
     </include>
 
-	<include name="ClearLogo">
-		<!--clearlogo top right-->
-		<control type="image" id="881">
-			<right>60</right>
-			<top>10</top>
-			<width>335</width>
-			<height>130</height>
-			<fadetime>600</fadetime>
-			<aspectratio align="right" aligny="center">keep</aspectratio>
-			<texture background="true">$VAR[ListItemClearLogo]</texture>
-			<visible>!String.IsEmpty(Control.GetLabel(881)) + false</visible>
-            <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(88888)</visible>
-			<animation type="Conditional" condition="Window.IsActive(volumebar)">
-                <effect type="slide" start="0,0" end="-120,0" time="400" tween="cubic" easing="inout" delay="0" />
-            </animation>
-		</control>
-
-		<!--clearlogo top left-->
-		<control type="image" id="882">
-			<left>60</left>
-			<top>10</top>
-			<width>335</width>
-			<height>130</height>
-			<fadetime>600</fadetime>
-			<aspectratio align="left" aligny="center">keep</aspectratio>
-			<texture background="true">$VAR[ListItemClearLogo]</texture>
-			<visible>!String.IsEmpty(Control.GetLabel(882)) + false</visible>
-            <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(88888)</visible>
-		</control>
-
-		<!--clearlogo top center-->
-		<control type="image" id="883">
-			<left>792</left>
-			<top>10</top>
-			<width>335</width>
-			<height>130</height>
-			<fadetime>600</fadetime>
-			<aspectratio align="center" aligny="center">keep</aspectratio>
-			<texture background="true">$VAR[ListItemClearLogo]</texture>
-            <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Control.IsVisible(88888)</visible>
-			<visible>!String.IsEmpty(Control.GetLabel(883)) + false</visible>
-		</control>
-
-	</include>
 
 	<include name="TimeInfo">
         <control type="group">

@@ -8,12 +8,6 @@
         <animation time="200" effect="fade">Visible</animation>
         <animation time="200" effect="fade">Hidden</animation>
     </include>
-    <include name="Visible_Fade">
-        <animation effect="fade" end="100" time="200">WindowOpen</animation>
-        <animation effect="fade" start="100" end="0" time="200">WindowClose</animation>
-        <animation effect="fade" end="100" time="200">Visible</animation>
-        <animation effect="fade" start="100" end="0" time="200">Hidden</animation>
-    </include>
 
     <include name="animation_window_open_close">
         <!--Fade Open/Close normal-->
@@ -44,18 +38,8 @@
     </include>
 
     <!-- Background Animation -->
-    <include name="BackgroundAnimation">
-        <animation effect="zoom" start="110" end="130" center="auto" time="12000" tween="cubic" easing="inout" pulse="true" condition="false">Conditional</animation>
-        <animation effect="slide" start="-10,-10" end="10,10" time="8000" tween="cubic" easing="inout" pulse="true" condition="false">Conditional</animation>
-    </include>
 
     <!-- Menu Animations -->
-    <include name="Circular_Menu_Animations">
-        <animation type="Conditional" condition="$EXP[IsMainMenuOpened]">
-            <effect type="slide" start="0" end="600" time="325" delay="0" tween="cubic" easing="inout" />
-            <effect type="fade" start="0" end="100" time="325" delay="0" tween="cubic" easing="inout" />
-        </animation>
-    </include>
     <include name="No_Circular_Menu_Animations">
         <animation effect="slide" start="0" end="280" time="325" delay="0" tween="cubic" easing="inout" condition="$EXP[IsMainMenuOpened] + [[$EXP[IsBingieListsActive] | Window.IsActive(1119)] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + [!String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)] | String.IsEmpty(Window(Home).Property(LastFocusWidgetPos))]]">Conditional</animation>
         <animation effect="slide" start="0" end="280" time="325" delay="0" tween="cubic" easing="inout" condition="$EXP[IsMainMenuOpened] + [Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + !String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + !String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)">Conditional</animation>
@@ -63,16 +47,8 @@
 		<animation effect="slide" start="0" end="0" time="200" delay="0" tween="sine" easing="inout" condition="[Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + !String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + !String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)">Conditional</animation>
     </include>
 
-	<include name="No_Circular_Menu_AnimationsOriginal">
-        <animation effect="slide" start="0" end="260" time="325" delay="0" tween="cubic" easing="inout" condition="$EXP[IsMainMenuOpened] + [[$EXP[IsBingieListsActive] | Window.IsActive(1119)] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + [!String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)] | String.IsEmpty(Window(Home).Property(LastFocusWidgetPos))]]">Conditional</animation>
-        <animation effect="slide" start="0" end="360" time="325" delay="0" tween="cubic" easing="inout" condition="$EXP[IsMainMenuOpened] + [Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + !String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + !String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)">Conditional</animation>
-        <animation effect="slide" start="0" end="-100" time="200" delay="0" tween="sine" easing="inout" condition="[Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + !String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + !String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)">Conditional</animation>
-    </include>
 
 
-    <include name="KeepMenuIndicatorVisible">
-        <animation effect="slide" start="0" end="100" delay="300" reversible="false" condition="[Window.IsActive(Home) | $EXP[IsBingieHubsActive]] + !String.IsEmpty(Window(Home).Property(LastFocusWidgetPos)) + !String.IsEqual(Window(Home).Property(LastFocusWidgetPos), 1)">Conditional</animation>
-    </include>
 
     <!-- Title Animations -->
     <include name="Bingie_TextTitle_Adjust_Genre_Anim">
@@ -116,23 +92,7 @@
         </animation>
     </include>
 
-    <include name="animation_fade_visible_hidden_delayed">
-        <!--Visible/Hidden Aniamtion-->
-        <animation time="125" effect="fade" delay="0">Visible</animation>
-        <animation time="125" effect="fade" delay="300">Hidden</animation>
-    </include>
 
-    <include name="animation_dialog_button">
-        <!--Shutdown Menu Open/Close-->
-        <animation type="WindowOpen">
-            <effect type="slide" start="0,200" end="0,-490" tween="cubic" easing="inout" time="550" />
-            <effect type="fade" start="0" end="100" tween="sine" easing="inout" time="400" />
-        </animation>
-        <animation type="WindowClose">
-            <effect type="slide" start="0,-490" end="0,200" tween="cubic" easing="inout" time="550" />
-            <effect type="fade" start="100" end="0" tween="sine" easing="out" time="350" />
-        </animation>
-    </include>
     <include name="animation_dialog_button_modern">
         <!--Shutdown Menu Open/Close-->
         <animation type="WindowOpen">
@@ -177,28 +137,14 @@
         </animation>
     </include>
 
-    <include name="SettingsFadeEffect">
-        <animation effect="fade" time="100" delay="200">Visible</animation>
-        <animation effect="fade" time="50">Hidden</animation>
-    </include>
 
-    <include name="backgroundfade">
-        <animation effect="fade" time="150">Visible</animation>
-        <animation effect="fade" time="150">Hidden</animation>
-    </include>
 
-    <include name="Frame_Scrolling_Fade">
-        <animation effect="fade" start="100" end="80" time="200" condition="Container.Scrolling | Container.OnScrollNext | Container.OnScrollPrevious">Conditional</animation>
-    </include>
 
     <!-- default fade animation -->
     <include name="Default_Visible_Fade">
         <animation effect="fade" time="350">Visible</animation>
     </include>
 
-    <include name="SearchSuggestionsAnim">
-        <animation effect="slide" start="0" end="0,-514" time="450" tween="sine" easing="inout" condition="Control.HasFocus(1007) | Control.IsVisible(500)">Conditional</animation>
-    </include>
 
     <include name="WidgetsBaseAnimation">
         <animation time="100" effect="fade" start="0" end="100" reversible="false" easing="inout">Visible</animation>
@@ -287,26 +233,6 @@
 		</animation>
 	</include>
 
-	<include name="Animation_Right_Home_2">
-		<animation type="Visible" reversible="false">
-		  <effect type="fade" start="0" end="100" time="500" delay="400" tween="sine" easing="out" />
-		  <effect type="slide" start="-150" end="0" time="500" delay="200" tween="cubic" easing="out" />
-		</animation>
-	</include>
 
-	<include name="OSD_Animation">
-		<animation type="WindowOpen">
-			<effect type="slide" start="0,-400" end="0,0" tween="cubic" easing="out" delay="0" time="450" reversible="false"/>
-			<effect type="fade" start="0" end="100" delay="0" time="350" reversible="false"/>
-		</animation>
-		<animation type="Visible">
-			<effect type="slide" start="0,-400" end="0,0" tween="cubic" easing="out" delay="0" time="450" reversible="false"/>
-			<effect type="fade" start="0" end="100" delay="0" time="350" reversible="false"/>
-		</animation>
-		<animation type="Hidden">
-			<effect type="slide" start="0,0" end="0,-400" tween="cubic" easing="out" delay="0" time="450" reversible="false"/>
-			<effect type="fade" start="100" end="0" delay="0" time="350" reversible="false"/>
-		</animation>
-	</include>
 
 </includes>

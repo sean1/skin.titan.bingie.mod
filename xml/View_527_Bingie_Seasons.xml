@@ -11,7 +11,6 @@
 
             <include condition="!false">Thumbs_Up_Down_Details_Row</include>
             <include condition="!false">Percentage_Rating_Details_Row_Seasons</include>
-            <include condition="false">IMDB_RT_Details_Row</include>
 
             <!-- Year -->
             <control type="label" id="611111">
@@ -26,7 +25,6 @@
                 <include>Default_Visible_Fade</include>
             </control>
 
-            <include condition="false">MPAA_Details_RowNew</include>
 			<include condition="!false + !false">MPAA_Details_Row</include>
 			<include condition="false + !false">MPAA_Details_RowUS</include>
 			<include condition="false + false">MPAA_Details_RowUS_Fixed_Size</include>
@@ -77,11 +75,6 @@
     </variable>
 
 	<!-- Variable for sorting out Season or TV Show Landscape -->
-	<variable name="View527SeasonOrShowLandscape">
-		<value condition="!String.IsEmpty(ListItem.Art(season.landscape))">$INFO[ListItem.Art(season.landscape)]</value>
-		<value condition="!String.IsEmpty(ListItem.Art(landscape))">$INFO[ListItem.Art(landscape)]</value>
-		<value>$INFO[ListItem.Art(tvshow.fanart)]</value>
-	</variable>
 
 	<!-- Total episode/s -->
     <variable name="View527TotalEpisodes">
@@ -211,61 +204,6 @@
     </include>
 
 	<!-- view527 container item details focused with air date -->
-    <include name="View_527_Details_Defs_Focus_2">
-        <!-- details -->
-        <control type="group">
-            <animation effect="fade" start="100" end="60" time="150" condition="!Control.HasFocus(5027) + !Control.HasFocus(60)">Conditional</animation>
-            <left>495</left>
-            <height>episodes_thumb_height</height>
-            <width>600</width>
-            <!-- item title -->
-            <control type="label">
-                <top>15</top>
-                <width>100%</width>
-                <aligny>center</aligny>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg30</font>
-                <textcolor>ffffffff</textcolor>
-                <label>[B]$VAR[View527MainLabel][/B]</label>
-                <scroll>false</scroll>
-            </control>
-            <!-- item sublabel -->
-            <control type="label">
-                <top>62</top>
-                <width>100%</width>
-                <aligny>center</aligny>
-                <height>30</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>b3ffffff</textcolor>
-                <label>$VAR[View527SubLabel,$LOCALIZE[320150]: ]</label>
-            </control>
-            <!-- plot -->
-            <control type="textbox">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <top>103</top>
-                <height max="105">auto</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>b3ffffff</textcolor>
-                <label>$VAR[ViewsPlotWithOutline]</label>
-                <autoscroll delay="7000" time="3000" repeat="4000">!true + Control.HasFocus(5027)</autoscroll>
-            </control>
-            <!-- duration -->
-            <control type="label">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <bottom>20</bottom>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>73ffffff</textcolor>
-                <label>$INFO[ListItem.Duration(mins),(,m)]</label>
-            </control>
-        </control>
-    </include>
 
 	<!-- view527 container item details -->
     <include name="View_527_Details_Defs">
@@ -314,61 +252,6 @@
     </include>
 
 	<!-- view527 container item details with air date -->
-    <include name="View_527_Details_Defs_2">
-        <!-- details -->
-        <control type="group">
-            <animation effect="fade" start="100" end="60" time="150" condition="!Control.HasFocus(5027) + !Control.HasFocus(60)">Conditional</animation>
-            <left>495</left>
-            <height>episodes_thumb_height</height>
-            <width>600</width>
-            <!-- item title -->
-            <control type="label">
-                <top>15</top>
-                <width>100%</width>
-                <aligny>center</aligny>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg30</font>
-                <textcolor>ffffffff</textcolor>
-                <label>[B]$VAR[View527MainLabel][/B]</label>
-                <scroll>false</scroll>
-            </control>
-            <!-- item sublabel -->
-            <control type="label">
-                <top>62</top>
-                <width>100%</width>
-                <aligny>center</aligny>
-                <height>30</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>b3ffffff</textcolor>
-                <label>$VAR[View527SubLabel,$LOCALIZE[320150]: ]</label>
-            </control>
-            <!-- plot -->
-            <control type="textbox">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <top>103</top>
-                <height max="105">auto</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>b3ffffff</textcolor>
-                <label>$VAR[ViewsPlotWithOutline]</label>
-                <autoscroll>false</autoscroll>
-            </control>
-            <!-- duration -->
-            <control type="label">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <bottom>20</bottom>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>73ffffff</textcolor>
-                <label>$INFO[ListItem.Duration(mins),(,m)]</label>
-            </control>
-        </control>
-    </include>
 
 	<!-- View 527 SxxExx format -->
     <variable name="View527SeasonEpisodeFormat">
@@ -379,46 +262,20 @@
     </variable>
 
 	<!-- item sublabel - premiered for episodes / year mpaa totalepisodes (unwatched) for seasons -->
-    <variable name="View527SubLabel">
-        <value condition="[Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)] + !String.IsEmpty(ListItem.Premiered)">$INFO[ListItem.Premiered]</value>
-        <value condition="[Container(5027).Content(episodes) | String.IsEqual(Container(5027).ListItem.DBTYPE,season)]">$VAR[View527SeasonTotalEpisodesInfoLabel]</value>
-    </variable>
 
 	<!-- year mpaa totalepisodes (unwatched) format for seasons -->
-    <variable name="View527SeasonTotalEpisodesInfoLabel">
-        <value condition="!String.IsEmpty(ListItem.Property(TotalEpisodes)) + Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0) + !String.IsEqual(ListItem.Property(UnWatchedEpisodes),ListItem.Property(TotalEpisodes))">$INFO[ListItem.Year,,   ]$INFO[ListItem.MPAA,,   ]$INFO[ListItem.Property(TotalEpisodes),, $LOCALIZE[20360] ]$INFO[ListItem.Property(UnWatchedEpisodes),(, $LOCALIZE[16101])]</value>
-        <value condition="!String.IsEmpty(ListItem.Property(TotalEpisodes))">$INFO[ListItem.Year,,   ]$INFO[ListItem.MPAA,,   ]$INFO[ListItem.Property(TotalEpisodes),, $LOCALIZE[20360]]</value>
-    </variable>
 
 	<!-- height for left list without fanart thumb -->
 	<include name="HeightWithoutThumb">
 		<height>650</height>
 	</include>
 	<!-- height for left list with fanart thumb -->
-	<include name="HeightWithThumb">
-		<height>390</height>
-	</include>
 
 	<include name="View_527_Seasons">
 		<control type="group">
 			<visible>Control.IsVisible(527) + Container.Content(seasons)</visible>
 
 			<!-- Fanart Image Added to View-->
-            <control type="multiimage">
-				<visible>false</visible>
-                <include>FullscreenDimensions</include>
-                <texture>diffuse/panel2.png</texture>
-			    <colordiffuse>26ffffff</colordiffuse>
-				<imagepath background="true">$VAR[backgroundVar]</imagepath>
-                <aspectratio>scale</aspectratio>
-                <fadetime>350</fadetime>
-                <include>fanartSpeed</include>
-                <randomize>true</randomize>
-                <loop>yes</loop>
-			<!-- Background Animation -->
-                <animation effect="zoom" start="110" end="130" center="auto" time="12000" tween="cubic" easing="inout" pulse="true" condition="false">Conditional</animation>
-                <animation effect="slide" start="-10,-10" end="10,10" time="8000" tween="cubic" easing="inout" pulse="true" condition="false">Conditional</animation>
-            </control>
 
 			<!-- Hidden Label for Landscape/Poster choice -->
 			<control type="label" id="22345">
@@ -484,19 +341,6 @@
                 </control>
 
 			<!-- Season Landscape -->
-			<control type="image">
-				<include>Animation_Right_Bingie_2</include>
-				<visible>String.Contains(Control.GetLabel(22345),landscape)</visible>
-				<visible>false</visible>
-				<visible>yes</visible>
-				<top>23</top>
-				<left>15</left>
-				<width>565</width>
-				<height>318</height>
-				<!-- <bottom>60</bottom> -->
-				<aspectratio aligny="center" align="center">scale</aspectratio>
-				<texture background="true">$VAR[View527SeasonOrShowLandscape]</texture>
-			</control>
 
 			<!-- Blank image for gap -->
 			<control type="image">
@@ -518,7 +362,6 @@
 				<left>16</left>
 				<top>9</top>
 				<width>565</width>
-				<include condition="false">HeightWithThumb</include>
 				<include condition="!false">HeightWithoutThumb</include>
 				<preloaditems>1</preloaditems>
 				<orientation>vertical</orientation>
@@ -638,27 +481,16 @@
                 <include>ScrollTime</include>
 				<focusedlayout width="1050" height="280">
                         <!-- panel/border -->
-                        <control type="image">
-                            <visible>!true</visible>
-                            <visible>Control.HasFocus(5027)</visible>
-                            <height>episodes_thumb_height</height>
-                            <width>episodes_thumb_width</width>
-                            <texture border="5">diffuse/wide.png</texture>
-                            <colordiffuse>ffffffff</colordiffuse>
-                            <include>thumbsborder_focused</include>
-                        </control>
                         <!-- landscape content -->
                         <include>View_527_Landscape_Defs</include>
                         <!-- details content -->
                         <include condition="!false">View_527_Details_Defs_Focus</include>
-						<include condition="false">View_527_Details_Defs_Focus_2</include>
                 </focusedlayout>
 				<itemlayout width="1050" height="280">
                         <!-- landscape content -->
                         <include>View_527_Landscape_Defs</include>
                         <!-- details content -->
                         <include condition="!false">View_527_Details_Defs</include>
-						<include condition="false">View_527_Details_Defs_2</include>
                     </itemlayout>
 				<content target="videos" sortby="episode" sortorder="ascending">$INFO[Container(527).ListItem.FolderPath]</content>
 				</control>
@@ -687,7 +519,6 @@
                     <width>10</width>
                     <height>100%</height>
                     <onup>60</onup>
-                    <ondown condition="false">6000</ondown>
                     <onleft>5027</onleft>
                     <animation effect="fade" start="0" end="100" time="400" condition="[Control.HasFocus(60) | false] + !Control.IsVisible(6002)">Conditional</animation>
                     <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | false] | Control.IsVisible(6002)">Conditional</animation>

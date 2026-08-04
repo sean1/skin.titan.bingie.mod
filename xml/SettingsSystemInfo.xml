@@ -227,7 +227,6 @@
 		</control>
 
 		<!--Footer-->
-        <include condition="!true">Footer</include>
 		<!--BINGIE Version-->
         <include>BingieLogo</include>
 	</controls>

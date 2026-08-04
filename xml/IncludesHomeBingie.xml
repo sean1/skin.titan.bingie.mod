@@ -27,7 +27,6 @@
                     <fadetime>350</fadetime>
                     <texture background="true">$VAR[BingieSpotlightBackground]</texture>
                     <aspectratio aligny="top">scale</aspectratio>
-                    <include condition="false">BackgroundAnimation</include>
                     <animation effect="fade" start="0" end="100" delay="0" time="1200">Visible</animation>
                 </control>
 				<!-- SPOTLIGHT DIFFUSE VIGNETTE -->
@@ -233,30 +232,6 @@
                     </control>
 
                     <!-- TV shows Seasons and Episodes -->
-                    <control type="grouplist">
-					<visible>!$EXP[IsCategoryDBType]</visible>
-					<visible>!true</visible>
-					<visible>!$EXP[IsMainMenuOpened]</visible>
-                        <visible>$EXP[IsEpisodeDBType]</visible>
-                        <include>Default_Visible_Fade</include>
-                        <orientation>vertical</orientation>
-                        <top>0</top>
-						<height>200</height>
-						<width>650</width>
-						<itemgap>20</itemgap>
-						<usecontrolcoords>true</usecontrolcoords>
-                        <!--Season/Episode label-->
-                        <control type="label">
-                            <height>50</height>
-                            <width>650</width>
-                            <align>left</align>
-							<posx>-6</posx>
-                            <aligny>center</aligny>
-                            <font>bold29</font>
-	<textcolor>ffffffff</textcolor>
-                            <label>$VAR[BingieEpisodeInfoHeader]</label>
-                        </control>
-                    </control>
 
 					<!-- TV shows Seasons and Episodes for Continue Watching -->
                     <control type="grouplist">
@@ -349,17 +324,6 @@
 								<texture>bingie/top250.png</texture>
 						</control>
 						<!-- Spotlight Details Row Top250 White Icon -->
-						<control type="image">
-								<visible>false</visible>
-								<visible>!String.IsEmpty(Control.GetLabel(8231))</visible>
-								<posy>5</posy>
-								<left>1</left>
-								<height>50</height>
-								<width>50</width>
-								<aspectratio>keep</aspectratio>
-								<colordiffuse>ffffffff</colordiffuse>
-								<texture>bingie/top2501.png</texture>
-						</control>
 						<!-- Spotlight Text Label Top250 -->
 						<control type="label" id="8231">
 							<visible>!$EXP[IsEpisodeDBType]</visible>

@@ -7,16 +7,6 @@
 		<control type="group">
 			<!--Footer Background-->
 			<control type="group">
-				<control type="image">
-					<posx>0</posx>
-					<bottom>0</bottom>
-					<width>100%</width>
-					<height>112</height>
-					<texture border="5">diffuse/panel2.png</texture>
-					<colordiffuse>None</colordiffuse>
-					<visible>!true</visible>
-					<visible>!Window.IsActive(Home)</visible>
-				</control>
 			</control>
 
             <!-- codec info normal-->
@@ -46,22 +36,6 @@
 		</control>
 	</include>
 
-	<include name="PowerButton">
-		<control type="button" id="2">
-            <description>powerbutton</description>
-            <width>60</width>
-            <height>60</height>
-            <onup>900</onup>
-            <onright>900</onright>
-            <onleft>900</onleft>
-            <texturefocus colordiffuse="cce0e0e0">common/shutdown2.png</texturefocus>
-            <texturenofocus colordiffuse="white">common/shutdown2.png</texturenofocus>
-            <onclick>ActivateWindow(111)</onclick>
-            <onfocus>ActivateWindow(111)</onfocus>
-            <include>animation_fade_visible_hidden</include>
-            <visible allowhiddenfocus="true">$PARAM[visibility]</visible>
-        </control>
-	</include>
 
 	<variable name="rating_value_imdb_2">
         <value condition="!String.IsEmpty(ListItem.RatingAndVotes(imdb))">$INFO[ListItem.RatingAndVotes(imdb)]</value>
@@ -265,24 +239,6 @@
 	<!-- Emmy Flag Horizontal -->
 
 	<!-- RT Certified Flag Horizontal -->
-    <include name="RT_Certified_Hor">
-        <control type="group">
-	            <visible>!String.IsEmpty(Control.GetLabel(2777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <width>72</width>
-                <height>74</height>
-                <right>0</right>
-                <bottom>0</bottom>
-                <include>Default_Visible_Fade</include>
-            <control type="image">
-				<width>72</width>
-                <height>52</height>
-				<bottom>15</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture>$PARAM[texture]</texture>
-			</control>
-		</control>
-    </include>
 
     <!-- Monochrome/Color Flags Includes -->
     <include name="MetaCritic_Color_Hor">
@@ -291,11 +247,6 @@
         </include>
     </include>
 
-    <include name="MetaCritic_Monochrome_Hor">
-        <include content="MetaCritic_Hor">
-            <param name="texture" value="flags/white/metacritic.png" />
-        </include>
-    </include>
 
 
 
@@ -305,11 +256,6 @@
         </include>
     </include>
 
-    <include name="TVDB_Monochrome_Hor">
-        <include content="TVDB_Hor">
-            <param name="texture" value="flags/white/tvdbtrans.png" />
-        </include>
-    </include>
 
     <include name="TMDB_Color_Hor">
         <include content="TMDB_Hor">
@@ -317,11 +263,6 @@
         </include>
     </include>
 
-    <include name="TMDB_Monochrome_Hor">
-        <include content="TMDB_Hor">
-            <param name="texture" value="flags/white/tmdbtp.png" />
-        </include>
-    </include>
 
     <include name="IMDB_Color_Hor">
         <include content="IMDB_Hor">
@@ -329,11 +270,6 @@
         </include>
     </include>
 
-    <include name="IMDB_Monochrome_Hor">
-        <include content="IMDB_Hor">
-            <param name="texture" value="flags/white/imdb_logo.png" />
-        </include>
-    </include>
 
     <include name="IMDB_Top250_Color_Hor">
         <include content="IMDB_Top250_Hor">
@@ -341,11 +277,6 @@
         </include>
     </include>
 
-    <include name="IMDB_Top250_Monochrome_Hor">
-        <include content="IMDB_Top250_Hor">
-            <param name="texture" value="flags/white/imdb_logo_250.png" />
-        </include>
-    </include>
 
 
 
@@ -353,17 +284,7 @@
 
 
 
-	<include name="RT_Certified_Color_Hor">
-        <include content="RT_Certified_Hor">
-            <param name="texture" value="flags/certified.png" />
-        </include>
-    </include>
 
-	<include name="RT_Certified_Monochrome_Hor">
-        <include content="RT_Certified_Hor">
-            <param name="texture" value="flags/white/cfwhite.png" />
-        </include>
-    </include>
 
     <include name="Footer_RatingAndStudio_Hor">
         <control type="group">
@@ -376,7 +297,6 @@
                 <height>66</height>
                 <itemgap>10</itemgap>
                 <align>right</align>
-                <include condition="false">Rating_Monochrome_Hor</include>
                 <include condition="!false">Rating_Color_Hor</include>
             </control>
         </control>
@@ -485,105 +405,6 @@
         <include condition="false + true">MetaCritic_Color_Hor</include>
     </include>
 
-    <include name="Rating_Monochrome_Hor">
-        <include condition="false + true">IMDB_Top250_Monochrome_Hor</include>
-        <include condition="false + true">IMDB_Monochrome_Hor</include>
-				<!--RT Critics Fresh White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-				<visible>false + true</visible>
-				<width>46</width>
-                <height>59</height>
-				<bottom>0</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/whiteRTcritics.png</texture>
-				</control>
-
-				<!--RT Critics Certified Fresh White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <visible>false + true</visible>
-				<width>48</width>
-                <height>59</height>
-				<bottom>0</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/cfwhite2.png</texture>
-				</control>
-
-				<!--RT Critics Rotten White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777121)) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-                <visible>false + true</visible>
-				<width>46</width>
-                <height>62</height>
-				<bottom>0</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/whiteRTcriticsRotten.png</texture>
-				</control>
-
-				<!-- RT critics label -->
-				<control type="label" id="2777121">
-				<visible>!String.IsEmpty(Control.GetLabel(2777121))</visible>
-                <visible>false + true</visible>
-				<posy>2</posy>
-				<width>auto</width>
-                <height></height>
-                <aligny>center</aligny>
-                <fadetime>300</fadetime>
-                <font>footer</font>
-                <textcolor>ffffffff</textcolor>
-				<shadowcolor>None</shadowcolor>
-                <label>$VAR[RottenTomatoesRatingValue,,  ]</label>
-				</control>
-
-				<!--RT Audience Fresh White-->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-                <visible>!String.IsEmpty(Control.GetLabel(3777122)) + Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-				<visible>false + true</visible>
-				<width>37</width>
-                <height>57</height>
-				<bottom>0</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/audiencefreshwhite1.png</texture>
-				</control>
-
-				<!--RT Audience Rotten White-->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-                <visible>!String.IsEmpty(Control.GetLabel(3777122)) + !Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-				<visible>false + true</visible>
-				<width>56</width>
-                <height>64</height>
-				<bottom>0</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/audiencerottenwhite1.png</texture>
-				</control>
-
-				<!-- RT Audience label-->
-				<control type="label" id="3777122">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(3777122))</visible>
-                <visible>false + true</visible>
-				<posy>2</posy>
-				<width>auto</width>
-				<height></height>
-                <aligny>center</aligny>
-				<fadetime>300</fadetime>
-                <font>footer</font>
-                <textcolor>ffffffff</textcolor>
-				<shadowcolor>None</shadowcolor>
-                <label>$VAR[RottenTomatoesUserRatingValue,,  ]</label>
-				</control>
-        <include condition="false + true">TVDB_Monochrome_Hor</include>
-        <include condition="false + true">TMDB_Monochrome_Hor</include>
-        <include condition="false + true">MetaCritic_Monochrome_Hor</include>
-    </include>
 
 
 
@@ -612,17 +433,6 @@
 				</control>
 
 				<!--Top250 White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777119))</visible>
-				<visible>false</visible>
-				<visible>false + false</visible>
-				<width>78</width>
-                <height>42</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/top250white.png</texture>
-				</control>
 
 				<control type="label" id="2777119">
 				<visible>!String.IsEmpty(Control.GetLabel(2777119))</visible>
@@ -652,18 +462,6 @@
 				</control>
 
 				<!--imdb White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777120))</visible>
-                <visible>false</visible>
-				<visible>!false</visible>
-				<visible>false + false</visible>
-				<width>78</width>
-                <height>42</height>
-				<bottom>20</bottom>
-				<aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/imdb1.png</texture>
-				</control>
 
 				<control type="label" id="2777120">
 				<visible>!String.IsEmpty(Control.GetLabel(2777120))</visible>
@@ -722,46 +520,10 @@
 				</control>
 
 				<!--RT Critics Fresh White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <visible>false</visible>
-				<visible>!false</visible>
-				<visible>false + false</visible>
-				<width>46</width>
-                <height>47</height>
-				<bottom>21</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/whiteRTcritics.png</texture>
-				</control>
 
 				<!--RT Critics Certified Fresh White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <visible>false</visible>
-				<visible>!false</visible>
-				<visible>false + false</visible>
-				<width>48</width>
-                <height>48</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/cfwhite2.png</texture>
-				</control>
 
 				<!--RT Critics Rotten White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777121)) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-                <visible>false</visible>
-				<visible>!false</visible>
-				<visible>false + false</visible>
-				<width>46</width>
-                <height>44</height>
-				<bottom>21</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/whiteRTcriticsRotten.png</texture>
-				</control>
 
 				<!-- RT critics label -->
 				<control type="label" id="2777121">
@@ -809,32 +571,8 @@
 				</control>
 
 				<!--RT Audience Fresh White-->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-                <visible>!String.IsEmpty(Control.GetLabel(3777122)) + Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-                <visible>false</visible>
-				<visible>false + false</visible>
-				<width>37</width>
-                <height>49</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/audiencefreshwhite1.png</texture>
-				</control>
 
 				<!--RT Audience Rotten White-->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-                <visible>!String.IsEmpty(Control.GetLabel(3777122)) + !Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-                <visible>false</visible>
-				<visible>false + false</visible>
-				<width>56</width>
-                <height>42</height>
-				<bottom>19</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/audiencerottenwhite1.png</texture>
-				</control>
 
 				<!-- RT Audience label-->
 				<control type="label" id="3777122">
@@ -868,19 +606,6 @@
 				</control>
 
 				<!--TVDB white-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777122)) + !$EXP[IsEpisodeDBType]</visible>
-                <visible>false</visible>
-				<visible>!false</visible>
-				<visible>false + false</visible>
-				<visible>!Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<width>72</width>
-                <height>42</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/tvdb1.png</texture>
-				</control>
 
 				<control type="label" id="2777122">
 				<visible>!String.IsEmpty(Control.GetLabel(2777122)) + !$EXP[IsEpisodeDBType]</visible>
@@ -914,18 +639,6 @@
 				</control>
 
 				<!--TMDB White-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777123))</visible>
-                <visible>false</visible>
-				<visible>false + false</visible>
-				<visible>!String.IsEmpty(ListItem.Rating(themoviedb))</visible>
-				<bottom>20</bottom>
-                <width>88</width>
-                <height>42</height>
-				<aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/tmdb1.png</texture>
-				</control>
 
 				<control type="label" id="2777123">
 				<visible>!String.IsEmpty(Control.GetLabel(2777123))</visible>
@@ -943,30 +656,8 @@
 				</control>
 
 				<!--TMDB Color logo VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777123))</visible>
-                <visible>!false</visible>
-				<visible>false</visible>
-				<bottom>20</bottom>
-                <width>88</width>
-                <height>42</height>
-				<aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/tmdb3.png</texture>
-				</control>
 
 				<!--TMDB White logo VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777123))</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<bottom>20</bottom>
-                <width>88</width>
-                <height>42</height>
-				<aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/tmdb1.png</texture>
-				</control>
 
 				<!-- TMDB Label logo VD -->
 				<control type="label" id="2777123">
@@ -984,32 +675,8 @@
 				</control>
 
 				<!--TVDB color VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777122)) + !$EXP[IsEpisodeDBType]</visible>
-                <visible>!false</visible>
-				<visible>false</visible>
-				<visible>!Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<width>72</width>
-                <height>42</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/tvdb2.png</texture>
-				</control>
 
 				<!--TVDB white logo VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777122)) + !$EXP[IsEpisodeDBType]</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<visible>!Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<width>72</width>
-                <height>42</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/tvdb1.png</texture>
-				</control>
 
 				<!-- TVDB label VD -->
 				<control type="label" id="2777122">
@@ -1028,82 +695,16 @@
 				</control>
 
 				<!--RT Critics Fresh logo Color VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(3777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <visible>!false</visible>
-				<visible>false</visible>
-				<width>46</width>
-                <height>47</height>
-				<bottom>21</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/fresh1.png</texture>
-				</control>
 
 				<!--RT Critics Certified Fresh logo Color VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(3777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <visible>!false</visible>
-				<visible>false</visible>
-				<width>48</width>
-                <height>48</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/cf2.png</texture>
-				</control>
 
 				<!--RT Critics Rotten logo Color VD-->
-				<control type="image">
-                <visible>!false</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(3777121)) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-				<visible>false</visible>
-				<width>46</width>
-                <height>44</height>
-				<bottom>21</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/rotten.png</texture>
-				</control>
 
 				<!--RT Critics Fresh logo White VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(3777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<width>46</width>
-                <height>47</height>
-				<bottom>21</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/whiteRTcritics.png</texture>
-				</control>
 
 				<!--RT Critics Certified Fresh logo White VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(3777121)) + Integer.IsGreater(ListItem.Rating(tomatometerallcritics),7.4)</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<width>48</width>
-                <height>48</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/cfwhite2.png</texture>
-				</control>
 
 				<!--RT Critics Rotten logo White VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(3777121)) + !Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<width>46</width>
-                <height>44</height>
-				<bottom>21</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/whiteRTcriticsRotten.png</texture>
-				</control>
 
 				<!-- RT critics label VD -->
 				<control type="label" id="2777121">
@@ -1136,60 +737,12 @@
 				</control>
 
 				<!--RT Audience Fresh Color VD -->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(4777122)) + Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-                <visible>!false</visible>
-				<visible>false</visible>
-				<width>37</width>
-                <height>49</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/audiencefresh.png</texture>
-				</control>
 
 				<!--RT Audience Rotten Color VD-->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(4777122)) + !Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-                <visible>!false</visible>
-				<visible>false</visible>
-				<width>56</width>
-                <height>42</height>
-				<bottom>19</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/audiencerotten.png</texture>
-				</control>
 
 				<!--RT Audience Fresh White VD -->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(4777122)) + Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<width>37</width>
-                <height>49</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-				<texture background="true">bingie/audiencefreshwhite1.png</texture>
-				</control>
 
 				<!--RT Audience Rotten White VD -->
-				<control type="image">
-				<visible>String.IsEqual(ListItem.DBType,movie)</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(4777122)) + !Integer.IsGreater(ListItem.Rating(tomatometerallaudience),5.9)</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<width>56</width>
-                <height>42</height>
-				<bottom>19</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-				<texture background="true">bingie/audiencerottenwhite1.png</texture>
-				</control>
 
 				<!-- RT Audience label VD-->
 				<control type="label" id="3777122">
@@ -1224,30 +777,8 @@
 				</control>
 
 				<!--imdb logo Color VD-->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777120))</visible>
-                <visible>!false</visible>
-				<visible>false</visible>
-				<width>78</width>
-                <height>42</height>
-				<bottom>20</bottom>
-                <aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/imdb2.png</texture>
-				</control>
 
 				<!--imdb logo White VD -->
-				<control type="image">
-                <visible>!String.IsEmpty(Control.GetLabel(2777120))</visible>
-                <visible>false</visible>
-				<visible>false</visible>
-				<bottom>20</bottom>
-                <width>78</width>
-                <height>42</height>
-				<aspectratio>keep</aspectratio>
-                <fadetime>300</fadetime>
-                <texture background="true">bingie/imdb1.png</texture>
-				</control>
 
 				<!-- IMDB label VD -->
 				<control type="label" id="2777120">

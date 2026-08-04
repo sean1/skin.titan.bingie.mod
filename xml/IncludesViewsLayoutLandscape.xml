@@ -2,119 +2,15 @@
 <!-- BINGIE -->
 <includes>
     <!-- THUMBS LAYOUT (SMALL LANDSCAPE) -->
-    <include name="ThumbsViewLayout">
-        <include>ThumbsViewItemLayout</include>
-     </include>
-    <include name="ThumbsViewLayoutFocus">
-        <include condition="![[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]">ThumbsFO</include>
-        <include>ThumbsViewItemLayout</include>
-    </include>
-    <include name="ThumbsViewItemLayout">
-        <control type="image">
-            <!--thumb image-->
-            <bordersize>8</bordersize>
-            <texture background="true" diffuse="diffuse/landscape.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
-            <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
-            <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
-            <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-        </control>
-        <control type="image">
-            <!--fallback logo image-->
-            <width>350</width>
-			<height>202</height>
-			<bottom>-44</bottom>
-			<left>0</left>
-            <bordersize>53</bordersize>
-            <texture background="true">$VAR[ClearLogoFallback]</texture>
-            <aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-            <visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-            <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-			<visible>false</visible>
-        </control>
-        <include condition="!$EXP[IsBingieViewsActive]">ThumbsTagOverlay</include>
-        <control type="group">
-            <!--Watched Overlay-->
-            <right>8</right>
-            <top>8</top>
-            <include content="WatchedIndicatorLayout">
-                <param name="width" value="60" />
-                <param name="height" value="60" />
-                <param name="font" value="indicator_small" />
-                <param name="overlay" value="normal" />
-                <param name="overlay_texture" value="diffuse/icon_overlay_landscape.png" />
-            </include>
-        </control>
-    </include>
 
-	<include name="ThumbsViewLayoutSmall">
-        <include>ThumbsViewItemLayoutSmall</include>
-     </include>
-    <include name="ThumbsViewLayoutFocusSmall">
-        <include condition="![[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]">ThumbsFO</include>
-        <include>ThumbsViewItemLayoutSmall</include>
-    </include>
-    <include name="ThumbsViewItemLayoutSmall">
-        <control type="image">
-            <!--thumb image-->
-            <bordersize>8</bordersize>
-            <texture background="true" diffuse="diffuse/landscape.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
-            <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
-            <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
-            <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-        </control>
-        <control type="image">
-            <!-- fallback logo image -->
-            <width>288</width>
-			<height>168</height>
-			<bottom>-36</bottom>
-			<left>0</left>
-            <bordersize>45</bordersize>
-            <texture background="true">$VAR[ClearLogoFallback]</texture>
-            <aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-            <visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-            <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-			<visible>false</visible>
-        </control>
-        <include condition="!$EXP[IsBingieViewsActive]">ThumbsTagOverlaySmall</include>
-        <control type="group">
-            <!--Watched Overlay-->
-            <right>8</right>
-            <top>8</top>
-            <include content="WatchedIndicatorLayout">
-                <param name="width" value="60" />
-                <param name="height" value="60" />
-                <param name="font" value="indicator_small" />
-                <param name="overlay" value="normal" />
-                <param name="overlay_texture" value="diffuse/icon_overlay_landscape.png" />
-            </include>
-        </control>
-    </include>
 
-    <include name="ThumbsFO">
-        <control type="image">
-            <include>ThumbsFO_Defs</include>
-            <include>thumbsborder_focused</include>
-        </control>
-    </include>
 
-    <include name="ThumbsFO_Defs">
-        <texture background="true">diffuse/landscape.png</texture>
-        <colordiffuse>ffffffff</colordiffuse>
-    </include>
 
-    <variable name="ClearLogoFallback">
-        <value condition="!String.IsEmpty(ListItem.Art(clearlogo))">$INFO[ListItem.Art(clearlogo)]</value>
-        <value condition="!String.IsEmpty(ListItem.Art(tvshow.clearlogo))">$INFO[ListItem.Art(tvshow.clearlogo)]</value>
-    </variable>
 
 	<!-- THUMBS LAYOUT (BINGIE LANDSCAPE) -->
     <include name="ThumbsViewBingieLayout">
         <include>ThumbsViewItemBingieLayout</include>
      </include>
-    <include name="ThumbsViewBingieLayoutFocus">
-        <include condition="![[Window.IsActive(Home) | $EXP[IsBingieListsActive]] | $EXP[IsBingieHubsActive]]">ThumbsFOBingie</include>
-        <include>ThumbsViewItemBingieLayout</include>
-    </include>
     <include name="ThumbsViewItemBingieLayout">
         <control type="image">
             <!--thumb image-->
@@ -140,69 +36,9 @@
         </control>
     </include>
 
-    <include name="ThumbsFOBingie">
-        <control type="image">
-            <include>ThumbsFO_DefsBingie</include>
-            <include>thumbsborder_focused</include>
-        </control>
-    </include>
 
-    <include name="ThumbsFO_DefsBingie">
-        <texture background="true">home/home_matte3.png</texture>
-        <colordiffuse>ffffffff</colordiffuse>
-    </include>
 
     <!-- LANDSCAPE LAYOUT -->
-    <include name="LandscapeLayout">
-        <include>LandscapeItemLayout</include>
-    </include>
-    <include name="LandscapeLayoutFocus">
-        <control type="image">
-            <!--focus image-->
-            <texture diffuse="home/home_matte2.png">diffuse/panel2.png</texture>
-            <colordiffuse>ffffffff</colordiffuse>
-            <aspectratio>stretch</aspectratio>
-            <include>thumbsborder_focused</include>
-        </control>
-        <include>LandscapeItemLayout</include>
-    </include>
-    <include name="LandscapeItemLayout">
-        <control type="image">
-            <!--Panel icon image-->
-			<bordersize>8</bordersize>
-            <texture background="true" diffuse="home/home_matte2.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
-            <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
-            <visible>![!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Art(thumb),ListItem.Property(channellogo))]</visible>
-            <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-        </control>
-        <control type="image">
-            <!--fallback logo image-->
-			<width>565</width>
-			<height>325</height>
-			<bottom>-74</bottom>
-			<left>0</left>
-            <bordersize>82</bordersize>
-            <texture background="true">$VAR[ClearLogoFallback]</texture>
-            <aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-            <visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-            <visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-			<visible>false</visible>
-        </control>
-        <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlay</include>
-		<control type="group">
-			<right>8</right>
-			<top>8</top>
-			<include content="WatchedIndicatorLayout">
-                <param name="width" value="80" />
-                <param name="height" value="80" />
-                <param name="font" value="indicator_normal" />
-                <param name="labeloffsetx" value="-30" />
-                <param name="labeloffsety" value="-4" />
-                <param name="overlay" value="normal" />
-                <param name="overlay_texture" value="diffuse/icon_overlay_landscape.png" />
-            </include>
-		 </control>
-    </include>
 
     <!-- TAG OVERLAYS -->
 	<include name="LandscapeTagOverlayVisibility">
@@ -229,49 +65,6 @@
             !String.IsEmpty(ListItem.Property(defaultID))] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
         </visible>
 	</include>
-	<include name="ThumbsTagOverlay">
-        <control type="image">
-            <!--Panel Ovelay-->
-            <bordersize>8</bordersize>
-			<bottom>0</bottom>
-            <height>78</height>
-            <texture>diffuse/home_overlay.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>dd000000</colordiffuse>
-        </control>
-        <control type="textbox">
-            <!--Label-->
-            <left>16</left>
-            <right>16</right>
-            <bottom>10</bottom>
-            <height>60</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg20</font>
-			<autoscroll>false</autoscroll>
-			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-        </control>
-		<control type="textbox">
-            <!--Label-->
-            <left>16</left>
-            <right>16</right>
-            <bottom>10</bottom>
-            <height>60</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg20</font>
-			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
-			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-        </control>
-    </include>
 	<include name="ThumbsTagOverlayBingie">
         <control type="image">
             <!--Panel Ovelay-->
@@ -290,7 +83,6 @@
             <right>16</right>
             <bottom>10</bottom>
             <height>60</height>
-            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
@@ -307,7 +99,6 @@
             <right>16</right>
             <bottom>10</bottom>
             <height>60</height>
-            <include condition="false">align_center</include>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
@@ -316,138 +107,6 @@
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             <textcolor>ffffffff</textcolor>
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
-        </control>
-    </include>
-	<include name="ThumbsTagOverlayLargeBingie">
-        <control type="image">
-            <!--Panel Ovelay-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-            <bordersize>8</bordersize>
-			<bottom>0</bottom>
-            <height>94</height>
-            <texture>diffuse/home_overlay_bingie.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>dd000000</colordiffuse>
-        </control>
-        <control type="textbox">
-            <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-            <left>16</left>
-            <right>16</right>
-            <bottom>8</bottom>
-            <height>80</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg28</font>
-			<autoscroll>false</autoscroll>
-			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
-        </control>
-		<control type="textbox">
-            <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-            <left>16</left>
-            <right>16</right>
-            <bottom>8</bottom>
-            <height>80</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg28</font>
-			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
-			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] | [false + false]">LandscapeTagOverlayVisibility</include>
-        </control>
-    </include>
-    <include name="ThumbsTagOverlaySmall">
-        <control type="image">
-            <!--Panel Ovelay-->
-            <bordersize>8</bordersize>
-			<bottom>0</bottom>
-            <height>74</height>
-            <texture>diffuse/home_overlay_small.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>dd000000</colordiffuse>
-        </control>
-        <control type="textbox">
-            <!--Label-->
-            <left>12</left>
-            <right>12</right>
-            <bottom>9</bottom>
-            <height>57</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg18</font>
-			<autoscroll>false</autoscroll>
-			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-        </control>
-		<control type="textbox">
-            <!--Label-->
-            <left>12</left>
-            <right>12</right>
-            <bottom>9</bottom>
-            <height>57</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg18</font>
-			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
-			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-        </control>
-    </include>
-    <include name="LandscapeTagOverlay">
-        <control type="image">
-            <!--Panel Overlay-->
-			<bordersize>8</bordersize>
-			<bottom>0</bottom>
-            <height>97</height>
-            <texture>home/home_overlay.png</texture>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>dd000000</colordiffuse>
-        </control>
-        <control type="textbox">
-            <!--Label-->
-            <left>18</left>
-            <right>8</right>
-            <bottom>4</bottom>
-            <height>28%</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg30</font>
-			<autoscroll>false</autoscroll>
-			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
-        </control>
-		<control type="textbox">
-            <!--Label-->
-            <left>18</left>
-            <right>8</right>
-            <bottom>4</bottom>
-            <height>28%</height>
-            <include condition="false">align_center</include>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg30</font>
-			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
-			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive]">LandscapeTagOverlayVisibility</include>
         </control>
     </include>
 

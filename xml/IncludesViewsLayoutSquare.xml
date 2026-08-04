@@ -76,7 +76,6 @@
                 <right>15</right>
                 <bottom>14</bottom>
                 <height>48</height>
-                <include condition="false">align_center</include>
                 <align>left</align>
                 <aligny>center</aligny>
                 <label>$VAR[ThumbListDetailsSquare]</label>
@@ -90,7 +89,6 @@
                 <right>15</right>
                 <bottom>14</bottom>
                 <height>48</height>
-                <include condition="false">align_center</include>
                 <align>left</align>
                 <aligny>center</aligny>
                 <label>$VAR[ThumbListDetailsSquare]</label>

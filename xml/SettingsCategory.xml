@@ -164,7 +164,6 @@
 		 </control>
 
 		<!--Footer-->
-        <include condition="!true">Footer</include>
 
         <control type="group">
             <control type="textbox" id="6">

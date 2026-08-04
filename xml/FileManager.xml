@@ -14,7 +14,6 @@
         <!-- footer bar -->
 		<control type="group">
 			<visible>!Control.IsVisible(514)</visible>
-			<include condition="!true">Footer</include>
 		</control>
 
 		<control type="group">

@@ -7,7 +7,6 @@
         <control type="image">
             <include>FullscreenDimensions</include>
             <texture fallback="diffuse/background.png">overlays/black.png</texture>
-            <include condition="true + !true">bgOverlayDiffuse</include>
             <visible>!Control.IsVisible(507)</visible>
             <visible>true</visible>
         </control>
@@ -17,9 +16,6 @@
         <colordiffuse>None</colordiffuse>
     </include>
 
-    <include name="bgOverlayDiffuse">
-        <colordiffuse>None</colordiffuse>
-    </include>
 
     <include name="DialogOverlayExtra">
         <!-- dim screen overlay used in certain dialogs -->
@@ -35,35 +31,8 @@
             <colordiffuse>aa0f0f0f</colordiffuse>
             <visible>true</visible>
         </control>
-        <control type="image">
-            <include>FullscreenDimensions</include>
-            <texture>diffuse/background.png</texture>
-            <colordiffuse>None</colordiffuse>
-            <visible>false</visible>
-        </control>
     </include>
 
-	<include name="DialogOverlayExtraBusy">
-        <!-- dim screen overlay used in certain dialogs -->
-        <control type="image">
-            <include>FullscreenDimensions</include>
-            <texture>diffuse/panel2.png</texture>
-            <colordiffuse>86000000</colordiffuse>
-            <visible>true</visible>
-        </control>
-        <control type="image">
-            <include>FullscreenDimensions</include>
-            <texture>diffuse/panel2.png</texture>
-            <colordiffuse>860f0f0f</colordiffuse>
-            <visible>true</visible>
-        </control>
-        <control type="image">
-            <include>FullscreenDimensions</include>
-            <texture>diffuse/panel2.png</texture>
-            <colordiffuse>None</colordiffuse>
-            <visible>false</visible>
-        </control>
-    </include>
 
 <!-- Side Menu Background Panel Color -->
     <include name="Dim_Overlay">
@@ -78,56 +47,15 @@
         </control>
     </include>
 
-    <include name="fanartSpeed5">
-        <timeperimage>5000</timeperimage>
-    </include>
-    <include name="fanartSpeed10">
-        <timeperimage>10000</timeperimage>
-    </include>
-    <include name="fanartSpeed15">
-        <timeperimage>15000</timeperimage>
-    </include>
-    <include name="fanartSpeed20">
-        <timeperimage>20000</timeperimage>
-    </include>
-    <include name="fanartSpeed30">
-        <timeperimage>30000</timeperimage>
-    </include>
-    <include name="fanartSpeed40">
-        <timeperimage>40000</timeperimage>
-    </include>
-    <include name="fanartSpeed50">
-        <timeperimage>50000</timeperimage>
-    </include>
-    <include name="fanartSpeed60">
-        <timeperimage>60000</timeperimage>
-    </include>
 
     <include name="fanartSpeed">
-	    <include condition="false">fanartSpeed5</include>
-        <include condition="false">fanartSpeed10</include>
-        <include condition="false">fanartSpeed15</include>
-        <include condition="false">fanartSpeed20</include>
-        <include condition="false">fanartSpeed30</include>
-        <include condition="false">fanartSpeed40</include>
-        <include condition="false">fanartSpeed50</include>
-        <include condition="false">fanartSpeed60</include>
     </include>
 
-    <include name="randomizeImages">
-        <randomize>true</randomize>
-    </include>
 
     <!--Global Background -->
     <include name="GlobalBackground">
 
         <!-- background panel -->
-        <control type="image">
-            <include>FullscreenDimensions</include>
-            <texture>colors/color_white.png</texture>
-            <colordiffuse>None</colordiffuse>
-            <visible>true + !true</visible>
-        </control>
         <!-- global background -->
         <control type="multiimage" id="99004">
             <include>HiddenObject</include>
@@ -136,10 +64,8 @@
             <aspectratio>scale</aspectratio>
             <fadetime>800</fadetime>
             <include condition="true + !true + !true">bgColorDiffuse</include>
-            <include condition="false">randomizeImages</include>
             <include>fanartSpeed</include>
             <loop>yes</loop>
-            <include condition="false">BackgroundAnimation</include>
         </control>
         <!-- fanart image background (hidden with visibility conditions)-->
         <control type="image" id="99006">
@@ -182,14 +108,6 @@
                 [Container.Content(Genres) + false + !String.IsEmpty(ListItem.label) + !String.IsEqual(ListItem.label,..)] |
                 [Container.Content(movies) | Container.Content(sets) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)]
             </visible>
-			<include condition="false">FadelabelPauseAtEnd5</include>
-			<include condition="false">FadelabelPauseAtEnd10</include>
-			<include condition="false">FadelabelPauseAtEnd15</include>
-			<include condition="false">FadelabelPauseAtEnd20</include>
-			<include condition="false">FadelabelPauseAtEnd30</include>
-			<include condition="false">FadelabelPauseAtEnd40</include>
-			<include condition="false">FadelabelPauseAtEnd50</include>
-			<include condition="false">FadelabelPauseAtEnd60</include>
 			<include condition="Window.IsMedia">disabledFanart</include>
             <include condition="Window.IsMedia">disabledExtraFanart</include>
 			<!-- common movie and TV show art -->
@@ -262,30 +180,6 @@
 	</include>
 
 	<!-- Extrafanart Fadelabel Pause -->
-	<include name="FadelabelPauseAtEnd5">
-		<pauseatend>5000</pauseatend>
-	</include>
-	<include name="FadelabelPauseAtEnd10">
-		<pauseatend>10000</pauseatend>
-	</include>
-	<include name="FadelabelPauseAtEnd15">
-		<pauseatend>15000</pauseatend>
-	</include>
-	<include name="FadelabelPauseAtEnd20">
-		<pauseatend>20000</pauseatend>
-	</include>
-	<include name="FadelabelPauseAtEnd30">
-		<pauseatend>30000</pauseatend>
-	</include>
-	<include name="FadelabelPauseAtEnd40">
-		<pauseatend>40000</pauseatend>
-	</include>
-	<include name="FadelabelPauseAtEnd50">
-		<pauseatend>50000</pauseatend>
-	</include>
-	<include name="FadelabelPauseAtEnd60">
-		<pauseatend>60000</pauseatend>
-	</include>
 
     <include name="disabledFanart">
         <!-- disabled fanart per view -->
@@ -368,15 +262,7 @@
         <value condition="!String.IsEmpty(Container(99007).ListItemAbsolute(3).Art(fanart))">$INFO[Container(99007).ListItemAbsolute(4).Art(fanart)]</value>
     </variable>
 
-	<variable name="CategoriesRandomClearLogo">
-        <value condition="!String.IsEmpty(Container(99007).ListItemAbsolute(0).Art(tvshow.clearlogo))">$INFO[Container(99007).ListItemAbsolute(0).Art(tvshow.clearlogo)]</value>
-        <value condition="!String.IsEmpty(Container(99007).ListItemAbsolute(0).Art(clearlogo))">$INFO[Container(99007).ListItemAbsolute(0).Art(clearlogo)]</value>
-    </variable>
 
-	<variable name="CategoriesRandomTitle">
-        <value condition="!String.IsEmpty(Container(99007).ListItemAbsolute(0).tvshow.title)">$INFO[Container(99007).ListItemAbsolute(0).tvshow.title]</value>
-        <value condition="!String.IsEmpty(Container(99007).ListItemAbsolute(0).title)">$INFO[Container(99007).ListItemAbsolute(0).title]</value>
-    </variable>
 
     <variable name="ItemArtContentRandomizer">
         <value condition="!String.IsEmpty(ListItem.Property(path2)) + Integer.IsGreater(Window(Home).Property(Random),30)">$INFO[ListItem.Property(path2)]</value>
@@ -415,7 +301,6 @@
 		<value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
         <!-- normal fanart background -->
         <value condition="Control.IsVisible(99006) + !String.IsEmpty(Control.GetLabel(99006))">$INFO[Control.GetLabel(99006)]</value>
-        <value condition="false"></value>
     </variable>
 
     <variable name="bingieThumb">

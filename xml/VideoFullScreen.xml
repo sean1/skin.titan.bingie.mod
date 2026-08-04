@@ -62,7 +62,6 @@
 		<control type="group" id="2">
 			<visible>Player.Caching + true</visible>
 			<animation end="-850,-230" time="0" effect="slide" condition="true">Conditional</animation>
-			<animation end="-850,-230" time="0" effect="slide" condition="!true">Conditional</animation>
 			<animation delay="300" effect="fade" time="200">Visible</animation>
 			<animation effect="fade" delay="200" time="150">Hidden</animation>
 			<control type="image" id="22">

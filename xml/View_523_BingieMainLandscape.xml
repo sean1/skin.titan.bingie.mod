@@ -100,19 +100,6 @@
                     <width>335</width>
                     <height>195</height>
                     <include>ThumbsViewItemBingieLayout</include>
-					<control type="image">
-						<!-- fallback logo image -->
-						<width>333</width>
-						<height>195</height>
-						<bottom>-43</bottom>
-						<left>0</left>
-						<bordersize>51</bordersize>
-						<texture background="true">$VAR[ClearLogoFallback]</texture>
-						<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-						<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-						<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-						<visible>false</visible>
-					</control>
                 </control>
             </itemlayout>
             <focusedlayout height="193" width="333">
@@ -126,19 +113,6 @@
                         <include>thumbsborder_focused</include>
                     </control>
                     <include>ThumbsViewItemBingieLayout</include>
-					<control type="image">
-						<!-- fallback logo image -->
-						<width>333</width>
-						<height>195</height>
-						<bottom>-43</bottom>
-						<left>0</left>
-						<bordersize>51</bordersize>
-						<texture background="true">$VAR[ClearLogoFallback]</texture>
-						<aspectratio scalediffuse="false" align="center" aligny="center">keep</aspectratio>
-						<visible>String.IsEmpty(Listitem.Art(landscape)) + String.IsEmpty(ListItem.Property(landscape)) + !String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEqual(ListItem.Property(DBTYPE),episode) + !Container.Content(episodes) + !String.IsEqual(ListItem.DBTYPE,season) + !String.IsEqual(ListItem.Property(DBTYPE),season)</visible>
-						<visible>String.IsEmpty(ListItem.Property(defaultID))</visible>
-						<visible>false</visible>
-					</control>
                     <animation effect="zoom" end="103,103" center="auto" time="100" condition="false + false">focus</animation>
                 </control>
 				<!--Top 250 1-->

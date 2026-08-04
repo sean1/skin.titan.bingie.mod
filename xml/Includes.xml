@@ -18,7 +18,6 @@
     <include file="IncludesViewsLayoutPoster.xml" />
     <include file="IncludesViewsLayoutLandscape.xml" />
     <include file="IncludesViewsLayoutSquare.xml" />
-    <include file="IncludesViewsLayoutBanner.xml" />
     <include file="IncludesOSD.xml" />
     <include file="IncludesContextMenu.xml" />
     <include file="IncludesHomeBingie.xml"/>
@@ -68,7 +67,6 @@
 
     <expression name="IsMovieDBType">String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,movie)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),movie)</expression>
 
-	<expression name="IsMovieDBTypeNoFallback">String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie)</expression>
 
     <expression name="IsEpisodeDBType">String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(Window(Home).Property(ListItem.DBTYPE,episode)) | String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),episode)</expression>
 
@@ -92,11 +90,9 @@
 	<expression name="IsKnownMenuEntryPath">$EXP[MenuPathHome] | $EXP[MenuPathTV] | $EXP[MenuPathMovies] | $EXP[MenuPathNew] | $EXP[MenuPathGenres]</expression>
 
 
-    <expression name="IsActualKeyboardActive">Window.IsActive(virtualkeyboard) + String.IsEmpty(Window(Home).Property(SpaceSearchTerm)) + String.IsEmpty(Window(Home).Property(BackspaceSearchTerm))</expression>
 
     <expression name="IsCurrentWidgetSpotlight">Control.HasFocus(1508) | [Control.IsVisible(1508) + Container(77777).Position(0)]</expression>
 
-	<expression name="Exp_InfoDialog_IsFolder">[String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.DBType,season) | String.IsEqual(ListItem.DBType,set)]</expression>
     <!--Common-->
 
 	<!--NETFLIX ICON - SETTINGS Bottom Right-->
@@ -135,17 +131,11 @@
         <height>100%</height>
     </include>
 
-    <include name="navigation_horizontal">
-        <orientation>horizontal</orientation>
-    </include>
 
     <include name="align_right">
         <align>right</align>
     </include>
 
-    <include name="align_left">
-        <align>left</align>
-    </include>
 
     <include name="align_center">
         <align>center</align>
@@ -175,24 +165,8 @@
         <posx>$PARAM[posx]</posx>
     </include>
 
-    <include name="ButtonMovementAction">
-        <onleft>$PARAM[action]</onleft>
-        <onright>$PARAM[action]</onright>
-        <onup>$PARAM[action]</onup>
-        <ondown>$PARAM[action]</ondown>
-        <onback>$PARAM[action]</onback>
-    </include>
 
-    <include name="textoffsetx">
-        <textoffsetx>$PARAM[textoffsetx]</textoffsetx>
-    </include>
 
-    <include name="ImageAlignCenter">
-        <aspectratio align="center">keep</aspectratio>
-    </include>
-    <include name="ImageAlignLeft">
-        <aspectratio align="left">keep</aspectratio>
-    </include>
 
     <include name="ScrollTime">
         <scrolltime tween="cubic" easing="out">600</scrolltime>
@@ -203,19 +177,7 @@
     </include>
 
     <!-- bounce up animation -->
-    <include name="Bounce_Up">
-        <animation condition="Window.IsVisible(1150)" reversible="false" type="Conditional">
-            <effect easing="out" end="0,-30" start="0,0" time="60" tween="sine" type="slide" />
-            <effect delay="80" easing="out" end="0,30" start="0,0" time="120" tween="sine" type="slide" />
-        </animation>
-    </include>
     <!-- bounce down animation -->
-    <include name="Bounce_Down">
-        <animation condition="Window.IsVisible(1149)" reversible="false" type="Conditional">
-            <effect easing="out" end="0,30" start="0,0" time="60" tween="sine" type="slide" />
-            <effect delay="80" easing="out" end="0,-30" start="0,0" time="120" tween="sine" type="slide" />
-        </animation>
-    </include>
 
     <!--Dialog Color/Font-->
     <include name="DialogHeader">
@@ -238,20 +200,6 @@
 		<texturefocus colordiffuse="cce0e0e0" border="10">diffuse/panel.png</texturefocus>
     </include>
 
-    <include name="DialogButtonBig">
-        <!--Dialog Button Big-->
-        <font>Reg30</font>
-        <textcolor>ffffffff</textcolor>
-        <focusedcolor>ff000000</focusedcolor>
-        <disabledcolor>ffffffff</disabledcolor>
-    </include>
-    <include name="DialogButtonSmall">
-        <!--Dialog Button Small-->
-        <font>Reg26</font>
-        <textcolor>ffffffff</textcolor>
-        <focusedcolor>ff000000</focusedcolor>
-        <disabledcolor>ffffffff</disabledcolor>
-    </include>
     <include name="DialogListNF">
         <!--Dialog List NF-->
         <font>Reg28</font>
@@ -307,56 +255,8 @@
     </include>
 
 	<!-- Content Loading -->
-    <include name="ContentLoading">
-        <param name="visibility" default="true"/>
-        <definition>
-		<control type="grouplist">
-			<visible>$PARAM[visibility]</visible>
-			<animation effect="fade" start="0" end="100" time="300" delay="200">WindowOpen</animation>
-			<animation effect="fade" start="100" end="0" time="200">WindowClose</animation>
-			<align>center</align>
-			<width>1792</width>
-			<top>$PARAM[top]</top>
-			<orientation>horizontal</orientation>
-                <itemgap>4</itemgap>
-					<control type="label">
-					<width>auto</width>
-					<align>center</align>
-					<aligny>center</aligny>
-					<label>$LOCALIZE[320212]</label>
-					<font>reg40</font>
-					<textcolor>ffffffff</textcolor>
-					<scroll>true</scroll>
-					</control>
-				<control type="multiimage">
-					<top>40</top>
-					<align>center</align>
-					<aligny>center</aligny>
-                    <width>24</width>
-                    <height>6</height>
-                    <aspectratio>keep</aspectratio>
-					<colordiffuse>ffffffff</colordiffuse>
-                    <imagepath>spinner/search_widget_loader/</imagepath>
-                    <timeperimage>250</timeperimage>
-                    <pauseatend>500</pauseatend>
-                    <fadetime>0</fadetime>
-                </control>
-			</control>
-        </definition>
-    </include>
 
     <!--Keyboard-->
-    <include name="EditTextKeyboard">
-        <font>Light45</font>
-        <align>center</align>
-        <textoffsetx>0</textoffsetx>
-        <texturenofocus/>
-        <textcolor>ffffffff</textcolor>
-        <focusedcolor>ff000000</focusedcolor>
-        <disabledcolor>ffffffff</disabledcolor>
-        <pulseonselect>false</pulseonselect>
-        <texturefocus colordiffuse="cce0e0e0" border="10">diffuse/panel.png</texturefocus>
-    </include>
     <include name="KeyBoardKey">
         <height>70</height>
         <width>130</width>
@@ -405,24 +305,6 @@
         <font>Reg34</font>
         <include>Key</include>
     </include>
-	<include name="ExtraSmallKey">
-        <width>70</width>
-		<height>70</height>
-        <include>Key</include>
-    </include>
-    <include name="BigKey">
-        <width>250</width>
-        <font>Reg28</font>
-        <include>Key</include>
-    </include>
-    <include name="SpaceBar">
-        <width>735</width>
-        <include>Key</include>
-    </include>
-    <include name="BackSpace">
-        <width>490</width>
-        <include>Key</include>
-    </include>
     <include name="DialogButtonBrowseAdd">
         <textureradiofocus colordiffuse="ff000000">dialogs/keyboard/plus.png</textureradiofocus>
         <textureradionofocus colordiffuse="ffffffff">dialogs/keyboard/plus.png</textureradionofocus>
@@ -467,24 +349,6 @@
         <height>55</height>
         <include>DialogButton</include>
     </include>
-    <include name="KeyLeft">
-        <width>130</width>
-        <include>Key</include>
-        <textureradiofocus colordiffuse="ff000000">dialogs/keyboard/left.png</textureradiofocus>
-        <textureradionofocus colordiffuse="ffffffff">dialogs/keyboard/left.png</textureradionofocus>
-        <radiowidth>70</radiowidth>
-        <radioheight>70</radioheight>
-        <radioposx>30</radioposx>
-    </include>
-    <include name="KeyRight">
-        <width>130</width>
-        <include>Key</include>
-        <textureradiofocus colordiffuse="ff000000">dialogs/keyboard/right.png</textureradiofocus>
-        <textureradionofocus colordiffuse="ffffffff">dialogs/keyboard/right.png</textureradionofocus>
-        <radiowidth>70</radiowidth>
-        <radioheight>70</radioheight>
-        <radioposx>30</radioposx>
-    </include>
     <include name="KeyBack">
         <width>130</width>
         <include>Key</include>
@@ -503,424 +367,19 @@
         <radioheight>70</radioheight>
         <radioposx>30</radioposx>
     </include>
-    <include name="DoubleKeyDone">
-        <width>250</width>
-        <height>90</height>
-        <include>Key</include>
-    </include>
-    <include name="DoubleKeyCancel">
-        <width>250</width>
-        <height>90</height>
-        <include>Key</include>
-    </include>
-    <include name="ListDetailsBtn">
-        <width>580</width>
-        <height>40</height>
-        <align>left</align>
-        <disabledcolor fallback="white">ffffffff</disabledcolor>
-        <texturefocus/>
-        <texturenofocus>dialogs/default/separator.png</texturenofocus>
-        <textoffsetx>0</textoffsetx>
-        <textcolor>ffffffff</textcolor>
-        <shadowcolor>None</shadowcolor>
-        <enable>false</enable>
-    </include>
 
-	<include name="Object_Hidden_Button">
-        <param name="control" default="button" />
-        <definition>
-            <control type="$PARAM[control]" id="$PARAM[id]">
-                <nested />
-                <top>-1000</top>
-                <left>-1000</left>
-                <width>1</width>
-                <height>1</height>
-                <texturefocus />
-                <texturenofocus />
-                <font />
-                <visible allowhiddenfocus="true">False</visible>
-            </control>
-        </definition>
-    </include>
 
-	<include name="Widget_Poster">
-        <param name="visible">true</param>
-        <param name="altvisible">false</param>
-        <param name="include">List_Poster_Row</param>
-        <param name="height">413</param>
-		<param name="width">1792</param>
-        <definition>
-            <include content="$PARAM[include]">
-                <param name="id">$PARAM[id]</param>
-                <param name="icon">$PARAM[icon]</param>
-                <param name="item_h">$PARAM[item_h]</param>
-                <param name="itemlayout_h">$PARAM[itemlayout_h]</param>
-                <param name="item_w">$PARAM[item_w]</param>
-                <param name="itemlayout_w">$PARAM[itemlayout_w]</param>
-                <nested />
-                <top>200</top>
-                <height>$PARAM[height]</height>
-				<width>$PARAM[width]</width>
-                <animation effect="fade" start="100" end="0" time="0" condition="Container($PARAM[id]).IsUpdating + [!Container(5012).IsUpdating + !Container(5020).IsUpdating]">Conditional</animation>
-                <visible>[Container($PARAM[id]).IsUpdating | !Integer.IsEqual(Container($PARAM[id]).NumItems,0) | $PARAM[altvisible]]</visible>
-                <visible>$PARAM[visible]</visible>
-                <animation effect="fade" start="100" end="0" time="400" reversible="false">Hidden</animation>
-            </include>
-        </definition>
-    </include>
 
-	<include name="List_Poster_Row">
-        <param name="movement" default="7" />
-        <definition>
-            <include content="List_Core">
-                <param name="orientation" value="horizontal" />
-                <param name="controltype" value="fixedlist" />
-                <param name="id" value="$PARAM[id]" />
-                <param name="item_w" value="207" />
-                <param name="item_h" value="294" />
-                <param name="itemlayout_w" value="223" />
-                <param name="itemlayout_h" value="294" />
-                <param name="itemlayout_include" value="Layout_Poster" />
-                <param name="icon" value="$PARAM[icon]" />
-                <nested />
-                <movement>$PARAM[movement]</movement>
-            </include>
-        </definition>
-    </include>
-	    <include name="Layout_Poster">
-        <param name="selected" default="false" />
-        <param name="diffuse" default="diffuse/poster3.png" />
-        <param name="icon" default="$VAR[PosterThumbList]" />
-        <param name="listitem_label" default="ListItem.Label" />
-        <param name="listitem_label2" default="ListItem.Label2" />
-		<param name="listitem_year" default="ListItem.year" />
-        <definition>
-            <control type="group">
-                <nested />
-                <width>$PARAM[item_w]</width>
-                <height>$PARAM[item_h]</height>
-                <include content="Object_Control">
-                    <param name="control" value="group" />
-                    <control type="image">
-                        <texture background="true" diffuse="$PARAM[diffuse]">$PARAM[icon]</texture>
-                        <aspectratio scalediffuse="false">scale</aspectratio>
-                    </control>
-                </include>
-                <include content="Object_Control">
-                    <param name="control" value="group" />
-                    <include content="Object_Control">
-                        <param name="control" value="group" />
-                        <top>$PARAM[item_w]</top>
-                        <control type="label">
-                            <textcolor>ffffffff</textcolor>
-                            <label>$INFO[$PARAM[listitem_label]]</label>
-                            <textoffsetx>0</textoffsetx>
-                            <align>center</align>
-                            <font>reg22</font>
-                            <width>$PARAM[item_w]</width>
-                            <bottom>-51</bottom>
-                            <visible>!String.IsEmpty($PARAM[listitem_label])</visible>
-							<scroll>$PARAM[selected]</scroll>
-                        </control>
-                        <control type="label">
-                            <textcolor>ffffffff</textcolor>
-                            <label>$INFO[$PARAM[listitem_label2]]</label>
-                            <textoffsetx>0</textoffsetx>
-                            <align>center</align>
-                            <font>reg22</font>
-                            <width>$PARAM[item_w]</width>
-                            <bottom>-81</bottom>
-                            <visible>!String.IsEmpty($PARAM[listitem_label2])</visible>
-							<scroll>$PARAM[selected]</scroll>
-                        </control>
-						<control type="label">
-                            <textcolor>ffffffff</textcolor>
-                            <label>$INFO[$PARAM[listitem_year]]</label>
-                            <textoffsetx>0</textoffsetx>
-                            <align>center</align>
-                            <font>reg22</font>
-                            <width>$PARAM[item_w]</width>
-                            <bottom>-81</bottom>
-                            <visible>!String.IsEmpty($PARAM[listitem_year]) + String.IsEmpty($PARAM[listitem_label2])</visible>
-							<scroll>$PARAM[selected]</scroll>
-                        </control>
-                    </include>
-					<include>WatchedIndicatorNormal</include>
-                </include>
-                <control type="group">
-                    <include content="Object_SelectBox" condition="$PARAM[selected]"></include>
-                </control>
-            </control>
-        </definition>
-    </include>
 
-	<include name="List_Core">
-        <param name="orientation" default="horizontal" />
-        <param name="controltype" default="list" />
-        <param name="id" default="" />
-        <param name="preloaditems" default="2" />
-        <param name="tween" default="quadratic" />
-        <param name="scrolltime" default="400" />
-        <param name="viewtype" default="list" />
-        <param name="offset_x" default="8" />
-        <param name="offset_y" default="6" />
-        <param name="itemlayout_w" default="" />
-        <param name="itemlayout_h" default="" />
-        <param name="item_w" default="" />
-        <param name="item_h" default="" />
-        <param name="itemlayout_include" default="" />
-        <definition>
-            <control type="$PARAM[controltype]" id="$PARAM[id]">
-                <nested />
-                <orientation>$PARAM[orientation]</orientation>
-                <preloaditems>$PARAM[preloaditems]</preloaditems>
-                <scrolltime tween="$PARAM[tween]">$PARAM[scrolltime]</scrolltime>
-                <itemlayout width="$PARAM[itemlayout_w]" height="$PARAM[itemlayout_h]">
-                    <control type="group">
-                        <left>$PARAM[offset_x]</left>
-                        <right>-$PARAM[offset_x]</right>
-                        <top>$PARAM[offset_y]</top>
-                        <bottom>-$PARAM[offset_y]</bottom>
-                        <include content="$PARAM[itemlayout_include]">
-                            <param name="selected" value="false" />
-                            <param name="item_w" value="$PARAM[item_w]" />
-                            <param name="item_h" value="$PARAM[item_h]" />
-                            <param name="id" value="$PARAM[id]" />
-                            <param name="diffuse" value="$PARAM[diffuse]" />
-                            <param name="icon" value="$PARAM[icon]" />
-                        </include>
-                    </control>
-                </itemlayout>
-                <focusedlayout width="$PARAM[itemlayout_w]" height="$PARAM[itemlayout_h]">
-                    <control type="group">
-                        <left>$PARAM[offset_x]</left>
-                        <right>-$PARAM[offset_x]</right>
-                        <top>$PARAM[offset_y]</top>
-                        <bottom>-$PARAM[offset_y]</bottom>
-                        <control type="group">
-                            <visible>!Control.HasFocus($PARAM[id])</visible>
-                            <include content="$PARAM[itemlayout_include]">
-                                <param name="selected" value="false" />
-                                <param name="item_w" value="$PARAM[item_w]" />
-                                <param name="item_h" value="$PARAM[item_h]" />
-                                <param name="id" value="$PARAM[id]" />
-                                <param name="diffuse" value="$PARAM[diffuse]" />
-                                <param name="icon" value="$PARAM[icon]" />
-                            </include>
-                        </control>
-                        <control type="group">
-                            <visible>Control.HasFocus($PARAM[id])</visible>
-                            <include content="$PARAM[itemlayout_include]">
-                                <param name="selected" value="true" />
-                                <param name="item_w" value="$PARAM[item_w]" />
-                                <param name="item_h" value="$PARAM[item_h]" />
-                                <param name="id" value="$PARAM[id]" />
-                                <param name="diffuse" value="$PARAM[diffuse]" />
-                                <param name="icon" value="$PARAM[icon]" />
-                            </include>
-                        </control>
-                    </control>
-                </focusedlayout>
-            </control>
-        </definition>
-    </include>
 
-	<include name="Object_Control">
-        <param name="padding" default="false" />
-        <definition>
-            <control type="$PARAM[control]" id="$PARAM[id]">
-                <include content="Dimension_Padding" condition="$PARAM[padding]">
-                    <param name="pad" value="$PARAM[pad]" />
-                </include>
-                <nested />
-            </control>
-        </definition>
-    </include>
 
-	<include name="Object_Control2">
-        <param name="pad" default="-4" />
-        <definition>
-            <control type="group">
-				<animation effect="fade" start="100" end="30" time="0" condition="true">Conditional</animation>
-                <include content="Object_Control">
-                    <param name="control" value="group" />
-                    <param name="padding" value="true" />
-                    <param name="pad" value="$PARAM[pad]" />
-                    <include content="Object_Control">
-                        <param name="control" value="image" />
-                        <texture border="10" background="true" colordiffuse="ffffffff">bingie/border/default_button_fo_4.png</texture>
-                    </include>
-                </include>
-            </control>
-        </definition>
-    </include>
 
-	<include name="Dimension_Padding">
-        <left>$PARAM[pad]</left>
-        <right>$PARAM[pad]</right>
-        <top>$PARAM[pad]</top>
-        <bottom>$PARAM[pad]</bottom>
-    </include>
 
-	    <include name="Object_SelectBox">
-        <param name="pad" default="-6" />
-        <definition>
-            <control type="group">
-                <include content="Object_Control">
-                    <param name="control" value="group" />
-                    <param name="padding" value="true" />
-                    <param name="pad" value="$PARAM[pad]" />
-                    <include content="Object_Control">
-                        <param name="control" value="image" />
-                        <texture background="true" border="12">bingie/border/poster_fo_4.png</texture>
-                    </include>
-                </include>
-            </control>
-        </definition>
-    </include>
 
-	 <include name="Object_SelectBox2">
-		<param name="pad" default="-4" />
-        <definition>
-            <control type="group">
-                <include content="Object_Control">
-                    <param name="control" value="group" />
-                    <param name="padding" value="true" />
-                    <param name="pad" value="$PARAM[pad]" />
-                    <include content="Object_Control">
-                        <param name="control" value="image" />
-                        <texture border="10" background="true" colordiffuse="ffffffff">bingie/border/default_button_fo_4.png</texture>
-                    </include>
-                </include>
-            </control>
-        </definition>
-    </include>
 
-	<include name="Widget_Label">
-        <definition>
-            <control type="grouplist" id="$PARAM[groupid]">
-				<visible>Control.IsVisible($PARAM[id])</visible>
-                <visible>Integer.IsGreater(Container($PARAM[id]).NumItems,0) | Container($PARAM[id]).IsUpdating</visible>
-                <nested />
-                <height>45</height>
-                <orientation>horizontal</orientation>
-                <usecontrolcoords>true</usecontrolcoords>
-                <itemgap>20</itemgap>
-                <control type="label">
-                    <left>7</left>
-                    <width>1040</width>
-                    <label>$PARAM[label]</label>
-                    <aligny>center</aligny>
-                    <textcolor>ffffffff</textcolor>
-                    <font>Bold31</font>
-                    <height>36</height>
-                    <visible>Integer.IsGreater(Container($PARAM[id]).NumItems,0) | Container($PARAM[id]).IsUpdating</visible>
-                </control>
-            </control>
-        </definition>
-    </include>
 
-	<include name="List_Landscape_Row">
-        <param name="movement" default="4" />
-        <definition>
-            <include content="List_Core">
-                <param name="orientation" value="horizontal" />
-                <param name="controltype" value="fixedlist" />
-                <param name="id" value="$PARAM[id]" />
-                <param name="item_w" value="341" />
-                <param name="item_h" value="191" />
-                <param name="itemlayout_w" value="357" />
-                <param name="itemlayout_h" value="191" />
-                <param name="itemlayout_include" value="Layout_Landscape" />
-                <param name="icon" value="$PARAM[icon]" />
-                <nested />
-                <movement>$PARAM[movement]</movement>
-            </include>
-        </definition>
-    </include>
 
-	<include name="Layout_Landscape">
-        <param name="artwork_h" default="191" />
-        <param name="selected" default="false" />
-        <param name="icon" default="$VAR[LandscapeImage]" />
-        <param name="diffuse" default="home/home_matte3.png" />
-		<param name="listitem_label" default="ListItem.Label" />
-        <definition>
-            <control type="group">
-                <width>$PARAM[item_w]</width>
-                <height>$PARAM[item_h]</height>
-                <control type="group">
-                    <height>$PARAM[artwork_h]</height>
-                    <control type="image">
-                        <texture background="false" diffuse="$PARAM[diffuse]">$PARAM[icon]</texture>
-                        <aspectratio scalediffuse="false">scale</aspectratio>
-                    </control>
-                </control>
-                <control type="group">
-                    <top>$PARAM[artwork_h]</top>
-						<control type="label">
-							<textcolor>ffffffff</textcolor>
-                            <label>$INFO[$PARAM[listitem_label]]</label>
-                            <textoffsetx>0</textoffsetx>
-                            <align>center</align>
-                            <font>reg22</font>
-                            <width>$PARAM[item_w]</width>
-                            <bottom>-51</bottom>
-                            <visible>!String.IsEmpty($PARAM[listitem_label])</visible>
-							<scroll>$PARAM[selected]</scroll>
-                        </control>
-                </control>
-				<include>WatchedIndicatorSmall</include>
-                <include content="Object_SelectBox" condition="$PARAM[selected]"></include>
-            </control>
-        </definition>
-    </include>
 
-	<include name="List_Reviews_Row">
-        <param name="movement">1</param>
-        <param name="item_h">295</param>
-        <param name="itemlayout_h">295</param>
-        <param name="item_w">872</param>
-        <param name="itemlayout_w">896</param>
-        <definition>
-            <include content="List_Core">
-                <param name="id">$PARAM[id]</param>
-                <param name="orientation">horizontal</param>
-                <param name="controltype">fixedlist</param>
-                <param name="item_w">$PARAM[item_w]</param>
-                <param name="item_h">$PARAM[item_h]</param>
-                <param name="itemlayout_w">$PARAM[itemlayout_w]</param>
-                <param name="itemlayout_h">$PARAM[itemlayout_h]</param>
-                <param name="itemlayout_include">Layout_Reviews</param>
-                <nested />
-                <movement>$PARAM[movement]</movement>
-            </include>
-        </definition>
-    </include>
 
-	<include name="Layout_Reviews">
-        <param name="selected" default="false" />
-        <param name="icon">$INFO[ListItem.Icon]</param>
-        <definition>
-            <control type="group">
-                <width>$PARAM[item_w]</width>
-                <height>$PARAM[item_h]</height>
-                <include content="Object_Control">
-                    <param name="control" value="textbox" />
-                    <label>[B]$INFO[ListItem.Label][/B][CR]$INFO[ListItem.Plot]</label>
-                    <textcolor>ffffffff</textcolor>
-                    <font>Reg26</font>
-					<width>834</width>
-					<height>265</height>
-                    <top>12</top>
-					<left>19</left>
-                    <align>left</align>
-                    <autoscroll delay="6000" time="3000" repeat="10000">!true + $PARAM[selected]</autoscroll>
-                </include>
-				<include content="Object_Control2" condition="!$PARAM[selected]"></include>
-                <include content="Object_SelectBox2" condition="$PARAM[selected]"></include>
-            </control>
-        </definition>
-    </include>
 
 </includes>

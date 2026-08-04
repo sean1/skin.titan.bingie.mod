@@ -155,202 +155,6 @@
     <!-- DETAILS ROW INCLUDES -->
 
 <!--IMDB/RT/TVDB details Row (changed to grouplist in preperation for future additions)-->
-	<include name="IMDB_RT_Details_Row">
-		<control type="grouplist">
-			<visible>!String.IsEmpty(Control.GetLabel(6997021)) | !String.IsEmpty(Control.GetLabel(699706)) | !String.IsEmpty(Control.GetLabel(699702)) | !String.IsEmpty(Control.GetLabel(6997061)) | [!String.IsEmpty(Control.GetLabel(878787)) | !String.IsEmpty(Control.GetLabel(8787871))] + !Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-			<posy>8</posy>
-			<height>31</height>
-			<width>500</width>
-			<orientation>horizontal</orientation>
-			<usecontrolcoords>true</usecontrolcoords>
-			<itemgap>10</itemgap>
-			<align>left</align>
-
-			<!-- IMDB logo White -->
-			<control type="image">
-				<include>Default_Visible_Fade</include>
-				<posy>2</posy>
-				<height>30</height>
-                <width>52</width>
-                <aspectratio>keep</aspectratio>
-                <texture background="true">bingie/imdb11.png</texture>
-				<visible>false</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(6997021))</visible>
-            </control>
-
-			<!-- IMDB logo Colored -->
-			<control type="image">
-				<include>Default_Visible_Fade</include>
-				<posy>2</posy>
-				<height>30</height>
-                <width>52</width>
-                <aspectratio>keep</aspectratio>
-                <texture background="true">bingie/imdb22.png</texture>
-				<visible>!false</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(699702))</visible>
-            </control>
-
-			<!-- IMDB Text Label color -->
-			<control type="label" id="699702">
-				<include>Default_Visible_Fade</include>
-                <visible>!String.IsEmpty(Control.GetLabel(699702))</visible>
-				<visible>!false</visible>
-				<top></top>
-				<width>auto</width>
-                <height></height>
-                <textcolor>a6ffffff</textcolor>
-                <font>Reg26</font>
-                <scroll>false</scroll>
-                <label>$VAR[IMDBRatingValue]</label>
-            </control>
-
-			<!-- IMDB Text Label White -->
-			<control type="label" id="6997021">
-				<include>Default_Visible_Fade</include>
-                <visible>!String.IsEmpty(Control.GetLabel(6997021))</visible>
-				<visible>false</visible>
-				<top></top>
-				<width>auto</width>
-                <height></height>
-                <textcolor>a6ffffff</textcolor>
-                <font>Reg26</font>
-                <scroll>false</scroll>
-                <label>$VAR[IMDBRatingValue]</label>
-            </control>
-
-			<!-- TVDB logo Colored -->
-			<control type="image">
-				<include>Default_Visible_Fade</include>
-				<posy>2</posy>
-				<height>30</height>
-                <width>50</width>
-                <aspectratio>keep</aspectratio>
-                <texture>bingie/tvdb22.png</texture>
-				<visible>!false</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(878787))</visible>
-				<visible>!Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-            </control>
-
-			<!-- TVDB logo White -->
-			<control type="image">
-				<include>Default_Visible_Fade</include>
-				<posy>2</posy>
-				<height>30</height>
-                <width>50</width>
-                <aspectratio>keep</aspectratio>
-                <texture background="true">bingie/tvdb11.png</texture>
-				<visible>false</visible>
-				<visible>!String.IsEmpty(Control.GetLabel(8787871))</visible>
-				<visible>!Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-            </control>
-
-			<!-- TVDB Label White -->
-			<control type="label" id="8787871">
-				<include>Default_Visible_Fade</include>
-				<visible>!String.IsEmpty(Control.GetLabel(8787871))</visible>
-				<visible>false</visible>
-				<visible>!Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-	<width>auto</width>
-                <height></height>
-                <textcolor>a6ffffff</textcolor>
-                <font>Reg26</font>
-                <scroll>false</scroll>
-                <label>$INFO[Window(Home).Property(SkinHelper.ListItem.Rating.TVDB)]</label>
-            </control>
-
-			<!-- TVDB Text Label -->
-			<control type="label" id="878787">
-				<include>Default_Visible_Fade</include>
-				<visible>!String.IsEmpty(Control.GetLabel(878787))</visible>
-				<visible>!false</visible>
-				<visible>!Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-	<width>auto</width>
-                <height></height>
-                <textcolor>a6ffffff</textcolor>
-                <font>Reg26</font>
-                <scroll>false</scroll>
-                <label>$INFO[Window(Home).Property(SkinHelper.ListItem.Rating.TVDB)]</label>
-            </control>
-
-			<!-- RT fresh white -->
-			<control type="image">
-				<include>Default_Visible_Fade</include>
-                <posy>2</posy>
-				<aspectratio>keep</aspectratio>
-                <width>28</width>
-                <height>29</height>
-                <texture background="true">bingie/whiteRTcritics1.png</texture>
-			    <visible>!String.IsEmpty(Control.GetLabel(6997061)) + String.IsEmpty(Control.GetLabel(878787)) + String.IsEmpty(Control.GetLabel(8787871)) | !String.IsEmpty(Control.GetLabel(6997061)) + Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<visible>Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-				<visible>false</visible>
-            </control>
-
-			<!-- RT rotten white -->
-			<control type="image">
-				<include>Default_Visible_Fade</include>
-                <posy>3</posy>
-				<aspectratio>keep</aspectratio>
-                <width>29</width>
-                <height>28</height>
-                <texture background="true">bingie/whitertcriticsrotten2.png</texture>
-			    <visible>!String.IsEmpty(Control.GetLabel(6997061)) + String.IsEmpty(Control.GetLabel(878787)) + String.IsEmpty(Control.GetLabel(8787871)) | !String.IsEmpty(Control.GetLabel(6997061)) + Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<visible>!Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-				<visible>false</visible>
-            </control>
-
-			<!-- Rotten Tomatoes Fresh Colored -->
-			<control type="image">
-				<posy>2</posy>
-				<include>Default_Visible_Fade</include>
-                <aspectratio>keep</aspectratio>
-                <width>28</width>
-                <height>29</height>
-                <texture background="true">bingie/fresh11.png</texture>
-				<visible>!String.IsEmpty(Control.GetLabel(699706)) + String.IsEmpty(Control.GetLabel(878787)) + String.IsEmpty(Control.GetLabel(8787871)) | !String.IsEmpty(Control.GetLabel(699706)) + Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<visible>Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-				<visible>!false</visible>
-            </control>
-
-			<!-- Rotten Tomatoes Rotten Colored -->
-			<control type="image">
-				<posy>3</posy>
-				<include>Default_Visible_Fade</include>
-                <aspectratio>keep</aspectratio>
-                <width>29</width>
-                <height>28</height>
-                <texture background="true">bingie/rotten2.png</texture>
-				<visible>!String.IsEmpty(Control.GetLabel(699706)) + String.IsEmpty(Control.GetLabel(878787)) + String.IsEmpty(Control.GetLabel(8787871)) | !String.IsEmpty(Control.GetLabel(699706)) + Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<visible>!Integer.IsGreater(ListItem.Rating(tomatometerallcritics),5.9)</visible>
-				<visible>!false</visible>
-            </control>
-
-			<!-- RT label White -->
-			<control type="label" id="6997061">
-				<include>Default_Visible_Fade</include>
-				<visible>!String.IsEmpty(Control.GetLabel(6997061)) + String.IsEmpty(Control.GetLabel(878787)) + String.IsEmpty(Control.GetLabel(8787871)) | !String.IsEmpty(Control.GetLabel(6997061)) + Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<visible>false</visible>
-	<width>auto</width>
-                <height></height>
-                <textcolor>a6ffffff</textcolor>
-                <font>Reg26</font>
-                <scroll>darkgray</scroll>
-                <label>$VAR[RottenTomatoesRatingValue]</label>
-            </control>
-
-			<!-- RT label -->
-			<control type="label" id="699706">
-				<include>Default_Visible_Fade</include>
-				<visible>!String.IsEmpty(Control.GetLabel(699706)) + String.IsEmpty(Control.GetLabel(878787)) + String.IsEmpty(Control.GetLabel(8787871)) | !String.IsEmpty(Control.GetLabel(699706)) + Integer.IsEqual(Window(Home).Property(SkinHelper.ListItem.Rating.TVDB),0.0)</visible>
-				<visible>!false</visible>
-	<width>auto</width>
-                <height></height>
-                <textcolor>a6ffffff</textcolor>
-                <font>Reg26</font>
-                <scroll>darkgray</scroll>
-                <label>$VAR[RottenTomatoesRatingValue]</label>
-            </control>
-        </control>
-    </include>
 
 	<!-- New Tag Percent -->
     <include name="New_Tag_Details_Row">
@@ -376,7 +180,6 @@
             <height>30</height>
             <!-- Thumbs Up -->
             <control type="image" id="61111">
-                <include>ThumbsUpMinCondition</include>
                 <posy>9</posy>
                 <width>25</width>
                 <height>30</height>
@@ -386,7 +189,6 @@
             </control>
             <!-- Thumbs Down -->
             <control type="image" id="61112">
-                <include>ThumbsDownMaxCondition</include>
                 <posy>10</posy>
                 <width>25</width>
                 <height>30</height>
@@ -443,33 +245,8 @@
     </include>
 
 	<!-- Year / Premiered -->
-    <include name="Year_Premiered_Highlight_Widget">
-        <control type="label" id="6114">
-            <visible>!String.IsEmpty(Control.GetLabel(6114))</visible>
-            <posy>7</posy>
-            <height>35</height>
-            <width>auto</width>
-            <aligny>center</aligny>
-            <font>Bold23</font>
-            <textcolor>ffffffff</textcolor>
-            <label>$VAR[YearOrPremiered]</label>
-            <include>Default_Visible_Fade</include>
-        </control>
-    </include>
 
 	<!-- MPAA icon -->
-    <include name="MPAA_Details_RowNew">
-	<include>Default_Visible_Fade</include>
-	<!-- Icon display -->
-		<control type="image" id="123458">
-			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
-			<width>56</width>
-			<height>50</height>
-            <aspectratio>keep</aspectratio>
-			<texture>$VAR[mediaflags_large_rating_UK_icons]</texture>
-			<include>Default_Visible_Fade</include>
-        </control>
-    </include>
 
 	<!-- MPAA Color Icons -->
     <include name="MPAA_Details_RowUS">
@@ -585,67 +362,10 @@
     </include>
 
 	<!-- Home Seasons Top Screen / Total Seasons/Episodes  -->
-    <include name="Duration_TotalSeasonsEpisodes_Highlight_Widget">
-        <control type="label" id="6116">
-            <posy>7</posy>
-            <visible>!String.IsEmpty(Control.GetLabel(6116))</visible>
-            <width>auto</width>
-            <label>$VAR[DurationOrTotalSECount]</label>
-            <height>35</height>
-            <aligny>center</aligny>
-            <textcolor>ffffffff</textcolor>
-            <font>Bold23</font>
-            <include>Default_Visible_Fade</include>
-        </control>
-    </include>
 
 	<!-- Resolution Top Box -->
-    <include name="Resolution_Details_Row">
-				<include>Default_Visible_Fade</include>
-			<control type="button" id="6117">
-				<visible>!String.IsEmpty(Control.GetLabel(6117))</visible>
-				<visible>![true + [String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)]]</visible>
-				<posy>7</posy>
-                <height>36</height>
-                <width>auto</width>
-				<align>center</align>
-				<aligny>center</aligny>
-				<textwidth>158</textwidth>
-				<textcolor>b3ffffff</textcolor>
-				<disabledcolor>b3ffffff</disabledcolor>
-				<texturenofocus colordiffuse="ff414141" border="10">bingie/square-rounded2.png</texturenofocus>
-				<texturefocus colordiffuse="ff414141" border="10">bingie/square-rounded2.png</texturefocus>
-				<textoffsetx>8</textoffsetx>
-				<textoffsety>2</textoffsety>
-				<font>Reg24</font>
-				<label>$VAR[GetResolution,[B],[/B]]</label>
-				<enable>false</enable>
-            </control>
-	</include>
 
 	<!-- HDR -->
-    <include name="HDR_Details_Row">
-				<include>Default_Visible_Fade</include>
-			<control type="button" id="61171">
-				<visible>String.IsEqual(Listitem.HdrType,hdr10) | String.IsEqual(Listitem.HdrType,dolbyvision) | String.IsEqual(Listitem.HdrType,hlg)</visible>
-				<visible>![true + [String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)]]</visible>
-				<posy>7</posy>
-                <height>36</height>
-                <width>auto</width>
-				<align>center</align>
-				<aligny>center</aligny>
-				<textwidth>160</textwidth>
-				<textcolor>b3ffffff</textcolor>
-				<disabledcolor>b3ffffff</disabledcolor>
-				<texturenofocus colordiffuse="ff414141" border="10">bingie/square-rounded2.png</texturenofocus>
-				<texturefocus colordiffuse="ff414141" border="10">bingie/square-rounded2.png</texturefocus>
-				<textoffsetx>8</textoffsetx>
-				<textoffsety>2</textoffsety>
-				<font>Reg24</font>
-				<label>[B]$VAR[VideoHDRVar][/B]</label>
-				<enable>false</enable>
-            </control>
-	</include>
 
 	<!-- Audio Channels Top Box -->
     <include name="Audio_Channels_Details_Row">
@@ -720,42 +440,6 @@
 </include>
 
 		<!-- TV Show Status -->
-		<include name="ShowStatus">
-				<include>Default_Visible_Fade</include>
-		<control type="group">
-		<visible>!String.IsEmpty(Control.GetLabel(6111161)) + $EXP[IsTvShowDBType]</visible>
-		<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast)</visible>
-				<visible>String.IsEmpty(ListItem.AudioCodec)</visible>
-			<control type="button" id="6111161">
-				<posy>7</posy>
-                <height>36</height>
-                <width min="80" max="148">auto</width>
-				<align>center</align>
-				<aligny>top</aligny>
-				<textwidth>auto</textwidth>
-				<textcolor>00ffffff</textcolor>
-				<disabledcolor>00ffffff</disabledcolor>
-				<texturenofocus colordiffuse="ff414141" border="10">bingie/square-rounded2.png</texturenofocus>
-				<texturefocus colordiffuse="ff414141" border="10">bingie/square-rounded2.png</texturefocus>
-				<textoffsetx>8</textoffsetx>
-				<textoffsety>-1</textoffsety>
-				<font>Reg26</font>
-				<label>[CAPITALIZE]$INFO[ListItem.Status][/CAPITALIZE]</label>
-				<enable>false</enable>
-			</control>
-			<control type="label" id="6111161">
-				<width>132</width>
-				<left>8</left>
-                <align>left</align>
-				<aligny>top</aligny>
-				<posy>7</posy>
-                <textcolor>b3ffffff</textcolor>
-                <font>Reg26</font>
-                <scroll>true</scroll>
-                <label>[CAPITALIZE]$INFO[ListItem.Status][/CAPITALIZE]</label>
-			</control>
-		</control>
-		</include>
 
     <!-- END OF DETAILS ROW INCLUDES-->
 
@@ -770,9 +454,7 @@
 			<include condition="!false">Thumbs_Up_Down_Details_Row</include>
 			<include condition="!false">New_Tag_Details_Row</include>
             <include condition="!false">Percentage_Rating_Details_Row</include>
-            <include condition="false">IMDB_RT_Details_Row</include>
 			<include>Year_Premiered_Details_Row</include>
-            <include condition="false">MPAA_Details_RowNew</include>
 			<include condition="!false + !false">MPAA_Details_Row</include>
 			<include condition="false + !false">MPAA_Details_RowUS</include>
 			<include condition="false + false">MPAA_Details_RowUS_Fixed_Size</include>
@@ -780,13 +462,10 @@
 			<!-- Resolution_Details_Row -->
 
 			<!-- <include>Resolution_Details_Row</include> -->
-			<include condition="false">Resolution_Details_Row</include>
-			<include condition="false">HDR_Details_Row</include>
 			<!-- HDR_Details_Row -->
 
 			<!-- <include>HDR_Details_Row</include> -->
 			<include>Audio_Channels_Details_Row</include>
-			<include condition="false">ShowStatus</include>
 			<include condition="!false">Audiocodec1</include>
 		</control>
 	</include>
@@ -799,7 +478,6 @@
 			<height>50</height>
 			<itemgap>15</itemgap>
 			<include>Duration_TotalSeasonsEpisodes_Details_Row</include>
-            <include condition="false">MPAA_Details_RowNew</include>
 			<include condition="!false + !false">MPAA_Details_Row</include>
 			<include condition="false + !false">MPAA_Details_RowUS</include>
 			<include condition="false + false">MPAA_Details_RowUS_Fixed_Size</include>
@@ -859,69 +537,7 @@
           </definition>
     </include>
 
-    <!-- Thumbs Down/Up Includes -->
-    <include name="ThumbsUpMinCondition">
-        <include condition="false">DisableVisibility</include>
-        <include condition="false">ThumbsUpMin6</include>
-        <include condition="false">ThumbsUpMin7</include>
-        <include condition="false">ThumbsUpMin8</include>
-        <include condition="false">ThumbsUpMin9</include>
-        <include condition="false">ThumbsUpMin10</include>
-    </include>
-
-	<include name="ThumbsUpMinCondition_2">
-        <include condition="false">DisableVisibility</include>
-        <include condition="false">ThumbsUpMin6_2</include>
-        <include condition="false">ThumbsUpMin7_2</include>
-        <include condition="false">ThumbsUpMin8_2</include>
-        <include condition="false">ThumbsUpMin9_2</include>
-        <include condition="false">ThumbsUpMin10_2</include>
-    </include>
-
-    <include name="ThumbsDownMaxCondition">
-        <include condition="false">DisableVisibility</include>
-        <include condition="false">ThumbsDownMax5</include>
-        <include condition="false">ThumbsDownMax4</include>
-        <include condition="false">ThumbsDownMax3</include>
-        <include condition="false">ThumbsDownMax2</include>
-        <include condition="false">ThumbsDownMax1</include>
-    </include>
-
-	<include name="ThumbsDownMaxCondition_2">
-        <include condition="false">DisableVisibility</include>
-        <include condition="false">ThumbsDownMax5_2</include>
-        <include condition="false">ThumbsDownMax4_2</include>
-        <include condition="false">ThumbsDownMax3_2</include>
-        <include condition="false">ThumbsDownMax2_2</include>
-        <include condition="false">ThumbsDownMax1_2</include>
-    </include>
-
-    <include name="ThumbsUpMin6"><visible>[Integer.IsGreaterOrEqual(ListItem.UserRating,6) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsUpMin7"><visible>[Integer.IsGreaterOrEqual(ListItem.UserRating,7) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsUpMin8"><visible>[Integer.IsGreaterOrEqual(ListItem.UserRating,8) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsUpMin9"><visible>[Integer.IsGreaterOrEqual(ListItem.UserRating,9) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsUpMin10"><visible>[Integer.IsGreaterOrEqual(ListItem.UserRating,10) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-
-	<include name="ThumbsUpMin6_2"><visible>![[Integer.IsGreaterOrEqual(ListItem.UserRating,6) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsUpMin7_2"><visible>![[Integer.IsGreaterOrEqual(ListItem.UserRating,7) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsUpMin8_2"><visible>![[Integer.IsGreaterOrEqual(ListItem.UserRating,8) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsUpMin9_2"><visible>![[Integer.IsGreaterOrEqual(ListItem.UserRating,9) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsUpMin10_2"><visible>![[Integer.IsGreaterOrEqual(ListItem.UserRating,10) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),like) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-
-    <include name="ThumbsDownMax5"><visible>[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,5) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsDownMax4"><visible>[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,4) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsDownMax3"><visible>[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,3) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsDownMax2"><visible>[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,2) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-    <include name="ThumbsDownMax1"><visible>[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,1) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]</visible></include>
-
-	<include name="ThumbsDownMax5_2"><visible>![[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,5) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsDownMax4_2"><visible>![[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,4) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsDownMax3_2"><visible>![[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,3) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsDownMax2_2"><visible>![[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,2) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-    <include name="ThumbsDownMax1_2"><visible>![[!String.IsEmpty(ListItem.UserRating) + Integer.IsLessOrEqual(ListItem.UserRating,1) + String.IsEmpty(Window(Home).Property(RateTitle))] | [String.IsEqual(Window(Home).Property(RateTitle.Action),dislike) + String.IsEqual(Window(Home).Property(RateTitle),ListItem.DBID)]]</visible></include>
-
     <!-- disable visibility -->
-    <include name="DisableVisibility"><visible>false</visible></include>
 
     <include name="hiddenSubmenu">
         <!-- hidden submenu to do count calculations -->
@@ -1226,16 +842,6 @@
     </variable>
 
     <!-- Resolution Info -->
-	<variable name="GetResolution">
-		<!-- NORMAL -->
-		<value condition="ListItem.IsStereoscopic">3D</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,8K)">8K</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,4K)">4K</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,1080)">FHD</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,720)">HD</value>
-		<value condition="String.IsEqual(ListItem.VideoResolution,480) | String.IsEqual(ListItem.VideoResolution,576) | String.IsEqual(ListItem.VideoResolution,540)">SD</value>
-
-	</variable>
 
 	<!-- Audio Channels Info (from 5.1 and up) -->
 	<variable name="GetAudioChannels">
@@ -1265,7 +871,6 @@
 
     <!-- bingie home clearlogo -->
     <variable name="BingieInfoClearlogo">
-        <value condition="false">colors/color_transparent.png</value>
         <!-- NORMAL -->
         <value condition="!String.IsEmpty(ListItem.Art(tvshow.clearlogo))">$INFO[ListItem.Art(tvshow.clearlogo)]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(artist.clearlogo))">$INFO[ListItem.Art(artist.clearlogo)]</value>
@@ -1291,7 +896,6 @@
     </variable>
 
     <variable name="BingieSpotlightLogo">
-        <value condition="false">colors/color_transparent.png</value>
         <value condition="!String.IsEmpty(Container(1508).ListItem.Art(tvshow.clearlogo))">$INFO[Container(1508).ListItem.Art(tvshow.clearlogo)]</value>
         <value condition="!String.IsEmpty(Container(1508).ListItem.Art(clearlogo))">$INFO[Container(1508).ListItem.Art(clearlogo)]</value>
         <value condition="!String.IsEmpty(Container(1508).ListItem.Property(ChannelLogo))">$INFO[Container(1508).ListItem.Property(ChannelLogo)]</value>
@@ -1374,10 +978,6 @@
         <value condition="!String.IsEmpty(Container(1508).ListItem.Art(thumb))">$INFO[Container(1508).ListItem.Art(thumb)]</value>
     </variable>
 
-	<variable name="SpotlightPosterImage">
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(tvshow.poster))">$INFO[Container(1508).ListItem.Art(tvshow.poster)]</value>
-        <value condition="!String.IsEmpty(Container(1508).ListItem.Art(poster))">$INFO[Container(1508).ListItem.Art(poster)]</value>
-    </variable>
 
     <!-- Bingie More Details (pseudo-random) -->
     <variable name="BingieMoreDetails">
@@ -1503,15 +1103,6 @@
     </variable>
 
     <!-- Global Background with Fade-Panel Overlay -->
-    <include name="GlobalFanartWithOverlay">
-        <include>GlobalBackground</include>
-        <control type="image">
-            <width>100%</width>
-            <height>100%</height>
-            <texture background="true" colordiffuse="$VAR[BingiePanelColor]">colors/color_white.png</texture>
-            <animation effect="fade" start="100" end="$PARAM[overlay_percent]" time="0" condition="true">Conditional</animation>
-        </control>
-    </include>
 
     <variable name="WidgetBusySpinnerPath">
         <value condition="System.HasAddon(resource.images.busyspinners.basic) + false"></value>
@@ -1824,19 +1415,9 @@
                 <focusedlayout width="360" height="50" condition="!Control.HasFocus(900)">
 
                     <include content="Bingie_Submenu_LabelFOCUS"></include>
-                    <control type="button">
-                        <label/>
-                        <visible>false</visible>
-                        <onfocus>SetProperty(submenu,show,Home)</onfocus>
-					</control>
                 </focusedlayout>
 				<focusedlayout width="360" height="50" condition="Control.HasFocus(900)">
                     <include content="Bingie_Submenu_Label"></include>
-                    <control type="button">
-                        <label/>
-                        <visible>false</visible>
-                        <onfocus>SetProperty(submenu,show,Home)</onfocus>
-					</control>
                 </focusedlayout>
                 <content>
                     <include>StaticSubmenu</include>
@@ -2434,14 +2015,10 @@
 <!-- Bingie Basic Inc/Vars -->
 <!-- Bingie Panel Color - Home Background Color-->
     <variable name="BingiePanelColor">
-        <value condition="!true"></value>
         <value>ff000000</value>
     <!-- This Above Should Never Be Changed -->
 	</variable>
 
-    <include name="Title_Height_No_Clearlogo">
-        <top>43</top>
-    </include>
 
     <!-- Bingie Views Includes -->
     <include name="Bingie_Main_Spotlight_Section">
@@ -2686,31 +2263,6 @@
 		</control>
 	</include>
 
-    <include name="Bingie_Main_View_Fixed_Frame">
-        <param name="visibility" default="true" />
-        <param name="isHorizontal" default="false" />
-        <definition>
-            <control type="image">
-                <nested />
-                <visible>$PARAM[visibility]</visible>
-                <visible>Integer.IsGreater(Container($PARAM[containerid]).NumItems, 0) + Control.HasFocus($PARAM[containerid])</visible>
-                <top>$PARAM[top]</top>
-                <width>$PARAM[width]</width>
-                <height>$PARAM[height]</height>
-                <texture background="true" border="-4">$PARAM[texture]</texture>
-                <colordiffuse>ffffffff</colordiffuse>
-                <bordersize>8</bordersize>
-                <include>Default_Visible_Fade</include>
-                <animation effect="slide" end="$PARAM[xAxisAnim],0" time="150" condition="Integer.IsGreater(Container($PARAM[containerid]).Column, 0)">Conditional</animation>
-                <animation effect="slide" end="$PARAM[xAxisAnim],0" time="150" condition="Integer.IsGreater(Container($PARAM[containerid]).Column, 1)">Conditional</animation>
-                <animation effect="slide" end="$PARAM[xAxisAnim],0" time="150" condition="Integer.IsGreater(Container($PARAM[containerid]).Column, 2)">Conditional</animation>
-                <animation effect="slide" end="$PARAM[xAxisAnim],0" time="150" condition="Integer.IsGreater(Container($PARAM[containerid]).Column, 3)">Conditional</animation>
-                <animation effect="slide" end="$PARAM[xAxisAnim],0" time="150" condition="Integer.IsGreater(Container($PARAM[containerid]).Column, 4)">Conditional</animation>
-                <animation effect="slide" end="$PARAM[xAxisAnim],0" time="150" condition="Integer.IsGreater(Container($PARAM[containerid]).Column, 5)">Conditional</animation>
-                <animation effect="slide" end="0,$PARAM[yAxisAnim]" time="200" condition="$PARAM[isHorizontal] + Integer.IsGreater(Container($PARAM[containerid]).Row, 0)">Conditional</animation>
-            </control>
-        </definition>
-    </include>
 
     <!-- Content header -->
     <variable name="BingieMainContentHeader">
@@ -2730,10 +2282,6 @@
     <!-- season/episode sublabel -->
 
     <!-- season total episodes / watched info -->
-    <variable name="BingieMainSeasonTotalEpisodesInfoLabel">
-        <value condition="Container.Content(seasons) + !String.IsEmpty(ListItem.Property(TotalEpisodes)) + Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0) + !String.IsEqual(ListItem.Property(UnWatchedEpisodes),ListItem.Property(TotalEpisodes))">$INFO[ListItem.Property(TotalEpisodes),, $LOCALIZE[20360] ]$INFO[ListItem.Property(UnWatchedEpisodes),(, $LOCALIZE[16101])]</value>
-        <value condition="Container.Content(seasons) + !String.IsEmpty(ListItem.Property(TotalEpisodes))">$INFO[ListItem.Property(TotalEpisodes),, $LOCALIZE[20360]]</value>
-    </variable>
 
     <!-- title text fallback -->
     <variable name="BingieMainFallbackTitle">

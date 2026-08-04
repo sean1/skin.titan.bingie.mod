@@ -584,31 +584,21 @@
                             </control>
 
 
-							<!--More episodes-->
+							<!-- Browse POV seasons and episodes. -->
                             <control type="radiobutton" id="53">
-                                <visible>false</visible>
-                                <visible>$EXP[IsTvShowDBTypeNoFallback]	| [$EXP[IsEpisodeDBTypeNoFallback] + !String.IsEmpty(ListItem.DBID) + !String.IsEmpty(Window(Home).Property(ListItem.TVShowID))]</visible>
+								<visible>$EXP[IsTvShowDBTypeNoFallback] + !String.IsEmpty(ListItem.UniqueID(tmdb))</visible>
                                 <include>Bingie_InfoDialog_Button_Default_Defs</include>
                                 <include content="Bingie_InfoDialog_Button_Texture">
                                     <param name="radiotexture" value="dialogs/videoinfo/info/more_episodes.png"/>
                                 </include>
-                                <label>$LOCALIZE[31853]</label>
+								<label>Episodes</label>
 								<radioposy>22</radioposy>
                                 <radioposx>16</radioposx>
                                 <radiowidth>24</radiowidth>
                                 <radioheight>24</radioheight>
                                 <onclick>SetProperty(BaseWindow,1,Home)</onclick>
 								<onclick>Dialog.Close(movieinformation)</onclick>
-                                <!-- activate ALL EPISODES view -->
-                                <!-- from episode infodialog -->
-                                <onclick condition="String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEmpty(ListItem.DBID) + !String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">SetProperty(KeepTVShowID,1,Home)</onclick>
-                                <onclick condition="String.IsEqual(ListItem.DBTYPE,episode) + !String.IsEmpty(ListItem.DBID) + !String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">ActivateWindow(Videos,videodb://tvshows/titles/$INFO[Window(Home).Property(ListItem.TVShowID)]/-2/,return)</onclick>
-                                <!-- from tvshow infodialog for library content -->
-                                <onclick condition="String.IsEqual(ListItem.DBTYPE,tvshow) + !String.IsEmpty(ListItem.DBID)">SetProperty(ListItem.TVShowID,$INFO[ListItem.DBID],Home)</onclick>
-                                <onclick condition="String.IsEqual(ListItem.DBTYPE,tvshow) + !String.IsEmpty(ListItem.DBID)">SetProperty(KeepTVShowID,1,Home)</onclick>
-								<onclick condition="String.IsEqual(ListItem.DBTYPE,tvshow) + !String.IsEmpty(ListItem.DBID)">ActivateWindow(Videos,videodb://tvshows/titles/$INFO[ListItem.DBID]/-2/,return)</onclick>
-                                <!-- from tvshow infodialog for non-library content -->
-								<onclick condition="String.IsEmpty(ListItem.DBID)">ActivateWindow(Videos,$ESCINFO[ListItem.FileNameAndPath],return)</onclick>
+								<onclick>AlarmClock(BrowseEpisodes,ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_season_list&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)],return),00:01,silent)</onclick>
 							</control>
 
 							<!-- Rate this title -->

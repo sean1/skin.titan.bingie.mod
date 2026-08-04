@@ -343,7 +343,6 @@
 			<property name="defaultID">5</property>
 			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
 			<onclick>ActivateWindow(Settings)</onclick>
-			<property name="path">ActivateWindow(Settings)</property>
 			<property name="list">Settings</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
 			<property name="group">powermenu</property>
@@ -430,7 +429,6 @@
 			<property name="defaultID">5</property>
 			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
 			<onclick>ActivateWindow(Settings)</onclick>
-			<property name="path">ActivateWindow(Settings)</property>
 			<property name="list">Settings</property>
 			<property name="group">powermenu</property>
 			<property name="isSubmenu">True</property>

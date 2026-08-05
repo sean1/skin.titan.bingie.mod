@@ -171,7 +171,7 @@
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
-            <autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
+            <autoscroll delay="2000" time="2000">true</autoscroll>
             <textcolor>ffffffff</textcolor>
         </control>
     </include>

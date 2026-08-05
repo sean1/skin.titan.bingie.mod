@@ -62,7 +62,7 @@
                 <aligny>center</aligny>
                 <label>$VAR[ThumbListDetailsSquare]</label>
                 <font>Reg18</font>
-                <autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
+                <autoscroll delay="2000" time="2000">true</autoscroll>
                 <textcolor>ffffffff</textcolor>
                 <visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             </control>

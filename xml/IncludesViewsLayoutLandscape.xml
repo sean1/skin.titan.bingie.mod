@@ -30,7 +30,7 @@
 			<texture background="true" fallback="DefaultFolder.png">$VAR[LandscapeImage]</texture>
 			<aspectratio align="center" aligny="center">keep</aspectratio>
 		</control>
-        <include condition="!$EXP[IsBingieViewsActive]">ThumbsTagOverlayBingie</include>
+        <include condition="!$EXP[IsBingieViewsActive] + !Control.IsVisible(523)">ThumbsTagOverlayBingie</include>
         <include condition="!$EXP[IsBingieViewsActive]">New_Episodes_Tag_Overlay</include>
         <control type="group">
             <!--Watched Overlay-->
@@ -136,7 +136,7 @@
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
-			<autoscroll delay="2000" time="2000" repeat="500">true</autoscroll>
+			<autoscroll delay="2000" time="2000">true</autoscroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             <textcolor>ffffffff</textcolor>
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>

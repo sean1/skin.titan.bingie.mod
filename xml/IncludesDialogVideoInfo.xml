@@ -8,6 +8,11 @@
 				<include>FullscreenDimensions</include>
 				<texture>colors/color_black.png</texture>
 			</control>
+			<include content="BingieSpotlightCornerImage">
+				<param name="visibility" value="!Player.HasVideo" />
+				<param name="image" value="$INFO[Window.Property(PovInfoFanart)]" />
+			</include>
+			<include>BingieRowTrailerPreviewWindow</include>
 			<!-- Dialog Info -->
 			<control type="group">
 				<animation effect="fade" start="0" end="100" time="200">Visible</animation>
@@ -349,14 +354,13 @@
 					<!-- Plot -->
 					<control type="group">
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
-						<left>620</left>
 						<top>19</top>
-						<height>300</height>
-						<width>1130</width>
+						<height>120</height>
+						<width>820</width>
 						<control type="textbox">
 							<visible>[String.IsEmpty(ListItem.Set) + !false] | false</visible>
-							<width>1130</width>
-							<height>300</height>
+							<width>820</width>
+							<height>120</height>
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
@@ -365,8 +369,8 @@
 						</control>
 						<control type="textbox">
 							<visible>[!String.IsEmpty(ListItem.Set) + !false]</visible>
-							<width>1130</width>
-							<height>300</height>
+							<width>820</width>
+							<height>120</height>
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
@@ -377,7 +381,7 @@
 
 					<!-- buttons -->
 					<control type="group">
-						<top>-310</top>
+						<top>33</top>
 						<width>550</width>
 						<posx>1</posx>
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), plot) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)">Conditional</animation>
@@ -587,7 +591,14 @@
 			<left>8</left>
 			<bottom>10</bottom>
 			<width>214</width>
-			<height>96</height>
+			<height>72</height>
+			<texture colordiffuse="b3ffffff">colors/color_black.png</texture>
+		</control>
+		<control type="image">
+			<left>8</left>
+			<bottom>10</bottom>
+			<width>214</width>
+			<height>128</height>
 			<texture>overlays/gradient_episodes.png</texture>
 			<aspectratio>stretch</aspectratio>
 			<colordiffuse>ffffffff</colordiffuse>

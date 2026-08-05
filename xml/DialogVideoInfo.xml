@@ -5,9 +5,12 @@
 	<onload condition="!String.IsEmpty(Window.Property(AdditionalInfo))">ClearProperty(AdditionalInfo)</onload>
     <onload>ClearProperty(PovInfoTmdb)</onload>
     <onload>ClearProperty(PovInfoType)</onload>
+	<onload>ClearProperty(PovInfoFanart)</onload>
     <onload condition="[String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow)] + !String.IsEmpty(ListItem.UniqueID(tmdb))">SetProperty(PovInfoTmdb,$INFO[ListItem.UniqueID(tmdb)])</onload>
     <onload condition="String.IsEqual(ListItem.DBTYPE,movie)">SetProperty(PovInfoType,movie)</onload>
     <onload condition="String.IsEqual(ListItem.DBTYPE,tvshow)">SetProperty(PovInfoType,tvshow)</onload>
+	<onload condition="!String.IsEmpty(ListItem.Art(fanart))">SetProperty(PovInfoFanart,$INFO[ListItem.Art(fanart)])</onload>
+	<onload condition="String.IsEmpty(ListItem.Art(fanart)) + !String.IsEmpty(ListItem.Art(tvshow.fanart))">SetProperty(PovInfoFanart,$INFO[ListItem.Art(tvshow.fanart)])</onload>
     <onload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">ClearProperty(ListItem.TVShowID,Home)</onload>
     <onload condition="!String.IsEmpty(Window(Home).Property(BaseWindow))">ClearProperty(BaseWindow,Home)</onload>
     <onunload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID)) + String.IsEmpty(Window(Home).Property(KeepTVShowID))">ClearProperty(ListItem.TVShowID,Home)</onunload>
@@ -20,6 +23,7 @@
 		condition="Window.IsActive(1122) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">AlarmClock(PovActorFocus,SetFocus(630),00:00:01,silent,loop)</onunload>
     <onunload>ClearProperty(PovInfoTmdb)</onunload>
     <onunload>ClearProperty(PovInfoType)</onunload>
+	<onunload>ClearProperty(PovInfoFanart)</onunload>
     <controls>
         <include condition="true">BingieInfo</include>
 	</controls>

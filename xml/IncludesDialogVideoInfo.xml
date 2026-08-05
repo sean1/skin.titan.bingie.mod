@@ -50,6 +50,8 @@
 				<!-- Native Kodi cast row populated by POV metadata -->
 				<control type="label">
 					<visible>Integer.IsGreater(Container(50).NumItems,0)</visible>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
+					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
 					<left>126</left>
 					<top>680</top>
 					<width>1668</width>
@@ -148,6 +150,8 @@
 				<!-- Control 50 is reserved by Kodi, so render its cast data in a normal panel that can route mouse and keyboard selection through POV. -->
 				<control type="panel" id="550">
 					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
+					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
 					<left>126</left>
 					<top>730</top>
 					<width>1668</width>
@@ -156,7 +160,8 @@
 					<preloaditems>4</preloaditems>
 					<scrolltime tween="quadratic">400</scrolltime>
 					<onup>8000</onup>
-					<ondown>550</ondown>
+					<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+					<ondown condition="!Integer.IsGreater(Container(560).NumItems,0)">550</ondown>
 					<itemlayout width="238" height="320">
 						<include content="PovCastCard">
 							<param name="focused" value="false" />
@@ -170,6 +175,102 @@
 					<content>
 						<include content="PovCastItems" />
 					</content>
+				</control>
+				<control type="button" id="561">
+					<visible>Integer.IsGreater(Container(50).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0) + !Control.HasFocus(560) + !Control.HasFocus(562)</visible>
+					<left>1394</left>
+					<top>674</top>
+					<width>400</width>
+					<height>50</height>
+					<font>Reg24</font>
+					<align>right</align>
+					<aligny>center</aligny>
+					<label>$LOCALIZE[31622]</label>
+					<textcolor>b3ffffff</textcolor>
+					<focusedcolor>ffffffff</focusedcolor>
+					<texturefocus>colors/color_transparent.png</texturefocus>
+					<texturenofocus>colors/color_transparent.png</texturenofocus>
+					<onclick>SetFocus(560)</onclick>
+					<onleft>550</onleft>
+					<onup>8000</onup>
+					<ondown>560</ondown>
+				</control>
+
+				<!-- Keep recommendations below Cast, then slide them into the shelf when focused. -->
+				<control type="group">
+					<visible>!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
+					<animation effect="slide" start="0,0" end="0,-410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(560) | Control.HasFocus(562) | !Integer.IsGreater(Container(50).NumItems,0)">Conditional</animation>
+					<control type="label">
+						<visible>Integer.IsGreater(Container(560).NumItems,0)</visible>
+						<left>126</left>
+						<top>1090</top>
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>$LOCALIZE[31622]</label>
+					</control>
+					<control type="button" id="562">
+						<visible>Integer.IsGreater(Container(50).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)</visible>
+						<left>1394</left>
+						<top>1084</top>
+						<width>400</width>
+						<height>50</height>
+						<font>Reg24</font>
+						<align>right</align>
+						<aligny>center</aligny>
+						<label>$LOCALIZE[206]</label>
+						<textcolor>b3ffffff</textcolor>
+						<focusedcolor>ffffffff</focusedcolor>
+						<texturefocus>colors/color_transparent.png</texturefocus>
+						<texturenofocus>colors/color_transparent.png</texturenofocus>
+						<onclick>SetFocus(550)</onclick>
+						<onleft>560</onleft>
+						<onup>8000</onup>
+						<ondown>560</ondown>
+					</control>
+					<control type="list" id="565">
+						<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
+						<left>-3000</left>
+						<top>-3000</top>
+						<width>1</width>
+						<height>1</height>
+						<itemlayout width="1" height="1" />
+						<focusedlayout width="1" height="1" />
+						<content limit="15" target="videos" browse="never">$VAR[PovMoreLikeThisPath]</content>
+					</control>
+					<control type="panel" id="560">
+						<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
+						<left>126</left>
+						<top>1140</top>
+						<width>1668</width>
+						<height>220</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>2</preloaditems>
+						<scrolltime tween="quadratic">400</scrolltime>
+						<onup condition="Integer.IsGreater(Container(50).NumItems,0)">550</onup>
+						<onup condition="!Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
+						<ondown>560</ondown>
+						<itemlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard">
+									<param name="focused" value="false" />
+								</include>
+							</control>
+						</itemlayout>
+						<focusedlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard">
+									<param name="focused" value="true" />
+								</include>
+							</control>
+						</focusedlayout>
+						<content><include>PovMoreLikeThisItems</include></content>
+					</control>
 				</control>
 
 				<!-- Additional Info Overlay -->
@@ -325,7 +426,8 @@
 							<itemgap>10</itemgap>
                             <onup>noop</onup>
 	                            <ondown condition="Integer.IsGreater(Container(50).NumItems,0)">550</ondown>
-								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0)">noop</ondown>
+								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0) + !Integer.IsGreater(Container(560).NumItems,0)">noop</ondown>
                             <scrolltime tween="sine" easing="inout">200</scrolltime>
 							<pagecontrol>300</pagecontrol>
 
@@ -557,6 +659,123 @@
 		<include content="PovCastItem"><param name="index" value="28" /></include>
 		<include content="PovCastItem"><param name="index" value="29" /></include>
 	</include>
+
+	<include name="PovMoreLikeThisCard">
+		<control type="image">
+			<visible>$PARAM[focused]</visible>
+			<width>335</width>
+			<height>195</height>
+			<texture background="true">home/home_matte3.png</texture>
+			<colordiffuse>ffffffff</colordiffuse>
+			<include>thumbsborder_focused</include>
+		</control>
+		<control type="image">
+			<width>335</width>
+			<height>195</height>
+			<bordersize>8</bordersize>
+			<texture background="true" diffuse="home/home_matte3.png" fallback="DefaultVideo.png">$INFO[ListItem.Property(landscape)]</texture>
+			<aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
+		</control>
+		<control type="image">
+			<left>8</left>
+			<right>8</right>
+			<bottom>8</bottom>
+			<height>128</height>
+			<texture>overlays/gradient_episodes.png</texture>
+			<aspectratio>stretch</aspectratio>
+			<colordiffuse>ffffffff</colordiffuse>
+		</control>
+		<control type="textbox">
+			<left>16</left>
+			<right>16</right>
+			<bottom>10</bottom>
+			<height>60</height>
+			<align>left</align>
+			<aligny>center</aligny>
+			<label>$VAR[PovMoreLikeThisCardYear][CR]$INFO[ListItem.Label]</label>
+			<font>Reg20</font>
+			<autoscroll delay="2000" time="2000">$PARAM[focused]</autoscroll>
+			<textcolor>ffffffff</textcolor>
+		</control>
+		<control type="group">
+			<visible>!String.IsEmpty(ListItem.Property(rating))</visible>
+			<left>8</left>
+			<top>8</top>
+			<width>58</width>
+			<height>38</height>
+			<control type="image">
+				<width>100%</width>
+				<height>100%</height>
+				<texture colordiffuse="80ffffff">colors/color_black.png</texture>
+			</control>
+			<control type="label">
+				<width>100%</width>
+				<height>100%</height>
+				<align>center</align>
+				<aligny>center</aligny>
+				<font>Reg20</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$INFO[ListItem.Property(rating)]</label>
+			</control>
+		</control>
+		<control type="group">
+			<right>8</right>
+			<top>8</top>
+			<include content="WatchedIndicatorLayout">
+				<param name="width" value="60" />
+				<param name="height" value="60" />
+				<param name="font" value="indicator_small" />
+				<param name="overlay" value="normal" />
+				<param name="overlay_texture" value="diffuse/icon_overlay_landscape.png" />
+			</include>
+		</control>
+	</include>
+
+	<include name="PovMoreLikeThisItem">
+		<item>
+			<label>$INFO[Container(565).ListItemAbsolute($PARAM[index]).Label]</label>
+			<icon>$INFO[Container(565).ListItemAbsolute($PARAM[index]).Icon]</icon>
+			<property name="DBTYPE">$INFO[Container(565).ListItemAbsolute($PARAM[index]).DBType]</property>
+			<property name="tmdb_id">$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
+			<property name="landscape">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="rating">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Rating]</property>
+			<property name="year">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Year]</property>
+			<property name="year_range">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(year_range)]</property>
+			<property name="status">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Status]</property>
+			<property name="UnWatchedEpisodes">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(UnWatchedEpisodes)]</property>
+			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[Window.Property(PovInfoType)]&amp;tmdb_id=$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
+			<visible>!String.IsEmpty(Container(565).ListItemAbsolute($PARAM[index]).Label)</visible>
+		</item>
+	</include>
+
+	<include name="PovMoreLikeThisItems">
+		<include content="PovMoreLikeThisItem"><param name="index" value="0" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="1" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="2" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="3" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="4" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="5" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="6" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="7" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="8" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="9" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="10" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="11" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="12" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="13" /></include>
+		<include content="PovMoreLikeThisItem"><param name="index" value="14" /></include>
+	</include>
+
+    <variable name="PovMoreLikeThisPath">
+        <value condition="String.IsEqual(Window.Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+        <value condition="String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+    </variable>
+
+	<variable name="PovMoreLikeThisCardYear">
+		<value condition="!String.IsEmpty(ListItem.Property(year_range))">$INFO[ListItem.Property(year_range)]</value>
+		<value condition="[String.Contains(ListItem.Property(status),Returning) | String.Contains(ListItem.Property(status),Production)] + !String.IsEmpty(ListItem.Property(year))">$INFO[ListItem.Property(year)]–Present</value>
+		<value>$INFO[ListItem.Property(year)]</value>
+	</variable>
 
     <!-- play/resume Sxx: ep. xx label -->
     <variable name="PlayOrResumeSeasonEpisodeLabel">

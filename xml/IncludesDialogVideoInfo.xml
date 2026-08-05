@@ -591,13 +591,6 @@
 			<left>8</left>
 			<bottom>10</bottom>
 			<width>214</width>
-			<height>72</height>
-			<texture colordiffuse="b3ffffff">colors/color_black.png</texture>
-		</control>
-		<control type="image">
-			<left>8</left>
-			<bottom>10</bottom>
-			<width>214</width>
 			<height>128</height>
 			<texture>overlays/gradient_episodes.png</texture>
 			<aspectratio>stretch</aspectratio>

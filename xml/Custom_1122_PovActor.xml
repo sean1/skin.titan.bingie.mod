@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <window id="1122">
 	<defaultcontrol always="true">600</defaultcontrol>
-	<onload condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent)</onload>
-	<onload condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">AlarmClock(PovActorFocus,SetFocus(620),00:00:01,silent)</onload>
+	<onload condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent,loop)</onload>
+	<onload condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">AlarmClock(PovActorFocus,SetFocus(620),00:00:01,silent,loop)</onload>
 	<onload
 		condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
 			+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
-			+ String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">AlarmClock(PovActorFocus,SetFocus(630),00:00:01,silent)</onload>
+			+ String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">AlarmClock(PovActorFocus,SetFocus(630),00:00:01,silent,loop)</onload>
 	<onunload condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onunload>
 	<onunload>ClearProperty(PovActorId,Home)</onunload>
 	<onunload>ClearProperty(PovActorName,Home)</onunload>

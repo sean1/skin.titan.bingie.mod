@@ -3,11 +3,10 @@
 	<!-- Bingie Info -->
 	<include name="BingieInfo">
 		<control type="group">
-			<include>GlobalBackground</include>
-			<!-- Base BG -->
+			<!-- Keep More Info on the same permanent black canvas as Home. -->
 			<control type="image">
 				<include>FullscreenDimensions</include>
-				<texture background="true" colordiffuse="$VAR[BingiePanelColor]">diffuse/panel2.png</texture>
+				<texture>colors/color_black.png</texture>
 			</control>
 			<!-- Dialog Info -->
 			<control type="group">
@@ -30,21 +29,6 @@
 					<itemlayout/>
 					<focusedlayout/>
 					<content sortorder="ascending" sortby="playcount" limit="1">$VAR[InfoDialogNextUpContent]</content>
-				</control>
-
-				<!-- Full fanart behind all More Info content. -->
-				<include content="BingieSpotlightFullImage">
-					<param name="visibility" value="![Player.HasVideo + ![VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]]" />
-					<param name="image" value="$VAR[fanartBackground]" />
-				</include>
-				<!-- Darken the title and action column, then fade into the description column. -->
-				<control type="image">
-					<left>0</left>
-					<top>0</top>
-					<width>1050</width>
-					<height>100%</height>
-					<texture background="true">overlays/gradient_videoinfo.png</texture>
-					<colordiffuse>e6000000</colordiffuse>
 				</control>
 
 				<!-- Native Kodi cast row populated by POV metadata -->
@@ -369,20 +353,13 @@
 						<label>$VAR[BingieDialogEpisodeInfoLabel]</label>
 					</control>
 
-					<!-- Plot with a 50%-opaque background for readability over light fanart. -->
+					<!-- Plot -->
 					<control type="group">
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast) | String.IsEqual(Window.Property(AdditionalInfo),plot)">Conditional</animation>
 						<left>620</left>
 						<top>19</top>
 						<height>300</height>
 						<width>1130</width>
-						<control type="image">
-							<left>-10</left>
-							<top>-10</top>
-							<width>1150</width>
-							<height>320</height>
-							<texture colordiffuse="80ffffff">colors/color_black.png</texture>
-						</control>
 						<control type="textbox">
 							<visible>[String.IsEmpty(ListItem.Set) + !false] | false</visible>
 							<width>1130</width>

@@ -10,32 +10,10 @@
 				<height>1080</height>
 				<texture>colors/color_black.png</texture>
 			</control>
-			<control type="image">
-				<width>1920</width>
-				<height>1080</height>
-				<texture background="true">$VAR[PovActorPageBackdrop]</texture>
-				<aspectratio>scale</aspectratio>
-				<fadetime>350</fadetime>
-			</control>
-			<control type="image">
-				<width>1920</width>
-				<height>1080</height>
-				<texture colordiffuse="40000000">colors/color_black.png</texture>
-			</control>
-			<control type="image">
-				<width>1370</width>
-				<height>1080</height>
-				<texture colordiffuse="ed000000">overlays/gradient_videoinfo.png</texture>
-			</control>
-			<control type="image">
-				<top>500</top>
-				<width>1920</width>
-				<height>580</height>
-				<texture colordiffuse="e6000000">overlays/gradient_episodes.png</texture>
-				<aspectratio>stretch</aspectratio>
-			</control>
+			<include>BingieRowTrailerPreviewWindow</include>
 
 			<control type="image">
+				<visible>![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
 				<left>126</left>
 				<top>84</top>
 				<width>320</width>
@@ -46,6 +24,7 @@
 			</control>
 
 			<control type="label">
+				<visible>![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
 				<left>500</left>
 				<top>88</top>
 				<width>1294</width>
@@ -55,7 +34,7 @@
 				<label>$INFO[Window(Home).Property(PovActorName)]</label>
 			</control>
 			<control type="label">
-				<visible>!String.IsEmpty(Window(Home).Property(PovActorLifespan))</visible>
+				<visible>!String.IsEmpty(Window(Home).Property(PovActorLifespan)) + ![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
 				<left>500</left>
 				<top>170</top>
 				<width>1294</width>
@@ -65,7 +44,7 @@
 				<label>$INFO[Window(Home).Property(PovActorLifespan)]</label>
 			</control>
 			<control type="label">
-				<visible>!String.IsEmpty(Window(Home).Property(PovActorBirthplace))</visible>
+				<visible>!String.IsEmpty(Window(Home).Property(PovActorBirthplace)) + ![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
 				<left>500</left>
 				<top>210</top>
 				<width>1294</width>
@@ -74,14 +53,40 @@
 				<textcolor>a6ffffff</textcolor>
 				<label>$INFO[Window(Home).Property(PovActorBirthplace),Born in ]</label>
 			</control>
-			<control type="image">
-				<left>485</left>
-				<top>258</top>
-				<width>1309</width>
-				<height>296</height>
-				<texture colordiffuse="99000000">colors/color_black.png</texture>
+			<control type="group">
+				<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
+				<control type="label">
+					<left>138</left>
+					<top>88</top>
+					<width>540</width>
+					<height>72</height>
+					<font>Bold50</font>
+					<textcolor>ffffffff</textcolor>
+					<label>$INFO[Window(Home).Property(PovActorName)]</label>
+				</control>
+				<control type="label">
+					<visible>!String.IsEmpty(Window(Home).Property(PovActorLifespan))</visible>
+					<left>138</left>
+					<top>170</top>
+					<width>540</width>
+					<height>34</height>
+					<font>Reg24</font>
+					<textcolor>d9ffffff</textcolor>
+					<label>$INFO[Window(Home).Property(PovActorLifespan)]</label>
+				</control>
+				<control type="textbox">
+					<visible>!String.IsEmpty(Window(Home).Property(PovActorBirthplace))</visible>
+					<left>138</left>
+					<top>210</top>
+					<width>540</width>
+					<height>70</height>
+					<font>Reg24</font>
+					<textcolor>a6ffffff</textcolor>
+					<label>$INFO[Window(Home).Property(PovActorBirthplace),Born in ]</label>
+				</control>
 			</control>
 			<control type="textbox">
+				<visible>![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
 				<left>510</left>
 				<top>278</top>
 				<width>1259</width>
@@ -93,7 +98,6 @@
 				<label>$INFO[Window(Home).Property(PovActorBiography)]</label>
 				<autoscroll delay="9000" time="2500" repeat="6500">true</autoscroll>
 			</control>
-
 			<!-- Credit providers stay off-screen; normal panels proxy them so Enter always opens More Info. -->
 			<control type="list" id="611">
 				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
@@ -132,13 +136,18 @@
 				<top>-100</top>
 				<width>1</width>
 				<height>1</height>
+				<onfocus condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">SetFocus(610)</onfocus>
+				<onfocus
+					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">SetFocus(620)</onfocus>
+				<onfocus
+					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(630)</onfocus>
 				<onfocus
 					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
 			</control>
 
 			<control type="group">
 				<visible>String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
-				<animation effect="fade" start="100" end="0" time="0" condition="!Control.HasFocus(610)">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="0" condition="Control.HasFocus(620) | Control.HasFocus(630)">Conditional</animation>
 				<control type="label">
 					<left>126</left>
 					<top>650</top>
@@ -150,6 +159,7 @@
 				</control>
 				<control type="panel" id="610">
 					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
+					<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 					<left>126</left>
 					<top>705</top>
 					<width>1668</width>
@@ -169,7 +179,7 @@
 
 			<control type="group">
 				<visible>String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
-				<animation effect="fade" start="100" end="0" time="0" condition="!Control.HasFocus(620)">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="0" condition="Control.HasFocus(610) | Control.HasFocus(630) | [!Control.HasFocus(610) + !Control.HasFocus(620) + !Control.HasFocus(630) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)]">Conditional</animation>
 				<control type="label">
 					<left>126</left>
 					<top>650</top>
@@ -181,6 +191,7 @@
 				</control>
 				<control type="panel" id="620">
 					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
+					<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 					<left>126</left>
 					<top>705</top>
 					<width>1668</width>
@@ -200,7 +211,7 @@
 
 			<control type="group">
 				<visible>String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
-				<animation effect="fade" start="100" end="0" time="0" condition="!Control.HasFocus(630)">Conditional</animation>
+				<animation effect="fade" start="100" end="0" time="0" condition="Control.HasFocus(610) | Control.HasFocus(620) | [!Control.HasFocus(610) + !Control.HasFocus(620) + !Control.HasFocus(630) + [String.IsEqual(Window(Home).Property(PovActorHasMovies),true) | String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)]]">Conditional</animation>
 				<control type="label">
 					<left>126</left>
 					<top>650</top>
@@ -212,6 +223,7 @@
 				</control>
 				<control type="panel" id="630">
 					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+					<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 					<left>126</left>
 					<top>705</top>
 					<width>1668</width>
@@ -312,10 +324,4 @@
 		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="29" /></include>
 	</include>
 
-	<variable name="PovActorPageBackdrop">
-		<value condition="Control.HasFocus(610) + !String.IsEmpty(Container(610).ListItem.Property(landscape))">$INFO[Container(610).ListItem.Property(landscape)]</value>
-		<value condition="Control.HasFocus(620) + !String.IsEmpty(Container(620).ListItem.Property(landscape))">$INFO[Container(620).ListItem.Property(landscape)]</value>
-		<value condition="Control.HasFocus(630) + !String.IsEmpty(Container(630).ListItem.Property(landscape))">$INFO[Container(630).ListItem.Property(landscape)]</value>
-		<value>$INFO[Window(Home).Property(PovActorBackdrop)]</value>
-	</variable>
 </includes>

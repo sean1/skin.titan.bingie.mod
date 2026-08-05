@@ -50,8 +50,8 @@
 				<!-- Native Kodi cast row populated by POV metadata -->
 				<control type="label">
 					<visible>Integer.IsGreater(Container(50).NumItems,0)</visible>
-					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
-					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
+					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
 					<left>126</left>
 					<top>680</top>
 					<width>1668</width>
@@ -150,8 +150,8 @@
 				<!-- Control 50 is reserved by Kodi, so render its cast data in a normal panel that can route mouse and keyboard selection through POV. -->
 				<control type="panel" id="550">
 					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
-					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
-					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(560) | Control.HasFocus(562)">Conditional</animation>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
+					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
 					<left>126</left>
 					<top>730</top>
 					<width>1668</width>
@@ -160,8 +160,9 @@
 					<preloaditems>4</preloaditems>
 					<scrolltime tween="quadratic">400</scrolltime>
 					<onup>8000</onup>
-					<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
-					<ondown condition="!Integer.IsGreater(Container(560).NumItems,0)">550</ondown>
+					<ondown condition="Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
+					<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+					<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(560).NumItems,0)">550</ondown>
 					<itemlayout width="238" height="320">
 						<include content="PovCastCard">
 							<param name="focused" value="false" />
@@ -176,58 +177,80 @@
 						<include content="PovCastItems" />
 					</content>
 				</control>
-				<control type="button" id="561">
-					<visible>Integer.IsGreater(Container(50).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0) + !Control.HasFocus(560) + !Control.HasFocus(562)</visible>
-					<left>1394</left>
-					<top>674</top>
-					<width>400</width>
-					<height>50</height>
-					<font>Reg24</font>
-					<align>right</align>
-					<aligny>center</aligny>
-					<label>$LOCALIZE[31622]</label>
-					<textcolor>b3ffffff</textcolor>
-					<focusedcolor>ffffffff</focusedcolor>
-					<texturefocus>colors/color_transparent.png</texturefocus>
-					<texturenofocus>colors/color_transparent.png</texturenofocus>
-					<onclick>SetFocus(560)</onclick>
-					<onleft>550</onleft>
-					<onup>8000</onup>
-					<ondown>560</ondown>
-				</control>
-
-				<!-- Keep recommendations below Cast, then slide them into the shelf when focused. -->
+				<!-- Keep collection titles below Cast, then slide them into the shelf when focused. -->
 				<control type="group">
-					<visible>!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
-					<animation effect="slide" start="0,0" end="0,-410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(560) | Control.HasFocus(562) | !Integer.IsGreater(Container(50).NumItems,0)">Conditional</animation>
+					<visible>String.IsEqual(Window.Property(PovInfoType),movie)</visible>
+					<animation effect="slide" start="0,0" end="0,-410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(563) | [!Integer.IsGreater(Container(50).NumItems,0) + !Control.HasFocus(560)]">Conditional</animation>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560)">Conditional</animation>
 					<control type="label">
-						<visible>Integer.IsGreater(Container(560).NumItems,0)</visible>
+						<visible>Integer.IsGreater(Container(563).NumItems,0)</visible>
 						<left>126</left>
 						<top>1090</top>
 						<width>1668</width>
 						<height>45</height>
 						<font>Bold31</font>
 						<textcolor>ffffffff</textcolor>
-						<label>$LOCALIZE[31622]</label>
+						<label>In This Collection</label>
 					</control>
-					<control type="button" id="562">
-						<visible>Integer.IsGreater(Container(50).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)</visible>
-						<left>1394</left>
-						<top>1084</top>
-						<width>400</width>
-						<height>50</height>
-						<font>Reg24</font>
-						<align>right</align>
-						<aligny>center</aligny>
-						<label>$LOCALIZE[206]</label>
-						<textcolor>b3ffffff</textcolor>
-						<focusedcolor>ffffffff</focusedcolor>
-						<texturefocus>colors/color_transparent.png</texturefocus>
-						<texturenofocus>colors/color_transparent.png</texturenofocus>
-						<onclick>SetFocus(550)</onclick>
-						<onleft>560</onleft>
-						<onup>8000</onup>
-						<ondown>560</ondown>
+					<control type="list" id="566">
+						<visible allowhiddenfocus="true">String.IsEqual(Window.Property(PovInfoType),movie)</visible>
+						<left>-3000</left>
+						<top>-3000</top>
+						<width>1</width>
+						<height>1</height>
+						<itemlayout width="1" height="1" />
+						<focusedlayout width="1" height="1" />
+						<content limit="15" target="videos" browse="never">$VAR[PovInThisCollectionPath]</content>
+					</control>
+					<control type="panel" id="563">
+						<visible allowhiddenfocus="true">Integer.IsGreater(Container(566).NumItems,0)</visible>
+						<left>126</left>
+						<top>1140</top>
+						<width>1668</width>
+						<height>220</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>2</preloaditems>
+						<scrolltime tween="quadratic">400</scrolltime>
+						<onup condition="Integer.IsGreater(Container(50).NumItems,0)">550</onup>
+						<onup condition="!Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
+						<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+						<ondown condition="!Integer.IsGreater(Container(560).NumItems,0)">563</ondown>
+						<itemlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard">
+									<param name="focused" value="false" />
+								</include>
+							</control>
+						</itemlayout>
+						<focusedlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard">
+									<param name="focused" value="true" />
+								</include>
+							</control>
+						</focusedlayout>
+						<content><include>PovCollectionItems</include></content>
+					</control>
+				</control>
+
+				<!-- Keep recommendations below the collection shelf, then slide them into view when focused. -->
+				<control type="group">
+					<visible>!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
+					<animation effect="slide" start="0,0" end="0,-820" time="250" tween="cubic" easing="inout"
+						condition="Control.HasFocus(560) | [!Integer.IsGreater(Container(50).NumItems,0) + !Integer.IsGreater(Container(563).NumItems,0)]">Conditional</animation>
+					<control type="label">
+						<visible>Integer.IsGreater(Container(560).NumItems,0)</visible>
+						<left>126</left>
+						<top>1500</top>
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>$LOCALIZE[31622]</label>
 					</control>
 					<control type="list" id="565">
 						<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
@@ -242,14 +265,15 @@
 					<control type="panel" id="560">
 						<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
 						<left>126</left>
-						<top>1140</top>
+						<top>1550</top>
 						<width>1668</width>
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">400</scrolltime>
-						<onup condition="Integer.IsGreater(Container(50).NumItems,0)">550</onup>
-						<onup condition="!Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
+						<onup condition="Integer.IsGreater(Container(563).NumItems,0)">563</onup>
+						<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(50).NumItems,0)">550</onup>
+						<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
 						<ondown>560</ondown>
 						<itemlayout width="333" height="193">
 							<control type="group">
@@ -426,8 +450,9 @@
 							<itemgap>10</itemgap>
                             <onup>noop</onup>
 	                            <ondown condition="Integer.IsGreater(Container(50).NumItems,0)">550</ondown>
-								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
-								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0) + !Integer.IsGreater(Container(560).NumItems,0)">noop</ondown>
+								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0) + Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
+								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0) + !Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+								<ondown condition="!Integer.IsGreater(Container(50).NumItems,0) + !Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(560).NumItems,0)">noop</ondown>
                             <scrolltime tween="sine" easing="inout">200</scrolltime>
 							<pagecontrol>300</pagecontrol>
 
@@ -766,10 +791,46 @@
 		<include content="PovMoreLikeThisItem"><param name="index" value="14" /></include>
 	</include>
 
+	<include name="PovCollectionItem">
+		<item>
+			<label>$INFO[Container(566).ListItemAbsolute($PARAM[index]).Label]</label>
+			<icon>$INFO[Container(566).ListItemAbsolute($PARAM[index]).Icon]</icon>
+			<property name="DBTYPE">$INFO[Container(566).ListItemAbsolute($PARAM[index]).DBType]</property>
+			<property name="tmdb_id">$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
+			<property name="landscape">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="rating">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Rating]</property>
+			<property name="year">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Year]</property>
+			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
+			<visible>!String.IsEmpty(Container(566).ListItemAbsolute($PARAM[index]).Label)</visible>
+		</item>
+	</include>
+
+	<include name="PovCollectionItems">
+		<include content="PovCollectionItem"><param name="index" value="0" /></include>
+		<include content="PovCollectionItem"><param name="index" value="1" /></include>
+		<include content="PovCollectionItem"><param name="index" value="2" /></include>
+		<include content="PovCollectionItem"><param name="index" value="3" /></include>
+		<include content="PovCollectionItem"><param name="index" value="4" /></include>
+		<include content="PovCollectionItem"><param name="index" value="5" /></include>
+		<include content="PovCollectionItem"><param name="index" value="6" /></include>
+		<include content="PovCollectionItem"><param name="index" value="7" /></include>
+		<include content="PovCollectionItem"><param name="index" value="8" /></include>
+		<include content="PovCollectionItem"><param name="index" value="9" /></include>
+		<include content="PovCollectionItem"><param name="index" value="10" /></include>
+		<include content="PovCollectionItem"><param name="index" value="11" /></include>
+		<include content="PovCollectionItem"><param name="index" value="12" /></include>
+		<include content="PovCollectionItem"><param name="index" value="13" /></include>
+		<include content="PovCollectionItem"><param name="index" value="14" /></include>
+	</include>
+
     <variable name="PovMoreLikeThisPath">
         <value condition="String.IsEqual(Window.Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
         <value condition="String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
     </variable>
+
+	<variable name="PovInThisCollectionPath">
+		<value condition="String.IsEqual(Window.Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+	</variable>
 
 	<variable name="PovMoreLikeThisCardYear">
 		<value condition="!String.IsEmpty(ListItem.Property(year_range))">$INFO[ListItem.Property(year_range)]</value>

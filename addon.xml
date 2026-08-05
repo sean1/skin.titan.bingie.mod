@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.2.45" name="BINGIE Lite" provider-name="AchillesPunks, Matke">
+<addon id="skin.titan.bingie.lite" version="2.2.46" name="BINGIE Lite" provider-name="AchillesPunks, Matke">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
-		<import addon="plugin.video.pov.lite" version="6.08.26"/>
+		<import addon="plugin.video.pov.lite" version="6.08.28"/>
 	</requires>
 	<extension point="xbmc.gui.skin" debugging="false">
 		<res width="1920" height="1080" aspect="16:9" default="true" folder="xml" />

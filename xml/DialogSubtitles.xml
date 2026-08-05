@@ -146,16 +146,6 @@
                                 <colordiffuse>ffffffff</colordiffuse-->
 								<aspectratio>keep</aspectratio>
 							</control>
-							<!-- sync image - OFF -->
-                            <control type="image">
-                                <posx>130</posx>
-                                <posy>50</posy>
-                                <width>100</width>
-                                <height>40</height>
-								<texture colordiffuse="FF424242"> flags/subsync.png</texture>
-								<visible>!ListItem.property(sync) + !string.IsEmpty(ListItem.Label)</visible>
-								<aspectratio>keep</aspectratio>
-							</control>
                     </itemlayout>
                     <focusedlayout width="1050" height="100">
                         <control type="group">
@@ -233,16 +223,6 @@
                                 <colordiffuse>ffffffff</colordiffuse-->
 								<aspectratio>keep</aspectratio>
 							</control>
-							<!-- sync image - OFF -->
-                            <control type="image">
-                                <posx>130</posx>
-                                <posy>50</posy>
-                                <width>100</width>
-                                <height>40</height>
-								<texture colordiffuse="FF424242"> flags/subsync.png</texture>
-								<visible>!ListItem.property(sync) + !string.IsEmpty(ListItem.Label)</visible>
-                                <aspectratio>keep</aspectratio>
-							</control>
                         </control>
                         <control type="group">
                             <visible>!Control.HasFocus(120)</visible>
@@ -309,16 +289,6 @@
                                 <visible>ListItem.property(sync)</visible>
                                 <colordiffuse>ffffffff</colordiffuse-->
 								<aspectratio>keep</aspectratio>
-							</control>
-							<!-- sync image - OFF -->
-                            <control type="image">
-                                <posx>130</posx>
-                                <posy>50</posy>
-                                <width>100</width>
-                                <height>40</height>
-								<texture colordiffuse="FF424242"> flags/subsync.png</texture>
-								<visible>!ListItem.property(sync) + !string.IsEmpty(ListItem.Label)</visible>
-                                <aspectratio>keep</aspectratio>
 							</control>
                         </control>
                     </focusedlayout>

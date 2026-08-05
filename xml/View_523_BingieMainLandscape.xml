@@ -116,6 +116,7 @@
 					<control type="image">
 						<visible>$EXP[IsNextPageListItem]</visible>
 						<texture>colors/color_black.png</texture>
+						<bordertexture colordiffuse="ffffffff">diffuse/panel2.png</bordertexture>
 						<include>thumbsborder_focused</include>
 					</control>
                     <include>ThumbsViewItemBingieLayout</include>

@@ -913,16 +913,15 @@
     </variable>
 
 
-    <!-- Bingie More Details (pseudo-random) -->
+    <!-- Bingie More Details -->
     <variable name="BingieMoreDetails">
-		<value condition="Integer.IsLessOrEqual(System.Time(ss),45) + !String.IsEmpty(ListItem.Tagline)">$INFO[ListItem.Tagline]</value>
-        <value condition="!String.IsEmpty(ListItem.Genre) + Integer.IsLessOrEqual(System.Time(ss),60) + !String.Contains(ListItem.Genre,unknown)">$INFO[ListItem.Genre]</value>
+		<value condition="!String.IsEmpty(ListItem.Genre) + !String.Contains(ListItem.Genre,unknown)">$INFO[ListItem.Genre]$INFO[ListItem.Property(main_actors),[CR]]</value>
+		<value condition="!String.IsEmpty(ListItem.Property(main_actors))">$INFO[ListItem.Property(main_actors)]</value>
     </variable>
 
-    <!-- Bingie More Details Image (pseudo-random) -->
+    <!-- Bingie More Details Image -->
     <variable name="BingieMoreDetailsImage">
-		<value condition="Integer.IsLessOrEqual(System.Time(ss),45) + !String.IsEmpty(ListItem.Tagline)">tags</value>
-        <value condition="!String.IsEmpty(ListItem.Genre) + Integer.IsLessOrEqual(System.Time(ss),60) + !String.Contains(ListItem.Genre,unknown)">genre</value>
+		<value>genre</value>
     </variable>
 
     <variable name="BingieEpisodeInfoHeader">

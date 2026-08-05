@@ -52,7 +52,7 @@
             <include content="Fixed_Focus_Navigation_Factory1">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>
-			<onclick>Action(Info)</onclick>
+			<include>ContainerShowInfoOnclick</include>
             <include content="$PARAM[widgetStyle]">
                 <param name="widgetid" value="$PARAM[widgetid]" />
                 <param name="widgetTags" value="WidgetTagOverlayAuto" />

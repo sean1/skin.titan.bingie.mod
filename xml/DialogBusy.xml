@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
 <window>
-    <controls>
+	<onload condition="!String.IsEmpty(Window(Home).Property(BingieTrailerPreview))">Dialog.Close(busydialog,true)</onload>
+	<onload condition="!String.IsEmpty(Window(Home).Property(BingieTrailerPreview))">Dialog.Close(busydialognocancel,true)</onload>
+	<controls>
 		<control type="group">
             <visible>!Window.IsVisible(startup)</visible>
 		</control>

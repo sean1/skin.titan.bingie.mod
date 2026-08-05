@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<includes>
+	<include name="PovActorPage">
+		<control type="group">
+			<animation effect="fade" start="0" end="100" time="250">WindowOpen</animation>
+			<animation effect="fade" start="100" end="0" time="180">WindowClose</animation>
+
+			<control type="image">
+				<width>1920</width>
+				<height>1080</height>
+				<texture>colors/color_black.png</texture>
+			</control>
+			<control type="image">
+				<width>1920</width>
+				<height>1080</height>
+				<texture background="true">$VAR[PovActorPageBackdrop]</texture>
+				<aspectratio>scale</aspectratio>
+				<fadetime>350</fadetime>
+			</control>
+			<control type="image">
+				<width>1920</width>
+				<height>1080</height>
+				<texture colordiffuse="40000000">colors/color_black.png</texture>
+			</control>
+			<control type="image">
+				<width>1370</width>
+				<height>1080</height>
+				<texture colordiffuse="ed000000">overlays/gradient_videoinfo.png</texture>
+			</control>
+			<control type="image">
+				<top>500</top>
+				<width>1920</width>
+				<height>580</height>
+				<texture colordiffuse="e6000000">overlays/gradient_episodes.png</texture>
+				<aspectratio>stretch</aspectratio>
+			</control>
+
+			<control type="image">
+				<left>126</left>
+				<top>84</top>
+				<width>320</width>
+				<height>470</height>
+				<texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultActorPoster.png">$INFO[Window(Home).Property(PovActorProfile)]</texture>
+				<aspectratio scalediffuse="true" align="center" aligny="top">scale</aspectratio>
+				<bordersize>8</bordersize>
+			</control>
+
+			<control type="label">
+				<left>500</left>
+				<top>88</top>
+				<width>1294</width>
+				<height>72</height>
+				<font>Bold50</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$INFO[Window(Home).Property(PovActorName)]</label>
+			</control>
+			<control type="label">
+				<visible>!String.IsEmpty(Window(Home).Property(PovActorLifespan))</visible>
+				<left>500</left>
+				<top>170</top>
+				<width>1294</width>
+				<height>34</height>
+				<font>Reg24</font>
+				<textcolor>d9ffffff</textcolor>
+				<label>$INFO[Window(Home).Property(PovActorLifespan)]</label>
+			</control>
+			<control type="label">
+				<visible>!String.IsEmpty(Window(Home).Property(PovActorBirthplace))</visible>
+				<left>500</left>
+				<top>210</top>
+				<width>1294</width>
+				<height>34</height>
+				<font>Reg24</font>
+				<textcolor>a6ffffff</textcolor>
+				<label>$INFO[Window(Home).Property(PovActorBirthplace),Born in ]</label>
+			</control>
+			<control type="image">
+				<left>485</left>
+				<top>258</top>
+				<width>1309</width>
+				<height>296</height>
+				<texture colordiffuse="99000000">colors/color_black.png</texture>
+			</control>
+			<control type="textbox">
+				<left>510</left>
+				<top>278</top>
+				<width>1259</width>
+				<height>254</height>
+				<font>Reg24</font>
+				<textcolor>e6ffffff</textcolor>
+				<align>left</align>
+				<aligny>top</aligny>
+				<label>$INFO[Window(Home).Property(PovActorBiography)]</label>
+				<autoscroll delay="9000" time="2500" repeat="6500">true</autoscroll>
+			</control>
+
+			<!-- Credit providers stay off-screen; normal panels proxy them so Enter always opens More Info. -->
+			<control type="list" id="611">
+				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
+				<left>-3000</left>
+				<top>-3000</top>
+				<width>1</width>
+				<height>1</height>
+				<itemlayout width="1" height="1" />
+				<focusedlayout width="1" height="1" />
+				<content limit="30" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=movies&amp;sort=newest</content>
+			</control>
+			<control type="list" id="621">
+				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
+				<left>-3000</left>
+				<top>-3000</top>
+				<width>1</width>
+				<height>1</height>
+				<itemlayout width="1" height="1" />
+				<focusedlayout width="1" height="1" />
+				<content limit="30" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=tvshows&amp;sort=newest</content>
+			</control>
+			<control type="list" id="631">
+				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+				<left>-3000</left>
+				<top>-3000</top>
+				<width>1</width>
+				<height>1</height>
+				<itemlayout width="1" height="1" />
+				<focusedlayout width="1" height="1" />
+				<content limit="30" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=directed&amp;sort=newest</content>
+			</control>
+
+			<control type="button" id="600">
+				<visible allowhiddenfocus="true">true</visible>
+				<left>-100</left>
+				<top>-100</top>
+				<width>1</width>
+				<height>1</height>
+				<onfocus
+					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
+			</control>
+
+			<control type="group">
+				<visible>String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
+				<animation effect="fade" start="100" end="0" time="0" condition="!Control.HasFocus(610)">Conditional</animation>
+				<control type="label">
+					<left>126</left>
+					<top>650</top>
+					<width>1668</width>
+					<height>45</height>
+					<font>Bold31</font>
+					<textcolor>ffffffff</textcolor>
+					<label>Movies</label>
+				</control>
+				<control type="panel" id="610">
+					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
+					<left>126</left>
+					<top>705</top>
+					<width>1668</width>
+					<height>220</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime tween="quadratic">350</scrolltime>
+					<onup>610</onup>
+					<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</ondown>
+					<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
+					<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">610</ondown>
+					<onback>PreviousMenu</onback>
+					<include>PovActorPanelLayouts</include>
+					<content><include content="PovActorCreditItems"><param name="provider" value="611" /></include></content>
+				</control>
+			</control>
+
+			<control type="group">
+				<visible>String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
+				<animation effect="fade" start="100" end="0" time="0" condition="!Control.HasFocus(620)">Conditional</animation>
+				<control type="label">
+					<left>126</left>
+					<top>650</top>
+					<width>1668</width>
+					<height>45</height>
+					<font>Bold31</font>
+					<textcolor>ffffffff</textcolor>
+					<label>TV Shows</label>
+				</control>
+				<control type="panel" id="620">
+					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
+					<left>126</left>
+					<top>705</top>
+					<width>1668</width>
+					<height>220</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime tween="quadratic">350</scrolltime>
+					<onup condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
+					<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">620</onup>
+					<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
+					<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">620</ondown>
+					<onback>PreviousMenu</onback>
+					<include>PovActorPanelLayouts</include>
+					<content><include content="PovActorCreditItems"><param name="provider" value="621" /></include></content>
+				</control>
+			</control>
+
+			<control type="group">
+				<visible>String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+				<animation effect="fade" start="100" end="0" time="0" condition="!Control.HasFocus(630)">Conditional</animation>
+				<control type="label">
+					<left>126</left>
+					<top>650</top>
+					<width>1668</width>
+					<height>45</height>
+					<font>Bold31</font>
+					<textcolor>ffffffff</textcolor>
+					<label>Directed By</label>
+				</control>
+				<control type="panel" id="630">
+					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+					<left>126</left>
+					<top>705</top>
+					<width>1668</width>
+					<height>220</height>
+					<orientation>horizontal</orientation>
+					<preloaditems>2</preloaditems>
+					<scrolltime tween="quadratic">350</scrolltime>
+					<onup condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</onup>
+					<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
+					<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">630</onup>
+					<ondown>630</ondown>
+					<onback>PreviousMenu</onback>
+					<include>PovActorPanelLayouts</include>
+					<content><include content="PovActorCreditItems"><param name="provider" value="631" /></include></content>
+				</control>
+			</control>
+
+			<control type="button" id="699">
+				<visible>!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+				<left>126</left>
+				<top>690</top>
+				<width>520</width>
+				<height>72</height>
+				<font>Reg24</font>
+				<label>No titles available</label>
+				<align>center</align>
+				<textcolor>ffffffff</textcolor>
+				<focusedcolor>ff000000</focusedcolor>
+				<texturefocus>colors/color_white.png</texturefocus>
+				<texturenofocus colordiffuse="cc000000">colors/color_black.png</texturenofocus>
+				<onclick>PreviousMenu</onclick>
+				<onback>PreviousMenu</onback>
+			</control>
+		</control>
+	</include>
+
+	<include name="PovActorPanelLayouts">
+		<itemlayout width="333" height="193">
+			<control type="group">
+				<width>335</width>
+				<height>195</height>
+				<include content="PovMoreLikeThisCard"><param name="focused" value="false" /></include>
+			</control>
+		</itemlayout>
+		<focusedlayout width="333" height="193">
+			<control type="group">
+				<width>335</width>
+				<height>195</height>
+				<include content="PovMoreLikeThisCard"><param name="focused" value="true" /></include>
+			</control>
+		</focusedlayout>
+	</include>
+
+	<include name="PovActorCreditItem">
+		<item>
+			<label>$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Label]</label>
+			<icon>$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Icon]</icon>
+			<property name="mediatype">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Property(PovCreditType)]</property>
+			<property name="tmdb_id">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
+			<property name="landscape">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="rating">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Rating]</property>
+			<property name="year">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Year]</property>
+			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(mediatype)]&amp;tmdb_id=$INFO[ListItem.Property(tmdb_id)])</onclick>
+			<visible>!String.IsEmpty(Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Label)</visible>
+		</item>
+	</include>
+
+	<include name="PovActorCreditItems">
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="0" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="1" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="2" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="3" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="4" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="5" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="6" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="7" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="8" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="9" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="10" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="11" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="12" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="13" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="14" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="15" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="16" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="17" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="18" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="19" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="20" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="21" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="22" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="23" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="24" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="25" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="26" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="27" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="28" /></include>
+		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="29" /></include>
+	</include>
+
+	<variable name="PovActorPageBackdrop">
+		<value condition="Control.HasFocus(610) + !String.IsEmpty(Container(610).ListItem.Property(landscape))">$INFO[Container(610).ListItem.Property(landscape)]</value>
+		<value condition="Control.HasFocus(620) + !String.IsEmpty(Container(620).ListItem.Property(landscape))">$INFO[Container(620).ListItem.Property(landscape)]</value>
+		<value condition="Control.HasFocus(630) + !String.IsEmpty(Container(630).ListItem.Property(landscape))">$INFO[Container(630).ListItem.Property(landscape)]</value>
+		<value>$INFO[Window(Home).Property(PovActorBackdrop)]</value>
+	</variable>
+</includes>

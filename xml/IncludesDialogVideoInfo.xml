@@ -647,7 +647,7 @@
 			<label>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label]</label>
 			<label2>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label2]</label2>
 			<icon>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Icon]</icon>
-			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=person_data_dialog&amp;query=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label])</onclick>
+			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_person_info&amp;query=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label]&amp;actor_image=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Icon])</onclick>
 			<visible>!String.IsEmpty(Container(50).ListItemAbsolute($PARAM[index]).Label)</visible>
 		</item>
 	</include>

@@ -141,7 +141,8 @@
     </include>
 
     <include name="ContainerShowInfoOnclick">
-		<onclick>Action(Info)</onclick>
+		<onclick condition="$EXP[IsNextPageListItem]">ActivateWindow(Videos,$ESCINFO[ListItem.FileNameAndPath],return)</onclick>
+		<onclick condition="!$EXP[IsNextPageListItem]">Action(Info)</onclick>
     </include>
 
     <include name="CustomBingieWinProps">

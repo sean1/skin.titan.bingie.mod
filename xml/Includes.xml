@@ -8,6 +8,7 @@
     <include file="IncludesAnimations.xml" />
     <include file="IncludesNowPlaying.xml" />
     <include file="IncludesDialogVideoInfo.xml" />
+	<include file="IncludesPovInfo.xml" />
 	<include file="IncludesPovActor.xml" />
     <include file="View_50_List.xml" />
     <include file="View_523_BingieMainLandscape.xml" />
@@ -95,6 +96,19 @@
 	<expression name="IsMovieOrTvShowListItem">
 		String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) |
 		String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.Property(DBTYPE),tvshow)
+	</expression>
+	<expression name="IsPovLiteListItem">
+		String.IsEqual(ListItem.Property(PovLiteItem),true) | String.StartsWith(ListItem.Path,plugin://plugin.video.pov.lite/) |
+		String.StartsWith(ListItem.FileNameAndPath,plugin://plugin.video.pov.lite/) | String.StartsWith(ListItem.FolderPath,plugin://plugin.video.pov.lite/) |
+		String.StartsWith(Container.FolderPath,plugin://plugin.video.pov.lite/)
+	</expression>
+	<expression name="IsPovLiteInfoListItem">
+		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +
+		$EXP[IsPovLiteListItem] + !String.IsEmpty(ListItem.UniqueID(tmdb))
+	</expression>
+	<expression name="IsNativeInfoListItem">
+		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +
+		[!$EXP[IsPovLiteListItem] | String.IsEmpty(ListItem.UniqueID(tmdb))]
 	</expression>
 	<expression name="IsNextPageListItem">ListItem.IsFolder + String.StartsWith(ListItem.Label,Next Page)</expression>
 

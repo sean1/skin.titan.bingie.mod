@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<includes>
+	<include name="PovInfoPage">
+		<control type="group">
+			<animation effect="fade" start="0" end="100" time="250">WindowOpen</animation>
+			<animation effect="fade" start="100" end="0" time="180">WindowClose</animation>
+
+			<control type="image">
+				<include>FullscreenDimensions</include>
+				<texture>colors/color_black.png</texture>
+			</control>
+			<include content="BingieSpotlightCornerImage">
+				<param name="visibility" value="!Player.HasVideo" />
+				<param name="image" value="$INFO[Window(Home).Property(PovInfoFanart)]" />
+			</include>
+			<include>BingieRowTrailerPreviewWindow</include>
+
+			<control type="image" id="9105">
+				<left>138</left>
+				<top>10</top>
+				<width>490</width>
+				<height>190</height>
+				<aspectratio align="left" aligny="center">keep</aspectratio>
+				<texture background="true">$INFO[Window(Home).Property(PovInfoLogo)]</texture>
+			</control>
+			<control type="textbox">
+				<visible>String.IsEmpty(Window(Home).Property(PovInfoLogo))</visible>
+				<left>138</left>
+				<top>10</top>
+				<width>650</width>
+				<height>190</height>
+				<font>Title</font>
+				<align>left</align>
+				<aligny>center</aligny>
+				<textcolor>ffffffff</textcolor>
+				<label>$INFO[Window(Home).Property(PovInfoTitle)]</label>
+				<autoscroll delay="4000" time="2000" repeat="6000">true</autoscroll>
+			</control>
+
+			<control type="grouplist">
+				<left>138</left>
+				<top>220</top>
+				<width>850</width>
+				<height>40</height>
+				<orientation>horizontal</orientation>
+				<itemgap>20</itemgap>
+				<control type="label">
+					<visible>!String.IsEmpty(Window(Home).Property(PovInfoMatch))</visible>
+					<width max="220">auto</width>
+					<height>40</height>
+					<font>Bold24</font>
+					<aligny>center</aligny>
+					<textcolor>ff46d369</textcolor>
+					<label>$INFO[Window(Home).Property(PovInfoMatch)]</label>
+				</control>
+				<control type="label">
+					<visible>!String.IsEmpty(Window(Home).Property(PovInfoYearRange))</visible>
+					<width max="180">auto</width>
+					<height>40</height>
+					<font>Reg24</font>
+					<aligny>center</aligny>
+					<textcolor>d9ffffff</textcolor>
+					<label>$INFO[Window(Home).Property(PovInfoYearRange)]</label>
+				</control>
+				<control type="label">
+					<visible>!String.IsEmpty(Window(Home).Property(PovInfoMpaa))</visible>
+					<width max="150">auto</width>
+					<height>40</height>
+					<font>Bold24</font>
+					<aligny>center</aligny>
+					<textcolor>d9ffffff</textcolor>
+					<label>$INFO[Window(Home).Property(PovInfoMpaa)]</label>
+				</control>
+				<control type="label">
+					<visible>String.IsEqual(Window(Home).Property(PovInfoType),movie) + !String.IsEmpty(Window(Home).Property(PovInfoRuntime))</visible>
+					<width max="180">auto</width>
+					<height>40</height>
+					<font>Reg24</font>
+					<aligny>center</aligny>
+					<textcolor>d9ffffff</textcolor>
+					<label>$INFO[Window(Home).Property(PovInfoRuntime)]</label>
+				</control>
+				<control type="label">
+					<visible>String.IsEqual(Window(Home).Property(PovInfoType),tvshow) + !String.IsEmpty(Window(Home).Property(PovInfoSeasons))</visible>
+					<width max="180">auto</width>
+					<height>40</height>
+					<font>Reg24</font>
+					<aligny>center</aligny>
+					<textcolor>d9ffffff</textcolor>
+					<label>$INFO[Window(Home).Property(PovInfoSeasons)]</label>
+				</control>
+			</control>
+
+			<control type="textbox">
+				<left>138</left>
+				<top>275</top>
+				<width>820</width>
+				<height>135</height>
+				<font>Plots</font>
+				<textcolor>b3ffffff</textcolor>
+				<align>left</align>
+				<aligny>top</aligny>
+				<label>$INFO[Window(Home).Property(PovInfoPlot)]</label>
+				<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
+			</control>
+
+			<control type="grouplist" id="8000">
+				<left>138</left>
+				<top>430</top>
+				<width>550</width>
+				<height>150</height>
+				<orientation>vertical</orientation>
+				<itemgap>10</itemgap>
+				<onup>noop</onup>
+				<ondown condition="String.IsEqual(Window(Home).Property(PovInfoHasCast),true)">550</ondown>
+				<ondown condition="!String.IsEqual(Window(Home).Property(PovInfoHasCast),true) + Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
+				<ondown condition="!String.IsEqual(Window(Home).Property(PovInfoHasCast),true) + !Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+				<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+				<control type="radiobutton" id="80">
+					<visible>String.IsEqual(Window(Home).Property(PovInfoType),movie)</visible>
+					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<include content="Bingie_InfoDialog_Button_Texture">
+						<param name="radiotexture" value="dialogs/videoinfo/info/play2.png" />
+					</include>
+					<label>$LOCALIZE[208]</label>
+					<radioposx>17</radioposx>
+					<radiowidth>22</radiowidth>
+					<radioheight>22</radioheight>
+					<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=play_from_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)])</onclick>
+					<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+				</control>
+				<control type="radiobutton" id="51">
+					<visible>String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
+					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<include content="Bingie_InfoDialog_Button_Texture">
+						<param name="radiotexture" value="dialogs/videoinfo/info/play2.png" />
+					</include>
+					<label>$LOCALIZE[208]</label>
+					<radioposx>17</radioposx>
+					<radiowidth>22</radiowidth>
+					<radioheight>22</radioheight>
+					<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=play_from_info&amp;mediatype=tvshow&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)])</onclick>
+					<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+				</control>
+				<control type="radiobutton" id="53">
+					<visible>String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
+					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<include content="Bingie_InfoDialog_Button_Texture">
+						<param name="radiotexture" value="dialogs/videoinfo/info/more_episodes.png" />
+					</include>
+					<label>Episodes</label>
+					<radioposy>22</radioposy>
+					<radioposx>16</radioposx>
+					<radiowidth>24</radiowidth>
+					<radioheight>24</radioheight>
+					<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)],return)</onclick>
+					<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+				</control>
+			</control>
+
+			<control type="list" id="566">
+				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovInfoType),movie)</visible>
+				<left>-3000</left>
+				<top>-3000</top>
+				<width>1</width>
+				<height>1</height>
+				<itemlayout width="1" height="1" />
+				<focusedlayout width="1" height="1" />
+				<content limit="15" target="videos" browse="never">$VAR[PovInfoPageCollectionPath]</content>
+			</control>
+			<control type="list" id="565">
+				<visible allowhiddenfocus="true">!String.IsEmpty(Window(Home).Property(PovInfoTmdb))</visible>
+				<left>-3000</left>
+				<top>-3000</top>
+				<width>1</width>
+				<height>1</height>
+				<itemlayout width="1" height="1" />
+				<focusedlayout width="1" height="1" />
+				<content limit="15" target="videos" browse="never">$VAR[PovInfoPageMoreLikeThisPath]</content>
+			</control>
+
+			<control type="grouplist">
+				<left>126</left>
+				<top>650</top>
+				<width>1668</width>
+				<height>924</height>
+				<orientation>vertical</orientation>
+				<usecontrolcoords>true</usecontrolcoords>
+				<itemgap>2</itemgap>
+				<animation effect="slide" end="0,-382" time="300" tween="cubic" easing="inout" condition="[Control.HasFocus(563) | Control.HasFocus(560)] + String.IsEqual(Window(Home).Property(PovInfoHasCast),true)">Conditional</animation>
+				<animation effect="slide" end="0,-272" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(560) + Integer.IsGreater(Container(566).NumItems,0)">Conditional</animation>
+
+				<control type="group">
+					<visible>String.IsEqual(Window(Home).Property(PovInfoHasCast),true)</visible>
+					<width>1668</width>
+					<height>380</height>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
+					<control type="label">
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>$LOCALIZE[206]</label>
+					</control>
+					<control type="panel" id="550">
+						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovInfoHasCast),true)</visible>
+						<top>50</top>
+						<width>1668</width>
+						<height>330</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>4</preloaditems>
+						<scrolltime tween="quadratic">400</scrolltime>
+						<onup>8000</onup>
+						<ondown condition="Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
+						<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+						<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(560).NumItems,0)">550</ondown>
+						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+						<onclick>RunPlugin($INFO[ListItem.Property(PovActorPath)])</onclick>
+						<oninfo>RunPlugin($INFO[ListItem.Property(PovActorPath)])</oninfo>
+						<itemlayout width="238" height="320">
+							<include content="PovCastCard"><param name="focused" value="false" /></include>
+						</itemlayout>
+						<focusedlayout width="238" height="320">
+							<include content="PovCastCard"><param name="focused" value="true" /></include>
+						</focusedlayout>
+						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_media_cast&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</content>
+					</control>
+				</control>
+
+				<control type="group">
+					<visible>Integer.IsGreater(Container(566).NumItems,0)</visible>
+					<width>1668</width>
+					<height>270</height>
+					<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(550)">Conditional</animation>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560)">Conditional</animation>
+					<control type="label">
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>In This Collection</label>
+					</control>
+					<control type="panel" id="563">
+						<visible allowhiddenfocus="true">Integer.IsGreater(Container(566).NumItems,0)</visible>
+						<top>50</top>
+						<width>1668</width>
+						<height>220</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>2</preloaditems>
+						<scrolltime tween="quadratic">400</scrolltime>
+						<onup condition="String.IsEqual(Window(Home).Property(PovInfoHasCast),true)">550</onup>
+						<onup condition="!String.IsEqual(Window(Home).Property(PovInfoHasCast),true)">8000</onup>
+						<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+						<ondown condition="!Integer.IsGreater(Container(560).NumItems,0)">563</ondown>
+						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=movie&amp;tmdb_id=$INFO[ListItem.Property(tmdb_id)])</oninfo>
+						<itemlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard"><param name="focused" value="false" /></include>
+							</control>
+						</itemlayout>
+						<focusedlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard"><param name="focused" value="true" /></include>
+							</control>
+						</focusedlayout>
+						<content><include>PovCollectionItems</include></content>
+					</control>
+				</control>
+
+				<control type="group">
+					<visible>Integer.IsGreater(Container(565).NumItems,0)</visible>
+					<width>1668</width>
+					<height>270</height>
+					<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(550) | Control.HasFocus(563)">Conditional</animation>
+					<control type="label">
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>$LOCALIZE[31622]</label>
+					</control>
+					<control type="panel" id="560">
+						<visible allowhiddenfocus="true">Integer.IsGreater(Container(565).NumItems,0)</visible>
+						<top>50</top>
+						<width>1668</width>
+						<height>220</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>2</preloaditems>
+						<scrolltime tween="quadratic">400</scrolltime>
+						<onup condition="Integer.IsGreater(Container(563).NumItems,0)">563</onup>
+						<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + String.IsEqual(Window(Home).Property(PovInfoHasCast),true)">550</onup>
+						<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + !String.IsEqual(Window(Home).Property(PovInfoHasCast),true)">8000</onup>
+						<ondown>560</ondown>
+						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[ListItem.Property(tmdb_id)])</oninfo>
+						<itemlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard"><param name="focused" value="false" /></include>
+							</control>
+						</itemlayout>
+						<focusedlayout width="333" height="193">
+							<control type="group">
+								<width>335</width>
+								<height>195</height>
+								<include content="PovMoreLikeThisCard"><param name="focused" value="true" /></include>
+							</control>
+						</focusedlayout>
+						<content><include>PovMoreLikeThisItems</include></content>
+					</control>
+				</control>
+			</control>
+		</control>
+	</include>
+
+	<variable name="PovInfoPageMoreLikeThisPath">
+		<value condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
+		<value condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
+	</variable>
+
+	<variable name="PovInfoPageCollectionPath">
+		<value condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
+	</variable>
+</includes>

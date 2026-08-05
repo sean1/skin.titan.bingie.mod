@@ -8,16 +8,6 @@
 			+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
 			+ String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">AlarmClock(PovActorFocus,SetFocus(630),00:00:01,silent,loop)</onload>
 	<onunload condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onunload>
-	<onunload>ClearProperty(PovActorId,Home)</onunload>
-	<onunload>ClearProperty(PovActorName,Home)</onunload>
-	<onunload>ClearProperty(PovActorProfile,Home)</onunload>
-	<onunload>ClearProperty(PovActorBiography,Home)</onunload>
-	<onunload>ClearProperty(PovActorLifespan,Home)</onunload>
-	<onunload>ClearProperty(PovActorBirthplace,Home)</onunload>
-	<onunload>ClearProperty(PovActorBackdrop,Home)</onunload>
-	<onunload>ClearProperty(PovActorHasMovies,Home)</onunload>
-	<onunload>ClearProperty(PovActorHasTVShows,Home)</onunload>
-	<onunload>ClearProperty(PovActorHasDirected,Home)</onunload>
 	<controls>
 		<include>PovActorPage</include>
 	</controls>

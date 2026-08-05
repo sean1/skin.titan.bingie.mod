@@ -111,8 +111,9 @@
 						<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</ondown>
 						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
 						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">610</ondown>
-						<onback>PreviousMenu</onback>
+						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
 						<include>PovActorPanelLayouts</include>
 						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=movies&amp;sort=newest</content>
 					</control>
@@ -144,8 +145,9 @@
 						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">620</onup>
 						<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
 						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">620</ondown>
-						<onback>PreviousMenu</onback>
+						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
 						<include>PovActorPanelLayouts</include>
 						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=tvshows&amp;sort=newest</content>
 					</control>
@@ -176,8 +178,9 @@
 						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
 						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">630</onup>
 						<ondown>630</ondown>
-						<onback>PreviousMenu</onback>
+						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
 						<include>PovActorPanelLayouts</include>
 						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=directed&amp;sort=newest</content>
 					</control>
@@ -197,8 +200,8 @@
 				<focusedcolor>ff000000</focusedcolor>
 				<texturefocus>colors/color_white.png</texturefocus>
 				<texturenofocus colordiffuse="cc000000">colors/color_black.png</texturenofocus>
-				<onclick>PreviousMenu</onclick>
-				<onback>PreviousMenu</onback>
+				<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onclick>
+				<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 			</control>
 		</control>
 	</include>

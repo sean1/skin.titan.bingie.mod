@@ -59,38 +59,6 @@
 				<label>$INFO[Window(Home).Property(PovActorBiography)]</label>
 				<autoscroll delay="9000" time="2500" repeat="6500">true</autoscroll>
 			</control>
-			<!-- Credit providers stay off-screen; normal panels proxy them so Enter always opens More Info. -->
-			<control type="list" id="611">
-				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
-				<left>-3000</left>
-				<top>-3000</top>
-				<width>1</width>
-				<height>1</height>
-				<itemlayout width="1" height="1" />
-				<focusedlayout width="1" height="1" />
-				<content limit="30" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=movies&amp;sort=newest</content>
-			</control>
-			<control type="list" id="621">
-				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
-				<left>-3000</left>
-				<top>-3000</top>
-				<width>1</width>
-				<height>1</height>
-				<itemlayout width="1" height="1" />
-				<focusedlayout width="1" height="1" />
-				<content limit="30" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=tvshows&amp;sort=newest</content>
-			</control>
-			<control type="list" id="631">
-				<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
-				<left>-3000</left>
-				<top>-3000</top>
-				<width>1</width>
-				<height>1</height>
-				<itemlayout width="1" height="1" />
-				<focusedlayout width="1" height="1" />
-				<content limit="30" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=directed&amp;sort=newest</content>
-			</control>
-
 			<control type="button" id="600">
 				<visible allowhiddenfocus="true">true</visible>
 				<left>-100</left>
@@ -144,8 +112,9 @@
 						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
 						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">610</ondown>
 						<onback>PreviousMenu</onback>
+						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 						<include>PovActorPanelLayouts</include>
-						<content><include content="PovActorCreditItems"><param name="provider" value="611" /></include></content>
+						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=movies&amp;sort=newest</content>
 					</control>
 				</control>
 
@@ -176,8 +145,9 @@
 						<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
 						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">620</ondown>
 						<onback>PreviousMenu</onback>
+						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 						<include>PovActorPanelLayouts</include>
-						<content><include content="PovActorCreditItems"><param name="provider" value="621" /></include></content>
+						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=tvshows&amp;sort=newest</content>
 					</control>
 				</control>
 
@@ -207,8 +177,9 @@
 						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">630</onup>
 						<ondown>630</ondown>
 						<onback>PreviousMenu</onback>
+						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 						<include>PovActorPanelLayouts</include>
-						<content><include content="PovActorCreditItems"><param name="provider" value="631" /></include></content>
+						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=directed&amp;sort=newest</content>
 					</control>
 				</control>
 			</control>
@@ -247,53 +218,6 @@
 				<include content="PovMoreLikeThisCard"><param name="focused" value="true" /></include>
 			</control>
 		</focusedlayout>
-	</include>
-
-	<include name="PovActorCreditItem">
-		<item>
-			<label>$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Label]</label>
-			<icon>$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Icon]</icon>
-			<property name="mediatype">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Property(PovCreditType)]</property>
-			<property name="tmdb_id">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
-			<property name="landscape">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
-			<property name="rating">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Rating]</property>
-			<property name="year">$INFO[Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Year]</property>
-			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(mediatype)]&amp;tmdb_id=$INFO[ListItem.Property(tmdb_id)])</onclick>
-			<visible>!String.IsEmpty(Container($PARAM[provider]).ListItemAbsolute($PARAM[index]).Label)</visible>
-		</item>
-	</include>
-
-	<include name="PovActorCreditItems">
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="0" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="1" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="2" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="3" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="4" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="5" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="6" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="7" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="8" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="9" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="10" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="11" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="12" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="13" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="14" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="15" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="16" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="17" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="18" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="19" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="20" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="21" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="22" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="23" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="24" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="25" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="26" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="27" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="28" /></include>
-		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="29" /></include>
 	</include>
 
 	<variable name="PovActorPageBackdrop">

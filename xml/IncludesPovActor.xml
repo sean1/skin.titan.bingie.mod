@@ -10,51 +10,13 @@
 				<height>1080</height>
 				<texture>colors/color_black.png</texture>
 			</control>
+			<include content="BingieSpotlightCornerImage">
+				<param name="visibility" value="!Player.HasVideo" />
+				<param name="image" value="$VAR[PovActorPageBackdrop]" />
+			</include>
 			<include>BingieRowTrailerPreviewWindow</include>
 
-			<control type="image">
-				<visible>![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
-				<left>126</left>
-				<top>84</top>
-				<width>320</width>
-				<height>470</height>
-				<texture background="true" diffuse="diffuse/poster3.png" fallback="DefaultActorPoster.png">$INFO[Window(Home).Property(PovActorProfile)]</texture>
-				<aspectratio scalediffuse="true" align="center" aligny="top">scale</aspectratio>
-				<bordersize>8</bordersize>
-			</control>
-
-			<control type="label">
-				<visible>![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
-				<left>500</left>
-				<top>88</top>
-				<width>1294</width>
-				<height>72</height>
-				<font>Bold50</font>
-				<textcolor>ffffffff</textcolor>
-				<label>$INFO[Window(Home).Property(PovActorName)]</label>
-			</control>
-			<control type="label">
-				<visible>!String.IsEmpty(Window(Home).Property(PovActorLifespan)) + ![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
-				<left>500</left>
-				<top>170</top>
-				<width>1294</width>
-				<height>34</height>
-				<font>Reg24</font>
-				<textcolor>d9ffffff</textcolor>
-				<label>$INFO[Window(Home).Property(PovActorLifespan)]</label>
-			</control>
-			<control type="label">
-				<visible>!String.IsEmpty(Window(Home).Property(PovActorBirthplace)) + ![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
-				<left>500</left>
-				<top>210</top>
-				<width>1294</width>
-				<height>34</height>
-				<font>Reg24</font>
-				<textcolor>a6ffffff</textcolor>
-				<label>$INFO[Window(Home).Property(PovActorBirthplace),Born in ]</label>
-			</control>
 			<control type="group">
-				<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
 				<control type="label">
 					<left>138</left>
 					<top>88</top>
@@ -86,11 +48,10 @@
 				</control>
 			</control>
 			<control type="textbox">
-				<visible>![Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))]</visible>
-				<left>510</left>
-				<top>278</top>
-				<width>1259</width>
-				<height>254</height>
+				<left>138</left>
+				<top>300</top>
+				<width>540</width>
+				<height>280</height>
 				<font>Reg24</font>
 				<textcolor>e6ffffff</textcolor>
 				<align>left</align>
@@ -323,5 +284,12 @@
 		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="28" /></include>
 		<include content="PovActorCreditItem"><param name="provider" value="$PARAM[provider]" /><param name="index" value="29" /></include>
 	</include>
+
+	<variable name="PovActorPageBackdrop">
+		<value condition="Control.HasFocus(610) + !String.IsEmpty(Container(610).ListItem.Property(landscape))">$INFO[Container(610).ListItem.Property(landscape)]</value>
+		<value condition="Control.HasFocus(620) + !String.IsEmpty(Container(620).ListItem.Property(landscape))">$INFO[Container(620).ListItem.Property(landscape)]</value>
+		<value condition="Control.HasFocus(630) + !String.IsEmpty(Container(630).ListItem.Property(landscape))">$INFO[Container(630).ListItem.Property(landscape)]</value>
+		<value>$INFO[Window(Home).Property(PovActorBackdrop)]</value>
+	</variable>
 
 </includes>

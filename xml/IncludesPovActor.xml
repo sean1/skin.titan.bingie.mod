@@ -106,99 +106,110 @@
 					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
 			</control>
 
-			<control type="group">
-				<visible>String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
-				<animation effect="fade" start="100" end="0" time="0" condition="Control.HasFocus(620) | Control.HasFocus(630)">Conditional</animation>
-				<control type="label">
-					<left>126</left>
-					<top>650</top>
-					<width>1668</width>
-					<height>45</height>
-					<font>Bold31</font>
-					<textcolor>ffffffff</textcolor>
-					<label>Movies</label>
-				</control>
-				<control type="panel" id="610">
-					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
-					<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
-					<left>126</left>
-					<top>705</top>
-					<width>1668</width>
-					<height>220</height>
-					<orientation>horizontal</orientation>
-					<preloaditems>2</preloaditems>
-					<scrolltime tween="quadratic">350</scrolltime>
-					<onup>610</onup>
-					<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</ondown>
-					<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
-					<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">610</ondown>
-					<onback>PreviousMenu</onback>
-					<include>PovActorPanelLayouts</include>
-					<content><include content="PovActorCreditItems"><param name="provider" value="611" /></include></content>
-				</control>
-			</control>
+			<!-- Keep every available credit shelf in one Home-style vertical stack. -->
+			<control type="grouplist">
+				<left>126</left>
+				<top>650</top>
+				<width>1668</width>
+				<height>831</height>
+				<orientation>vertical</orientation>
+				<usecontrolcoords>true</usecontrolcoords>
+				<itemgap>2</itemgap>
+				<animation effect="slide" end="0,-277" time="300" tween="cubic" easing="inout" condition="[Control.HasFocus(620) | Control.HasFocus(630)] + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">Conditional</animation>
+				<animation effect="slide" end="0,-277" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(630) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">Conditional</animation>
 
-			<control type="group">
-				<visible>String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
-				<animation effect="fade" start="100" end="0" time="0" condition="Control.HasFocus(610) | Control.HasFocus(630) | [!Control.HasFocus(610) + !Control.HasFocus(620) + !Control.HasFocus(630) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)]">Conditional</animation>
-				<control type="label">
-					<left>126</left>
-					<top>650</top>
+				<control type="group">
+					<visible>String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
 					<width>1668</width>
-					<height>45</height>
-					<font>Bold31</font>
-					<textcolor>ffffffff</textcolor>
-					<label>TV Shows</label>
+					<height>275</height>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(620) | Control.HasFocus(630)">Conditional</animation>
+					<control type="label">
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>Movies</label>
+					</control>
+					<control type="panel" id="610">
+						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
+						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
+						<top>55</top>
+						<width>1668</width>
+						<height>220</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>2</preloaditems>
+						<scrolltime tween="quadratic">350</scrolltime>
+						<onup>610</onup>
+						<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</ondown>
+						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
+						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">610</ondown>
+						<onback>PreviousMenu</onback>
+						<include>PovActorPanelLayouts</include>
+						<content><include content="PovActorCreditItems"><param name="provider" value="611" /></include></content>
+					</control>
 				</control>
-				<control type="panel" id="620">
-					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
-					<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
-					<left>126</left>
-					<top>705</top>
-					<width>1668</width>
-					<height>220</height>
-					<orientation>horizontal</orientation>
-					<preloaditems>2</preloaditems>
-					<scrolltime tween="quadratic">350</scrolltime>
-					<onup condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
-					<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">620</onup>
-					<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
-					<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">620</ondown>
-					<onback>PreviousMenu</onback>
-					<include>PovActorPanelLayouts</include>
-					<content><include content="PovActorCreditItems"><param name="provider" value="621" /></include></content>
-				</control>
-			</control>
 
-			<control type="group">
-				<visible>String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
-				<animation effect="fade" start="100" end="0" time="0" condition="Control.HasFocus(610) | Control.HasFocus(620) | [!Control.HasFocus(610) + !Control.HasFocus(620) + !Control.HasFocus(630) + [String.IsEqual(Window(Home).Property(PovActorHasMovies),true) | String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)]]">Conditional</animation>
-				<control type="label">
-					<left>126</left>
-					<top>650</top>
+				<control type="group">
+					<visible>String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
 					<width>1668</width>
-					<height>45</height>
-					<font>Bold31</font>
-					<textcolor>ffffffff</textcolor>
-					<label>Directed By</label>
+					<height>275</height>
+					<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(610)">Conditional</animation>
+					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(630)">Conditional</animation>
+					<control type="label">
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>TV Shows</label>
+					</control>
+					<control type="panel" id="620">
+						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
+						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
+						<top>55</top>
+						<width>1668</width>
+						<height>220</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>2</preloaditems>
+						<scrolltime tween="quadratic">350</scrolltime>
+						<onup condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
+						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">620</onup>
+						<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
+						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">620</ondown>
+						<onback>PreviousMenu</onback>
+						<include>PovActorPanelLayouts</include>
+						<content><include content="PovActorCreditItems"><param name="provider" value="621" /></include></content>
+					</control>
 				</control>
-				<control type="panel" id="630">
-					<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
-					<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
-					<left>126</left>
-					<top>705</top>
+
+				<control type="group">
+					<visible>String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
 					<width>1668</width>
-					<height>220</height>
-					<orientation>horizontal</orientation>
-					<preloaditems>2</preloaditems>
-					<scrolltime tween="quadratic">350</scrolltime>
-					<onup condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</onup>
-					<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
-					<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">630</onup>
-					<ondown>630</ondown>
-					<onback>PreviousMenu</onback>
-					<include>PovActorPanelLayouts</include>
-					<content><include content="PovActorCreditItems"><param name="provider" value="631" /></include></content>
+					<height>275</height>
+					<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(610) | Control.HasFocus(620)">Conditional</animation>
+					<control type="label">
+						<width>1668</width>
+						<height>45</height>
+						<font>Bold31</font>
+						<textcolor>ffffffff</textcolor>
+						<label>Directed By</label>
+					</control>
+					<control type="panel" id="630">
+						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
+						<top>55</top>
+						<width>1668</width>
+						<height>220</height>
+						<orientation>horizontal</orientation>
+						<preloaditems>2</preloaditems>
+						<scrolltime tween="quadratic">350</scrolltime>
+						<onup condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</onup>
+						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
+						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">630</onup>
+						<ondown>630</ondown>
+						<onback>PreviousMenu</onback>
+						<include>PovActorPanelLayouts</include>
+						<content><include content="PovActorCreditItems"><param name="provider" value="631" /></include></content>
+					</control>
 				</control>
 			</control>
 

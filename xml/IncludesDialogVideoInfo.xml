@@ -31,19 +31,7 @@
 					<content sortorder="ascending" sortby="playcount" limit="1">$VAR[InfoDialogNextUpContent]</content>
 				</control>
 
-				<!-- Native Kodi cast row populated by POV metadata -->
-				<control type="label">
-					<visible>Integer.IsGreater(Container(50).NumItems,0)</visible>
-					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
-					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
-					<left>126</left>
-					<top>680</top>
-					<width>1668</width>
-					<height>45</height>
-					<font>Bold31</font>
-					<textcolor>ffffffff</textcolor>
-					<label>$LOCALIZE[206]</label>
-				</control>
+				<!-- Native Kodi cast provider populated by POV metadata. -->
 				<control type="panel" id="50">
 					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
 					<left>-2000</left>
@@ -131,153 +119,158 @@
 						</control>
 					</focusedlayout>
 				</control>
-				<!-- Control 50 is reserved by Kodi, so render its cast data in a normal panel that can route mouse and keyboard selection through POV. -->
-				<control type="panel" id="550">
-					<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
-					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
-					<animation effect="slide" start="0,0" end="0,410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
-					<left>126</left>
-					<top>730</top>
-					<width>1668</width>
-					<height>330</height>
-					<orientation>horizontal</orientation>
-					<preloaditems>4</preloaditems>
-					<scrolltime tween="quadratic">400</scrolltime>
-					<onup>8000</onup>
-					<ondown condition="Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
-					<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
-					<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(560).NumItems,0)">550</ondown>
-					<itemlayout width="238" height="320">
-						<include content="PovCastCard">
-							<param name="focused" value="false" />
-						</include>
-					</itemlayout>
-					<focusedlayout width="238" height="320">
-						<include content="PovCastCard">
-							<param name="focused" value="true" />
-						</include>
-					</focusedlayout>
-					<content>
-						<include content="PovCastItems" />
-					</content>
+				<!-- Hidden POV providers load independently so optional visual shelves collapse without gaps. -->
+				<control type="list" id="566">
+					<visible allowhiddenfocus="true">String.IsEqual(Window.Property(PovInfoType),movie)</visible>
+					<left>-3000</left>
+					<top>-3000</top>
+					<width>1</width>
+					<height>1</height>
+					<itemlayout width="1" height="1" />
+					<focusedlayout width="1" height="1" />
+					<content limit="15" target="videos" browse="never">$VAR[PovInThisCollectionPath]</content>
 				</control>
-				<!-- Keep collection titles below Cast, then slide them into the shelf when focused. -->
-				<control type="group">
-					<visible>String.IsEqual(Window.Property(PovInfoType),movie)</visible>
-					<animation effect="slide" start="0,0" end="0,-410" time="250" tween="cubic" easing="inout" condition="Control.HasFocus(563) | [!Integer.IsGreater(Container(50).NumItems,0) + !Control.HasFocus(560)]">Conditional</animation>
-					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560)">Conditional</animation>
-					<control type="label">
-						<visible>Integer.IsGreater(Container(563).NumItems,0)</visible>
-						<left>126</left>
-						<top>1090</top>
-						<width>1668</width>
-						<height>45</height>
-						<font>Bold31</font>
-						<textcolor>ffffffff</textcolor>
-						<label>In This Collection</label>
-					</control>
-					<control type="list" id="566">
-						<visible allowhiddenfocus="true">String.IsEqual(Window.Property(PovInfoType),movie)</visible>
-						<left>-3000</left>
-						<top>-3000</top>
-						<width>1</width>
-						<height>1</height>
-						<itemlayout width="1" height="1" />
-						<focusedlayout width="1" height="1" />
-						<content limit="15" target="videos" browse="never">$VAR[PovInThisCollectionPath]</content>
-					</control>
-					<control type="panel" id="563">
-						<visible allowhiddenfocus="true">Integer.IsGreater(Container(566).NumItems,0)</visible>
-						<left>126</left>
-						<top>1140</top>
-						<width>1668</width>
-						<height>220</height>
-						<orientation>horizontal</orientation>
-						<preloaditems>2</preloaditems>
-						<scrolltime tween="quadratic">400</scrolltime>
-						<onup condition="Integer.IsGreater(Container(50).NumItems,0)">550</onup>
-						<onup condition="!Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
-						<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
-						<ondown condition="!Integer.IsGreater(Container(560).NumItems,0)">563</ondown>
-						<itemlayout width="333" height="193">
-							<control type="group">
-								<width>335</width>
-								<height>195</height>
-								<include content="PovMoreLikeThisCard">
-									<param name="focused" value="false" />
-								</include>
-							</control>
-						</itemlayout>
-						<focusedlayout width="333" height="193">
-							<control type="group">
-								<width>335</width>
-								<height>195</height>
-								<include content="PovMoreLikeThisCard">
-									<param name="focused" value="true" />
-								</include>
-							</control>
-						</focusedlayout>
-						<content><include>PovCollectionItems</include></content>
-					</control>
+				<control type="list" id="565">
+					<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
+					<left>-3000</left>
+					<top>-3000</top>
+					<width>1</width>
+					<height>1</height>
+					<itemlayout width="1" height="1" />
+					<focusedlayout width="1" height="1" />
+					<content limit="15" target="videos" browse="never">$VAR[PovMoreLikeThisPath]</content>
 				</control>
 
-				<!-- Keep recommendations below the collection shelf, then slide them into view when focused. -->
-				<control type="group">
-					<visible>!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
-					<animation effect="slide" start="0,0" end="0,-820" time="250" tween="cubic" easing="inout"
-						condition="Control.HasFocus(560) | [!Integer.IsGreater(Container(50).NumItems,0) + !Integer.IsGreater(Container(563).NumItems,0)]">Conditional</animation>
-					<control type="label">
-						<visible>Integer.IsGreater(Container(560).NumItems,0)</visible>
-						<left>126</left>
-						<top>1500</top>
+				<!-- Home-style shelf stack: focused rows stay anchored while later rows remain visible below. -->
+				<control type="grouplist">
+					<left>126</left>
+					<top>650</top>
+					<width>1668</width>
+					<height>924</height>
+					<orientation>vertical</orientation>
+					<usecontrolcoords>true</usecontrolcoords>
+					<itemgap>2</itemgap>
+					<animation effect="slide" end="0,-382" time="300" tween="cubic" easing="inout" condition="[Control.HasFocus(563) | Control.HasFocus(560)] + Integer.IsGreater(Container(50).NumItems,0)">Conditional</animation>
+					<animation effect="slide" end="0,-272" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(560) + Integer.IsGreater(Container(566).NumItems,0)">Conditional</animation>
+
+					<!-- Control 50 is reserved by Kodi, so this normal panel proxies its cast data through POV. -->
+					<control type="group">
+						<visible>Integer.IsGreater(Container(50).NumItems,0)</visible>
 						<width>1668</width>
-						<height>45</height>
-						<font>Bold31</font>
-						<textcolor>ffffffff</textcolor>
-						<label>$LOCALIZE[31622]</label>
+						<height>380</height>
+						<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
+						<control type="label">
+							<width>1668</width>
+							<height>45</height>
+							<font>Bold31</font>
+							<textcolor>ffffffff</textcolor>
+							<label>$LOCALIZE[206]</label>
+						</control>
+						<control type="panel" id="550">
+							<visible allowhiddenfocus="true">Integer.IsGreater(Container(50).NumItems,0)</visible>
+							<top>50</top>
+							<width>1668</width>
+							<height>330</height>
+							<orientation>horizontal</orientation>
+							<preloaditems>4</preloaditems>
+							<scrolltime tween="quadratic">400</scrolltime>
+							<onup>8000</onup>
+							<ondown condition="Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
+							<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+							<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(560).NumItems,0)">550</ondown>
+							<itemlayout width="238" height="320">
+								<include content="PovCastCard"><param name="focused" value="false" /></include>
+							</itemlayout>
+							<focusedlayout width="238" height="320">
+								<include content="PovCastCard"><param name="focused" value="true" /></include>
+							</focusedlayout>
+							<content><include content="PovCastItems" /></content>
+						</control>
 					</control>
-					<control type="list" id="565">
-						<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
-						<left>-3000</left>
-						<top>-3000</top>
-						<width>1</width>
-						<height>1</height>
-						<itemlayout width="1" height="1" />
-						<focusedlayout width="1" height="1" />
-						<content limit="15" target="videos" browse="never">$VAR[PovMoreLikeThisPath]</content>
-					</control>
-					<control type="panel" id="560">
-						<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
-						<left>126</left>
-						<top>1550</top>
+
+					<control type="group">
+						<visible>Integer.IsGreater(Container(566).NumItems,0)</visible>
 						<width>1668</width>
-						<height>220</height>
-						<orientation>horizontal</orientation>
-						<preloaditems>2</preloaditems>
-						<scrolltime tween="quadratic">400</scrolltime>
-						<onup condition="Integer.IsGreater(Container(563).NumItems,0)">563</onup>
-						<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(50).NumItems,0)">550</onup>
-						<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
-						<ondown>560</ondown>
-						<itemlayout width="333" height="193">
-							<control type="group">
-								<width>335</width>
-								<height>195</height>
-								<include content="PovMoreLikeThisCard">
-									<param name="focused" value="false" />
-								</include>
-							</control>
-						</itemlayout>
-						<focusedlayout width="333" height="193">
-							<control type="group">
-								<width>335</width>
-								<height>195</height>
-								<include content="PovMoreLikeThisCard">
-									<param name="focused" value="true" />
-								</include>
-							</control>
-						</focusedlayout>
-						<content><include>PovMoreLikeThisItems</include></content>
+						<height>270</height>
+						<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(550)">Conditional</animation>
+						<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(560)">Conditional</animation>
+						<control type="label">
+							<width>1668</width>
+							<height>45</height>
+							<font>Bold31</font>
+							<textcolor>ffffffff</textcolor>
+							<label>In This Collection</label>
+						</control>
+						<control type="panel" id="563">
+							<visible allowhiddenfocus="true">Integer.IsGreater(Container(566).NumItems,0)</visible>
+							<top>50</top>
+							<width>1668</width>
+							<height>220</height>
+							<orientation>horizontal</orientation>
+							<preloaditems>2</preloaditems>
+							<scrolltime tween="quadratic">400</scrolltime>
+							<onup condition="Integer.IsGreater(Container(50).NumItems,0)">550</onup>
+							<onup condition="!Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
+							<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
+							<ondown condition="!Integer.IsGreater(Container(560).NumItems,0)">563</ondown>
+							<itemlayout width="333" height="193">
+								<control type="group">
+									<width>335</width>
+									<height>195</height>
+									<include content="PovMoreLikeThisCard"><param name="focused" value="false" /></include>
+								</control>
+							</itemlayout>
+							<focusedlayout width="333" height="193">
+								<control type="group">
+									<width>335</width>
+									<height>195</height>
+									<include content="PovMoreLikeThisCard"><param name="focused" value="true" /></include>
+								</control>
+							</focusedlayout>
+							<content><include>PovCollectionItems</include></content>
+						</control>
+					</control>
+
+					<control type="group">
+						<visible>Integer.IsGreater(Container(565).NumItems,0)</visible>
+						<width>1668</width>
+						<height>270</height>
+						<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(550) | Control.HasFocus(563)">Conditional</animation>
+						<control type="label">
+							<width>1668</width>
+							<height>45</height>
+							<font>Bold31</font>
+							<textcolor>ffffffff</textcolor>
+							<label>$LOCALIZE[31622]</label>
+						</control>
+						<control type="panel" id="560">
+							<visible allowhiddenfocus="true">Integer.IsGreater(Container(565).NumItems,0)</visible>
+							<top>50</top>
+							<width>1668</width>
+							<height>220</height>
+							<orientation>horizontal</orientation>
+							<preloaditems>2</preloaditems>
+							<scrolltime tween="quadratic">400</scrolltime>
+							<onup condition="Integer.IsGreater(Container(563).NumItems,0)">563</onup>
+							<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(50).NumItems,0)">550</onup>
+							<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
+							<ondown>560</ondown>
+							<itemlayout width="333" height="193">
+								<control type="group">
+									<width>335</width>
+									<height>195</height>
+									<include content="PovMoreLikeThisCard"><param name="focused" value="false" /></include>
+								</control>
+							</itemlayout>
+							<focusedlayout width="333" height="193">
+								<control type="group">
+									<width>335</width>
+									<height>195</height>
+									<include content="PovMoreLikeThisCard"><param name="focused" value="true" /></include>
+								</control>
+							</focusedlayout>
+							<content><include>PovMoreLikeThisItems</include></content>
+						</control>
 					</control>
 				</control>
 

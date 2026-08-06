@@ -21,22 +21,22 @@
 			<property name="widget.2">pov-trending-movies</property>
 			<property name="widgetTarget.2">videos</property>
 			<property name="widgetType.2">movies</property>
-			<property name="widgetPath.2">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</property>
+			<property name="widgetPath.2">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10</property>
 			<property name="widgetName.2">Trending Movies</property>
 			<property name="widget.3">pov-trending-tv</property>
 			<property name="widgetTarget.3">videos</property>
 			<property name="widgetType.3">tvshows</property>
-			<property name="widgetPath.3">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</property>
+			<property name="widgetPath.3">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</property>
 			<property name="widgetName.3">Trending TV Shows</property>
 			<property name="widget.4">pov-popular-movies</property>
 			<property name="widgetTarget.4">videos</property>
 			<property name="widgetType.4">movies</property>
-			<property name="widgetPath.4">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</property>
+			<property name="widgetPath.4">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</property>
 			<property name="widgetName.4">Popular Movies</property>
 			<property name="widget.5">pov-popular-tv</property>
 			<property name="widgetTarget.5">videos</property>
 			<property name="widgetType.5">tvshows</property>
-			<property name="widgetPath.5">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
+			<property name="widgetPath.5">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</property>
 			<property name="widgetName.5">Popular TV Shows</property>
 			<onclick>ActivateWindow(home,return)</onclick>
 			<property name="path">ActivateWindow(home,return)</property>
@@ -526,13 +526,13 @@
 		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),4)">plugin://plugin.video.pov.lite/?mode=build_in_progress_episode&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</value>
 	</variable>
 	<variable name="BingieHomePopularMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</value>
 	</variable>
 	<variable name="BingieHomePopularTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</value>
 	</variable>
 	<include name="StaticHomeWidgetRows">
 		<include content="widget_header_multi">
@@ -548,11 +548,11 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending" />
+			<param name="widgetPath" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10" />
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="21" />
+			<param name="widgetLimit" value="11" />
 			<param name="widgetInfoPanel" value="top" />
 			<param name="visibility" value="true" />
 		</include>
@@ -573,7 +573,7 @@
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="21" />
+			<param name="widgetLimit" value="11" />
 			<param name="widgetInfoPanel" value="top" />
 			<param name="visibility" value="true" />
 		</include>
@@ -594,7 +594,7 @@
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="21" />
+			<param name="widgetLimit" value="11" />
 			<param name="widgetInfoPanel" value="top" />
 			<param name="visibility" value="true" />
 		</include>
@@ -615,7 +615,7 @@
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="21" />
+			<param name="widgetLimit" value="11" />
 			<param name="widgetInfoPanel" value="top" />
 			<param name="visibility" value="true" />
 		</include>

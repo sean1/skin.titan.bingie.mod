@@ -5,7 +5,7 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 addon_file="$project_dir/addon.xml"
-output_dir=${1:-"$project_dir/dist"}
+output_dir=${1:-"${HOME:?}/Downloads"}
 
 addon_id=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*id="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
 addon_version=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*version="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)

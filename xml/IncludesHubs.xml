@@ -42,7 +42,7 @@
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>
             <include>ScrollTime</include>
-            <preloaditems>5</preloaditems>
+            <preloaditems>2</preloaditems>
             <orientation>horizontal</orientation>
             <onback condition="$EXP[IsPlayingRecognizedContent]">SetFocus(509)</onback>
             <onback condition="!$EXP[IsPlayingRecognizedContent]">900</onback>

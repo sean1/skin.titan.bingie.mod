@@ -1487,10 +1487,10 @@
                 <width>$PARAM[width]</width>
                 <height>$PARAM[height]</height>
                 <texture background="true" diffuse="bingie/new_bingie_spotlight_diffuse.png">$PARAM[image]</texture>
-				<fadetime>550</fadetime>
+				<fadetime>200</fadetime>
                 <aspectratio scalediffuse="true" aligny="top" align="right">keep</aspectratio>
-                <animation effect="fade" end="0" time="500">Hidden</animation>
-                <animation effect="fade" start="0" end="100" time="1200">Visible</animation>
+                <animation effect="fade" end="0" time="200">Hidden</animation>
+                <animation effect="fade" start="0" end="100" time="200">Visible</animation>
             </control>
 	    </definition>
     </include>

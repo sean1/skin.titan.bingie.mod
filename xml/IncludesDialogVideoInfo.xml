@@ -44,7 +44,7 @@
 					<width>1</width>
 					<height>1</height>
 					<orientation>horizontal</orientation>
-					<preloaditems>4</preloaditems>
+					<preloaditems>1</preloaditems>
 					<scrolltime tween="quadratic">400</scrolltime>
 					<itemlayout width="238" height="320">
 						<control type="image">

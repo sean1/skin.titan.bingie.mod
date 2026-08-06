@@ -784,13 +784,14 @@
 		<include content="PovCollectionItem"><param name="index" value="14" /></include>
 	</include>
 
-    <variable name="PovMoreLikeThisPath">
-        <value condition="String.IsEqual(Window.Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
-        <value condition="String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
-    </variable>
+	<variable name="PovMoreLikeThisPath">
+		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+	</variable>
 
 	<variable name="PovInThisCollectionPath">
-		<value condition="String.IsEqual(Window.Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + !String.IsEmpty(Window.Property(PovInfoCollectionId))">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]&amp;collection_id=$INFO[Window.Property(PovInfoCollectionId)]</value>
+		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + String.IsEmpty(Window.Property(PovInfoCollectionId)) + !String.IsEqual(ListItem.Property(PovLiteItem),true)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
 	</variable>
 
 	<variable name="PovInfoActiveType">

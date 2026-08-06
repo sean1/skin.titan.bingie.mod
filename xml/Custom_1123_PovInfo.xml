@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <window id="1123">
+	<onload>ClearProperty(PovInfoMoreLikeThisReady,Home)</onload>
+	<onload>ClearProperty(PovInfoCollectionReady,Home)</onload>
+	<onload condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb))">AlarmClock(PovInfoMoreLikeThisShelf,SetProperty(PovInfoMoreLikeThisReady,1,Home),00:00:01,silent)</onload>
+	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),movie) + !String.IsEmpty(Window(Home).Property(PovInfoCollectionId))">AlarmClock(PovInfoCollectionShelf,SetProperty(PovInfoCollectionReady,1,Home),00:00:02,silent)</onload>
 	<onload>Control.SetFocus(550,0,absolute)</onload>
 	<onload>Control.SetFocus(563,0,absolute)</onload>
 	<onload>Control.SetFocus(560,0,absolute)</onload>
 	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">SetFocus(80)</onload>
 	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">SetFocus(51)</onload>
+	<onunload condition="System.HasAlarm(PovInfoMoreLikeThisShelf)">CancelAlarm(PovInfoMoreLikeThisShelf,silent)</onunload>
+	<onunload condition="System.HasAlarm(PovInfoCollectionShelf)">CancelAlarm(PovInfoCollectionShelf,silent)</onunload>
+	<onunload>ClearProperty(PovInfoMoreLikeThisReady,Home)</onunload>
+	<onunload>ClearProperty(PovInfoCollectionReady,Home)</onunload>
 	<defaultcontrol always="true">8000</defaultcontrol>
 	<controls>
 		<include>PovInfoPage</include>

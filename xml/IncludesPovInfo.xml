@@ -320,11 +320,11 @@
 	</include>
 
 	<variable name="PovInfoPageMoreLikeThisPath">
-		<value condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
-		<value condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window(Home).Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
 	</variable>
 
 	<variable name="PovInfoPageCollectionPath">
-		<value condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoCollectionReady)) + String.IsEqual(Window(Home).Property(PovInfoType),movie) + !String.IsEmpty(Window(Home).Property(PovInfoCollectionId))">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]&amp;collection_id=$INFO[Window(Home).Property(PovInfoCollectionId)]</value>
 	</variable>
 </includes>

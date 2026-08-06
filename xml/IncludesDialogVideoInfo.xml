@@ -724,7 +724,7 @@
 			<icon>$INFO[Container(565).ListItemAbsolute($PARAM[index]).Icon]</icon>
 			<property name="DBTYPE">$INFO[Container(565).ListItemAbsolute($PARAM[index]).DBType]</property>
 			<property name="tmdb_id">$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
-			<property name="landscape">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="landscape">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Art(landscape)]</property>
 			<property name="rating">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Rating]</property>
 			<property name="year">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Year]</property>
 			<property name="year_range">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(year_range)]</property>
@@ -759,7 +759,7 @@
 			<icon>$INFO[Container(566).ListItemAbsolute($PARAM[index]).Icon]</icon>
 			<property name="DBTYPE">$INFO[Container(566).ListItemAbsolute($PARAM[index]).DBType]</property>
 			<property name="tmdb_id">$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
-			<property name="landscape">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="landscape">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Art(landscape)]</property>
 			<property name="rating">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Rating]</property>
 			<property name="year">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Year]</property>
 			<property name="PovInfoSourceTmdb">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovInfoSourceTmdb)]</property>

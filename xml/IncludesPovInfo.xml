@@ -152,7 +152,8 @@
 					<radioposx>16</radioposx>
 					<radiowidth>24</radiowidth>
 					<radioheight>24</radioheight>
-					<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)],return)</onclick>
+					<onclick condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb))">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)],return)</onclick>
+					<onclick condition="String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoPendingTmdb)],return)</onclick>
 					<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 				</control>
 				<control type="radiobutton" id="55">

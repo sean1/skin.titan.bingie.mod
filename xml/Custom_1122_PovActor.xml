@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <window id="1122">
 	<defaultcontrol always="true">600</defaultcontrol>
+	<onload>Control.SetFocus(610,0,absolute)</onload>
+	<onload>Control.SetFocus(620,0,absolute)</onload>
+	<onload>Control.SetFocus(630,0,absolute)</onload>
 	<onload condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent,loop)</onload>
 	<onload condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">AlarmClock(PovActorFocus,SetFocus(620),00:00:01,silent,loop)</onload>
 	<onload

@@ -69,7 +69,7 @@
             <param name="widgetid" value="1510" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=in_progress_movies" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=30" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
@@ -98,7 +98,7 @@
             <param name="widgetid" value="1510" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_in_progress_episode" />
+            <param name="path" value="plugin://plugin.video.pov.lite/?mode=build_in_progress_episode&amp;limit=30" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />

@@ -254,7 +254,7 @@
 								<include content="PovCastCard"><param name="focused" value="true" /></include>
 							</control>
 						</focusedlayout>
-						<content limit="30" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_media_cast&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</content>
+						<content limit="14" target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_media_cast&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</content>
 					</control>
 				</control>
 

@@ -11,6 +11,7 @@
 	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">SetFocus(51)</onload>
 	<onunload condition="System.HasAlarm(PovInfoMoreLikeThisShelf)">CancelAlarm(PovInfoMoreLikeThisShelf,silent)</onunload>
 	<onunload condition="System.HasAlarm(PovInfoCollectionShelf)">CancelAlarm(PovInfoCollectionShelf,silent)</onunload>
+	<onunload>SetProperty(BingieTrailerPreviewCancel,true,Home)</onunload>
 	<onunload>ClearProperty(PovInfoMoreLikeThisReady,Home)</onunload>
 	<onunload>ClearProperty(PovInfoCollectionReady,Home)</onunload>
 	<defaultcontrol always="true">8000</defaultcontrol>

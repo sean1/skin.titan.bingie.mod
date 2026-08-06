@@ -40,7 +40,7 @@
                 <aspectratio>stretch</aspectratio>
                 <colordiffuse>ffffffff</colordiffuse>
             </control>
-            <control type="textbox">
+            <control type="label">
                 <left>15</left>
                 <right>15</right>
                 <bottom>14</bottom>
@@ -49,11 +49,11 @@
                 <aligny>center</aligny>
                 <label>$VAR[ThumbListDetailsSquare]</label>
                 <font>Reg18</font>
-                <autoscroll>false</autoscroll>
+                <scroll>false</scroll>
                 <textcolor>ffffffff</textcolor>
                 <visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             </control>
-            <control type="textbox">
+            <control type="label">
                 <left>15</left>
                 <right>15</right>
                 <bottom>14</bottom>
@@ -62,7 +62,7 @@
                 <aligny>center</aligny>
                 <label>$VAR[ThumbListDetailsSquare]</label>
                 <font>Reg18</font>
-                <autoscroll delay="2000" time="2000">true</autoscroll>
+                <scroll>true</scroll>
                 <textcolor>ffffffff</textcolor>
                 <visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             </control>

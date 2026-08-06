@@ -102,7 +102,7 @@
                     <width>335</width>
                     <height>195</height>
                     <include>ThumbsViewItemBingieLayout</include>
-                    <include>Bingie_Main_Landscape_Title</include>
+                    <include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include>
                 </control>
             </itemlayout>
             <focusedlayout height="193" width="333">
@@ -123,7 +123,7 @@
 						<include>thumbsborder_focused</include>
 					</control>
                     <include>ThumbsViewItemBingieLayout</include>
-                    <include>Bingie_Main_Landscape_Title</include>
+                    <include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include>
                     <animation effect="zoom" end="103,103" center="auto" time="100" condition="false + false">focus</animation>
                 </control>
 				<!--Top 250 1-->
@@ -164,17 +164,17 @@
             <aspectratio>stretch</aspectratio>
             <colordiffuse>ffffffff</colordiffuse>
         </control>
-        <control type="textbox">
+        <control type="label">
             <visible>!String.IsEqual(ListItem.Label,..)</visible>
             <left>16</left>
             <right>16</right>
-            <bottom>10</bottom>
-            <height>60</height>
+            <bottom>8</bottom>
+            <height>38</height>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
-            <autoscroll delay="2000" time="2000">true</autoscroll>
+            <scroll>$PARAM[focused]</scroll>
             <textcolor>ffffffff</textcolor>
         </control>
     </include>

@@ -227,7 +227,7 @@
                 <font>Reg30</font>
                 <textcolor>ffffffff</textcolor>
                 <label>[B]$VAR[View525MainLabel][/B]</label>
-                <scroll>false</scroll>
+                <scroll>true</scroll>
             </control>
             <!-- plot -->
             <control type="textbox">

@@ -32,33 +32,18 @@
 		</control>
         <include condition="!$EXP[IsBingieViewsActive] + !Control.IsVisible(523)">ThumbsTagOverlayBingie</include>
         <include condition="!$EXP[IsBingieViewsActive]">New_Episodes_Tag_Overlay</include>
-        <control type="group">
-            <!--Watched Overlay-->
-            <right>8</right>
-            <top>8</top>
-            <include content="WatchedIndicatorLayout">
-                <param name="width" value="60" />
-                <param name="height" value="60" />
-                <param name="font" value="indicator_small" />
-                <param name="overlay" value="normal" />
-                <param name="overlay_texture" value="diffuse/icon_overlay_landscape.png" />
-            </include>
-        </control>
+		<include>LandscapeCardTopGradient</include>
+		<include>LandscapeCardYearLabel</include>
 		<control type="group">
 			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Rating)</visible>
-			<left>8</left>
+			<right>16</right>
 			<top>8</top>
 			<width>58</width>
 			<height>38</height>
-			<control type="image">
-				<width>100%</width>
-				<height>100%</height>
-				<texture colordiffuse="80ffffff">colors/color_black.png</texture>
-			</control>
 			<control type="label">
 				<width>100%</width>
 				<height>100%</height>
-				<align>center</align>
+				<align>right</align>
 				<aligny>center</aligny>
 				<font>Reg20</font>
 				<textcolor>ffffffff</textcolor>
@@ -66,6 +51,38 @@
 			</control>
 		</control>
     </include>
+
+	<include name="LandscapeCardTopGradient">
+		<control type="image">
+			<visible>$EXP[IsMovieOrTvShowListItem]</visible>
+			<left>8</left>
+			<right>8</right>
+			<top>8</top>
+			<height>128</height>
+			<texture flipy="true">overlays/gradient_episodes.png</texture>
+			<aspectratio>stretch</aspectratio>
+			<colordiffuse>ffffffff</colordiffuse>
+		</control>
+	</include>
+
+	<include name="LandscapeCardYearLabel">
+		<control type="group">
+			<visible>$EXP[IsMovieOrTvShowListItem] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))]</visible>
+			<left>16</left>
+			<top>8</top>
+			<width>150</width>
+			<height>38</height>
+			<control type="label">
+				<width>100%</width>
+				<height>100%</height>
+				<align>left</align>
+				<aligny>center</aligny>
+				<font>Reg20</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$VAR[CardYearRange]</label>
+			</control>
+		</control>
+	</include>
 
 
 
@@ -109,34 +126,34 @@
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>
             <colordiffuse>ffffffff</colordiffuse>
         </control>
-        <control type="textbox">
+        <control type="label">
             <!--Label-->
             <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <left>16</left>
             <right>16</right>
-            <bottom>10</bottom>
-            <height>60</height>
+            <bottom>8</bottom>
+            <height>38</height>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
-			<autoscroll>false</autoscroll>
+			<scroll>false</scroll>
 			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             <textcolor>ffffffff</textcolor>
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>
         </control>
-		<control type="textbox">
+		<control type="label">
             <!--Label-->
             <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
             <left>16</left>
             <right>16</right>
-            <bottom>10</bottom>
-            <height>60</height>
+            <bottom>8</bottom>
+            <height>38</height>
             <align>left</align>
             <aligny>center</aligny>
             <label>$VAR[ThumbListDetails]</label>
             <font>Reg20</font>
-			<autoscroll delay="2000" time="2000">true</autoscroll>
+			<scroll>true</scroll>
 			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             <textcolor>ffffffff</textcolor>
             <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523) | [false + false]">LandscapeTagOverlayVisibility</include>

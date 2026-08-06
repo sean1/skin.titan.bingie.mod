@@ -684,49 +684,35 @@
 			<aspectratio>stretch</aspectratio>
 			<colordiffuse>ffffffff</colordiffuse>
 		</control>
-		<control type="textbox">
+		<include>LandscapeCardTopGradient</include>
+		<control type="label">
 			<left>16</left>
 			<right>16</right>
-			<bottom>10</bottom>
-			<height>60</height>
+			<bottom>8</bottom>
+			<height>38</height>
 			<align>left</align>
 			<aligny>center</aligny>
-			<label>$VAR[PovMoreLikeThisCardYear][CR]$INFO[ListItem.Label]</label>
+			<label>$INFO[ListItem.Label]</label>
 			<font>Reg20</font>
-			<autoscroll delay="2000" time="2000">$PARAM[focused]</autoscroll>
+			<scroll>$PARAM[focused]</scroll>
 			<textcolor>ffffffff</textcolor>
 		</control>
+		<include>LandscapeCardYearLabel</include>
 		<control type="group">
 			<visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-			<left>8</left>
+			<right>16</right>
 			<top>8</top>
 			<width>58</width>
 			<height>38</height>
-			<control type="image">
-				<width>100%</width>
-				<height>100%</height>
-				<texture colordiffuse="80ffffff">colors/color_black.png</texture>
-			</control>
 			<control type="label">
 				<width>100%</width>
 				<height>100%</height>
-				<align>center</align>
+				<align>right</align>
 				<aligny>center</aligny>
 				<font>Reg20</font>
 				<textcolor>ffffffff</textcolor>
 				<label>$INFO[ListItem.Property(rating)]</label>
 			</control>
-		</control>
-		<control type="group">
-			<right>8</right>
-			<top>8</top>
-			<include content="WatchedIndicatorLayout">
-				<param name="width" value="60" />
-				<param name="height" value="60" />
-				<param name="font" value="indicator_small" />
-				<param name="overlay" value="normal" />
-				<param name="overlay_texture" value="diffuse/icon_overlay_landscape.png" />
-			</include>
 		</control>
 	</include>
 
@@ -741,7 +727,6 @@
 			<property name="year">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Year]</property>
 			<property name="year_range">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(year_range)]</property>
 			<property name="status">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Status]</property>
-			<property name="UnWatchedEpisodes">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(UnWatchedEpisodes)]</property>
 			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$VAR[PovInfoActiveType]&amp;tmdb_id=$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
 			<visible>!String.IsEmpty(Container(565).ListItemAbsolute($PARAM[index]).Label)</visible>
 		</item>
@@ -809,12 +794,6 @@
 	<variable name="PovInfoActiveType">
 		<value condition="Window.IsActive(1123)">$INFO[Window(Home).Property(PovInfoType)]</value>
 		<value>$INFO[Window.Property(PovInfoType)]</value>
-	</variable>
-
-	<variable name="PovMoreLikeThisCardYear">
-		<value condition="!String.IsEmpty(ListItem.Property(year_range))">$INFO[ListItem.Property(year_range)]</value>
-		<value condition="[String.Contains(ListItem.Property(status),Returning) | String.Contains(ListItem.Property(status),Production)] + !String.IsEmpty(ListItem.Property(year))">$INFO[ListItem.Property(year)]–Present</value>
-		<value>$INFO[ListItem.Property(year)]</value>
 	</variable>
 
     <!-- play/resume Sxx: ep. xx label -->

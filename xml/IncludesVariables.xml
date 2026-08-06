@@ -114,7 +114,9 @@
     <variable name="CardYearRange">
         <value condition="!String.IsEmpty(ListItem.Property(year_range))">$INFO[ListItem.Property(year_range)]</value>
         <value condition="!String.IsEmpty(ListItem.Property(pov_lite_year_range))">$INFO[ListItem.Property(pov_lite_year_range)]</value>
+		<value condition="!String.IsEmpty(ListItem.Property(year)) + [String.Contains(ListItem.Property(status),Returning) | String.Contains(ListItem.Property(status),Production)]">$INFO[ListItem.Property(year)]–Present</value>
         <value condition="!String.IsEmpty(ListItem.Year) + [String.Contains(ListItem.Status,Returning) | String.Contains(ListItem.Status,Production)]">$INFO[ListItem.Year]–Present</value>
+		<value condition="!String.IsEmpty(ListItem.Property(year))">$INFO[ListItem.Property(year)]</value>
         <value>$INFO[ListItem.Year]</value>
     </variable>
 
@@ -122,7 +124,6 @@
         <!-- specials used in widgets -->
 		<value condition="String.IsEmpty(ListItem.Property(submenuVisibility)) + String.IsEqual(ListItem.Property(DBTYPE), systeminfo)">[B]$INFO[ListItem.label][/B] $INFO[ListItem.label2]</value>
 		<!-- normal items-->
-        <value condition="$EXP[IsTvShowDBType] + !String.IsEmpty(ListItem.Year)">$VAR[CardYearRange][CR]$INFO[ListItem.label]</value>
         <value condition="$EXP[IsTvShowDBType]">$INFO[ListItem.label]</value>
         <value condition="Container.Content(seasons)">$INFO[ListItem.label]</value>
 		<value condition="!String.IsEmpty(ListItem.TvShowTitle) + !String.IsEmpty(ListItem.Episode) + Integer.IsGreater(ListItem.Episode,9) + Integer.IsGreater(ListItem.Season,9)">$INFO[ListItem.Title][CR]$INFO[ListItem.TvShowTitle] • [UPPERCASE]S$INFO[ListItem.Season]E$INFO[ListItem.Episode][/UPPERCASE]</value>
@@ -130,7 +131,6 @@
         <value condition="!String.IsEmpty(ListItem.TvShowTitle) + !String.IsEmpty(ListItem.Episode) + Integer.IsGreater(ListItem.Season,9)">$INFO[ListItem.Title][CR]$INFO[ListItem.TvShowTitle] • [UPPERCASE]S$INFO[ListItem.Season]E0$INFO[ListItem.Episode][/UPPERCASE]</value>
         <value condition="!String.IsEmpty(ListItem.TvShowTitle) + !String.IsEmpty(ListItem.Episode)">$INFO[ListItem.Title][CR]$INFO[ListItem.TvShowTitle] • [UPPERCASE]S0$INFO[ListItem.Season]E0$INFO[ListItem.Episode][/UPPERCASE]</value>
 
-		<value condition="String.IsEmpty(ListItem.Property(submenuVisibility)) + !String.IsEmpty(ListItem.Year)">$INFO[ListItem.Year][CR]$INFO[ListItem.label]</value>
         <value condition="String.IsEmpty(ListItem.Property(submenuVisibility))">$INFO[ListItem.label]</value>
 		<value>$INFO[ListItem.label]</value>
     </variable>
@@ -164,14 +164,13 @@
         <value condition="Container.Content(addons) + !String.IsEmpty(ListItem.AddonVersion) + !String.IsEmpty(ListItem.Label2)">$LOCALIZE[24051] $INFO[ListItem.AddonVersion] - $LOCALIZE[21863]: $INFO[ListItem.AddonCreator] - $INFO[ListItem.Label2]</value>
 		<value condition="Container.Content(Sets)">$INFO[ListItem.Year]</value>
 		<value condition="Container.Content(Movies) + [!String.IsEmpty(ListItem.Duration) | !String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Genre)]">$INFO[ListItem.Year]$INFO[ListItem.Genre, • ]</value>
-		<value condition="Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0) + [Container.Content(Seasons) | Container.Content(TVShows)] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(ListItem.Property(TotalEpisodes))]">$INFO[ListItem.Year,, • ]$INFO[ListItem.MPAA,, • ]$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360]: ] $INFO[ListItem.Property(UnWatchedEpisodes),(,)]</value>
-		<value condition="!Integer.IsGreater(ListItem.Property(UnWatchedEpisodes),0) + [Container.Content(Seasons) | Container.Content(TVShows)] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(ListItem.Property(TotalEpisodes))]">$INFO[ListItem.Year,, • ]$INFO[ListItem.MPAA,, • ]$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360]: ]</value>
+		<value condition="[Container.Content(Seasons) | Container.Content(TVShows)] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.MPAA) | !String.IsEmpty(ListItem.Property(TotalEpisodes))]">$INFO[ListItem.Year,, • ]$INFO[ListItem.MPAA,, • ]$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360]: ]</value>
 
         <!-- movies -->
         <value condition="String.StartsWith(ListItem.Path,videodb://1/7)">$LOCALIZE[20457]</value>
 
-        <value condition="Container.Content(tvshows) + !String.IsEmpty(ListItem.Episode)">$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360, - ]: ]$INFO[ListItem.Property(UnWatchedEpisodes),$LOCALIZE[16101]: ]</value>
-        <value condition="Container.Content(seasons) + !String.IsEmpty(ListItem.Episode)">$INFO[ListItem.TVShowTitle,, - ]$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360]: , - ]$INFO[ListItem.Property(UnWatchedEpisodes),$LOCALIZE[16101]: ]</value>
+        <value condition="Container.Content(tvshows) + !String.IsEmpty(ListItem.Episode)">$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360, - ]: ]</value>
+        <value condition="Container.Content(seasons) + !String.IsEmpty(ListItem.Episode)">$INFO[ListItem.TVShowTitle,, - ]$INFO[ListItem.Property(TotalEpisodes),$LOCALIZE[20360]: , - ]</value>
         <value condition="[Container.Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)]">$INFO[ListItem.Duration,$LOCALIZE[180]: ,min.]$INFO[ListItem.TVShowTitle, - ]</value>
         <value condition="!String.IsEmpty(ListItem.Duration)">$INFO[ListItem.Duration, ,min. • ]</value>
 		<value condition="!String.IsEmpty(ListItem.Label2)">$INFO[ListItem.Label2]</value>

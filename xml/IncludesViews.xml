@@ -76,26 +76,6 @@
             </control>
 
             <control type="group">
-                <description>Episodes count Overlay</description>
-                <visible>Integer.IsGreater(ListItem$PARAM[listitem].Property(UnWatchedEpisodes),0)</visible>
-                <visible>!ListItem$PARAM[listitem].IsPlaying</visible>
-                <control type="image">
-                    <texture background="true">$PARAM[overlay_texture]</texture>
-                    <colordiffuse>cc800000</colordiffuse>
-                </control>
-                <control type="label">
-                    <right>0</right>
-                    <top>0</top>
-                    <align>center</align>
-                    <font>$PARAM[font]</font>
-                    <width>65%</width>
-                    <height>45%</height>
-                    <label>$INFO[ListItem$PARAM[listitem].Property(UnWatchedEpisodes)]</label>
-                    <textcolor>ffffffff</textcolor>
-                </control>
-            </control>
-
-            <control type="group">
                 <description>Movieset Overlay</description>
                 <visible>ListItem$PARAM[listitem].IsCollection | String.Contains(ListItem$PARAM[listitem].Path,videodb://movies/sets/)</visible>
                 <visible>!ListItem$PARAM[listitem].IsPlaying</visible>

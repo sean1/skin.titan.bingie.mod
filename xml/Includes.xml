@@ -106,6 +106,30 @@
 		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +
 		$EXP[IsPovLiteListItem] + !String.IsEmpty(ListItem.UniqueID(tmdb))
 	</expression>
+	<expression name="PovInfoHasCurrentCast">
+		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + String.IsEqual(Window(Home).Property(PovInfoHasCast),true) +
+		String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))
+	</expression>
+	<expression name="PovInfoHasCurrentCollection">
+		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + !String.IsEmpty(Window(Home).Property(PovInfoCollectionReady)) +
+		String.IsEqual(Container(566).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))
+	</expression>
+	<expression name="PovInfoHasCurrentMoreLikeThis">
+		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + !String.IsEmpty(Window(Home).Property(PovInfoMoreLikeThisReady)) +
+		String.IsEqual(Container(565).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))
+	</expression>
+	<expression name="PovActorHasCurrentMovies">
+		String.IsEqual(Window(Home).Property(PovActorHasMovies),true) +
+		String.IsEqual(Container(610).ListItemAbsolute(0).Property(PovActorSourceId),Window(Home).Property(PovActorId))
+	</expression>
+	<expression name="PovActorHasCurrentTVShows">
+		String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) +
+		String.IsEqual(Container(620).ListItemAbsolute(0).Property(PovActorSourceId),Window(Home).Property(PovActorId))
+	</expression>
+	<expression name="PovActorHasCurrentDirected">
+		String.IsEqual(Window(Home).Property(PovActorHasDirected),true) +
+		String.IsEqual(Container(630).ListItemAbsolute(0).Property(PovActorSourceId),Window(Home).Property(PovActorId))
+	</expression>
 	<expression name="IsNativeInfoListItem">
 		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +
 		[!$EXP[IsPovLiteListItem] | String.IsEmpty(ListItem.UniqueID(tmdb))]

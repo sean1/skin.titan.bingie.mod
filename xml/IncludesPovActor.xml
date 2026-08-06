@@ -83,8 +83,8 @@
 				<orientation>vertical</orientation>
 				<usecontrolcoords>true</usecontrolcoords>
 				<itemgap>2</itemgap>
-				<animation effect="slide" end="0,-277" time="300" tween="cubic" easing="inout" condition="[Control.HasFocus(620) | Control.HasFocus(630)] + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">Conditional</animation>
-				<animation effect="slide" end="0,-277" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(630) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">Conditional</animation>
+				<animation effect="slide" end="0,-277" time="300" tween="cubic" easing="inout" condition="[Control.HasFocus(620) | Control.HasFocus(630)] + $EXP[PovActorHasCurrentMovies]">Conditional</animation>
+				<animation effect="slide" end="0,-277" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(630) + $EXP[PovActorHasCurrentTVShows]">Conditional</animation>
 
 				<control type="group">
 					<visible>String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
@@ -92,6 +92,7 @@
 					<height>275</height>
 					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(620) | Control.HasFocus(630)">Conditional</animation>
 					<control type="label">
+						<visible>$EXP[PovActorHasCurrentMovies]</visible>
 						<width>1668</width>
 						<height>45</height>
 						<font>Bold31</font>
@@ -100,6 +101,7 @@
 					</control>
 					<control type="panel" id="610">
 						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
+						<enable>$EXP[PovActorHasCurrentMovies]</enable>
 						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 						<top>55</top>
 						<width>1668</width>
@@ -108,13 +110,13 @@
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">350</scrolltime>
 						<onup>610</onup>
-						<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</ondown>
-						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
-						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">610</ondown>
+						<ondown condition="$EXP[PovActorHasCurrentTVShows]">620</ondown>
+						<ondown condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentDirected]">630</ondown>
+						<ondown condition="!$EXP[PovActorHasCurrentTVShows] + !$EXP[PovActorHasCurrentDirected]">610</ondown>
 						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
-						<include>PovActorPanelLayouts</include>
+						<include content="PovActorPanelLayouts"><param name="ready" value="$EXP[PovActorHasCurrentMovies]" /></include>
 						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=movies&amp;sort=newest</content>
 					</control>
 				</control>
@@ -126,6 +128,7 @@
 					<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(610)">Conditional</animation>
 					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(630)">Conditional</animation>
 					<control type="label">
+						<visible>$EXP[PovActorHasCurrentTVShows]</visible>
 						<width>1668</width>
 						<height>45</height>
 						<font>Bold31</font>
@@ -134,6 +137,7 @@
 					</control>
 					<control type="panel" id="620">
 						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
+						<enable>$EXP[PovActorHasCurrentTVShows]</enable>
 						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 						<top>55</top>
 						<width>1668</width>
@@ -141,14 +145,14 @@
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">350</scrolltime>
-						<onup condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
-						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">620</onup>
-						<ondown condition="String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">630</ondown>
-						<ondown condition="!String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">620</ondown>
+						<onup condition="$EXP[PovActorHasCurrentMovies]">610</onup>
+						<onup condition="!$EXP[PovActorHasCurrentMovies]">620</onup>
+						<ondown condition="$EXP[PovActorHasCurrentDirected]">630</ondown>
+						<ondown condition="!$EXP[PovActorHasCurrentDirected]">620</ondown>
 						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
-						<include>PovActorPanelLayouts</include>
+						<include content="PovActorPanelLayouts"><param name="ready" value="$EXP[PovActorHasCurrentTVShows]" /></include>
 						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=tvshows&amp;sort=newest</content>
 					</control>
 				</control>
@@ -159,6 +163,7 @@
 					<height>275</height>
 					<animation effect="fade" start="100" end="50" time="100" condition="Control.HasFocus(610) | Control.HasFocus(620)">Conditional</animation>
 					<control type="label">
+						<visible>$EXP[PovActorHasCurrentDirected]</visible>
 						<width>1668</width>
 						<height>45</height>
 						<font>Bold31</font>
@@ -167,6 +172,7 @@
 					</control>
 					<control type="panel" id="630">
 						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+						<enable>$EXP[PovActorHasCurrentDirected]</enable>
 						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 						<top>55</top>
 						<width>1668</width>
@@ -174,14 +180,14 @@
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">350</scrolltime>
-						<onup condition="String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">620</onup>
-						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">610</onup>
-						<onup condition="!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">630</onup>
+						<onup condition="$EXP[PovActorHasCurrentTVShows]">620</onup>
+						<onup condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentMovies]">610</onup>
+						<onup condition="!$EXP[PovActorHasCurrentTVShows] + !$EXP[PovActorHasCurrentMovies]">630</onup>
 						<ondown>630</ondown>
 						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
-						<include>PovActorPanelLayouts</include>
+						<include content="PovActorPanelLayouts"><param name="ready" value="$EXP[PovActorHasCurrentDirected]" /></include>
 						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=directed&amp;sort=newest</content>
 					</control>
 				</control>
@@ -209,6 +215,7 @@
 	<include name="PovActorPanelLayouts">
 		<itemlayout width="333" height="193">
 			<control type="group">
+				<visible>$PARAM[ready]</visible>
 				<width>335</width>
 				<height>195</height>
 				<include content="PovMoreLikeThisCard"><param name="focused" value="false" /></include>
@@ -216,6 +223,7 @@
 		</itemlayout>
 		<focusedlayout width="333" height="193">
 			<control type="group">
+				<visible>$PARAM[ready]</visible>
 				<width>335</width>
 				<height>195</height>
 				<include content="PovMoreLikeThisCard"><param name="focused" value="true" /></include>
@@ -224,9 +232,9 @@
 	</include>
 
 	<variable name="PovActorPageBackdrop">
-		<value condition="Control.HasFocus(610) + !String.IsEmpty(Container(610).ListItem.Property(landscape))">$INFO[Container(610).ListItem.Property(landscape)]</value>
-		<value condition="Control.HasFocus(620) + !String.IsEmpty(Container(620).ListItem.Property(landscape))">$INFO[Container(620).ListItem.Property(landscape)]</value>
-		<value condition="Control.HasFocus(630) + !String.IsEmpty(Container(630).ListItem.Property(landscape))">$INFO[Container(630).ListItem.Property(landscape)]</value>
+		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610) + !String.IsEmpty(Container(610).ListItem.Property(landscape))">$INFO[Container(610).ListItem.Property(landscape)]</value>
+		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620) + !String.IsEmpty(Container(620).ListItem.Property(landscape))">$INFO[Container(620).ListItem.Property(landscape)]</value>
+		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630) + !String.IsEmpty(Container(630).ListItem.Property(landscape))">$INFO[Container(630).ListItem.Property(landscape)]</value>
 		<value>$INFO[Window(Home).Property(PovActorBackdrop)]</value>
 	</variable>
 

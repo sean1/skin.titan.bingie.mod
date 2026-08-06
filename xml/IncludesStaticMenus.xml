@@ -520,19 +520,19 @@
 	</include>
 	<!-- An empty dynamic content path defers its provider job; container visibility alone does not. -->
 	<variable name="BingieHomeContinueMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),3)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeContinueTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://plugin.video.pov.lite/?mode=build_in_progress_episode&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),4)">plugin://plugin.video.pov.lite/?mode=build_in_progress_episode&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</value>
 	</variable>
 	<variable name="BingieHomePopularMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),3)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</value>
 	</variable>
 	<variable name="BingieHomePopularTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),4)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</value>
 	</variable>
 	<include name="StaticHomeWidgetRows">
 		<include content="widget_header_multi">
@@ -559,54 +559,12 @@
 		<include content="widget_header_multi">
 			<param name="widgetid" value="2520" />
 			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="Continue Watching Movies" />
-		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
-			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2520" />
-			<param name="widgetName" value="Continue Watching Movies" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetTags" value="WidgetTagOverlayAuto" />
-			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="$VAR[BingieHomeContinueMoviesPath]" />
-			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
-			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="21" />
-			<param name="widgetInfoPanel" value="top" />
-			<param name="visibility" value="true" />
-		</include>
-		<include content="widget_header_multi">
-			<param name="widgetid" value="2530" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="Continue Watching TV" />
-		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
-			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2530" />
-			<param name="widgetName" value="Continue Watching TV" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetTags" value="WidgetTagOverlayAuto" />
-			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="$VAR[BingieHomeContinueTVPath]" />
-			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
-			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="21" />
-			<param name="widgetInfoPanel" value="top" />
-			<param name="visibility" value="true" />
-		</include>
-		<include content="widget_header_multi">
-			<param name="widgetid" value="2540" />
-			<param name="submenuid" value="num-10000" />
 			<param name="widgetName" value="Trending TV Shows" />
 		</include>
 		<include content="widget_base" condition="true">
 			<param name="containerType" value="panel" />
 			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2540" />
+			<param name="widgetid" value="2520" />
 			<param name="widgetName" value="Trending TV Shows" />
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
@@ -620,14 +578,14 @@
 			<param name="visibility" value="true" />
 		</include>
 		<include content="widget_header_multi">
-			<param name="widgetid" value="2550" />
+			<param name="widgetid" value="2530" />
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetName" value="Popular Movies" />
 		</include>
 		<include content="widget_base" condition="true">
 			<param name="containerType" value="panel" />
 			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2550" />
+			<param name="widgetid" value="2530" />
 			<param name="widgetName" value="Popular Movies" />
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
@@ -641,14 +599,14 @@
 			<param name="visibility" value="true" />
 		</include>
 		<include content="widget_header_multi">
-			<param name="widgetid" value="2560" />
+			<param name="widgetid" value="2540" />
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetName" value="Popular TV Shows" />
 		</include>
 		<include content="widget_base" condition="true">
 			<param name="containerType" value="panel" />
 			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2560" />
+			<param name="widgetid" value="2540" />
 			<param name="widgetName" value="Popular TV Shows" />
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
@@ -656,6 +614,48 @@
 			<param name="widgetPath" value="$VAR[BingieHomePopularTVPath]" />
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="21" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2550" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Continue Watching Movies" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2550" />
+			<param name="widgetName" value="Continue Watching Movies" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="$VAR[BingieHomeContinueMoviesPath]" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="21" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2560" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Continue Watching TV" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2560" />
+			<param name="widgetName" value="Continue Watching TV" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="$VAR[BingieHomeContinueTVPath]" />
+			<param name="widgetStyle" value="widget_layout_default" />
+			<param name="widgetSortBy" value="" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="21" />
 			<param name="widgetInfoPanel" value="top" />

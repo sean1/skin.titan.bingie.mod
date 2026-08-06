@@ -7,15 +7,18 @@
     <!-- Defaults -->
 	<!-- BINGIE -->
     <onload>SetProperty(bingieviews,1,Home)</onload>
-    <onload condition="String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">AlarmClock(BingieHomeTrendingWidgets,SetProperty(BingieHomeTrendingReady,1,Home),00:00:01,silent)</onload>
-    <onload condition="String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">AlarmClock(BingieHomePopularWidgets,SetProperty(BingieHomePopularReady,1,Home),00:00:02,silent)</onload>
-    <onload condition="!String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">SetProperty(BingieHomeTrendingReady,1,Home)</onload>
-    <onload condition="!String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">SetProperty(BingieHomePopularReady,1,Home)</onload>
+    <onload>AlarmClock(BingieHomeWidgetStage2,SetProperty(BingieHomeWidgetStage,1,Home),00:00:01,silent)</onload>
+    <onload>AlarmClock(BingieHomeWidgetStage3,SetProperty(BingieHomeWidgetStage,2,Home),00:00:02,silent)</onload>
+    <onload>AlarmClock(BingieHomeWidgetStage4,SetProperty(BingieHomeWidgetStage,3,Home),00:00:03,silent)</onload>
+    <onload>AlarmClock(BingieHomeWidgetStage5,SetProperty(BingieHomeWidgetStage,4,Home),00:00:04,silent)</onload>
+    <onload>AlarmClock(BingieHomeWidgetStage6,SetProperty(BingieHomeWidgetStage,5,Home),00:00:05,silent)</onload>
     <onunload>SetProperty(SectionBackground,$ESCINFO[Control.GetLabel(99004)])</onunload>
-    <onunload condition="System.HasAlarm(BingieHomeTrendingWidgets)">CancelAlarm(BingieHomeTrendingWidgets,silent)</onunload>
-    <onunload condition="System.HasAlarm(BingieHomePopularWidgets)">CancelAlarm(BingieHomePopularWidgets,silent)</onunload>
-    <onunload>ClearProperty(BingieHomeTrendingReady,Home)</onunload>
-    <onunload>ClearProperty(BingieHomePopularReady,Home)</onunload>
+    <onunload condition="System.HasAlarm(BingieHomeWidgetStage2)">CancelAlarm(BingieHomeWidgetStage2,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieHomeWidgetStage3)">CancelAlarm(BingieHomeWidgetStage3,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieHomeWidgetStage4)">CancelAlarm(BingieHomeWidgetStage4,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieHomeWidgetStage5)">CancelAlarm(BingieHomeWidgetStage5,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieHomeWidgetStage6)">CancelAlarm(BingieHomeWidgetStage6,silent)</onunload>
+    <onunload>ClearProperty(BingieHomeWidgetStage,Home)</onunload>
     <onunload>ClearProperty(submenu,Home)</onunload>
     <onunload>ClearProperty(ShowWidget,Home)</onunload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
@@ -28,7 +31,6 @@
         <control type="button" id="1000">
             <include>HiddenObject</include>
             <onfocus condition="String.IsEmpty(Window(Home).Property(LastFocusWidget))">SetFocus(77777)</onfocus>
-            <onfocus condition="String.IsEmpty(Window(Home).Property(HomeFirstLoadDone))">SetProperty(HomeFirstLoadDone,1)</onfocus>
             <onleft>900</onleft>
             <onright>900</onright>
             <onback>900</onback>

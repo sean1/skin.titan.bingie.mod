@@ -11,7 +11,7 @@
 				<texture>colors/color_black.png</texture>
 			</control>
 			<include content="BingieSpotlightCornerImage">
-				<param name="visibility" value="!Player.HasVideo" />
+				<param name="visibility" value="String.IsEqual(Window(Home).Property(PovActorReady),true) + !Player.HasVideo" />
 				<param name="image" value="$VAR[PovActorPageBackdrop]" />
 			</include>
 			<include>BingieRowTrailerPreviewWindow</include>
@@ -27,7 +27,7 @@
 					<label>$INFO[Window(Home).Property(PovActorName)]</label>
 				</control>
 				<control type="label">
-					<visible>!String.IsEmpty(Window(Home).Property(PovActorLifespan))</visible>
+					<visible>String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorLifespan))</visible>
 					<left>138</left>
 					<top>170</top>
 					<width>540</width>
@@ -37,7 +37,7 @@
 					<label>$INFO[Window(Home).Property(PovActorLifespan)]</label>
 				</control>
 				<control type="textbox">
-					<visible>!String.IsEmpty(Window(Home).Property(PovActorBirthplace))</visible>
+					<visible>String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorBirthplace))</visible>
 					<left>138</left>
 					<top>210</top>
 					<width>540</width>
@@ -48,6 +48,7 @@
 				</control>
 			</control>
 			<control type="textbox">
+				<visible>String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorBiography))</visible>
 				<left>138</left>
 				<top>300</top>
 				<width>540</width>
@@ -65,13 +66,22 @@
 				<top>-100</top>
 				<width>1</width>
 				<height>1</height>
-				<onfocus condition="String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">SetFocus(610)</onfocus>
+				<onfocus condition="String.IsEqual(Window(Home).Property(PovActorReady),true) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">SetFocus(610)</onfocus>
 				<onfocus
-					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">SetFocus(620)</onfocus>
+					condition="String.IsEqual(Window(Home).Property(PovActorReady),true)
+						+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
+						+ String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">SetFocus(620)</onfocus>
 				<onfocus
-					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(630)</onfocus>
+					condition="String.IsEqual(Window(Home).Property(PovActorReady),true)
+						+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
+						+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
+						+ String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(630)</onfocus>
 				<onfocus
-					condition="!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
+					condition="String.IsEqual(Window(Home).Property(PovActorReady),true)
+						+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
+						+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
+						+ !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
+				<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
 			</control>
 
 			<!-- Keep every available credit shelf in one Home-style vertical stack. -->
@@ -194,7 +204,10 @@
 			</control>
 
 			<control type="button" id="699">
-				<visible>!String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+				<visible>
+					String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true) +
+					!String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)
+				</visible>
 				<left>126</left>
 				<top>690</top>
 				<width>520</width>
@@ -206,8 +219,20 @@
 				<focusedcolor>ff000000</focusedcolor>
 				<texturefocus>colors/color_white.png</texturefocus>
 				<texturenofocus colordiffuse="cc000000">colors/color_black.png</texturenofocus>
+				<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 				<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onclick>
 				<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+			</control>
+			<control type="label">
+				<visible>!String.IsEqual(Window(Home).Property(PovActorReady),true)</visible>
+				<left>126</left>
+				<top>690</top>
+				<width>520</width>
+				<height>72</height>
+				<font>Reg24</font>
+				<label>Loading…</label>
+				<textcolor>b3ffffff</textcolor>
+				<aligny>center</aligny>
 			</control>
 		</control>
 	</include>

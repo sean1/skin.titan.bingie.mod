@@ -270,6 +270,9 @@
         <!-- categories fanart -->
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),categorie)">$VAR[CategoriesFanart]</value>
         <value condition="$EXP[IsCategoryDBType]">$VAR[CategoriesRandomArt]</value>
+		<value
+			condition="[$EXP[IsBingieViewsActive] | Window.IsActive(Videos)] + !Container.Content(Genres) + !$EXP[IsCategoryDBType]
+				+ !String.IsEmpty(Window(Home).Property(PovFocusedFanartIdentity))">$INFO[Window(Home).Property(PovFocusedFanart)]</value>
         <!-- normal fanart backgrounds -->
         <value condition="!String.IsEmpty(ListItem.Art(fanart))">$INFO[ListItem.Art(fanart)]</value>
 		<value condition="!String.IsEmpty(Container.ListItem.Art(fanart))">$INFO[Container.ListItem.Art(fanart)]</value>
@@ -281,6 +284,9 @@
 
 	<variable name="fanartBackground_something">
 		<value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
+		<value
+			condition="[$EXP[IsBingieViewsActive] | Window.IsActive(Videos)] + !Container.Content(Genres) + !$EXP[IsCategoryDBType]
+				+ !String.IsEmpty(Window(Home).Property(PovFocusedFanartIdentity))">$INFO[Window(Home).Property(PovFocusedFanart)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(fanart))">$INFO[ListItem.Art(fanart)]</value>
 		<value condition="!String.IsEmpty(Container.ListItem.Art(fanart))">$INFO[Container.ListItem.Art(fanart)]</value>
         <value condition="!String.IsEmpty(Container.ListItem.Art(season.fanart))">$INFO[Container.ListItem.Art(season.fanart)]</value>

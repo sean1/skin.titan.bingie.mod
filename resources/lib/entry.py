@@ -27,6 +27,12 @@ TRAILER_PREPARED_CACHE_LIMIT = 32
 TRAILER_PREPARED_CACHE_TTL = 120.0
 TRAILER_PREVIEW_WINDOWS = ('Home', 'Videos', '1110', '1111', '1112', '1122', '1123', 'DialogVideoInfo.xml')
 TRAILER_PREVIEW_WINDOW_VISIBILITY = ' | '.join('Window.IsActive(%s)' % window for window in TRAILER_PREVIEW_WINDOWS)
+FOCUSED_FANART_PROPERTY = 'PovFocusedFanart'
+FOCUSED_FANART_IDENTITY_PROPERTY = 'PovFocusedFanartIdentity'
+FOCUSED_FANART_SETTLE_DELAY = 0.25
+FOCUSED_FANART_WINDOWS = ('Home', 'Videos', '1110', '1111', '1112', '1118')
+FOCUSED_FANART_WINDOW_VISIBILITY = ' | '.join('Window.IsActive(%s)' % window for window in FOCUSED_FANART_WINDOWS)
+FOCUSED_FANART_VIDEO_FOCUS = 'Control.HasFocus(50) | Control.HasFocus(523) | Control.HasFocus(525) | Control.HasFocus(5250) | Control.HasFocus(527) | Control.HasFocus(5027)'
 FOCUSED_METADATA_DELAY = 0.25
 FOCUSED_METADATA_RETRY_DELAY = 2.0
 FOCUSED_METADATA_IDENTITY_PROPERTY = 'PovFocusedMetaIdentity'
@@ -145,6 +151,74 @@ def routing(sys_obj):
 class Router:
 	def run(self, sys):
 		return routing(sys)
+
+class FocusedFanart:
+	def __init__(self):
+		self.identity = ''
+		self.focused_at = 0.0
+		self.published_identity = ''
+		self._clear(force=True)
+
+	def close(self):
+		self._reset()
+
+	def pause(self):
+		self._reset()
+
+	def tick(self):
+		if not kodi_utils.get_visibility(FOCUSED_FANART_WINDOW_VISIBILITY):
+			self._reset()
+			return False
+		if kodi_utils.get_visibility('Window.IsActive(Videos)'):
+			content_focused = kodi_utils.get_visibility(FOCUSED_FANART_VIDEO_FOCUS)
+		else: content_focused = kodi_utils.get_visibility('ControlGroup(77777).HasFocus()')
+		if not content_focused: return False
+		identity = self._focused_identity()
+		if not identity: return True
+		now = monotonic()
+		if identity != self.identity:
+			self.identity = identity
+			self.focused_at = now
+			return True
+		if self.published_identity != identity and now - self.focused_at >= FOCUSED_FANART_SETTLE_DELAY:
+			fanart = self._focused_art()
+			confirmed_identity = self._focused_identity()
+			if confirmed_identity != identity:
+				self.identity = confirmed_identity
+				self.focused_at = monotonic()
+				return True
+			set_property(FOCUSED_FANART_PROPERTY, fanart)
+			set_property(FOCUSED_FANART_IDENTITY_PROPERTY, identity)
+			self.published_identity = identity
+		return True
+
+	def _focused_identity(self):
+		identity = self._item_label('Property(PovFocusIdentity)')
+		if identity: return identity
+		media_type = self._item_label('DBType').lower() or self._item_label('Property(DBTYPE)').lower() or self._item_label('Property(mediatype)').lower()
+		if media_type in ('category', 'categorie', 'genre'): return ''
+		item_id = (
+			self._item_label('UniqueID(tmdb)') or self._item_label('DBID') or self._item_label('FileNameAndPath') or
+			self._item_label('Path') or self._item_label('Label')
+		)
+		return '|'.join(('focused', media_type, item_id)) if item_id else ''
+
+	def _focused_art(self):
+		return self._item_label('Art(fanart)') or self._item_label('Art(season.fanart)') or self._item_label('Art(tvshow.fanart)')
+
+	def _item_label(self, label):
+		return kodi_utils.get_infolabel('Container.ListItem.%s' % label).strip() or kodi_utils.get_infolabel('ListItem.%s' % label).strip()
+
+	def _reset(self):
+		self.identity = ''
+		self.focused_at = 0.0
+		self._clear()
+
+	def _clear(self, force=False):
+		if not force and not self.published_identity: return
+		clear_property(FOCUSED_FANART_IDENTITY_PROPERTY)
+		clear_property(FOCUSED_FANART_PROPERTY)
+		self.published_identity = ''
 
 class TrailerPreview:
 	def __init__(self):
@@ -682,11 +756,13 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		try: viewsSetWindowProperties()
 		except: pass
 		self.threads = (Thread(target=premAccntNotification), Thread(target=self._deferred_database_maintenance))
+		self.focused_fanart = FocusedFanart()
 		self.trailer_preview = TrailerPreview()
 		self.next_page_prefetch = NextPagePrefetch()
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
+		if hasattr(self, 'focused_fanart'): self.focused_fanart.close()
 		if hasattr(self, 'trailer_preview'): self.trailer_preview.close()
 		if hasattr(self, 'next_page_prefetch'): self.next_page_prefetch.cancel()
 		for i in getattr(self, 'threads', ()): i.join()
@@ -704,10 +780,13 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			while not self.waitForAbort(poll_interval):
 				if get_property('pov_lite_pause_services'):
 					self.next_page_prefetch.cancel()
+					self.focused_fanart.pause()
 					poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.pause() else TRAILER_PREVIEW_IDLE_POLL
 					continue
 				self.next_page_prefetch.tick()
-				poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.tick() else TRAILER_PREVIEW_IDLE_POLL
+				fanart_active = self.focused_fanart.tick()
+				preview_active = self.trailer_preview.tick()
+				poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if fanart_active or preview_active else TRAILER_PREVIEW_IDLE_POLL
 
 	def _deferred_database_maintenance(self):
 		if self.waitForAbort(DATABASE_MAINTENANCE_DELAY): return

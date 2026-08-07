@@ -5,9 +5,9 @@
 
 import ctypes, random, time
 from json import loads as jsloads
-import queue
 from fenom import client
 from fenom import source_utils
+from modules.source_search import RequestCoalescer
 
 
 class source:
@@ -16,7 +16,7 @@ class source:
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
-	_queue = queue.SimpleQueue()
+	_requests = RequestCoalescer()
 	def __init__(self):
 		self.language = ['en']
 		self.base_link = "https://debridmediamanager.com"
@@ -45,16 +45,7 @@ class source:
 				url = '%s%s' % (self.base_link, self.movieSearch_link % imdb)
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			try:
-				url += '&dmmProblemKey=%s&solution=%s' % get_secret()
-				results = client.request(url, timeout=self.timeout)
-				files = jsloads(results)['results']
-			except:
-				files = []
-				raise
-			finally:
-				self._queue.put_nowait(files) # if seasons
-				self._queue.put_nowait(files) # if shows
+			files = self._get_files(url)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
@@ -92,6 +83,17 @@ class source:
 				source_utils.scraper_error('DMM')
 		return sources
 
+	def _get_files(self, url):
+		def fetch():
+			try:
+				request_url = url + '&dmmProblemKey=%s&solution=%s' % get_secret()
+				results = client.request(request_url, timeout=self.timeout)
+				return jsloads(results)['results']
+			except:
+				source_utils.scraper_error('DMM')
+				raise
+		return self._requests.get(url, fetch, self.timeout + 1)
+
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
 		sources = []
 		if not data: return sources
@@ -104,7 +106,7 @@ class source:
 			season = data['season']
 			url = '%s%s' % (self.base_link, self.tvSearch_link % (imdb, season))
 			if 'timeout' in data: self.timeout = int(data['timeout'])
-			files = self._queue.get(timeout=self.timeout + 1)
+			files = self._get_files(url)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
@@ -196,4 +198,3 @@ def get_secret():
 
 	solution = slice_hash(s, n)
 	return dmmProblemKey, solution
-

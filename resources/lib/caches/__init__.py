@@ -30,6 +30,21 @@ class BaseCache:
 	def _get_timestamp(self, date_time):
 		return int(date_time.timestamp())
 
+	def close(self):
+		try: self.dbcur.close()
+		except: pass
+		try: self.dbcon.close()
+		except: pass
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		self.close()
+
+	def __del__(self):
+		self.close()
+
 	def jsloads(self, data_str):
 		return json.loads(data_str) if data_str else None
 

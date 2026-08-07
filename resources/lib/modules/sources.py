@@ -1,7 +1,7 @@
 import re
 import json
 import time
-from concurrent.futures import ThreadPoolExecutor as TPE, as_completed
+from concurrent.futures import ThreadPoolExecutor as TPE
 from threading import Thread
 from magneto import sources as magneto_sources
 from windows import open_window, create_window
@@ -9,7 +9,8 @@ from caches.providers_cache import ExternalProvidersCache
 from indexers.metadata import movie_meta, tvshow_meta, season_episodes_meta, get_title
 from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCheck
 from modules import player, kodi_utils, settings, source_utils
-from modules.utils import manual_function_import, get_datetime, safe_string, string_to_float
+from modules.source_search import CORE_CACHED_RESULT_TARGET, external_worker_count, split_external_providers
+from modules.utils import get_datetime, safe_string, string_to_float
 #from modules.kodi_utils import logger
 
 POVPlayer, progressDialogBG, notification = player.POVPlayer, kodi_utils.progressDialogBG, kodi_utils.notification
@@ -79,6 +80,7 @@ class Sources:
 
 	def get_sources(self):
 		start_time = time.monotonic()
+		self.meta.pop('full_search_available', None)
 		self.progress_dialog = DialogProgress(getattr(self, 'full_screen', False))
 		if self.prescrape and any(x in self.active_internal_scrapers for x in default_internal_scrapers):
 			results = self.collect_prescrape_results()
@@ -103,7 +105,8 @@ class Sources:
 			if self.active_external:
 				args = (
 					self.meta, self.external_providers, self.debrid_torrent_enabled, # self.internal_scraper_names,
-					self.threads, self.prescrape_sources, self.progress_dialog, self.disabled_ignored
+					self.threads, self.prescrape_sources, self.progress_dialog, self.disabled_ignored,
+					None if self.ignore_scrape_filters else self.results_processor.filter_staged_results, self.force_full_search
 				)
 				self.activate_providers('external', (ExternalManager, args), False)
 			elif self.providers and self.background: [i.join() for i in self.threads]
@@ -196,14 +199,17 @@ class Sources:
 			meta=self.meta,
 			scraper_settings=self.scraper_settings,
 			prescrape=self.prescrape,
-			filters_ignored=self.filters_ignored
+			filters_ignored=self.filters_ignored,
+			full_search_available=self.meta.get('full_search_available', False)
 		)
 		if not chosen_item: return self.progress_dialog.kill()
 		action, chosen_item = chosen_item
 		if action == 'play':
 			return self.play_file(results, chosen_item)
-		if action == 'perform_full_search' and self.prescrape:
-			self.prescrape, self.clear_properties = False, False
+		if action == 'perform_full_search':
+			self.prescrape, self.clear_properties, self.force_full_search = False, False, True
+			self.params['force_full_search'] = 'true'
+			self.sources, self.threads, self.providers = [], [], []
 			return self.source_select()
 
 	def play_source(self, results):
@@ -279,6 +285,7 @@ class ConfigLoader:
 		else: show_busy_dialog()
 		source.disabled_ignored = self._as_bool(params_get('disabled_ignored'), False)
 		source.ignore_scrape_filters = self._as_bool(params_get('ignore_scrape_filters'), False)
+		source.force_full_search = self._as_bool(params_get('force_full_search'), False)
 		source.tmdb_id = params_get('tmdb_id')
 		source.season = self._as_int(params_get('season'), '')
 		source.episode = self._as_int(params_get('episode'), '')
@@ -497,6 +504,15 @@ class ResultsProcessor:
 		]
 		return results
 
+	def filter_staged_results(self, results):
+		results = self.filter_results(results)
+		for key, setting in (
+			(hevc_filter_key, self.source.filter_hevc), (hdr_filter_key, self.source.filter_hdr),
+			(dolby_vision_filter_key, self.source.filter_dv), (av1_filter_key, self.source.filter_av1)
+		):
+			if setting == 1: results = self.special_filter(results, key, setting)
+		return results
+
 	def sort_results(self, results):
 		for item in results:
 			provider, quality = item['scrape_provider'], item.get('quality', 'SD')
@@ -594,12 +610,13 @@ class ExternalManager:
 
 	def __init__(
 		self, meta, source_dict, debrid_torrents, internal_scrapers,
-		prescrape_sources, progress_dialog, disabled_ignored=False
+		prescrape_sources, progress_dialog, disabled_ignored=False, eligibility_filter=None, force_full_search=False
 	):
 		self.meta, self.background = meta, meta.get('background', False)
 		self.source_dict, self.debrid_torrents = source_dict, debrid_torrents
 		self.internal_scrapers, self.prescrape_sources = internal_scrapers, prescrape_sources
 		self.disabled_ignored, self.progress_dialog = disabled_ignored, progress_dialog
+		self.eligibility_filter, self.force_full_search = eligibility_filter, force_full_search
 		self.internal_activated = len(self.internal_scrapers) > 0
 		self.internal_prescraped = len(self.prescrape_sources) > 0
 		self.processed_prescrape = False
@@ -617,38 +634,82 @@ class ExternalManager:
 
 	@dialog_hook
 	def results(self, info):
-		tpe = TPE(max(1, len(self.source_dict), len(self.debrid_torrents)))
+		core_dict, fallback_dict = split_external_providers(self.source_dict)
+		exhaustive_core = self.force_full_search or not core_dict
+		if exhaustive_core: core_dict, fallback_dict = self.source_dict, []
+		tpe = TPE(external_worker_count(len(core_dict), len(self.debrid_torrents), exhaustive_core))
 		try:
-			threads = set()
-			total_results = []
-			for provider, module, *pack in self.source_dict:
-				args = (provider, module, *pack) if pack else (provider, module)
-				fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
-				fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
-				threads.add(fut)
-			self.thread_monitor(threads, ls(32676), False)
-			threads = [i for i in threads if i.done() and not i.exception()]
-			for fut in as_completed(threads): total_results.extend(fut.result())
-			self.sources.extend(self.process_duplicates(total_results))
-			torrent_sources = [i for i in self.sources if 'torrent' in i['source']]
-			result_hashes = list({i['hash'] for i in torrent_sources})
-			DebridCheck.set_cached_hashes(result_hashes)
-			threads = set()
-			for item in self.debrid_torrents:
-				fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
-				fut.name = item
-				threads.add(fut)
-			self.thread_monitor(threads, ls(32579), True)
-			threads = [i for i in threads if i.done() and not i.exception()]
-			for name, hashes in ((fut.name, set(fut.result())) for fut in threads):
-				uncached = '%s %s' % ('Unchecked', name)
-				self.final_sources.extend(
-					{**i, 'cache_provider': name if i['hash'] in hashes else uncached, 'debrid': name}
-					for i in torrent_sources
-				)
+			unique_urls, unique_hashes = set(), set()
+			core_results = self.fetch_sources(core_dict, info, tpe)
+			core_sources = list(self.process_duplicates(core_results, unique_urls, unique_hashes))
+			self.sources.extend(core_sources)
+			core_final, core_cached = self.cache_sources(core_sources, tpe)
+			self.final_sources.extend(core_final)
+			if fallback_dict and self.eligible_cached_count(core_final, core_cached) >= CORE_CACHED_RESULT_TARGET:
+				self.meta['full_search_available'] = True
+				return self.final_sources
+			if fallback_dict:
+				tpe.shutdown(wait=False, cancel_futures=True)
+				tpe = TPE(external_worker_count(len(fallback_dict), len(self.debrid_torrents), True))
+				fallback_results = self.fetch_sources(fallback_dict, info, tpe)
+				fallback_sources = list(self.process_duplicates(fallback_results, unique_urls, unique_hashes))
+				self.sources.extend(fallback_sources)
+				fallback_final, _cached = self.cache_sources(fallback_sources, tpe)
+				self.final_sources.extend(fallback_final)
 		except: notification(32574)
-		finally: tpe.shutdown(False)
+		finally: tpe.shutdown(wait=False, cancel_futures=True)
 		return self.final_sources
+
+	def fetch_sources(self, source_dict, info, tpe):
+		threads, results = [], []
+		for provider, module, *pack in source_dict:
+			args = (provider, module, *pack) if pack else (provider, module)
+			fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
+			fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
+			threads.append(fut)
+		self.thread_monitor(threads, ls(32676), False)
+		for fut in threads:
+			if not fut.done():
+				fut.cancel()
+				continue
+			try: results.extend(fut.result())
+			except: pass
+		return results
+
+	def cache_sources(self, sources, tpe):
+		torrent_sources = [i for i in sources if 'torrent' in i['source']]
+		if not torrent_sources: return [], set()
+		try: check_sources = self.eligibility_filter(list(torrent_sources)) if self.eligibility_filter else torrent_sources
+		except: check_sources = torrent_sources
+		check_hashes = list({i['hash'] for i in check_sources})
+		if not check_hashes:
+			return [
+				{**i, 'cache_provider': '%s %s' % ('Unchecked', name), 'debrid': name}
+				for name in self.debrid_torrents for i in torrent_sources
+			], set()
+		DebridCheck.set_cached_hashes(check_hashes)
+		threads = []
+		for item in self.debrid_torrents:
+			fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
+			fut.name = item
+			threads.append(fut)
+		self.thread_monitor(threads, ls(32579), True)
+		results, cached_hashes = [], set()
+		for fut in threads:
+			if not fut.done():
+				fut.cancel()
+				continue
+			try: hashes = set(fut.result())
+			except: continue
+			cached_hashes.update(hashes)
+			uncached = '%s %s' % ('Unchecked', fut.name)
+			results.extend({**i, 'cache_provider': fut.name if i['hash'] in hashes else uncached, 'debrid': fut.name} for i in torrent_sources)
+		return results, cached_hashes
+
+	def eligible_cached_count(self, sources, cached_hashes):
+		try: eligible = self.eligibility_filter(list(sources)) if self.eligibility_filter else sources
+		except: eligible = sources
+		return len({i['hash'] for i in eligible if i.get('hash') in cached_hashes})
 
 	def thread_monitor(self, threads, status_line='', debrid=False):
 		len_threads = len(threads)
@@ -680,8 +741,9 @@ class ExternalManager:
 			else: progressDialogBG.update(progress, line3)
 		except: pass
 
-	def process_duplicates(self, sources):
-		uniqueURLs, uniqueHashes = set(), set()
+	def process_duplicates(self, sources, uniqueURLs=None, uniqueHashes=None):
+		uniqueURLs = uniqueURLs if uniqueURLs is not None else set()
+		uniqueHashes = uniqueHashes if uniqueHashes is not None else set()
 		for provider in sources:
 			try:
 				url = provider['url'].lower()
@@ -756,11 +818,14 @@ class ExternalSource:
 
 	def get_movie_source(self, provider, module):
 		epc = ExternalProvidersCache()
-		sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '')
-		if sources is None:
-			sources = module().sources(self.data, self.hostDict)
-			sources = self.process_sources(provider, sources)
-			epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '', sources, self.single_expiry)
+		try:
+			sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '')
+			if sources is None:
+				instance = module()
+				sources = instance.sources(self.provider_data(instance), self.hostDict)
+				sources = self.process_sources(provider, sources)
+				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '', sources, self.single_expiry)
+		finally: epc.close()
 		if sources:
 			self.sources.extend(sources)
 
@@ -768,23 +833,33 @@ class ExternalSource:
 		if pack in pack_check: s_check, e_check = '' if pack == show_display else self.season, ''
 		else: s_check, e_check = self.season, self.episode
 		epc = ExternalProvidersCache()
-		sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
-		if sources is None:
-			if pack == show_display:
-				expiry_hours = self.show_expiry
-				sources = module().sources_packs(self.data, self.hostDict, search_series=True, total_seasons=self.total_seasons)
-			elif pack == season_display:
-				expiry_hours = self.season_expiry
-				sources = module().sources_packs(self.data, self.hostDict)
-			else:
-				expiry_hours = self.single_expiry
-				sources = module().sources(self.data, self.hostDict)
-			sources = self.process_sources(provider, sources)
-			epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
+		try:
+			sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
+			if sources is None:
+				instance = module()
+				data = self.provider_data(instance)
+				if pack == show_display:
+					expiry_hours = self.show_expiry
+					sources = instance.sources_packs(data, self.hostDict, search_series=True, total_seasons=self.total_seasons)
+				elif pack == season_display:
+					expiry_hours = self.season_expiry
+					sources = instance.sources_packs(data, self.hostDict)
+				else:
+					expiry_hours = self.single_expiry
+					sources = instance.sources(data, self.hostDict)
+				sources = self.process_sources(provider, sources)
+				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
+		finally: epc.close()
 		if sources:
 			if pack == season_display: sources = [i for i in sources if 'episode_start' not in i or i['episode_start'] <= self.episode <= i['episode_end']]
 			elif pack == show_display: sources = [i for i in sources if i['last_season'] >= self.season]
 			self.sources.extend(sources)
+
+	def provider_data(self, instance):
+		data = self.data.copy()
+		try: data['timeout'] = min(int(self.timeout), int(instance.timeout))
+		except: pass
+		return data
 
 	def process_sources(self, provider, sources):
 		for i in sources:

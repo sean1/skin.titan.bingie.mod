@@ -159,7 +159,7 @@ class DebridCheck:
 	@classmethod
 	def set_cached_hashes(cls, hash_list):
 		cls.hash_list = hash_list
-		cls.cached_hashes = DebridCache().get_many(hash_list) or []
+		with DebridCache() as cache: cls.cached_hashes = cache.get_many(hash_list) or []
 
 	def __init__(self, meta, name):
 		self.cached_list = []
@@ -167,7 +167,7 @@ class DebridCheck:
 		self.imdb, self.season, self.episode = meta.get('imdb_id'), meta.get('season'), meta.get('episode')
 
 	def cache_write(self, hashes):
-		DebridCache().set_many(hashes, self.debrid)
+		with DebridCache() as cache: cache.set_many(hashes, self.debrid)
 
 	def cache_check(self):
 		try:

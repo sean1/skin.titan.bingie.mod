@@ -34,6 +34,7 @@ class SourceResults(BaseDialog):
 		self.meta = kwargs.get('meta')
 		self.info_highlights_dict = kwargs.get('scraper_settings')
 		self.prescrape = kwargs.get('prescrape')
+		self.full_search_available = kwargs.get('full_search_available', False)
 		if kwargs.get('filters_ignored'): self.filters_ignored = ignored_str % filters_ignored
 		else: self.filters_ignored = ''
 		self.make_items()
@@ -174,7 +175,7 @@ class SourceResults(BaseDialog):
 			highlight_type = self.info_highlights_dict['highlight_type']
 			self.item_list = list(builder())
 			self.total_results = string(len(self.item_list))
-			if not self.prescrape: return
+			if not self.prescrape and not self.full_search_available: return
 			count = len(self.item_list)
 			self._results[str(count + 1)] = {}
 			prescrape_listitem = self.make_listitem()

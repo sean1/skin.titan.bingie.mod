@@ -41,6 +41,7 @@ tar -C "$project_dir" \
 	--exclude='./build' \
 	--exclude='./dist' \
 	--exclude='./scripts' \
+	--exclude='./tests' \
 	--exclude='./shortcuts' \
 	--exclude='./playlists' \
 	--exclude='./extras/categories' \

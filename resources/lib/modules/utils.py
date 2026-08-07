@@ -13,6 +13,22 @@ from modules.kodi_utils import local_string as ls, get_setting, logger
 
 LIST_WORKERS = 5
 
+def toggle_provider():
+	import json
+	from modules.source_search import EXTERNAL_PROVIDERS
+	from modules.kodi_utils import notification, select_dialog, set_setting
+	providers = list(EXTERNAL_PROVIDERS)
+	items = [{'line1': provider.replace('_', ' ').title()} for provider in providers]
+	preselect = [index for index, provider in enumerate(providers) if get_setting('provider.external.%s.enabled' % provider, 'true') == 'true']
+	selection = select_dialog(
+		providers, items=json.dumps(items), heading='%s %s' % (ls(32118), ls(32513)),
+		multi_choice='true', multi_line='false', preselect=preselect, allow_empty='true'
+	)
+	if selection is None: return
+	selection = set(selection)
+	for provider in providers: set_setting('provider.external.%s.enabled' % provider, str(provider in selection).lower())
+	notification(32576, 1500)
+
 def valid_tmdb_id(value):
 	try: return int(str(value).strip()) > 0 and str(value).strip().isdigit()
 	except (TypeError, ValueError): return False

@@ -1,7 +1,7 @@
 
 import os
 from pkgutil import iter_modules
-from modules.kodi_utils import logger
+from modules.kodi_utils import get_setting, logger
 
 
 sourcePath = os.path.dirname(__file__)
@@ -14,6 +14,7 @@ def sources(ret_all=False):
 		append = sourceDict.append
 		for loader, module_name, is_pkg in iter_modules([sourcePath]):
 			if is_pkg: continue
+			if not ret_all and get_setting('provider.external.%s.enabled' % module_name, 'true') != 'true': continue
 			try: append((module_name, loader.find_spec(module_name).loader.load_module(module_name).source))
 			except Exception as e: logger('BINGIE Lite', 'Error: Loading module: "%s": %s' % (module_name, e))
 		return sourceDict

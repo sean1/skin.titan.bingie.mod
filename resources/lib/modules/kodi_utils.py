@@ -4,6 +4,7 @@ from threading import Lock
 from urllib.parse import urlencode, urlparse, parse_qsl
 import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 from xbmcaddon import Addon
+from modules.source_search import EXTERNAL_PROVIDERS
 
 addon_object, window, execJSONRPC = Addon(), xbmcgui.Window(10000), xbmc.executeJSONRPC
 player, xbmc_player, monitor, xbmc_monitor = xbmc.Player(), xbmc.Player, xbmc.Monitor(), xbmc.Monitor
@@ -228,7 +229,7 @@ def select_dialog(function_list, **kwargs):
 	else:
 		preselect = kwargs.get('preselect') if kwargs.get('preselect') is not None else -1
 		selection = dialog.select(heading, list(_builder()), preselect=preselect, useDetails=details)
-	if selection in ([], -1, None): return None
+	if selection in (-1, None) or (selection == [] and kwargs.get('allow_empty', 'false') != 'true'): return None
 	if multi_choice: return [function_list[i] for i in selection]
 	return function_list[selection]
 
@@ -514,11 +515,13 @@ FIXED_SETTINGS = {
 	'widget_hide_watched': 'false',
 }
 
+EXTERNAL_PROVIDER_SETTING_IDS = tuple('provider.external.%s.enabled' % provider for provider in EXTERNAL_PROVIDERS)
+
 PERSISTED_SETTING_IDS = frozenset((
 	'database.maintenance.due', 'database.merge_status', 'migration.removed_services.6_08_03',
 	'rd.client_id', 'rd.refresh', 'rd.secret', 'rd.token', 'rd.username',
 	'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38', 'migration.tmdb_native_lists.2_03_03'
-))
+) + EXTERNAL_PROVIDER_SETTING_IDS)
 
 _settings_lock = Lock()
 

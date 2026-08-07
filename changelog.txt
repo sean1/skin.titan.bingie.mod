@@ -1,3 +1,10 @@
+BINGIE Lite 2.3.4
+
+- Search high-yield torrent providers first and offer a full scrape when additional sources are available.
+- Add an External Scrapers Manager for enabling or disabling individual providers.
+- Coalesce DMM and Torz pack requests to prevent duplicate requests and cross-search result leakage.
+- Filter candidates before debrid cache checks and close source-cache database connections deterministically.
+
 BINGIE Lite 2.3.3
 
 - Keep consecutive trailers attached to BINGIE when Kodi normalizes the local HLS URL.

@@ -3,6 +3,16 @@
 <window id="1110">
     <defaultcontrol always="true">77777</defaultcontrol>
     <menucontrol>900</menucontrol>
+    <onload condition="String.IsEmpty(Window(1110).Property(BingieHubFirstLoadDone))">ClearProperty(BingieHubWidgetStage,1110)</onload>
+    <onload condition="String.IsEmpty(Window(1110).Property(BingieHubFirstLoadDone))">AlarmClock(BingieTVHubWidgetStage1,SetProperty(BingieHubWidgetStage,1,1110),00:00:01,silent)</onload>
+    <onload condition="String.IsEmpty(Window(1110).Property(BingieHubFirstLoadDone))">AlarmClock(BingieTVHubWidgetStage2,SetProperty(BingieHubWidgetStage,2,1110),00:00:02,silent)</onload>
+    <onload condition="String.IsEmpty(Window(1110).Property(BingieHubFirstLoadDone))">AlarmClock(BingieTVHubWidgetStage3,SetProperty(BingieHubWidgetStage,3,1110),00:00:03,silent)</onload>
+    <onload condition="!String.IsEmpty(Window(1110).Property(BingieHubFirstLoadDone))">SetProperty(BingieHubWidgetStage,3,1110)</onload>
+    <onload condition="String.IsEmpty(Window(1110).Property(BingieHubFirstLoadDone))">SetProperty(BingieHubFirstLoadDone,1,1110)</onload>
+    <onunload condition="System.HasAlarm(BingieTVHubWidgetStage1)">CancelAlarm(BingieTVHubWidgetStage1,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieTVHubWidgetStage2)">CancelAlarm(BingieTVHubWidgetStage2,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieTVHubWidgetStage3)">CancelAlarm(BingieTVHubWidgetStage3,silent)</onunload>
+    <onunload>ClearProperty(BingieHubWidgetStage,1110)</onunload>
     <include>CustomBingieWinProps</include>
     <include>BingieViews_WindowOpen_Fade</include>
     <controls>

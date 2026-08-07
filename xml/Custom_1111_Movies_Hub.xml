@@ -3,6 +3,16 @@
 <window id="1111">
     <defaultcontrol always="true">77777</defaultcontrol>
     <menucontrol>900</menucontrol>
+    <onload condition="String.IsEmpty(Window(1111).Property(BingieHubFirstLoadDone))">ClearProperty(BingieHubWidgetStage,1111)</onload>
+    <onload condition="String.IsEmpty(Window(1111).Property(BingieHubFirstLoadDone))">AlarmClock(BingieMoviesHubWidgetStage1,SetProperty(BingieHubWidgetStage,1,1111),00:00:01,silent)</onload>
+    <onload condition="String.IsEmpty(Window(1111).Property(BingieHubFirstLoadDone))">AlarmClock(BingieMoviesHubWidgetStage2,SetProperty(BingieHubWidgetStage,2,1111),00:00:02,silent)</onload>
+    <onload condition="String.IsEmpty(Window(1111).Property(BingieHubFirstLoadDone))">AlarmClock(BingieMoviesHubWidgetStage3,SetProperty(BingieHubWidgetStage,3,1111),00:00:03,silent)</onload>
+    <onload condition="!String.IsEmpty(Window(1111).Property(BingieHubFirstLoadDone))">SetProperty(BingieHubWidgetStage,3,1111)</onload>
+    <onload condition="String.IsEmpty(Window(1111).Property(BingieHubFirstLoadDone))">SetProperty(BingieHubFirstLoadDone,1,1111)</onload>
+    <onunload condition="System.HasAlarm(BingieMoviesHubWidgetStage1)">CancelAlarm(BingieMoviesHubWidgetStage1,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieMoviesHubWidgetStage2)">CancelAlarm(BingieMoviesHubWidgetStage2,silent)</onunload>
+    <onunload condition="System.HasAlarm(BingieMoviesHubWidgetStage3)">CancelAlarm(BingieMoviesHubWidgetStage3,silent)</onunload>
+    <onunload>ClearProperty(BingieHubWidgetStage,1111)</onunload>
     <include>CustomBingieWinProps</include>
     <include>BingieViews_WindowOpen_Fade</include>
     <controls>

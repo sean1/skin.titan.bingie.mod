@@ -13,6 +13,10 @@ from modules.kodi_utils import local_string as ls, get_setting, logger
 
 LIST_WORKERS = 5
 
+def valid_tmdb_id(value):
+	try: return int(str(value).strip()) > 0 and str(value).strip().isdigit()
+	except (TypeError, ValueError): return False
+
 def media_percentage_properties(rating=None, progress=None):
 	properties = {}
 	if rating is not None:

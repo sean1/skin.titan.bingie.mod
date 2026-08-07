@@ -4,8 +4,6 @@ from threading import Thread
 from time import monotonic_ns
 from urllib.parse import urljoin, urlparse
 
-import requests
-
 from modules import kodi_utils
 
 
@@ -20,6 +18,15 @@ TRAILER_MANIFEST_URL_PROPERTY = 'BingieTrailerManifestUrl'
 TRAILER_RESOLUTION = (1280, 720)
 TRAILER_MANIFEST_FILE = kodi_utils.profile_path + 'trailer_preview.m3u8'
 HLS_ATTRIBUTE = re.compile(r'([A-Z0-9-]+)=("[^"]*"|[^,]*)')
+HTTP_SESSION = None
+
+
+def _http_session():
+	global HTTP_SESSION
+	if HTTP_SESSION is None:
+		import requests
+		HTTP_SESSION = requests.Session()
+	return HTTP_SESSION
 
 
 def plugin_url(video_id):
@@ -60,7 +67,7 @@ def prepare_video(video_id):
 
 
 def limit_hls_resolution(master_url):
-	response = requests.get(master_url, timeout=15)
+	response = _http_session().get(master_url, timeout=15)
 	response.raise_for_status()
 	manifest = _limited_hls_manifest(response.text, master_url)
 	kodi_utils.make_directorys(kodi_utils.profile_path)
@@ -169,7 +176,7 @@ def resolve(video_id):
 			},
 		},
 	}
-	response = requests.post(YOUTUBE_PLAYER_URL, params={'key': YOUTUBE_API_KEY}, headers=headers, json=payload, timeout=15)
+	response = _http_session().post(YOUTUBE_PLAYER_URL, params={'key': YOUTUBE_API_KEY}, headers=headers, json=payload, timeout=15)
 	response.raise_for_status()
 	data = response.json()
 	playability = data.get('playabilityStatus') or {}

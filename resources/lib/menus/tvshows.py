@@ -5,7 +5,7 @@ from modules import kodi_utils, settings
 from modules.meta_lists import tvshow_genres
 from modules.prefetch import schedule_next_page_prefetch
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate
-from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, TaskPool
+from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
 # logger = kodi_utils.logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
@@ -258,8 +258,8 @@ class Menu(TVShows):
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.similar:
-				tmdb_id = self.params['tmdb_id']
-				data = function(tmdb_id, page_no)
+				tmdb_id = self.params.get('tmdb_id')
+				data = function(tmdb_id, page_no) if valid_tmdb_id(tmdb_id) else {'results': [], 'page': 1, 'total_pages': 1}
 				self.list = data['results']
 				if data['page'] < data['total_pages']:
 					self.new_page = {'new_page': string(data['page'] + 1), 'tmdb_id': tmdb_id}

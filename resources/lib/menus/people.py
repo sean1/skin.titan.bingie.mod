@@ -7,7 +7,7 @@ from caches.window_property_cache import WindowPropertyCache
 from indexers.tmdb_api import tmdb_people_info, tmdb_people_actor_info, tmdb_image_base, resized_tmdb_image
 from menus.images import Images
 from modules import kodi_utils, settings
-from modules.utils import calculate_age
+from modules.utils import calculate_age, valid_tmdb_id
 # from modules.kodi_utils import logger
 
 KODI_VERSION = kodi_utils.get_kodi_version()
@@ -267,6 +267,7 @@ def build_media_cast(params):
 	items = []
 	media_type, tmdb_id = params.get('mediatype'), params.get('tmdb_id')
 	try:
+		if media_type not in ('movie', 'tvshow') or not valid_tmdb_id(tmdb_id): raise ValueError('Invalid media cast request')
 		cast = _info_cast_snapshot(media_type, tmdb_id)
 		if cast is None:
 			from modules.dialogs import get_media_metadata

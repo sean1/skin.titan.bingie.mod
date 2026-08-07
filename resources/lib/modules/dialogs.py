@@ -2,7 +2,7 @@ import json
 from time import monotonic, monotonic_ns
 from modules import kodi_utils, settings
 from modules.cache import clear_cache
-from modules.utils import get_datetime, safe_string
+from modules.utils import get_datetime, safe_string, valid_tmdb_id
 # logger = kodi_utils.logger
 
 ls, build_url, media_path, select_dialog = kodi_utils.local_string, kodi_utils.build_url, kodi_utils.media_path, kodi_utils.select_dialog
@@ -27,10 +27,8 @@ POV_ACTOR_HYDRATION_PROPERTY = 'PovActorHydrationRequest'
 TRAILER_PREVIEW_PROPERTY = 'BingieTrailerPreview'
 TRAILER_PREVIEW_CANCEL_PROPERTY = 'BingieTrailerPreviewCancel'
 TRAILER_PREVIEW_REQUEST_PROPERTY = 'BingieTrailerPreviewRequest'
-POV_INFO_ROW_IDS = (550, 563, 560)
 
 def _reset_info_page_focus(media_type):
-	for control_id in POV_INFO_ROW_IDS: execute_builtin('Control.SetFocus(%s,0,absolute)' % control_id)
 	execute_builtin('SetFocus(%s)' % (80 if media_type == 'movie' else 51))
 
 def _page_history():
@@ -82,7 +80,7 @@ def pov_page_back(params=None):
 	execute_builtin('PreviousMenu')
 
 def get_media_metadata(media_type, tmdb_id):
-	if not tmdb_id or media_type not in ('movie', 'tvshow'): return None
+	if media_type not in ('movie', 'tvshow') or not valid_tmdb_id(tmdb_id): return None
 	from indexers import metadata
 	user_info = settings.metadata_user_info().copy()
 	user_info['language'] = 'en'
@@ -209,7 +207,7 @@ def _set_pending_media_info_properties(media_type, tmdb_id):
 
 def show_media_info(params):
 	media_type, tmdb_id = params.get('mediatype'), params.get('tmdb_id')
-	if not tmdb_id or media_type not in ('movie', 'tvshow'): return
+	if media_type not in ('movie', 'tvshow') or not valid_tmdb_id(tmdb_id): return
 	if get_property('PovInfoTransition'): return
 	transition_token = str(monotonic_ns())
 	set_property('PovInfoTransition', transition_token)
@@ -243,7 +241,7 @@ def show_media_info(params):
 
 def hydrate_media_info(params):
 	media_type, tmdb_id, hydration_token = params.get('mediatype'), params.get('tmdb_id'), params.get('request')
-	if not tmdb_id or media_type not in ('movie', 'tvshow') or get_property(POV_INFO_HYDRATION_PROPERTY) != hydration_token: return
+	if media_type not in ('movie', 'tvshow') or not valid_tmdb_id(tmdb_id) or get_property(POV_INFO_HYDRATION_PROPERTY) != hydration_token: return
 	try:
 		meta = get_media_metadata(media_type, tmdb_id)
 		if get_property(POV_INFO_HYDRATION_PROPERTY) != hydration_token: return

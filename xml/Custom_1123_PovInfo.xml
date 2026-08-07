@@ -2,11 +2,8 @@
 <window id="1123">
 	<onload>ClearProperty(PovInfoMoreLikeThisReady,Home)</onload>
 	<onload>ClearProperty(PovInfoCollectionReady,Home)</onload>
-	<onload condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb)) | !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">SetProperty(PovInfoMoreLikeThisReady,1,Home)</onload>
-	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),movie) + !String.IsEmpty(Window(Home).Property(PovInfoCollectionId))">SetProperty(PovInfoCollectionReady,1,Home)</onload>
-	<onload>Control.SetFocus(550,0,absolute)</onload>
-	<onload>Control.SetFocus(563,0,absolute)</onload>
-	<onload>Control.SetFocus(560,0,absolute)</onload>
+	<onload condition="$EXP[PovInfoHasValidMedia]">SetProperty(PovInfoMoreLikeThisReady,1,Home)</onload>
+	<onload condition="$EXP[PovInfoHasValidMedia] + String.IsEqual(Window(Home).Property(PovInfoType),movie) + !String.IsEmpty(Window(Home).Property(PovInfoCollectionId))">SetProperty(PovInfoCollectionReady,1,Home)</onload>
 	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">SetFocus(80)</onload>
 	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">SetFocus(51)</onload>
 	<onunload>SetProperty(BingieTrailerPreviewCancel,true,Home)</onunload>

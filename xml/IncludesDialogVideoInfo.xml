@@ -126,7 +126,7 @@
 				</control>
 				<!-- Hidden POV providers load independently so optional visual shelves collapse without gaps. -->
 				<control type="list" id="566">
-					<visible allowhiddenfocus="true">String.IsEqual(Window.Property(PovInfoType),movie)</visible>
+					<visible allowhiddenfocus="true">$EXP[PovDialogCollectionReady] + [!String.IsEmpty(Window.Property(PovInfoCollectionId)) | !String.IsEqual(ListItem.Property(PovLiteItem),true)]</visible>
 					<left>-3000</left>
 					<top>-3000</top>
 					<width>1</width>
@@ -136,7 +136,7 @@
 					<content limit="15" target="videos" browse="never">$VAR[PovInThisCollectionPath]</content>
 				</control>
 				<control type="list" id="565">
-					<visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(PovInfoTmdb))</visible>
+					<visible allowhiddenfocus="true">$EXP[PovDialogMoreLikeThisReady]</visible>
 					<left>-3000</left>
 					<top>-3000</top>
 					<width>1</width>
@@ -787,13 +787,13 @@
 	</include>
 
 	<variable name="PovMoreLikeThisPath">
-		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),movie)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
-		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="$EXP[PovDialogMoreLikeThisReady] + String.IsEqual(Window.Property(PovInfoType),movie)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="$EXP[PovDialogMoreLikeThisReady] + String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
 	</variable>
 
 	<variable name="PovInThisCollectionPath">
-		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + !String.IsEmpty(Window.Property(PovInfoCollectionId))">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]&amp;collection_id=$INFO[Window.Property(PovInfoCollectionId)]</value>
-		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + String.IsEmpty(Window.Property(PovInfoCollectionId)) + !String.IsEqual(ListItem.Property(PovLiteItem),true)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="$EXP[PovDialogCollectionReady] + !String.IsEmpty(Window.Property(PovInfoCollectionId))">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]&amp;collection_id=$INFO[Window.Property(PovInfoCollectionId)]</value>
+		<value condition="$EXP[PovDialogCollectionReady] + String.IsEmpty(Window.Property(PovInfoCollectionId)) + !String.IsEqual(ListItem.Property(PovLiteItem),true)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
 	</variable>
 
 	<variable name="PovInfoActiveType">

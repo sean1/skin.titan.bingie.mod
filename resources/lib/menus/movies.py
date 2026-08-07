@@ -5,7 +5,7 @@ from modules import kodi_utils, settings
 from modules.meta_lists import movie_genres
 from modules.prefetch import schedule_next_page_prefetch
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate, chunks
-from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, TaskPool
+from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
 # logger = kodi_utils.logger
 
 KODI_VERSION, make_cast_list, default_duration = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list, 3600
@@ -271,7 +271,8 @@ class Menu(Movies):
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.similar:
 				tmdb_id = params_get('tmdb_id')
-				if self.action == 'tmdb_movies_in_collection': data = function(tmdb_id, page_no, params_get('collection_id'))
+				if not valid_tmdb_id(tmdb_id): data = {'results': [], 'page': 1, 'total_pages': 1}
+				elif self.action == 'tmdb_movies_in_collection': data = function(tmdb_id, page_no, params_get('collection_id'))
 				else: data = function(tmdb_id, page_no)
 				self.list = data['results']
 				if data['page'] < data['total_pages']:

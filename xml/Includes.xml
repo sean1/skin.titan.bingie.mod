@@ -114,16 +114,32 @@
 		!String.IsEmpty(ListItem.Mpaa) |
 		[$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedMpaa))]
 	</expression>
+	<expression name="PovInfoHasValidMedia">
+		[String.IsEqual(Window(Home).Property(PovInfoType),movie) | String.IsEqual(Window(Home).Property(PovInfoType),tvshow)] +
+		!String.IsEmpty(Window(Home).Property(PovInfoTmdb))
+	</expression>
+	<expression name="PovInfoMoreLikeThisReady">$EXP[PovInfoHasValidMedia] + !String.IsEmpty(Window(Home).Property(PovInfoMoreLikeThisReady))</expression>
+	<expression name="PovInfoCollectionReady">
+		String.IsEqual(Window(Home).Property(PovInfoType),movie) + !String.IsEmpty(Window(Home).Property(PovInfoTmdb)) +
+		!String.IsEmpty(Window(Home).Property(PovInfoCollectionReady))
+	</expression>
+	<expression name="PovDialogHasValidMedia">
+		[String.IsEqual(Window.Property(PovInfoType),movie) | String.IsEqual(Window.Property(PovInfoType),tvshow)] + !String.IsEmpty(Window.Property(PovInfoTmdb))
+	</expression>
+	<expression name="PovDialogMoreLikeThisReady">$EXP[PovDialogHasValidMedia] + !String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady))</expression>
+	<expression name="PovDialogCollectionReady">
+		String.IsEqual(Window.Property(PovInfoType),movie) + !String.IsEmpty(Window.Property(PovInfoTmdb)) + !String.IsEmpty(Window.Property(PovInfoCollectionReady))
+	</expression>
 	<expression name="PovInfoHasCurrentCast">
-		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + String.IsEqual(Window(Home).Property(PovInfoHasCast),true) +
+		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + $EXP[PovInfoHasValidMedia] + String.IsEqual(Window(Home).Property(PovInfoHasCast),true) +
 		String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))
 	</expression>
 	<expression name="PovInfoHasCurrentCollection">
-		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + !String.IsEmpty(Window(Home).Property(PovInfoCollectionReady)) +
+		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + $EXP[PovInfoCollectionReady] +
 		String.IsEqual(Container(566).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))
 	</expression>
 	<expression name="PovInfoHasCurrentMoreLikeThis">
-		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + !String.IsEmpty(Window(Home).Property(PovInfoMoreLikeThisReady)) +
+		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + $EXP[PovInfoMoreLikeThisReady] +
 		String.IsEqual(Container(565).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))
 	</expression>
 	<expression name="PovActorHasCurrentMovies">

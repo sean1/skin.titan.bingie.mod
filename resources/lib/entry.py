@@ -14,7 +14,7 @@ TRAILER_PREVIEW_PROPERTY = 'BingieTrailerPreview'
 TRAILER_PREVIEW_CANCEL_PROPERTY = 'BingieTrailerPreviewCancel'
 TRAILER_PREVIEW_REQUEST_PROPERTY = 'BingieTrailerPreviewRequest'
 TRAILER_RESOLVED_PROPERTY = 'BingieTrailerResolved'
-TRAILER_PREVIEW_DELAY = 2.0
+TRAILER_PREVIEW_DELAY = 3.0
 TRAILER_PREVIEW_STOP_DELAY = 0.5
 TRAILER_PREVIEW_STOP_TIMEOUT = 10.0
 TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
@@ -556,6 +556,8 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		kodi_utils.migrate_legacy_profile()
 		initializeDatabases()
 		checkSettingsFile()
+		try: viewsSetWindowProperties()
+		except: pass
 		self.threads = (Thread(target=premAccntNotification), Thread(target=self._deferred_database_maintenance))
 		self.trailer_preview = TrailerPreview()
 		self.next_page_prefetch = NextPagePrefetch()
@@ -569,8 +571,6 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 	def run(self):
 		with self:
 			try: metadataCachePrefetch()
-			except: pass
-			try: viewsSetWindowProperties()
 			except: pass
 			for i in getattr(self, 'threads', ()): i.start()
 			try: autoRun()

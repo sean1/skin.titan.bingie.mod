@@ -287,7 +287,11 @@ class Discover:
 	def pick_my_night(self):
 		media_options = ((ls(32028), 'movie'), (ls(32029), 'tvshow'))
 		mood_options = (
-			(ls(32908), ''), (ls(32909), 'feel_good'), (ls(32910), 'funny'), (ls(32911), 'thrilling'), (ls(32912), 'dark')
+			(ls(32908), ''), (ls(32909), 'feel_good'), (ls(32910), 'funny'), (ls(32929), 'action_rush'), (ls(32911), 'thrilling'),
+			(ls(32926), 'big_adventure'), (ls(32927), 'mind_bending'), (ls(32934), 'time_travel'), (ls(32928), 'heartfelt'), (ls(32912), 'dark'),
+			(ls(32930), 'crime_fix'), (ls(32931), 'real_stories'), (ls(32932), 'animated_escape'), (ls(32933), 'war_stories'),
+			(ls(32938), 'apocalyptic_worlds'), (ls(32939), 'space_voyages'), (ls(32940), 'heist'),
+			(ls(32935), 'chinese_cinema'), (ls(32936), 'vietnamese_cinema'), (ls(32937), 'korean_cinema')
 		)
 		era_options = ((ls(32913), ''), (ls(32914), '2020s'), (ls(32915), '2010s'), (ls(32916), '2000s'), (ls(32917), 'classic'))
 		style_options = ((ls(32918), 'crowd_pleasers'), (ls(32919), 'hidden_gems'), (ls(32920), 'critically_loved'))
@@ -310,8 +314,25 @@ class Discover:
 		url_mediatype = 'movie' if mediatype == 'movie' else 'tv'
 		date_key = 'primary_release_date' if mediatype == 'movie' else 'first_air_date'
 		genres = {
-			'movie': {'feel_good': '35|10751|10749', 'funny': '35', 'thrilling': '28|53', 'dark': '27|80|9648'},
-			'tvshow': {'feel_good': '35|10751', 'funny': '35', 'thrilling': '10759|9648', 'dark': '80|9648|10765'}
+			'movie': {
+				'feel_good': '35|10751|10749', 'funny': '35', 'action_rush': '28', 'thrilling': '28|53', 'big_adventure': '12|14',
+				'mind_bending': '878|9648', 'heartfelt': '18|10749', 'dark': '27|80', 'crime_fix': '80|9648',
+				'real_stories': '99|36', 'animated_escape': '16', 'war_stories': '10752'
+			},
+			'tvshow': {
+				'feel_good': '35|10751', 'funny': '35', 'action_rush': '10759', 'thrilling': '9648', 'big_adventure': '10765',
+				'mind_bending': '9648|10765', 'heartfelt': '18|10751', 'dark': '80', 'crime_fix': '80|9648',
+				'real_stories': '99', 'animated_escape': '16', 'war_stories': '10768'
+			}
+		}
+		special_moods = {
+			'time_travel': ('with_keywords', '4379'),
+			'apocalyptic_worlds': ('with_keywords', '4458|10150|12332|186565|355070|298669'),
+			'space_voyages': ('with_keywords', '252937|3801|1612|4040|161176|252634'),
+			'heist': ('with_keywords', '10051'),
+			'chinese_cinema': ('with_original_language', 'zh'),
+			'vietnamese_cinema': ('with_original_language', 'vi'),
+			'korean_cinema': ('with_original_language', 'ko')
 		}
 		eras = {
 			'2020s': ('2020-01-01', '2029-12-31'), '2010s': ('2010-01-01', '2019-12-31'),
@@ -322,18 +343,34 @@ class Discover:
 			'hidden_gems': ('vote_average.desc', '100', '6', '40'),
 			'critically_loved': ('vote_average.desc', '500', '7', None)
 		}
+		style_vote_overrides = {
+			'chinese_cinema': {'crowd_pleasers': '100', 'hidden_gems': '25', 'critically_loved': '100'},
+			'korean_cinema': {'crowd_pleasers': '100', 'hidden_gems': '25', 'critically_loved': '100'}
+		}
+		sparse_moods = ('apocalyptic_worlds', 'space_voyages', 'heist', 'vietnamese_cinema')
 		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
-		if mood[0]: query += '&with_genres=%s' % genres[mediatype][mood[0]]
+		if mood[0]:
+			filter_name, filter_value = special_moods[mood[0]] if mood[0] in special_moods else ('with_genres', genres[mediatype][mood[0]])
+			query += '&%s=%s' % (filter_name, filter_value)
 		if era[0]:
 			date_start, date_end = eras[era[0]]
 			query += '&%s.gte=%s&%s.lte=%s' % (date_key, date_start, date_key, date_end)
 		sort_by, vote_count, rating, popularity = styles[style[0]]
-		query += '&sort_by=%s&vote_count.gte=%s' % (sort_by, vote_count)
-		if rating: query += '&vote_average.gte=%s' % rating
-		if popularity: query += '&popularity.lte=%s' % popularity
+		vote_count = style_vote_overrides.get(mood[0], {}).get(style[0], vote_count)
+		fallback_sort = 'popularity.desc' if style[0] == 'crowd_pleasers' else 'vote_count.desc'
+		if mood[0] in sparse_moods: sort_by, vote_count = fallback_sort, '1'
+
+		def apply_style(base_query, query_sort, query_vote_count):
+			result = '%s&sort_by=%s&vote_count.gte=%s' % (base_query, query_sort, query_vote_count)
+			if rating: result += '&vote_average.gte=%s' % rating
+			if popularity: result += '&popularity.lte=%s' % popularity
+			return result
+
+		fallback_query = apply_style(query, fallback_sort, '1')
+		query = apply_style(query, sort_by, vote_count)
 		name = '%s | %s | %s | %s' % (media[1], mood[1], era[1], style[1])
 		mode, action = ('build_movie_list', 'tmdb_movies_discover') if mediatype == 'movie' else ('build_tvshow_list', 'tmdb_tv_discover')
-		url = build_url({'mode': mode, 'action': action, 'query': query, 'name': name})
+		url = build_url({'mode': mode, 'action': action, 'query': query, 'fallback_query': fallback_query, 'target_results': '200', 'max_pages': '10', 'name': name})
 		kodi_utils.execute_builtin('CancelAlarm(BingiePickMyNight,silent)')
 		return kodi_utils.execute_builtin('AlarmClock(BingiePickMyNight,ActivateWindow(Videos,%s,return),00:00:01,silent)' % url)
 

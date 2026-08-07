@@ -1171,7 +1171,7 @@ msgid "What do you want to watch?"
 msgstr ""
 
 msgctxt "#32905"
-msgid "Choose a mood"
+msgid "Choose a mood or theme"
 msgstr ""
 
 msgctxt "#32906"
@@ -1248,6 +1248,66 @@ msgstr ""
 
 msgctxt "#32925"
 msgid "Recommended for You"
+msgstr ""
+
+msgctxt "#32926"
+msgid "Big Adventure"
+msgstr ""
+
+msgctxt "#32927"
+msgid "Mind-Bending"
+msgstr ""
+
+msgctxt "#32928"
+msgid "Heartfelt"
+msgstr ""
+
+msgctxt "#32929"
+msgid "Action Rush"
+msgstr ""
+
+msgctxt "#32930"
+msgid "Crime Fix"
+msgstr ""
+
+msgctxt "#32931"
+msgid "Real Stories"
+msgstr ""
+
+msgctxt "#32932"
+msgid "Animated Escape"
+msgstr ""
+
+msgctxt "#32933"
+msgid "War Stories"
+msgstr ""
+
+msgctxt "#32934"
+msgid "Time Travel"
+msgstr ""
+
+msgctxt "#32935"
+msgid "Chinese Cinema"
+msgstr ""
+
+msgctxt "#32936"
+msgid "Vietnamese Cinema"
+msgstr ""
+
+msgctxt "#32937"
+msgid "Korean Cinema"
+msgstr ""
+
+msgctxt "#32938"
+msgid "Apocalyptic Worlds"
+msgstr ""
+
+msgctxt "#32939"
+msgid "Voyages Through Space"
+msgstr ""
+
+msgctxt "#32940"
+msgid "The Big Score"
 msgstr ""
 
 msgctxt "#32964"

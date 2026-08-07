@@ -273,11 +273,19 @@ class Menu(TVShows):
 				if data['page'] < data['total_pages']:
 					self.new_page = {'new_page': string(data['page'] + 1), key: function_var}
 			elif self.action == 'tmdb_tv_discover':
-				name, query = self.params['name'], self.params['query']
+				name, query = params_get('name'), params_get('query')
 				data = function(query, page_no)
+				try: target_results = int(params_get('target_results', '0'))
+				except (TypeError, ValueError): target_results = 0
+				fallback_query = params_get('fallback_query')
+				if page_no == 1 and fallback_query and fallback_query != query and target_results > 0 and data.get('total_results', 0) < target_results:
+					query, data = fallback_query, function(fallback_query, page_no)
 				self.list = data['results'][:item_limit] if item_limit > 0 else data['results']
-				if data['page'] < data['total_pages']:
+				try: max_pages = int(params_get('max_pages', '0'))
+				except (TypeError, ValueError): max_pages = 0
+				if data['page'] < data['total_pages'] and (max_pages < 1 or data['page'] < max_pages):
 					self.new_page = {'query': query, 'name': name, 'new_page': string(data['page'] + 1)}
+					if max_pages > 0: self.new_page['max_pages'] = string(max_pages)
 			elif self.action == 'tmdb_tv_genres':
 				genre_id = self.params['genre_id']
 				if not genre_id: return

@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.3
+
+- Keep consecutive trailers attached to BINGIE when Kodi normalizes the local HLS URL.
+- Preserve the embedded preview surface until the previous trailer has finished stopping.
+
 BINGIE Lite 2.3.2
 
 - Limit embedded trailer playback to a single 720p HLS video rendition and its matching audio.

@@ -37,6 +37,7 @@ tar -C "$project_dir" \
 	--exclude='./.gitignore' \
 	--exclude='./AGENTS.md' \
 	--exclude='./.idea' \
+	--exclude='./.ruff_cache' \
 	--exclude='./build' \
 	--exclude='./dist' \
 	--exclude='./scripts' \

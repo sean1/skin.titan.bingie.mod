@@ -434,10 +434,12 @@ class TrailerPreview:
 
 	def _start_preview(self, trailer, now):
 		identity = self.identity
+		clear_property(TRAILER_RESOLVED_PROPERTY)
 		try:
 			from modules.trailers import prepare
 			playback_url, listitem = prepare(trailer)
 		except Exception as exc:
+			clear_property(TRAILER_RESOLVED_PROPERTY)
 			logger('BINGIE trailer playback', str(exc))
 			kodi_utils.notification('Trailer unavailable', 2500)
 			self.manual_identity = ''
@@ -445,6 +447,7 @@ class TrailerPreview:
 			return
 		candidate = self._candidate()
 		if not candidate or candidate[0] != identity:
+			clear_property(TRAILER_RESOLVED_PROPERTY)
 			self._track_candidate(candidate, monotonic())
 			return
 		now = monotonic()
@@ -456,7 +459,6 @@ class TrailerPreview:
 		self.trailer = playback_url
 		self.cancelled = False
 		self.fullscreen_exit_at = 0.0
-		clear_property(TRAILER_RESOLVED_PROPERTY)
 		set_property(TRAILER_PREVIEW_PROPERTY, 'true')
 		logger('BINGIE Lite', 'Starting BINGIE row trailer preview')
 		if listitem is None: kodi_utils.player.play(playback_url, windowed=True)
@@ -475,8 +477,10 @@ class TrailerPreview:
 	def _defer_preview_stop(self, now):
 		if not self.active: return
 		trailer = self.trailer
-		self._finish_preview()
-		if not trailer: return
+		self._finish_preview(preserve_window=True)
+		if not trailer:
+			self._clear_pending_stop()
+			return
 		self.pending_stop_trailer = trailer
 		self.pending_stop_at = now + TRAILER_PREVIEW_STOP_DELAY
 		self.pending_stop_deadline = now + TRAILER_PREVIEW_STOP_TIMEOUT
@@ -506,6 +510,7 @@ class TrailerPreview:
 		self.pending_stop_at = 0.0
 		self.pending_stop_deadline = 0.0
 		self.pending_stop_requested = False
+		clear_property(TRAILER_PREVIEW_PROPERTY)
 		clear_property(TRAILER_RESOLVED_PROPERTY)
 
 	def _stop_preview(self):
@@ -528,16 +533,23 @@ class TrailerPreview:
 	def _owns_preview(self, trailer=None):
 		playing_file = kodi_utils.get_infolabel('Player.FilenameAndPath').strip()
 		if not playing_file: return None
-		return playing_file in ((trailer or self.trailer), get_property(TRAILER_RESOLVED_PROPERTY))
+		playing_url = playing_file.partition('?')[0]
+		for expected_file in ((trailer or self.trailer), get_property(TRAILER_RESOLVED_PROPERTY)):
+			if not expected_file: continue
+			if playing_file == expected_file: return True
+			if expected_file.startswith('http://127.0.0.1:') and playing_url == expected_file.partition('?')[0]: return True
+		return False
 
-	def _finish_preview(self):
+	def _finish_preview(self, preserve_window=False):
 		if self.active: logger('BINGIE Lite', 'Stopping BINGIE row trailer preview')
 		self.active = False
 		self.playback_started = False
 		self.trailer = ''
 		self.cancelled = False
 		self.fullscreen_exit_at = 0.0
-		clear_property(TRAILER_PREVIEW_PROPERTY)
+		if not preserve_window:
+			clear_property(TRAILER_PREVIEW_PROPERTY)
+			clear_property(TRAILER_RESOLVED_PROPERTY)
 
 class POVMonitor(kodi_utils.xbmc_monitor):
 	def __enter__(self):

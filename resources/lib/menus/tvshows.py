@@ -32,7 +32,7 @@ class TVShows:
 		self.items, self.new_page, self.total_pages = [], {}, None
 		self.append = self.items.append
 		self.is_detail_shelf = self.action == 'tmdb_tv_more_like_this'
-		self.is_summary_listing = self.is_detail_shelf or bool(self.action and self.action.startswith(('tmdb_tv_', 'tmdb_tvanime_')))
+		self.is_summary_listing = self.is_detail_shelf or bool(self.action and self.action.startswith('tmdb_tv_'))
 		self.is_widget = kodi_utils.external_browse()
 		if not self.exit_list_params: self.exit_list_params = get_infolabel('Container.FolderPath')
 		self._full_context_ready = False
@@ -203,9 +203,8 @@ class TVShows:
 
 class Menu(TVShows):
 	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'dropped_tvshows': ('caches.dropped_cache', 'get_dropped')}
-	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tvanime_year': 'year'}
-	tmdb_main = ('tmdb_tv_trending', 'tmdb_tv_popular', 'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'tmdb_tvanime_popular', 'tmdb_tvanime_premieres')
-	trakt_main = ('trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_tvanime_trending', 'trakt_tvanime_most_watched')
+	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year'}
+	tmdb_main = ('tmdb_tv_trending_day', 'tmdb_tv_trending', 'tmdb_tv_popular', 'tmdb_tv_airing_today', 'tmdb_tv_on_the_air', 'tmdb_tv_top_rated')
 	similar = ('tmdb_tv_similar', 'tmdb_tv_recommendations', 'tmdb_tv_more_like_this')
 
 	def worker(self):
@@ -247,11 +246,6 @@ class Menu(TVShows):
 				self.list = results
 				total_pages = data['total_pages']
 				if total_pages > page_no: self.new_page = {'new_page': string(data['page'] + 1)}
-			elif self.action in Menu.trakt_main:
-				self.id_type = 'trakt_dict'
-				data, total_pages = function(page_no)
-				self.list = [i['show']['ids'] for i in data]
-				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.personal_dict:
 				data, total_pages = function(self.watched_info, 'tvshow', page_no)
 				self.list = [i['media_id'] for i in data]
@@ -277,7 +271,7 @@ class Menu(TVShows):
 				self.list = data['results']
 				if data['page'] < data['total_pages']:
 					self.new_page = {'query': query, 'name': name, 'new_page': string(data['page'] + 1)}
-			elif self.action in ('tmdb_tv_genres', 'tmdb_tvanime_genres'):
+			elif self.action == 'tmdb_tv_genres':
 				genre_id = self.params['genre_id']
 				if not genre_id: return
 				data = function(genre_id, page_no)
@@ -290,11 +284,6 @@ class Menu(TVShows):
 				self.list = data['results']
 				total_pages = data['total_pages']
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1), 'query': query}
-			elif self.action == 'trakt_tv_certifications':
-				self.id_type = 'trakt_dict'
-				data = function(self.params['certification'], page_no)
-				self.list = [i['show']['ids'] for i in data]
-				self.new_page = {'new_page': string(page_no + 1), 'certification': self.params['certification']}
 			if prefetch:
 				if not self.is_summary_listing: self.prefetch_metadata()
 				return

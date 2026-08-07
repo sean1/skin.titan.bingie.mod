@@ -517,7 +517,7 @@ FIXED_SETTINGS = {
 PERSISTED_SETTING_IDS = frozenset((
 	'database.maintenance.due', 'database.merge_status', 'migration.removed_services.6_08_03',
 	'rd.client_id', 'rd.refresh', 'rd.secret', 'rd.token', 'rd.username',
-	'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38'
+	'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38', 'migration.tmdb_native_lists.2_03_03'
 ))
 
 _settings_lock = Lock()

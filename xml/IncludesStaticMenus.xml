@@ -21,13 +21,13 @@
 			<property name="widget.2">pov-trending-movies</property>
 			<property name="widgetTarget.2">videos</property>
 			<property name="widgetType.2">movies</property>
-			<property name="widgetPath.2">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10</property>
-			<property name="widgetName.2">Trending Movies</property>
+			<property name="widgetPath.2">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;limit=10</property>
+			<property name="widgetName.2">Trending Movies Today</property>
 			<property name="widget.3">pov-trending-tv</property>
 			<property name="widgetTarget.3">videos</property>
 			<property name="widgetType.3">tvshows</property>
-			<property name="widgetPath.3">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</property>
-			<property name="widgetName.3">Trending TV Shows</property>
+			<property name="widgetPath.3">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10</property>
+			<property name="widgetName.3">Trending TV Shows Today</property>
 			<property name="widget.4">pov-popular-movies</property>
 			<property name="widgetTarget.4">videos</property>
 			<property name="widgetType.4">movies</property>
@@ -174,11 +174,27 @@
 		<item id="2">
 			<property name="id">$NUMBER[2]</property>
 			<property name="mainmenuid">4</property>
-			<label>Trending TV Shows</label>
+			<label>Trending TV Shows Today</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
 			<thumb />
-			<property name="labelID">trending-tv-shows</property>
+			<property name="labelID">trending-tv-shows-today</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">4</property>
+			<label>Trending TV Shows This Week</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">trending-tv-shows-this-week</property>
 			<property name="defaultID">369</property>
 			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</onclick>
 			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</property>
@@ -187,8 +203,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">4</property>
 			<label>Popular TV Shows</label>
 			<label2>TV Shows</label2>
@@ -203,24 +219,56 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
 			<property name="mainmenuid">4</property>
-			<label>New TV Shows</label>
+			<label>Airing Today</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
 			<thumb />
-			<property name="labelID">new-tv-shows</property>
+			<property name="labelID">airing-today-tv-shows</property>
 			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_airing_today,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_airing_today,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_airing_today</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<property name="mainmenuid">4</property>
+			<label>On the Air</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">on-the-air-tv-shows</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<property name="mainmenuid">4</property>
+			<label>Top Rated TV Shows</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">top-rated-tv-shows</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="8">
+			<property name="id">$NUMBER[8]</property>
 			<property name="mainmenuid">4</property>
 			<label>TV Genres</label>
 			<label2>TV Shows</label2>
@@ -235,8 +283,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
+		<item id="10">
+			<property name="id">$NUMBER[10]</property>
 			<property name="mainmenuid">4</property>
 			<label>Search</label>
 			<label2>TV Shows</label2>
@@ -270,11 +318,27 @@
 		<item id="2">
 			<property name="id">$NUMBER[2]</property>
 			<property name="mainmenuid">5</property>
-			<label>Trending Movies</label>
+			<label>Trending Movies Today</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
 			<thumb />
-			<property name="labelID">trending-movies</property>
+			<property name="labelID">trending-movies-today</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">5</property>
+			<label>Trending Movies This Week</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">trending-movies-this-week</property>
 			<property name="defaultID">135</property>
 			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</onclick>
 			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</property>
@@ -283,8 +347,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">5</property>
 			<label>Popular Movies</label>
 			<label2>Movies</label2>
@@ -299,24 +363,56 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
 			<property name="mainmenuid">5</property>
-			<label>New Releases</label>
+			<label>Now Playing</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
 			<thumb />
-			<property name="labelID">new-releases</property>
+			<property name="labelID">now-playing-movies</property>
 			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_now_playing,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_now_playing,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_now_playing</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<property name="mainmenuid">5</property>
+			<label>Upcoming Movies</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">upcoming-movies</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_upcoming,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_upcoming,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_upcoming</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<property name="mainmenuid">5</property>
+			<label>Top Rated Movies</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">top-rated-movies</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="8">
+			<property name="id">$NUMBER[8]</property>
 			<property name="mainmenuid">5</property>
 			<label>Movie Genres</label>
 			<label2>Movies</label2>
@@ -331,8 +427,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
+		<item id="10">
+			<property name="id">$NUMBER[10]</property>
 			<property name="mainmenuid">5</property>
 			<label>Search</label>
 			<label2>Movies</label2>
@@ -526,7 +622,7 @@
 		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),4)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10</value>
 	</variable>
 	<variable name="BingieHomePopularMoviesPath">
 		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</value>
@@ -538,17 +634,17 @@
 		<include content="widget_header_multi">
 			<param name="widgetid" value="2510" />
 			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="Trending Movies" />
+			<param name="widgetName" value="Trending Movies Today" />
 		</include>
 		<include content="widget_base" condition="true">
 			<param name="containerType" value="panel" />
 			<param name="contentStyle" value="normal" />
 			<param name="widgetid" value="2510" />
-			<param name="widgetName" value="Trending Movies" />
+			<param name="widgetName" value="Trending Movies Today" />
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10" />
+			<param name="widgetPath" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;limit=10" />
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
@@ -559,13 +655,13 @@
 		<include content="widget_header_multi">
 			<param name="widgetid" value="2520" />
 			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="Trending TV Shows" />
+			<param name="widgetName" value="Trending TV Shows Today" />
 		</include>
 		<include content="widget_base" condition="true">
 			<param name="containerType" value="panel" />
 			<param name="contentStyle" value="normal" />
 			<param name="widgetid" value="2520" />
-			<param name="widgetName" value="Trending TV Shows" />
+			<param name="widgetName" value="Trending TV Shows Today" />
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />

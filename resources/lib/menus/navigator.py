@@ -39,15 +39,6 @@ class Navigator:
 		self._add_item({'mode': 'clear_cache', 'cache': 'rd_cloud', 'name': clca_str }, 'realdebrid.png', n_ins, False)
 
 
-	def my_content(self):
-		t_str, user_str, l_str = ls(32037), ls(32065), ls(32501)
-		tu_str, pu_str = '%s %s %s' % (ls(32458), user_str, l_str), '%s %s %s' % (ls(32459), user_str, l_str)
-		sea_str, n_ins = '%s %s' % (ls(32477), l_str), _in_str % (t_str.upper(), '')
-		self._add_item({'mode': 'build_trakt_list.get_trakt_trending_popular_lists', 'list_type': 'trending', 'name': tu_str }, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_trakt_list.get_trakt_trending_popular_lists', 'list_type': 'popular' , 'name': pu_str }, 'trakt.png', n_ins)
-		self._add_item({'mode': 'build_trakt_list.search_trakt_lists',                                        'name': sea_str}, 'trakt.png', n_ins)
-		self._end_directory()
-
 	def search(self):
 		search_str, people_str = ls(32450), ls(32507)
 		coll_str, s_n_ins = '%s %s (%s)' % (mov_str, ls(32499), ls(32068)), _in_str % (search_str.upper(), '')
@@ -133,17 +124,6 @@ class Navigator:
 			self._add_item({'mode': mode, 'action': action, 'year': str(i), 'name': str(i)}, 'calender.png', list_name=list_name)
 		self._end_directory()
 
-	def anime_years(self):
-		from modules.meta_lists import years
-		menu_type = self.params_get('menu_type')
-		mode = 'build_movie_list' if menu_type == 'movie' else 'build_tvshow_list'
-		action = 'tmdb_moviesanime_year' if menu_type == 'movie' else 'tmdb_tvanime_year'
-		lst_ins = self.make_list_name(menu_type)
-		for i in years():
-			list_name = 'ANIME %s: %s %s' % (lst_ins.upper(), str(i), ls(32460))
-			self._add_item({'mode': mode, 'action': action, 'year': str(i), 'name': str(i)}, 'calender.png', list_name=list_name)
-		self._end_directory()
-
 	def genres(self):
 		import json
 		menu_type = self.params_get('menu_type')
@@ -157,20 +137,6 @@ class Navigator:
 		self._add_item({'mode': 'navigator.multiselect_genres', 'genre_list': json.dumps(genre_list), 'menu_type': menu_type, 'exclude_external': 'true', 'name': ls(32789)}, 'genres.png', isFolder=False)
 		for genre, value in sorted(genre_list.items()):
 			list_name = '%s: %s %s' % (lst_ins.upper(), genre, ls(32470))
-			self._add_item({'mode': mode, 'action': action, 'genre_id': value[0], 'name': genre}, 'genres.png', list_name=list_name)
-		self._end_directory()
-
-	def anime_genres(self):
-		menu_type = self.params_get('menu_type')
-		if menu_type == 'movie':
-			from modules.meta_lists import movie_genres as genre_list
-			mode, action = 'build_movie_list', 'tmdb_moviesanime_genres'
-		else:
-			from modules.meta_lists import tvshow_genres as genre_list
-			mode, action = 'build_tvshow_list', 'tmdb_tvanime_genres'
-		lst_ins = self.make_list_name(menu_type)
-		for genre, value in sorted(genre_list.items()):
-			list_name = 'ANIME %s: %s %s' % (lst_ins.upper(), genre, ls(32470))
 			self._add_item({'mode': mode, 'action': action, 'genre_id': value[0], 'name': genre}, 'genres.png', list_name=list_name)
 		self._end_directory()
 

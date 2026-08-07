@@ -64,7 +64,6 @@ POV_ROUTES = {
 	'build_episode_list': lambda p: _import('menus.seasons', 'Episodes')(p).run(),
 	'build_in_progress_episode': lambda p: _import('menus.episodes', 'Menu')(p).run(),
 	'build_next_episode': lambda p: _import('menus.episodes', 'Menu')(p).run(),
-	'build_anime_calendar': lambda p: _import('menus.episodes', 'Menu')(p).run(),
 	'build_navigate_to_page': lambda p: _import('modules.dialogs', 'build_navigate_to_page')(p),
 	'build_popular_people': lambda p: _import('menus.people', 'popular_people')(),
 	'build_person_credits': lambda p: _import('menus.people', 'build_person_credits')(p),
@@ -834,11 +833,12 @@ def checkSettingsFile():
 	if not path_exists(profile_xml):
 		kodi_utils.make_directorys(profile_dir)
 	kodi_utils.clean_settings(silent=True)
-	from modules.cache import purge_history_data, purge_removed_list_data, purge_removed_personal_trakt_data, purge_removed_service_data
+	from modules.cache import migrate_tmdb_native_lists, purge_history_data, purge_removed_list_data, purge_removed_personal_trakt_data, purge_removed_service_data
 	purge_removed_service_data()
 	purge_removed_list_data()
 	purge_removed_personal_trakt_data()
 	purge_history_data()
+	migrate_tmdb_native_lists()
 	clear_property('pov_lite_settings')
 	make_settings_dict()
 	set_property('pov_lite_kodi_menu_cache', get_setting('kodi_menu_cache'))

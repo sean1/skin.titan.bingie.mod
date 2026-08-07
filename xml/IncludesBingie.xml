@@ -20,6 +20,9 @@
 		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,2)">Conditional</animation>
         <animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,4)">Conditional</animation>
 		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,6)">Conditional</animation>
+		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,8)">Conditional</animation>
+		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,10)">Conditional</animation>
+		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,12)">Conditional</animation>
 
         <animation effect="fade" start="100" end="0" time="250" condition="Integer.IsGreater(Window(Home).Property(CurrentWidgetID), $PARAM[widgetid])">Conditional</animation>
         <animation effect="fade" start="0" end="100" delay="300" time="300" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>

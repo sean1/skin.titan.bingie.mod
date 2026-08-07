@@ -32,7 +32,7 @@ class Movies:
 		self.items, self.new_page, self.total_pages = [], {}, None
 		self.append = self.items.append
 		self.is_detail_shelf = self.action in ('tmdb_movies_more_like_this', 'tmdb_movies_in_collection')
-		self.is_summary_listing = self.is_detail_shelf or bool(self.action and self.action.startswith(('tmdb_movies_', 'tmdb_moviesanime_')))
+		self.is_summary_listing = self.is_detail_shelf or bool(self.action and self.action.startswith('tmdb_movies_'))
 		self.is_widget = kodi_utils.external_browse()
 		if not self.exit_list_params: self.exit_list_params = get_infolabel('Container.FolderPath')
 		self._full_context_ready = False
@@ -196,9 +196,8 @@ class Movies:
 
 class Menu(Movies):
 	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items')}
-	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_moviesanime_year': 'year'}
-	tmdb_main = ('tmdb_movies_trending', 'tmdb_movies_popular', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres', 'tmdb_movies_upcoming', 'tmdb_movies_blockbusters', 'tmdb_oscar_winners', 'tmdb_moviesanime_popular', 'tmdb_moviesanime_latest_releases')
-	trakt_main = ('trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched')
+	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year'}
+	tmdb_main = ('tmdb_movies_trending_day', 'tmdb_movies_trending', 'tmdb_movies_popular', 'tmdb_movies_now_playing', 'tmdb_movies_upcoming', 'tmdb_movies_top_rated')
 	similar = ('tmdb_movies_similar', 'tmdb_movies_recommendations', 'tmdb_movies_more_like_this', 'tmdb_movies_in_collection')
 
 	def build_movies_results(self):
@@ -257,11 +256,6 @@ class Menu(Movies):
 				self.list = results
 				total_pages = data['total_pages']
 				if total_pages > page_no: self.new_page = {'new_page': string(data['page'] + 1)}
-			elif self.action in Menu.trakt_main:
-				self.id_type = 'trakt_dict'
-				data, total_pages = function(page_no)
-				self.list = [i['movie']['ids'] for i in data]
-				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.personal_dict:
 				watched_info = self.bookmarks if self.action == 'in_progress_movies' else self.watched_info
 				data, total_pages = function(watched_info, 'movie', page_no)
@@ -291,7 +285,7 @@ class Menu(Movies):
 				self.list = data['results']
 				if data['page'] < data['total_pages']:
 					self.new_page = {'query': query, 'name': name, 'new_page': string(data['page'] + 1)}
-			elif self.action in ('tmdb_movies_genres', 'tmdb_moviesanime_genres'):
+			elif self.action == 'tmdb_movies_genres':
 				genre_id = params_get('genre_id')
 				if not genre_id: return
 				data = function(genre_id, page_no)

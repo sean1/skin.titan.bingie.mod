@@ -279,7 +279,7 @@ msgid "Oscar Winners"
 msgstr ""
 
 msgctxt "#32469"
-msgid "Up Coming"
+msgid "Upcoming"
 msgstr ""
 
 msgctxt "#32470"
@@ -1156,6 +1156,30 @@ msgstr ""
 
 msgctxt "#32964"
 msgid "Jump To..."
+msgstr ""
+
+msgctxt "#32965"
+msgid "Trending Today"
+msgstr ""
+
+msgctxt "#32966"
+msgid "Trending This Week"
+msgstr ""
+
+msgctxt "#32967"
+msgid "Now Playing"
+msgstr ""
+
+msgctxt "#32968"
+msgid "Top Rated"
+msgstr ""
+
+msgctxt "#32969"
+msgid "Airing Today"
+msgstr ""
+
+msgctxt "#32970"
+msgid "On the Air"
 msgstr ""
 
 msgctxt "#32978"

@@ -74,20 +74,38 @@
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Trending Movies" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending" />
+            <param name="label" value="Trending Movies Today" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />
+            <param name="widgetStyle" value="widget_layout_default" />
+            <param name="label" value="Trending Movies This Week" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending" />
+        </include>
+        <include content="bingie_pov_hub_item">
+            <param name="widgetid" value="1540" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Popular Movies" />
             <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular" />
         </include>
         <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1540" />
+            <param name="widgetid" value="1550" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="New Releases" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases" />
+            <param name="label" value="Now Playing" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_now_playing" />
+        </include>
+        <include content="bingie_pov_hub_item">
+            <param name="widgetid" value="1560" />
+            <param name="widgetStyle" value="widget_layout_default" />
+            <param name="label" value="Upcoming Movies" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_upcoming" />
+        </include>
+        <include content="bingie_pov_hub_item">
+            <param name="widgetid" value="1570" />
+            <param name="widgetStyle" value="widget_layout_default" />
+            <param name="label" value="Top Rated Movies" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated" />
         </include>
     </include>
 
@@ -103,20 +121,38 @@
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Trending TV Shows" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending" />
+            <param name="label" value="Trending TV Shows Today" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />
+            <param name="widgetStyle" value="widget_layout_default" />
+            <param name="label" value="Trending TV Shows This Week" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending" />
+        </include>
+        <include content="bingie_pov_hub_item">
+            <param name="widgetid" value="1540" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Popular TV Shows" />
             <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular" />
         </include>
         <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1540" />
+            <param name="widgetid" value="1550" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="New TV Shows" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres" />
+            <param name="label" value="Airing Today" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_airing_today" />
+        </include>
+        <include content="bingie_pov_hub_item">
+            <param name="widgetid" value="1560" />
+            <param name="widgetStyle" value="widget_layout_default" />
+            <param name="label" value="On the Air" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air" />
+        </include>
+        <include content="bingie_pov_hub_item">
+            <param name="widgetid" value="1570" />
+            <param name="widgetStyle" value="widget_layout_default" />
+            <param name="label" value="Top Rated TV Shows" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated" />
         </include>
     </include>
 
@@ -139,14 +175,14 @@
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1510" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="New Movie Releases" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases" />
+            <param name="label" value="Now Playing" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_now_playing" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="New TV Shows" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres" />
+            <param name="label" value="Airing Today" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_airing_today" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />

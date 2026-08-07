@@ -188,6 +188,41 @@ def purge_removed_personal_trakt_data():
 		kodi_utils.logger('purge_removed_personal_trakt_data error', str(e))
 		return False
 
+def migrate_tmdb_native_lists():
+	setting_id = 'migration.tmdb_native_lists.2_03_03'
+	if kodi_utils.get_setting(setting_id) == 'true': return True
+	try:
+		from caches.navigator_cache import navigator_cache
+		from modules.menu_lists import main_menus
+		deprecated_actions = {
+			'AnimeList', 'tmdb_oscar_winners', 'tmdb_movies_blockbusters', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres',
+			'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched',
+			'trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched',
+			'trakt_tvanime_trending', 'trakt_tvanime_most_watched'
+		}
+		deprecated_modes = {'navigator.my_content', 'build_anime_calendar', 'navigator.anime_genres', 'navigator.anime_years'}
+		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
+		for list_name, list_type, list_contents in rows:
+			if list_name == 'AnimeList': continue
+			items = navigator_cache.jsloads(list_contents) or []
+			if list_type == 'default' and list_name in main_menus:
+				filtered = main_menus[list_name]
+			else:
+				filtered = [
+					item for item in items
+					if item.get('action') not in deprecated_actions
+					and not str(item.get('action', '')).startswith(('tmdb_moviesanime_', 'tmdb_tvanime_'))
+					and item.get('mode') not in deprecated_modes
+				]
+			if filtered != items: navigator_cache.set_list(list_name, list_type, filtered)
+		navigator_cache.dbcur.execute('DELETE FROM navigator WHERE list_name = ?', ('AnimeList',))
+		for list_type in ('default', 'edited'): navigator_cache.delete_memory_cache('AnimeList', list_type)
+		kodi_utils.set_setting(setting_id, 'true')
+		return True
+	except Exception as e:
+		kodi_utils.logger('migrate_tmdb_native_lists error', str(e))
+		return False
+
 def remove_old_databases():
 	# The embedded POV databases share the skin's profile directory. Unknown files
 	# in that directory belong to the skin unless an explicit legacy target says otherwise.

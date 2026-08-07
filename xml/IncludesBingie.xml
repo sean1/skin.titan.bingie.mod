@@ -135,7 +135,7 @@
 	<include>Default_Visible_Fade</include>
 	<!-- Icon display -->
 	<control type="button" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
+			<visible>$EXP[HasBingieMpaa]</visible>
 			<posy>8</posy>
 				<height>34</height>
                 <width min="42">auto</width>
@@ -160,16 +160,11 @@
 	<include>Default_Visible_Fade</include>
 	<!-- Icon display -->
 	<control type="group" id="123456">
-			<visible>[!String.IsEmpty(ListItem.MPAA) + [String.Contains(ListItem.mpaa,US:G) | String.Contains(ListItem.mpaa,USA:G) | String.Contains(ListItem.mpaa,Rated G) | String.IsEqual(ListItem.Mpaa,G) |
-			String.Contains(ListItem.mpaa,US:PG-13) | String.Contains(ListItem.mpaa,USA:PG-13) | String.Contains(ListItem.mpaa,Rated PG-13) | String.IsEqual(ListItem.Mpaa,PG-13) |
-			String.IsEqual(ListItem.mpaa,US:PG) | String.IsEqual(ListItem.mpaa,USA:PG) | String.IsEqual(ListItem.mpaa,Rated PG) | String.IsEqual(ListItem.Mpaa,PG) |
-			String.Contains(ListItem.mpaa,US:R) | String.Contains(ListItem.mpaa,USA:R) | String.Contains(ListItem.mpaa,Rated R) | String.IsEqual(ListItem.Mpaa,R) | String.Contains(ListItem.mpaa,NC-17) | String.Contains(ListItem.mpaa,NR) |
-			String.IsEqual(ListItem.mpaa,TV-Y) | String.Contains(ListItem.mpaa,TV-Y7) | String.Contains(ListItem.mpaa,TV-G) |String.Contains(ListItem.mpaa,TV-PG) | String.Contains(ListItem.mpaa,TV-14) | String.Contains(ListItem.mpaa,TV-MA) | String.Contains(ListItem.mpaa,USA:TV-MA)]]
-			</visible>
+			<visible>$EXP[HasBingieMpaa]</visible>
 			<height>34</height>
             <width>106</width>
 	<control type="image" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
+			<visible>$EXP[HasBingieMpaa]</visible>
 			<top>8</top>
 			<width>106</width>
 			<height>34</height>
@@ -179,7 +174,7 @@
 			<include>Default_Visible_Fade</include>
         </control>
 	<control type="image" id="123456">
-			<visible>!String.IsEmpty(ListItem.MPAA)</visible>
+			<visible>$EXP[HasBingieMpaa]</visible>
 			<right>3</right>
 			<top>11</top>
 			<width>100</width>
@@ -190,7 +185,7 @@
 			<include>Default_Visible_Fade</include>
     </control>
 		<control type="label" id="123456">
-				<visible>!String.IsEmpty(ListItem.MPAA)</visible>
+				<visible>$EXP[HasBingieMpaa]</visible>
 				<posy>8</posy>
 				<align>center</align>
 				<aligny>top</aligny>
@@ -209,7 +204,7 @@
 	<include name="MPAA_Details_Row">
             <include>Default_Visible_Fade</include>
             <control type="button" id="765">
-				<visible>!String.IsEmpty(ListItem.Mpaa)</visible>
+					<visible>$EXP[HasBingieMpaa]</visible>
 				<posy>7</posy>
                 <height>36</height>
                 <width min="42">auto</width>
@@ -511,12 +506,14 @@
 
 	<!--Year Info -->
 	<variable name="GetYear">
+		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedYearRange))">$INFO[Window(Home).Property(PovFocusedYearRange)]</value>
 		<value condition="!String.IsEmpty(ListItem.Year)">$INFO[ListItem.Year]</value>
 		<value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Year))">$INFO[Window(Home).Property(ListItem.Year)]</value>
 	</variable>
 
     <!--Duration Info -->
-    <variable name="GetDuration">
+	<variable name="GetDuration">
+		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedDuration))">$INFO[Window(Home).Property(PovFocusedDuration)]</value>
         <!-- Hours not disabled -->
         <!-- normal -->
         <value condition="!false + Integer.IsGreater(ListItem.Duration(h),0)">$INFO[ListItem.Duration(h),,h ]$INFO[ListItem.Duration(m),,m]</value>
@@ -533,7 +530,8 @@
     </variable>
 
     <!-- Total Seasons/Episodes Info -->
-    <variable name="GetTotalSeasonEpisodeCount">
+	<variable name="GetTotalSeasonEpisodeCount">
+		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedSeasons))">$INFO[Window(Home).Property(PovFocusedSeasons)]</value>
         <!--normal-->
         <value condition="Integer.IsGreater(ListItem.Property(TotalEpisodes),1) + Integer.IsGreater(ListItem.Property(TotalSeasons),1)">$INFO[ListItem.Property(TotalSeasons),, $LOCALIZE[320207]]</value>
         <value condition="Integer.IsGreater(ListItem.Property(TotalEpisodes),1) + Integer.IsEqual(ListItem.Property(TotalSeasons),1)">$INFO[ListItem.Property(TotalSeasons),, $LOCALIZE[20373]]</value>
@@ -547,7 +545,8 @@
     </variable>
 
     <!-- MPAA Info -->
-    <variable name="GetMPAA">
+	<variable name="GetMPAA">
+		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedMpaa))">$INFO[Window(Home).Property(PovFocusedMpaa)]</value>
         <!-- contains is very slow! -->
         <!-- normal listitems -->
         <!-- US MPAA Views-->
@@ -751,8 +750,9 @@
 	</variable>
 
     <!-- bingie home clearlogo -->
-    <variable name="BingieInfoClearlogo">
-        <!-- NORMAL -->
+	<variable name="BingieInfoClearlogo">
+		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedClearLogo))">$INFO[Window(Home).Property(PovFocusedClearLogo)]</value>
+		<!-- NORMAL -->
         <value condition="!String.IsEmpty(ListItem.Art(tvshow.clearlogo))">$INFO[ListItem.Art(tvshow.clearlogo)]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(artist.clearlogo))">$INFO[ListItem.Art(artist.clearlogo)]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(albumartist.clearlogo))">$INFO[ListItem.Art(albumartist.clearlogo)]</value>
@@ -825,8 +825,10 @@
     </variable>
 
 
-    <!-- Bingie More Details -->
-    <variable name="BingieMoreDetails">
+	<!-- Bingie More Details -->
+	<variable name="BingieMoreDetails">
+		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedGenre))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
+		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedMainActors))">$INFO[Window(Home).Property(PovFocusedMainActors)]</value>
 		<value condition="!String.IsEmpty(ListItem.Genre) + !String.Contains(ListItem.Genre,unknown)">$INFO[ListItem.Genre]$INFO[ListItem.Property(main_actors),[CR]]</value>
 		<value condition="!String.IsEmpty(ListItem.Property(main_actors))">$INFO[ListItem.Property(main_actors)]</value>
     </variable>

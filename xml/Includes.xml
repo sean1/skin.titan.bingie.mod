@@ -106,6 +106,14 @@
 		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +
 		$EXP[IsPovLiteListItem] + !String.IsEmpty(ListItem.UniqueID(tmdb))
 	</expression>
+	<expression name="PovFocusedMetadataMatches">
+		!String.IsEmpty(ListItem.Property(PovFocusIdentity)) +
+		String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),ListItem.Property(PovFocusIdentity))
+	</expression>
+	<expression name="HasBingieMpaa">
+		!String.IsEmpty(ListItem.Mpaa) |
+		[$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedMpaa))]
+	</expression>
 	<expression name="PovInfoHasCurrentCast">
 		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + String.IsEqual(Window(Home).Property(PovInfoHasCast),true) +
 		String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))

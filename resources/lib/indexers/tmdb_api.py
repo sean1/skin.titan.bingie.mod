@@ -8,6 +8,7 @@ ls, logger = kodi_utils.local_string, kodi_utils.logger
 get_setting = kodi_utils.get_setting
 EXPIRES_4_HOURS, EXPIRES_2_DAYS, EXPIRES_1_WEEK, EXPIRES_1_MONTH = 4, 48, 168, 672
 DETAIL_SHELF_LIMIT = 15
+DISCOVER_SHELF_LIMIT = 10
 READ_TOKEN = get_setting('tmdb_read_token')
 movies_append = 'external_ids,videos,credits,release_dates,alternative_titles,translations,images'
 tvshows_append = 'external_ids,videos,credits,content_ratings,alternative_titles,translations,images'
@@ -146,6 +147,10 @@ def tmdb_movies_recommendations(tmdb_id, page_no):
 	url = '%s/movie/%s/recommendations?language=en-US&page=%s' % (base_url, tmdb_id, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
+def tmdb_movies_because_you_watched(tmdb_id, watched_ids):
+	if not tmdb_id: return tmdb_movies_trending_day(1)
+	return _because_you_watched(tmdb_id, watched_ids, tmdb_movies_recommendations(tmdb_id, 1), tmdb_movies_similar)
+
 def _more_like_this(tmdb_id, recommendations, similar_function):
 	results, seen = [], {str(tmdb_id)}
 
@@ -160,6 +165,23 @@ def _more_like_this(tmdb_id, recommendations, similar_function):
 
 	add_items(recommendations)
 	if len(results) < DETAIL_SHELF_LIMIT: add_items(similar_function(tmdb_id, 1))
+	return {'page': 1, 'total_pages': 1, 'total_results': len(results), 'results': results}
+
+def _because_you_watched(tmdb_id, watched_ids, recommendations, similar_function):
+	results, seen = [], {str(i) for i in watched_ids}
+	seen.add(str(tmdb_id))
+
+	def add_items(data):
+		for item in (data or {}).get('results', ()):
+			item_id = item.get('id')
+			item_key = str(item_id)
+			if not item_id or item_key in seen: continue
+			seen.add(item_key)
+			results.append(item)
+			if len(results) == DISCOVER_SHELF_LIMIT: break
+
+	add_items(recommendations)
+	if len(results) < DISCOVER_SHELF_LIMIT: add_items(similar_function(tmdb_id, 1))
 	return {'page': 1, 'total_pages': 1, 'total_results': len(results), 'results': results}
 
 def tmdb_movies_more_like_this(tmdb_id, _page_no):
@@ -245,6 +267,10 @@ def tmdb_tv_recommendations(tmdb_id, page_no):
 	string = 'tmdb_tv_recommendations_%s_%s' % (tmdb_id, page_no)
 	url = '%s/tv/%s/recommendations?language=en-US&page=%s' % (base_url, tmdb_id, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
+
+def tmdb_tv_because_you_watched(tmdb_id, watched_ids):
+	if not tmdb_id: return tmdb_tv_trending_day(1)
+	return _because_you_watched(tmdb_id, watched_ids, tmdb_tv_recommendations(tmdb_id, 1), tmdb_tv_similar)
 
 def tmdb_tv_more_like_this(tmdb_id, _page_no):
 	return _more_like_this(tmdb_id, tmdb_tv_recommendations(tmdb_id, 1), tmdb_tv_similar)

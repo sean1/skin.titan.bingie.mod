@@ -146,9 +146,12 @@
 			<thumb />
 			<property name="labelID">discover</property>
 			<property name="defaultID">discover</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.discover_main,return)</onclick>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.discover_main</property>
+			<onclick>ActivateWindow(1113,return)</onclick>
+			<property name="path">ActivateWindow(1113,return)</property>
+			<property name="list">1113</property>
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
 			<property name="submenuVisibility">num-10000</property>
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">False</property>

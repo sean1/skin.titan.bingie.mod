@@ -199,6 +199,7 @@ class Menu(Movies):
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year'}
 	tmdb_main = ('tmdb_movies_trending_day', 'tmdb_movies_trending', 'tmdb_movies_popular', 'tmdb_movies_now_playing', 'tmdb_movies_upcoming', 'tmdb_movies_top_rated')
 	similar = ('tmdb_movies_similar', 'tmdb_movies_recommendations', 'tmdb_movies_more_like_this', 'tmdb_movies_in_collection')
+	personalized = ('tmdb_movies_because_you_watched',)
 
 	def build_movies_results(self):
 		full_items = []
@@ -271,6 +272,12 @@ class Menu(Movies):
 				self.list = data['results']
 				if data['page'] < data['total_pages']:
 					self.new_page = {'new_page': string(data['page'] + 1), 'tmdb_id': tmdb_id}
+			elif self.action in Menu.personalized:
+				watched_info = get_watched_info_movie(settings.watched_indicators())
+				seed_item = max((i for i in watched_info.values() if valid_tmdb_id(i[0])), key=lambda k: k[2], default=None)
+				seed = seed_item[0] if seed_item else None
+				data = function(seed, watched_info.keys())
+				self.list = data['results'][:item_limit] if item_limit > 0 else data['results']
 			elif self.action in Menu.tmdb_special_key_dict:
 				key = Menu.tmdb_special_key_dict[self.action]
 				function_var = params_get(key)
@@ -282,7 +289,7 @@ class Menu(Movies):
 			elif self.action == 'tmdb_movies_discover':
 				name, query = params_get('name'), params_get('query')
 				data = function(query, page_no)
-				self.list = data['results']
+				self.list = data['results'][:item_limit] if item_limit > 0 else data['results']
 				if data['page'] < data['total_pages']:
 					self.new_page = {'query': query, 'name': name, 'new_page': string(data['page'] + 1)}
 			elif self.action == 'tmdb_movies_genres':
@@ -320,7 +327,7 @@ class Menu(Movies):
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, worker())
-			if self.new_page:
+			if self.new_page and not self.is_widget:
 				if limited_tmdb:
 					browse_params = {'mode': mode, 'action': self.action, 'exit_list_params': self.exit_list_params, 'name': category}
 					kodi_utils.add_dir(__handle__, browse_params, nextpage_str, item_next)

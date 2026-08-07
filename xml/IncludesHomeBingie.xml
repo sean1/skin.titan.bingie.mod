@@ -231,6 +231,7 @@
                 <include condition="Window.IsActive(1110)">bingie_items_tvshows</include>
                 <include condition="Window.IsActive(1111)">bingie_items_movies</include>
                 <include condition="Window.IsActive(1112)">bingie_items_new</include>
+                <include condition="Window.IsActive(1113)">bingie_items_discover</include>
             </control>
 			<!-- Fixed Focus Frame -->
 			<control type="group">
@@ -247,7 +248,7 @@
             </control>
 
 			<control type="grouplist">
-				<visible>Window.IsActive(1110) | Window.IsActive(1111)</visible>
+				<visible>Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1113)</visible>
 				<orientation>horizontal</orientation>
 				<height>56</height>
 				<width>300</width>

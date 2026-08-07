@@ -24,6 +24,16 @@ class Navigator:
 		self._add_item({'mode': 'discover.help',                           'name': help_str}, 'discover.png', n_ins, False)
 		self._end_directory()
 
+	def discover_hub_actions(self):
+		actions = (
+			({'mode': 'discover.pick_my_night', 'name': ls(32900), 'exclude_external': 'true'}, 'discover.png', False, 'pick_my_night'),
+			({'mode': 'discover.router', 'mediatype': 'movie', 'name': ls(32901), 'exclude_external': 'true'}, 'search_movie.png', True, 'movie_mix'),
+			({'mode': 'discover.router', 'mediatype': 'tvshow', 'name': ls(32902), 'exclude_external': 'true'}, 'search_tv.png', True, 'tv_mix')
+		)
+		for params, icon, is_folder, category in actions:
+			self._add_item(params, icon, isFolder=is_folder, properties={'DBTYPE': 'category', 'category': category})
+		self._end_directory()
+
 	def premium(self):
 		from modules.debrid import debrid_enabled
 		debrids = debrid_enabled()
@@ -266,7 +276,7 @@ class Navigator:
 	def make_list_name(self, menu_type):
 		return menu_type.replace('tvshow', tv_str).replace('movie', mov_str)
 
-	def _add_item(self, url_params, iconImage='', prefix='', isFolder=True, list_name=''):
+	def _add_item(self, url_params, iconImage='', prefix='', isFolder=True, list_name='', properties=None):
 		handle, fanart = self.params_get('handle'), self.params_get('fanart')
 		if not isFolder: url_params['isFolder'] = 'false'
 		if iconImage in ('', 'None', None, 'DefaultFolder.png'): icon = 'DefaultFolder.png'
@@ -278,6 +288,7 @@ class Navigator:
 		listitem = make_listitem()
 		listitem.setLabel(f"{prefix}{url_params['name']}")
 		listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon, 'landscape': icon})
+		for key, value in (properties or {}).items(): listitem.setProperty(key, value)
 		if 'exclude_external' not in url_params:
 			cm = []
 			cm_append = cm.append

@@ -190,7 +190,7 @@ class Discover:
 			kwargs = {'items': json.dumps(companies), 'heading': heading_base % ls(32664), 'multi_choice': 'true'}
 			company_choice = kodi_utils.select_dialog(companies, **kwargs)
 			if company_choice is None: return self._set_property()
-		else: company_choice = companies[0]
+		else: company_choice = [companies[0]]
 		for i in company_choice:
 			company_ids_append(str(i['id']))
 			company_append(i['name'].upper())
@@ -284,6 +284,59 @@ class Discover:
 	def help(self):
 		return kodi_utils.show_text(heading_base % ls(32487), help())
 
+	def pick_my_night(self):
+		media_options = ((ls(32028), 'movie'), (ls(32029), 'tvshow'))
+		mood_options = (
+			(ls(32908), ''), (ls(32909), 'feel_good'), (ls(32910), 'funny'), (ls(32911), 'thrilling'), (ls(32912), 'dark')
+		)
+		era_options = ((ls(32913), ''), (ls(32914), '2020s'), (ls(32915), '2010s'), (ls(32916), '2000s'), (ls(32917), 'classic'))
+		style_options = ((ls(32918), 'crowd_pleasers'), (ls(32919), 'hidden_gems'), (ls(32920), 'critically_loved'))
+
+		def choose(options, heading):
+			choice = self._selection_dialog([item[0] for item in options], [item[1] for item in options], heading)
+			if choice is None: return None
+			return choice, next(item[0] for item in options if item[1] == choice)
+
+		media = choose(media_options, ls(32904))
+		if media is None: return
+		mood = choose(mood_options, ls(32905))
+		if mood is None: return
+		era = choose(era_options, ls(32906))
+		if era is None: return
+		style = choose(style_options, ls(32907))
+		if style is None: return
+
+		mediatype = media[0]
+		url_mediatype = 'movie' if mediatype == 'movie' else 'tv'
+		date_key = 'primary_release_date' if mediatype == 'movie' else 'first_air_date'
+		genres = {
+			'movie': {'feel_good': '35|10751|10749', 'funny': '35', 'thrilling': '28|53', 'dark': '27|80|9648'},
+			'tvshow': {'feel_good': '35|10751', 'funny': '35', 'thrilling': '10759|9648', 'dark': '80|9648|10765'}
+		}
+		eras = {
+			'2020s': ('2020-01-01', '2029-12-31'), '2010s': ('2010-01-01', '2019-12-31'),
+			'2000s': ('2000-01-01', '2009-12-31'), 'classic': ('1900-01-01', '1989-12-31')
+		}
+		styles = {
+			'crowd_pleasers': ('popularity.desc', '500', None, None),
+			'hidden_gems': ('vote_average.desc', '100', '6', '40'),
+			'critically_loved': ('vote_average.desc', '500', '7', None)
+		}
+		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
+		if mood[0]: query += '&with_genres=%s' % genres[mediatype][mood[0]]
+		if era[0]:
+			date_start, date_end = eras[era[0]]
+			query += '&%s.gte=%s&%s.lte=%s' % (date_key, date_start, date_key, date_end)
+		sort_by, vote_count, rating, popularity = styles[style[0]]
+		query += '&sort_by=%s&vote_count.gte=%s' % (sort_by, vote_count)
+		if rating: query += '&vote_average.gte=%s' % rating
+		if popularity: query += '&popularity.lte=%s' % popularity
+		name = '%s | %s | %s | %s' % (media[1], mood[1], era[1], style[1])
+		mode, action = ('build_movie_list', 'tmdb_movies_discover') if mediatype == 'movie' else ('build_tvshow_list', 'tmdb_tv_discover')
+		url = build_url({'mode': mode, 'action': action, 'query': query, 'name': name})
+		kodi_utils.execute_builtin('CancelAlarm(BingiePickMyNight,silent)')
+		return kodi_utils.execute_builtin('AlarmClock(BingiePickMyNight,ActivateWindow(Videos,%s,return),00:00:01,silent)' % url)
+
 	def _set_default_params(self, mediatype):
 		self._clear_property()
 		if mediatype == 'movie': url_mediatype, param_mediatype = 'movie', 'Movies'
@@ -298,6 +351,8 @@ class Discover:
 		self.discover_params['mediatype'] = mediatype
 		self.discover_params['search_name'] = {'mediatype': param_mediatype}
 		self.discover_params['search_string'] =  search
+		self._build_string()
+		self._build_name()
 		self._set_property()
 
 	def _add_defaults(self):
@@ -335,7 +390,7 @@ class Discover:
 		self._build_name()
 		self._set_property()
 		kodi_utils.container_refresh()
-		if index: kodi_utils.focus_index(index, 500)
+		if index is not None: kodi_utils.focus_index(index, 500)
 
 	def _clear_property(self):
 		kodi_utils.clear_property(self.window_id)

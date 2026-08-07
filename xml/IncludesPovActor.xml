@@ -81,7 +81,7 @@
 						+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
 						+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
 						+ !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
-				<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+				<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 			</control>
 
 			<!-- Keep every available credit shelf in one Home-style vertical stack. -->
@@ -123,11 +123,11 @@
 						<ondown condition="$EXP[PovActorHasCurrentTVShows]">620</ondown>
 						<ondown condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentDirected]">630</ondown>
 						<ondown condition="!$EXP[PovActorHasCurrentTVShows] + !$EXP[PovActorHasCurrentDirected]">610</ondown>
-						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
-						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
-						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
+						<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+						<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+						<oninfo>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
 						<include content="PovActorPanelLayouts"><param name="ready" value="$EXP[PovActorHasCurrentMovies]" /></include>
-						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=movies&amp;sort=newest</content>
+						<content target="videos" browse="never">plugin://skin.titan.bingie.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=movies&amp;sort=newest</content>
 					</control>
 				</control>
 
@@ -159,11 +159,11 @@
 						<onup condition="!$EXP[PovActorHasCurrentMovies]">620</onup>
 						<ondown condition="$EXP[PovActorHasCurrentDirected]">630</ondown>
 						<ondown condition="!$EXP[PovActorHasCurrentDirected]">620</ondown>
-						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
-						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
-						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
+						<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+						<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+						<oninfo>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
 						<include content="PovActorPanelLayouts"><param name="ready" value="$EXP[PovActorHasCurrentTVShows]" /></include>
-						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=tvshows&amp;sort=newest</content>
+						<content target="videos" browse="never">plugin://skin.titan.bingie.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=tvshows&amp;sort=newest</content>
 					</control>
 				</control>
 
@@ -194,11 +194,11 @@
 						<onup condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentMovies]">610</onup>
 						<onup condition="!$EXP[PovActorHasCurrentTVShows] + !$EXP[PovActorHasCurrentMovies]">630</onup>
 						<ondown>630</ondown>
-						<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
-						<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
-						<oninfo>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
+						<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+						<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+						<oninfo>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.Property(PovCreditType)]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
 						<include content="PovActorPanelLayouts"><param name="ready" value="$EXP[PovActorHasCurrentDirected]" /></include>
-						<content target="videos" browse="never">plugin://plugin.video.pov.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=directed&amp;sort=newest</content>
+						<content target="videos" browse="never">plugin://skin.titan.bingie.lite/?mode=build_person_credits&amp;actor_id=$INFO[Window(Home).Property(PovActorId)]&amp;credit_type=directed&amp;sort=newest</content>
 					</control>
 				</control>
 			</control>
@@ -220,8 +220,8 @@
 				<texturefocus>colors/color_white.png</texturefocus>
 				<texturenofocus colordiffuse="cc000000">colors/color_black.png</texturenofocus>
 				<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
-				<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onclick>
-				<onback>RunPlugin(plugin://plugin.video.pov.lite/?mode=pov_page_back)</onback>
+				<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onclick>
+				<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 			</control>
 			<control type="label">
 				<visible>!String.IsEqual(Window(Home).Property(PovActorReady),true)</visible>

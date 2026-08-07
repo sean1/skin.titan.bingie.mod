@@ -443,7 +443,7 @@
 								<radioheight>22</radioheight>
 								<onclick>SetProperty(BaseWindow,1,Home)</onclick>
 								<onclick>Dialog.Close(movieinformation)</onclick>
-								<onclick>AlarmClock(PlayShow,RunPlugin(plugin://plugin.video.pov.lite/?mode=smart_play_media&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)]),00:01,silent)</onclick>
+								<onclick>AlarmClock(PlayShow,RunPlugin(plugin://skin.titan.bingie.lite/?mode=smart_play_media&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)]),00:01,silent)</onclick>
                             </control>
 
 							<!-- Play the selected POV season from its first episode. -->
@@ -459,7 +459,7 @@
 								<radioheight>22</radioheight>
 								<onclick>SetProperty(BaseWindow,1,Home)</onclick>
 								<onclick>Dialog.Close(movieinformation)</onclick>
-								<onclick>AlarmClock(PlaySeason,RunPlugin(plugin://plugin.video.pov.lite/?mode=play_media&amp;mediatype=episode&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)]&amp;season=$INFO[ListItem.Season]&amp;episode=1),00:01,silent)</onclick>
+								<onclick>AlarmClock(PlaySeason,RunPlugin(plugin://skin.titan.bingie.lite/?mode=play_media&amp;mediatype=episode&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)]&amp;season=$INFO[ListItem.Season]&amp;episode=1),00:01,silent)</onclick>
 							</control>
 
                             <!-- Play -->
@@ -538,7 +538,7 @@
                                 <radiowidth>24</radiowidth>
                                 <radioheight>24</radioheight>
 								<onclick>Dialog.Close(movieinformation)</onclick>
-								<onclick>AlarmClock(BrowseEpisodes,ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_season_list&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)],return),00:01,silent)</onclick>
+								<onclick>AlarmClock(BrowseEpisodes,ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_season_list&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)],return),00:01,silent)</onclick>
 							</control>
 
 						</control>
@@ -623,7 +623,7 @@
 			<label>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label]</label>
 			<label2>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label2]</label2>
 			<icon>$INFO[Container(50).ListItemAbsolute($PARAM[index]).Icon]</icon>
-			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_person_info&amp;query=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label]&amp;actor_image=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Icon])</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_person_info&amp;query=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Label]&amp;actor_image=$INFO[Container(50).ListItemAbsolute($PARAM[index]).Icon])</onclick>
 			<visible>!String.IsEmpty(Container(50).ListItemAbsolute($PARAM[index]).Label)</visible>
 		</item>
 	</include>
@@ -730,7 +730,7 @@
 			<property name="year_range">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(year_range)]</property>
 			<property name="status">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Status]</property>
 			<property name="PovInfoSourceTmdb">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(PovInfoSourceTmdb)]</property>
-			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$VAR[PovInfoActiveType]&amp;tmdb_id=$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$VAR[PovInfoActiveType]&amp;tmdb_id=$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
 			<visible>!String.IsEmpty(Container(565).ListItemAbsolute($PARAM[index]).Label)</visible>
 		</item>
 	</include>
@@ -763,7 +763,7 @@
 			<property name="rating">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Rating]</property>
 			<property name="year">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Year]</property>
 			<property name="PovInfoSourceTmdb">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovInfoSourceTmdb)]</property>
-			<onclick>RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
 			<visible>!String.IsEmpty(Container(566).ListItemAbsolute($PARAM[index]).Label)</visible>
 		</item>
 	</include>
@@ -787,13 +787,13 @@
 	</include>
 
 	<variable name="PovMoreLikeThisPath">
-		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),movie)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
-		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),movie)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window.Property(PovInfoMoreLikeThisReady)) + String.IsEqual(Window.Property(PovInfoType),tvshow)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
 	</variable>
 
 	<variable name="PovInThisCollectionPath">
-		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + !String.IsEmpty(Window.Property(PovInfoCollectionId))">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]&amp;collection_id=$INFO[Window.Property(PovInfoCollectionId)]</value>
-		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + String.IsEmpty(Window.Property(PovInfoCollectionId)) + !String.IsEqual(ListItem.Property(PovLiteItem),true)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + !String.IsEmpty(Window.Property(PovInfoCollectionId))">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]&amp;collection_id=$INFO[Window.Property(PovInfoCollectionId)]</value>
+		<value condition="!String.IsEmpty(Window.Property(PovInfoCollectionReady)) + String.IsEqual(Window.Property(PovInfoType),movie) + String.IsEmpty(Window.Property(PovInfoCollectionId)) + !String.IsEqual(ListItem.Property(PovLiteItem),true)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_in_collection&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>
 	</variable>
 
 	<variable name="PovInfoActiveType">

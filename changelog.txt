@@ -1,0 +1,18 @@
+BINGIE Lite 2.3.2
+
+- Limit embedded trailer playback to a single 720p HLS video rendition and its matching audio.
+- Resolve internal trailer URLs before playback so the final HLS stream cannot trigger a second fullscreen transition.
+- Keep BINGIE's embedded preview surface selected for the complete trailer playback lifecycle.
+- Return to the embedded surface if Kodi activates its fullscreen-video window.
+
+BINGIE Lite 2.3.1
+
+- Keep row previews and Extras trailers inside BINGIE's embedded video window instead of opening fullscreen.
+
+BINGIE Lite 2.3.0
+
+- Moved POV Lite browsing, metadata, search, source selection, playback, watched-state, Real-Debrid, subtitles, and service features into BINGIE.
+- Added an internal trailer resolver so trailer playback no longer requires the YouTube add-on.
+- Bundled the pure-Python networking and AES libraries used by the media runtime.
+- Added safe one-time migration of existing POV Lite Real-Debrid settings and watched history.
+- Added Real-Debrid authorization to BINGIE's settings screen.

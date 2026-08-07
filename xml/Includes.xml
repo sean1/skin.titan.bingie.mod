@@ -88,9 +88,9 @@
 	<expression name="IsMenuEntryActive">$EXP[MenuActiveHome] | $EXP[MenuActiveTV] | $EXP[MenuActiveMovies] | $EXP[MenuActiveNew] | $EXP[MenuActiveGenres]</expression>
 	<expression name="IsKnownMenuEntryPath">$EXP[MenuPathHome] | $EXP[MenuPathTV] | $EXP[MenuPathMovies] | $EXP[MenuPathNew] | $EXP[MenuPathGenres]</expression>
 	<expression name="IsPovLiteNavigationMenu">
-		String.IsEqual(Container.FolderPath,plugin://plugin.video.pov.lite/) |
-		String.IsEqual(Container.FolderPath,plugin://plugin.video.pov.lite) |
-		[String.Contains(Container.FolderPath,plugin://plugin.video.pov.lite/) +
+		String.IsEqual(Container.FolderPath,plugin://skin.titan.bingie.lite/) |
+		String.IsEqual(Container.FolderPath,plugin://skin.titan.bingie.lite) |
+		[String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) +
 		[String.Contains(Container.FolderPath,mode=navigator.) | String.Contains(Container.FolderPath,mode=search_history) | String.Contains(Container.FolderPath,mode=discover.)]]
 	</expression>
 	<expression name="IsMovieOrTvShowListItem">
@@ -98,9 +98,9 @@
 		String.IsEqual(ListItem.DBType,tvshow) | String.IsEqual(ListItem.Property(DBTYPE),tvshow)
 	</expression>
 	<expression name="IsPovLiteListItem">
-		String.IsEqual(ListItem.Property(PovLiteItem),true) | String.StartsWith(ListItem.Path,plugin://plugin.video.pov.lite/) |
-		String.StartsWith(ListItem.FileNameAndPath,plugin://plugin.video.pov.lite/) | String.StartsWith(ListItem.FolderPath,plugin://plugin.video.pov.lite/) |
-		String.StartsWith(Container.FolderPath,plugin://plugin.video.pov.lite/)
+		String.IsEqual(ListItem.Property(PovLiteItem),true) | String.StartsWith(ListItem.Path,plugin://skin.titan.bingie.lite/) |
+		String.StartsWith(ListItem.FileNameAndPath,plugin://skin.titan.bingie.lite/) | String.StartsWith(ListItem.FolderPath,plugin://skin.titan.bingie.lite/) |
+		String.StartsWith(Container.FolderPath,plugin://skin.titan.bingie.lite/)
 	</expression>
 	<expression name="IsPovLiteInfoListItem">
 		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +

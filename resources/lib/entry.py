@@ -1,0 +1,681 @@
+from threading import Thread
+from datetime import datetime
+from time import monotonic
+from collections import OrderedDict
+from modules import kodi_utils, settings
+from modules.prefetch import NextPagePrefetch
+
+logger, path_exists, translate_path = kodi_utils.logger, kodi_utils.path_exists, kodi_utils.translate_path
+monitor = kodi_utils.monitor
+get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils.set_property, kodi_utils.clear_property
+get_setting, set_setting, make_settings_dict = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.make_settings_dict
+
+TRAILER_PREVIEW_PROPERTY = 'BingieTrailerPreview'
+TRAILER_PREVIEW_CANCEL_PROPERTY = 'BingieTrailerPreviewCancel'
+TRAILER_PREVIEW_REQUEST_PROPERTY = 'BingieTrailerPreviewRequest'
+TRAILER_RESOLVED_PROPERTY = 'BingieTrailerResolved'
+TRAILER_PREVIEW_DELAY = 2.0
+TRAILER_PREVIEW_STOP_DELAY = 0.5
+TRAILER_PREVIEW_STOP_TIMEOUT = 10.0
+TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
+TRAILER_PREVIEW_ACTIVE_POLL = 0.25
+TRAILER_PREVIEW_IDLE_POLL = 1.0
+TRAILER_PREVIEW_CACHE_LIMIT = 128
+TRAILER_PREVIEW_WINDOWS = ('Home', 'Videos', '1110', '1111', '1112', '1122', '1123', 'DialogVideoInfo.xml')
+FOCUSED_METADATA_DELAY = 0.25
+FOCUSED_METADATA_RETRY_DELAY = 2.0
+FOCUSED_METADATA_IDENTITY_PROPERTY = 'PovFocusedMetaIdentity'
+FOCUSED_METADATA_FIELDS = (
+	('PovFocusedMainActors', 'main_actors'), ('PovFocusedGenre', 'genre'), ('PovFocusedClearLogo', 'clearlogo'), ('PovFocusedMpaa', 'mpaa'),
+	('PovFocusedDuration', 'duration'), ('PovFocusedSeasons', 'seasons'), ('PovFocusedYearRange', 'year_range')
+)
+DATABASE_MAINTENANCE_DELAY = 60.0
+DATABASE_MAINTENANCE_RETRY = 5.0
+DATABASE_MAINTENANCE_IDLE_SECONDS = 10
+
+POV_ROUTES = {
+	'play_trailer': lambda p: _import('modules.trailers', 'play')(p),
+	'smart_play_media': lambda p: _import('modules.episode_tools', 'SmartPlay')(p),
+	'play_media': lambda p: _import('modules.sources', 'Sources').factory(p),
+	'media_play': lambda p: _import('modules.debrid', 'play_from_cloud')(p),
+
+	'options_menu_choice': lambda p: _import('modules.dialogs', 'options_menu')(p),
+	'extras_menu_choice': lambda p: _import('modules.dialogs', 'extras_menu')(p),
+	'show_media_info': lambda p: _import('modules.dialogs', 'show_media_info')(p),
+	'hydrate_media_info': lambda p: _import('modules.dialogs', 'hydrate_media_info')(p),
+	'play_from_info': lambda p: _import('modules.dialogs', 'play_from_info')(p),
+	'pov_page_back': lambda p: _import('modules.dialogs', 'pov_page_back')(p),
+	'random_choice': lambda p: _import('modules.dialogs', 'random_choice')(p['mode'], p),
+
+	'build_movie_list': lambda p: _import('menus.movies', 'Menu')(p).run(),
+	'build_tvshow_list': lambda p: _import('menus.tvshows', 'Menu')(p).run(),
+	'build_season_list': lambda p: _import('menus.seasons', 'Seasons')(p).run(),
+	'build_episode_list': lambda p: _import('menus.seasons', 'Episodes')(p).run(),
+	'build_in_progress_episode': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_next_episode': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_anime_calendar': lambda p: _import('menus.episodes', 'Menu')(p).run(),
+	'build_navigate_to_page': lambda p: _import('modules.dialogs', 'build_navigate_to_page')(p),
+	'build_popular_people': lambda p: _import('menus.people', 'popular_people')(),
+	'build_person_credits': lambda p: _import('menus.people', 'build_person_credits')(p),
+	'build_media_cast': lambda p: _import('menus.people', 'build_media_cast')(p),
+
+	'clean_settings': lambda p: _import('modules.kodi_utils', 'clean_settings')(),
+	'clean_settings_window_properties': lambda p: _import('modules.kodi_utils', 'clean_settings_window_properties')(),
+	'clear_all_cache': lambda p: _import('modules.cache', 'clear_all_cache')(),
+	'clear_cache': lambda p: _import('modules.cache', 'clear_cache')(p.get('cache')),
+	'clean_databases': lambda p: _import('modules.cache', 'clean_databases')(),
+	'clear_streams': lambda p: _import('modules.tuneup', 'clear_streams')(),
+	'clear_thumbnails': lambda p: _import('modules.tuneup', 'clear_thumbnails')(),
+
+	'search_history': lambda p: _import('menus.history', 'search_history')(p),
+	'get_search_term': lambda p: _import('menus.history', 'get_search_term')(p),
+	'person_search': lambda p: _import('menus.people', 'person_search')(p['query']),
+	'show_person_info': lambda p: _import('menus.people', 'show_person_info')(p),
+	'hydrate_person_info': lambda p: _import('menus.people', 'hydrate_person_info')(p),
+	'person_data_dialog': lambda p: _import('menus.people', 'person_data_dialog')(p),
+
+	'mark_as_watched_unwatched_episode': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_episode')(p),
+	'mark_as_watched_unwatched_season': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_season')(p),
+	'mark_as_watched_unwatched_tvshow': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_tvshow')(p),
+	'mark_as_watched_unwatched_movie': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_movie')(p),
+	'watched_unwatched_erase_bookmark': lambda p: _import('caches.watched_cache', 'erase_bookmark')(
+		p.get('mediatype'), p.get('tmdb_id'), p.get('season', ''), p.get('episode', ''), p.get('refresh', 'false')
+	),
+
+	'choose_view': lambda p: _import('modules.kodi_utils', 'choose_view')(p['view_type'], p.get('content', '')),
+	'set_view': lambda p: _import('modules.kodi_utils', 'set_view')(p['view_type']),
+	'clear_view': lambda p: _import('modules.kodi_utils', 'clear_view')(p['view_type']),
+	'show_text': lambda p: _import('modules.kodi_utils', 'show_text')(
+		p.get('heading'), p.get('text'), p.get('file'), p.get('font_size', 'small'), p.get('kodi_log', 'false') == 'true'
+	),
+
+	'toggle_provider': lambda p: _import('modules.utils', 'toggle_provider')(),
+	'upload_logfile': lambda p: _import('modules.kodi_utils', 'upload_logfile')(),
+	'myservices': lambda p: _import('modules.myservices', 'authorize')(),
+	'refer_link': lambda p: _import('modules.myservices', 'refer_link')(p['query']),
+}
+
+def _import(module_path, attr_name):
+	mod = __import__(module_path, fromlist=[attr_name])
+	return getattr(mod, attr_name)
+
+def _run_class_method(cls_module, cls_name, params, mode):
+	cls = _import(cls_module, cls_name)
+	method_name = mode.split('.')[-1]
+	method = getattr(cls(params), method_name, None)
+	if callable(method): return method()
+
+def _run_debrid_method(cls_module, cls_name, params, mode):
+	cls = _import(cls_module, cls_name)
+	method_name = mode.split('.')[-1]
+	method = getattr(cls(), method_name, None)
+	if callable(method): return method(params)
+
+def _run_dynamic_func(module_path, mode, params):
+	from modules.utils import manual_function_import
+	func_name = mode.split('.')[-1]
+	function = manual_function_import(module_path, func_name)
+	return function(params)
+
+def routing(sys_obj):
+	params = kodi_utils.parsed_query(sys_obj.argv[2])
+	if params.get('action') in ('search', 'manualsearch', 'download'): return _import('subtitle_service', 'run')(sys_obj)
+	mode = params.get('mode', 'navigator.main')
+
+	if mode in POV_ROUTES: return POV_ROUTES[mode](params)
+
+	if mode.startswith('navigator.'): return _run_class_method('menus.navigator', 'Navigator', params, mode)
+
+	if mode.startswith('discover.'): return _run_class_method('menus.discover', 'Discover', params, mode)
+
+	if mode.startswith('menu_editor.'): return _run_class_method('modules.menu_editor', 'MenuEditor', params, mode)
+
+	if '_image' in mode: return _import('menus.images', 'Images')().run(params)
+
+	if mode.startswith('build_'):
+		if mode.startswith('build_trakt_'): return _run_dynamic_func('menus.trakt', mode, params)
+
+	if mode.startswith('real_debrid.'): return _run_debrid_method('menus.real_debrid', 'Menu', params, 'run')
+
+class Router:
+	def run(self, sys):
+		return routing(sys)
+
+class TrailerPreview:
+	def __init__(self):
+		self.identity = ''
+		self.focused_at = 0.0
+		self.played = False
+		self.active = False
+		self.playback_started = False
+		self.launched_at = 0.0
+		self.trailer = ''
+		self.cancelled = False
+		self.suppressed_identity = ''
+		self.manual_identity = ''
+		self.pending_stop_trailer = ''
+		self.pending_stop_at = 0.0
+		self.pending_stop_deadline = 0.0
+		self.pending_stop_requested = False
+		self.fullscreen_exit_at = 0.0
+		self.resolved_trailers = OrderedDict()
+		self.resolved_focused_metadata = OrderedDict()
+		self.focused_metadata_retries = OrderedDict()
+		self.lookup_thread = None
+		self.lookup_result = None
+		self.manifest_server = None
+		clear_property(TRAILER_PREVIEW_PROPERTY)
+		clear_property(TRAILER_PREVIEW_CANCEL_PROPERTY)
+		clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
+		clear_property(TRAILER_RESOLVED_PROPERTY)
+		clear_property('PovInfoTransition')
+		self._clear_focused_metadata()
+		try:
+			from modules.trailers import start_manifest_server
+			self.manifest_server = start_manifest_server()
+		except Exception as exc: logger('BINGIE trailer manifest service', str(exc))
+
+	def close(self):
+		self.manual_identity = ''
+		self._clear_focused_metadata()
+		clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
+		if self.active: self._defer_preview_stop(monotonic())
+		close_deadline = monotonic() + TRAILER_PREVIEW_CLOSE_TIMEOUT
+		while self.pending_stop_trailer and monotonic() < close_deadline:
+			self._stop_pending_preview(monotonic(), force=True)
+			if self.pending_stop_trailer: kodi_utils.sleep(50)
+		self._clear_pending_stop()
+		from modules.trailers import stop_manifest_server
+		stop_manifest_server(self.manifest_server)
+
+	def pause(self):
+		self._clear_focused_metadata()
+		self._stop_pending_preview(monotonic(), force=True)
+		if not self.active: return bool(self.pending_stop_trailer)
+		self.cancelled = True
+		self._stop_preview()
+		return self.active or bool(self.pending_stop_trailer)
+
+	def tick(self):
+		now = monotonic()
+		self._consume_lookup_result()
+		cancel_request = get_property(TRAILER_PREVIEW_CANCEL_PROPERTY)
+		if cancel_request:
+			clear_property(TRAILER_PREVIEW_CANCEL_PROPERTY)
+			self.manual_identity = ''
+			if cancel_request != 'true':
+				self.suppressed_identity = cancel_request
+				if self.identity == cancel_request: self.played = True
+			if self.active:
+				self.cancelled = True
+				self._stop_preview()
+			self._stop_pending_preview(now, force=True)
+			return self.active or bool(self.pending_stop_trailer)
+		self._stop_pending_preview(now)
+		if self._restore_preview_window(now): return True
+		candidate = self._candidate()
+		manual_required = bool(candidate and candidate[4])
+		if get_property(TRAILER_PREVIEW_REQUEST_PROPERTY):
+			clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
+			if manual_required and (not self.active or candidate[0] != self.identity):
+				self.manual_identity = candidate[0]
+				self.played = False
+		manual_requested = bool(manual_required and self.manual_identity == candidate[0])
+		if self.pending_stop_trailer:
+			if not candidate:
+				self.manual_identity = ''
+				self._track_candidate(None, now)
+			elif candidate[0] != self.identity: self._track_candidate(candidate, now)
+			return True
+		if self.active:
+			if self.cancelled or not self._preview_window_active():
+				self._stop_preview()
+				self._track_candidate(candidate, now)
+				return self.active or bool(candidate) or bool(self.pending_stop_trailer)
+			if self._preview_navigation_away() or candidate and candidate[0] != self.identity:
+				self._defer_preview_stop(now)
+				self._track_candidate(candidate, now)
+				return bool(candidate) or bool(self.pending_stop_trailer)
+			if kodi_utils.get_visibility('Player.HasVideo'):
+				owns_preview = self._owns_preview()
+				if owns_preview is None and now - self.launched_at < 10.0: return True
+				if not owns_preview:
+					self._finish_preview()
+					return False
+				self.playback_started = True
+			elif not self.playback_started and now - self.launched_at < 10.0: return True
+			else:
+				if kodi_utils.get_visibility('Player.HasMedia'):
+					if self._owns_preview() is not False: kodi_utils.execute_builtin('PlayerControl(Stop)')
+				elif not self.playback_started: kodi_utils.execute_builtin('PlayerControl(Stop)')
+				self._finish_preview()
+				return False
+			return True
+		if not candidate:
+			self.manual_identity = ''
+			self._track_candidate(None, now)
+			return bool(self.pending_stop_trailer)
+		if candidate[0] != self.identity:
+			self._track_candidate(candidate, now)
+			if not manual_requested: return True
+		if candidate[5] and now - self.focused_at >= FOCUSED_METADATA_DELAY:
+			self._ensure_focused_metadata(candidate[0], candidate[2], candidate[3])
+		if manual_required and not manual_requested: return bool(self.pending_stop_trailer)
+		if self.played: return bool(self.pending_stop_trailer)
+		if kodi_utils.get_visibility('Player.HasMedia'):
+			if manual_required and not self.pending_stop_trailer: self.manual_identity = ''
+			return bool(self.pending_stop_trailer)
+		if not manual_required and now - self.focused_at < TRAILER_PREVIEW_DELAY: return True
+		trailer = candidate[1]
+		if not trailer:
+			found, trailer = self._cached_trailer(candidate[0])
+			if not found:
+				self._start_trailer_lookup(candidate[0], candidate[2], candidate[3])
+				return True
+			if not trailer:
+				self.played = True
+				self.manual_identity = ''
+				return False
+		self._start_preview(trailer, now)
+		return True
+
+	def _candidate(self):
+		if not self._preview_context_active(): return None
+		if kodi_utils.get_visibility('Window.IsActive(1123)'):
+			media_type = get_property('PovInfoType').strip().lower()
+			item_id = get_property('PovInfoTmdb').strip()
+			trailer = get_property('PovInfoTrailer').strip()
+			if media_type not in ('movie', 'tvshow') or not item_id: return None
+			identity = '|'.join(('info', media_type, item_id))
+			return identity, trailer, media_type, item_id, True, False
+		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)'):
+			media_type = kodi_utils.get_infolabel('Window.Property(PovInfoType)').strip().lower()
+			item_id = kodi_utils.get_infolabel('Window.Property(PovInfoTmdb)').strip()
+			trailer = kodi_utils.get_infolabel('ListItem.Trailer').strip()
+			if media_type not in ('movie', 'tvshow') or not item_id: return None
+			identity = '|'.join(('info', media_type, item_id))
+			return identity, trailer, media_type, item_id, False, False
+		if kodi_utils.get_visibility('Window.IsActive(1122)'):
+			media_type = self._item_label('Property(PovCreditType)').lower() or self._item_label('Property(mediatype)').lower() or self._item_label('DBType').lower()
+			item_id = self._item_label('UniqueID(tmdb)') or self._item_label('Property(tmdb_id)')
+			label = self._item_label('Label')
+			if media_type not in ('movie', 'tvshow') or not item_id or not label: return None
+			identity = '|'.join(('actor', media_type, item_id))
+			return identity, '', media_type, item_id, False, False
+		media_type = self._item_label('DBType').lower()
+		trailer = self._item_label('Trailer')
+		is_summary = self._item_label('Property(PovLiteSummary)').lower() == 'true'
+		if media_type not in ('movie', 'tvshow') or not trailer and not is_summary: return None
+		label = self._item_label('Label')
+		if not label or label.lower().startswith('next page'): return None
+		item_id = self._item_label('UniqueID(tmdb)') or self._item_label('FileNameAndPath')
+		if is_summary and not item_id: return None
+		identity = self._item_label('Property(PovFocusIdentity)') if is_summary else ''
+		if not identity: identity = '|'.join(('listing', media_type, item_id)) if is_summary else '|'.join((media_type, item_id or label, trailer))
+		return identity, trailer, media_type, item_id, False, is_summary
+
+	def _preview_context_active(self):
+		if get_property('PovInfoTransition'): return False
+		if not self._preview_window_active(): return False
+		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1123)'): return True
+		if kodi_utils.get_visibility('Window.IsActive(1122)'):
+			return kodi_utils.get_visibility('Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)')
+		if kodi_utils.get_visibility('Window.IsActive(Videos)'):
+			return kodi_utils.get_visibility('Control.HasFocus(523)')
+		return kodi_utils.get_visibility('ControlGroup(77777).HasFocus()')
+
+	def _preview_navigation_away(self):
+		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1123)'): return False
+		if kodi_utils.get_visibility('Window.IsActive(1122)'):
+			return False
+		if kodi_utils.get_visibility('Window.IsActive(Videos)'):
+			return kodi_utils.get_visibility('ControlGroup(9000).HasFocus() | Control.HasFocus(9000)')
+		return kodi_utils.get_visibility('ControlGroup(9001).HasFocus() | Control.HasFocus(900) | Control.HasFocus(4444)')
+
+	def _preview_window_active(self):
+		if kodi_utils.xbmc.getSkinDir() != 'skin.titan.bingie.lite': return False
+		if not any(kodi_utils.get_visibility('Window.IsActive(%s)' % window) for window in TRAILER_PREVIEW_WINDOWS): return False
+		return not kodi_utils.get_visibility('Window.IsActive(VideoOSD)')
+
+	def _item_label(self, label):
+		return kodi_utils.get_infolabel('Container.ListItem.%s' % label).strip() or kodi_utils.get_infolabel('ListItem.%s' % label).strip()
+
+	def _track_candidate(self, candidate, now):
+		identity = candidate[0] if candidate else ''
+		if identity != self.identity: self._clear_focused_metadata()
+		if self.suppressed_identity and identity != self.suppressed_identity: self.suppressed_identity = ''
+		if self.manual_identity and identity != self.manual_identity: self.manual_identity = ''
+		self.identity = identity
+		self.focused_at = now
+		self.played = bool(identity and identity == self.suppressed_identity)
+
+	def _start_trailer_lookup(self, identity, media_type, tmdb_id):
+		if self.lookup_thread and self.lookup_thread.is_alive(): return
+		self.lookup_thread = Thread(target=self._lookup_media, args=(identity, media_type, tmdb_id, False), daemon=True)
+		self.lookup_thread.start()
+
+	def _start_focused_metadata_lookup(self, identity, media_type, tmdb_id):
+		if self.lookup_thread and self.lookup_thread.is_alive(): return
+		self.lookup_thread = Thread(target=self._lookup_media, args=(identity, media_type, tmdb_id, True), daemon=True)
+		self.lookup_thread.start()
+
+	def _lookup_media(self, identity, media_type, tmdb_id, focused):
+		result = None
+		try:
+			if focused:
+				from modules.dialogs import get_focused_media_info
+				result = get_focused_media_info(media_type, tmdb_id)
+			else:
+				from indexers.tmdb_api import tmdb_media_videos
+				from indexers.metadata import select_trailer
+				videos = tmdb_media_videos(media_type, tmdb_id)
+				if videos is not None: result = select_trailer(videos.get('results')) or ''
+		except Exception as exc: logger('BINGIE Lite focused metadata lookup' if focused else 'BINGIE Lite trailer lookup', str(exc))
+		self.lookup_result = identity, focused, result
+
+	def _consume_lookup_result(self):
+		if self.lookup_result is None: return
+		identity, focused, result = self.lookup_result
+		self.lookup_result = None
+		if focused:
+			if result is None:
+				self.focused_metadata_retries.pop(identity, None)
+				self.focused_metadata_retries[identity] = monotonic() + FOCUSED_METADATA_RETRY_DELAY
+				if len(self.focused_metadata_retries) > TRAILER_PREVIEW_CACHE_LIMIT: self.focused_metadata_retries.popitem(last=False)
+				return
+			metadata = result
+			self.focused_metadata_retries.pop(identity, None)
+			self.resolved_focused_metadata.pop(identity, None)
+			self.resolved_focused_metadata[identity] = metadata
+			if len(self.resolved_focused_metadata) > TRAILER_PREVIEW_CACHE_LIMIT: self.resolved_focused_metadata.popitem(last=False)
+			self._cache_trailer(identity, metadata.get('trailer') or '')
+			if self.identity == identity: self._publish_focused_metadata(identity, metadata)
+			return
+		trailer = result
+		if trailer is None:
+			if self.identity == identity: self.played = True
+			if self.manual_identity == identity: self.manual_identity = ''
+			return
+		self._cache_trailer(identity, trailer)
+
+	def _cache_trailer(self, identity, trailer):
+		self.resolved_trailers.pop(identity, None)
+		self.resolved_trailers[identity] = trailer
+		if len(self.resolved_trailers) > TRAILER_PREVIEW_CACHE_LIMIT: self.resolved_trailers.popitem(last=False)
+
+	def _ensure_focused_metadata(self, identity, media_type, tmdb_id):
+		if get_property(FOCUSED_METADATA_IDENTITY_PROPERTY) == identity: return
+		if monotonic() < self.focused_metadata_retries.get(identity, 0.0): return
+		self.focused_metadata_retries.pop(identity, None)
+		try: metadata = self.resolved_focused_metadata.pop(identity)
+		except KeyError:
+			self._start_focused_metadata_lookup(identity, media_type, tmdb_id)
+			return
+		self.resolved_focused_metadata[identity] = metadata
+		self._publish_focused_metadata(identity, metadata)
+
+	def _publish_focused_metadata(self, identity, metadata):
+		if self.identity != identity: return
+		clear_property(FOCUSED_METADATA_IDENTITY_PROPERTY)
+		for prop, key in FOCUSED_METADATA_FIELDS:
+			value = metadata.get(key) or ''
+			set_property(prop, str(value)) if value else clear_property(prop)
+		set_property(FOCUSED_METADATA_IDENTITY_PROPERTY, identity)
+
+	def _clear_focused_metadata(self):
+		clear_property(FOCUSED_METADATA_IDENTITY_PROPERTY)
+		for prop, _ in FOCUSED_METADATA_FIELDS: clear_property(prop)
+
+	def _cached_trailer(self, identity):
+		try: trailer = self.resolved_trailers.pop(identity)
+		except KeyError: return False, ''
+		self.resolved_trailers[identity] = trailer
+		return True, trailer
+
+	def _start_preview(self, trailer, now):
+		identity = self.identity
+		try:
+			from modules.trailers import prepare
+			playback_url, listitem = prepare(trailer)
+		except Exception as exc:
+			logger('BINGIE trailer playback', str(exc))
+			kodi_utils.notification('Trailer unavailable', 2500)
+			self.manual_identity = ''
+			self.played = True
+			return
+		candidate = self._candidate()
+		if not candidate or candidate[0] != identity:
+			self._track_candidate(candidate, monotonic())
+			return
+		now = monotonic()
+		self.manual_identity = ''
+		self.active = True
+		self.played = True
+		self.playback_started = False
+		self.launched_at = now
+		self.trailer = playback_url
+		self.cancelled = False
+		self.fullscreen_exit_at = 0.0
+		clear_property(TRAILER_RESOLVED_PROPERTY)
+		set_property(TRAILER_PREVIEW_PROPERTY, 'true')
+		logger('BINGIE Lite', 'Starting BINGIE row trailer preview')
+		if listitem is None: kodi_utils.player.play(playback_url, windowed=True)
+		else: kodi_utils.player.play(playback_url, listitem, windowed=True)
+
+	def _restore_preview_window(self, now):
+		if not self.active or not kodi_utils.get_visibility('Window.IsActive(fullscreenvideo)'):
+			self.fullscreen_exit_at = 0.0
+			return False
+		if now >= self.fullscreen_exit_at:
+			logger('BINGIE Lite', 'Returning trailer playback to the embedded preview window')
+			kodi_utils.execute_builtin('Action(FullScreen)')
+			self.fullscreen_exit_at = now + 1.0
+		return True
+
+	def _defer_preview_stop(self, now):
+		if not self.active: return
+		trailer = self.trailer
+		self._finish_preview()
+		if not trailer: return
+		self.pending_stop_trailer = trailer
+		self.pending_stop_at = now + TRAILER_PREVIEW_STOP_DELAY
+		self.pending_stop_deadline = now + TRAILER_PREVIEW_STOP_TIMEOUT
+		self.pending_stop_requested = False
+
+	def _stop_pending_preview(self, now, force=False):
+		trailer = self.pending_stop_trailer
+		if not trailer or not force and now < self.pending_stop_at: return bool(trailer)
+		owns_preview = self._owns_preview(trailer)
+		if owns_preview is False:
+			self._clear_pending_stop()
+			return False
+		if owns_preview and not self.pending_stop_requested:
+			logger('BINGIE Lite', 'Stopping deferred BINGIE row trailer preview')
+			kodi_utils.execute_builtin('PlayerControl(Stop)')
+			self.pending_stop_requested = True
+		if self.pending_stop_requested and not kodi_utils.get_visibility('Player.HasMedia'):
+			self._clear_pending_stop()
+			return False
+		if now >= self.pending_stop_deadline:
+			self._clear_pending_stop()
+			return False
+		return True
+
+	def _clear_pending_stop(self):
+		self.pending_stop_trailer = ''
+		self.pending_stop_at = 0.0
+		self.pending_stop_deadline = 0.0
+		self.pending_stop_requested = False
+		clear_property(TRAILER_RESOLVED_PROPERTY)
+
+	def _stop_preview(self):
+		if self.active and kodi_utils.get_visibility('Player.HasMedia'):
+			owns_preview = self._owns_preview()
+			if owns_preview is None and not self.playback_started and monotonic() - self.launched_at < 10.0:
+				self.cancelled = True
+				clear_property(TRAILER_PREVIEW_PROPERTY)
+				return
+			if owns_preview: kodi_utils.execute_builtin('PlayerControl(Stop)')
+			self._finish_preview()
+		elif self.active and not self.playback_started and monotonic() - self.launched_at < 10.0:
+			self.cancelled = True
+			kodi_utils.execute_builtin('PlayerControl(Stop)')
+			clear_property(TRAILER_PREVIEW_PROPERTY)
+		else:
+			if self.active and not self.playback_started: kodi_utils.execute_builtin('PlayerControl(Stop)')
+			self._finish_preview()
+
+	def _owns_preview(self, trailer=None):
+		playing_file = kodi_utils.get_infolabel('Player.FilenameAndPath').strip()
+		if not playing_file: return None
+		return playing_file in ((trailer or self.trailer), get_property(TRAILER_RESOLVED_PROPERTY))
+
+	def _finish_preview(self):
+		if self.active: logger('BINGIE Lite', 'Stopping BINGIE row trailer preview')
+		self.active = False
+		self.playback_started = False
+		self.trailer = ''
+		self.cancelled = False
+		self.fullscreen_exit_at = 0.0
+		clear_property(TRAILER_PREVIEW_PROPERTY)
+
+class POVMonitor(kodi_utils.xbmc_monitor):
+	def __enter__(self):
+		kodi_utils.migrate_legacy_profile()
+		initializeDatabases()
+		checkSettingsFile()
+		self.threads = (Thread(target=premAccntNotification), Thread(target=self._deferred_database_maintenance))
+		self.trailer_preview = TrailerPreview()
+		self.next_page_prefetch = NextPagePrefetch()
+		return self
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		if hasattr(self, 'trailer_preview'): self.trailer_preview.close()
+		if hasattr(self, 'next_page_prefetch'): self.next_page_prefetch.cancel()
+		for i in getattr(self, 'threads', ()): i.join()
+
+	def run(self):
+		with self:
+			try: metadataCachePrefetch()
+			except: pass
+			try: viewsSetWindowProperties()
+			except: pass
+			for i in getattr(self, 'threads', ()): i.start()
+			try: autoRun()
+			except: pass
+			try: clearSubs()
+			except: pass
+			poll_interval = TRAILER_PREVIEW_IDLE_POLL
+			while not self.waitForAbort(poll_interval):
+				if get_property('pov_lite_pause_services'):
+					self.next_page_prefetch.cancel()
+					poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.pause() else TRAILER_PREVIEW_IDLE_POLL
+					continue
+				active = self.next_page_prefetch.tick()
+				poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.tick() or active else TRAILER_PREVIEW_IDLE_POLL
+
+	def _deferred_database_maintenance(self):
+		if self.waitForAbort(DATABASE_MAINTENANCE_DELAY): return
+		while not self._database_maintenance_ready():
+			if self.waitForAbort(DATABASE_MAINTENANCE_RETRY): return
+		try: databaseMaintenance()
+		except: pass
+
+	def _database_maintenance_ready(self):
+		if kodi_utils.get_visibility('Container.IsUpdating'): return False
+		if kodi_utils.get_visibility('Window.IsVisible(busydialog)'): return False
+		if kodi_utils.get_visibility('Window.IsVisible(busydialognocancel)'): return False
+		if kodi_utils.get_visibility('Player.HasMedia'): return False
+		return kodi_utils.get_visibility('System.IdleTime(%d)' % DATABASE_MAINTENANCE_IDLE_SECONDS)
+
+	def ver(*args):
+		return f"{kodi_utils.get_addoninfo('id')}-{kodi_utils.get_addoninfo('version')}"
+
+	def onSettingsChanged(self):
+		clear_property('pov_lite_settings')
+		kodi_utils.sleep(50)
+		make_settings_dict()
+		set_property('pov_lite_kodi_menu_cache', get_setting('kodi_menu_cache'))
+
+	def onScreensaverActivated(self):
+		set_property('pov_lite_pause_services', 'true')
+
+	def onScreensaverDeactivated(self):
+		clear_property('pov_lite_pause_services')
+
+	def onNotification(self, sender, method, data):
+		if method == 'System.OnSleep': set_property('pov_lite_pause_services', 'true')
+		elif method == 'System.OnWake': clear_property('pov_lite_pause_services')
+
+def initializeDatabases():
+	from modules.cache import check_databases
+	logger('BINGIE Lite', 'InitializeDatabases Service Starting')
+	check_databases()
+	return logger('BINGIE Lite', 'InitializeDatabases Service Finished')
+
+def checkSettingsFile():
+	logger('BINGIE Lite', 'CheckSettingsFile Service Starting')
+	profile_dir = kodi_utils.get_addoninfo('profile')
+	profile_xml = profile_dir + 'settings.xml'
+	if not path_exists(profile_xml):
+		kodi_utils.make_directorys(profile_dir)
+	kodi_utils.clean_settings(silent=True)
+	from modules.cache import purge_history_data, purge_removed_list_data, purge_removed_personal_trakt_data, purge_removed_service_data
+	purge_removed_service_data()
+	purge_removed_list_data()
+	purge_removed_personal_trakt_data()
+	purge_history_data()
+	clear_property('pov_lite_settings')
+	make_settings_dict()
+	set_property('pov_lite_kodi_menu_cache', get_setting('kodi_menu_cache'))
+	return logger('BINGIE Lite', 'CheckSettingsFile Service Finished')
+
+def metadataCachePrefetch():
+	from caches.meta_cache import MetaCache
+	MetaCache().prefetch()
+
+def databaseMaintenance():
+	current_time = int(datetime.now().timestamp())
+	next_clean = current_time + 259200 # 3 days
+	due_clean = int(get_setting('database.maintenance.due', '0'))
+	if current_time < due_clean: return
+	logger('BINGIE Lite', 'Database Maintenance Service Starting')
+	kodi_utils.clean_settings(silent=True)
+	from modules.cache import clean_databases
+	clean_databases(current_time, database_check=False, silent=True)
+	set_setting('database.maintenance.due', str(next_clean))
+	return logger('BINGIE Lite', 'Database Maintenance Service Finished')
+
+def viewsSetWindowProperties():
+	logger('BINGIE Lite', 'ViewsSetWindowProperties Service Starting')
+	kodi_utils.set_view_properties()
+	return logger('BINGIE Lite', 'ViewsSetWindowProperties Service Finished')
+
+def autoRun():
+	logger('BINGIE Lite', 'AutoRun Service Starting')
+	if settings.auto_start_pov(): kodi_utils.execute_builtin('ActivateWindow(Videos,%s,return)' % kodi_utils.build_url({'mode': 'navigator.main'}))
+	return logger('BINGIE Lite', 'AutoRun Service Finished')
+
+def clearSubs():
+	logger('BINGIE Lite', 'Clear Subtitles Service Starting')
+	subtitle_path = 'special://temp/'
+	for i in kodi_utils.list_dirs(subtitle_path)[1]:
+		if i.startswith('POVLiteSubs_'):
+			kodi_utils.delete_file(subtitle_path + i)
+	return logger('BINGIE Lite', 'Clear Subtitles Service Finished')
+
+def premAccntNotification():
+	logger('BINGIE Lite', 'Debrid Account Expiry Notification Service Starting')
+	from importlib import import_module
+	for user, expires, module, cls in (
+		('rd.username', 'rd.expires', 'real_debrid_api', 'RealDebridAPI'),
+	):
+		try:
+			if not get_setting(user): continue
+			if (limit := int(get_setting(expires, '7'))) < 1: continue
+			module = import_module('debrids.%s' % module)
+			days_remaining = getattr(module, cls)().days_remaining()
+			if days_remaining is None or days_remaining > limit: continue
+			kodi_utils.notification('%s expires in %s days' % (cls, days_remaining))
+		except: pass
+	return logger('BINGIE Lite', 'Debrid Account Expiry Notification Service Finished')

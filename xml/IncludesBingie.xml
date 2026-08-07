@@ -50,10 +50,10 @@
 
     <include name="ContainerShowInfoOnclick">
 		<onclick condition="$EXP[IsNextPageListItem]">ActivateWindow(Videos,$ESCINFO[ListItem.FileNameAndPath],return)</onclick>
-		<onclick condition="!$EXP[IsNextPageListItem] + $EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+		<onclick condition="!$EXP[IsNextPageListItem] + $EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 		<onclick condition="!$EXP[IsNextPageListItem] + !$EXP[IsMovieOrTvShowListItem]">Action(Info)</onclick>
 		<onclick condition="!$EXP[IsNextPageListItem] + $EXP[IsNativeInfoListItem]">Action(Info)</onclick>
-		<oninfo condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
+		<oninfo condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
     </include>
 
     <include name="CustomBingieWinProps">

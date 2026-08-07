@@ -92,10 +92,10 @@
 			<onleft>9000</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
-			<onclick condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+			<onclick condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 			<onclick condition="$EXP[IsNativeInfoListItem]">Action(Info)</onclick>
 			<onclick condition="String.IsEqual(ListItem.DBType,season) | String.IsEqual(ListItem.DBType,episode)">Action(Info)</onclick>
-			<oninfo condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://plugin.video.pov.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
+			<oninfo condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
 			<content target="videos">$INFO[Container.FolderPath]</content>
             <itemlayout height="193" width="333">
                 <control type="group">

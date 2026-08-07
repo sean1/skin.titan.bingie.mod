@@ -11,32 +11,32 @@
 			<property name="widget">pov-in-progress-movies</property>
 			<property name="widgetTarget">videos</property>
 			<property name="widgetType">movies</property>
-			<property name="widgetPath">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</property>
+			<property name="widgetPath">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</property>
 			<property name="widgetName">Continue Watching Movies</property>
 			<property name="widget.1">pov-in-progress-tv</property>
 			<property name="widgetTarget.1">videos</property>
 			<property name="widgetType.1">episodes</property>
-			<property name="widgetPath.1">plugin://plugin.video.pov.lite/?mode=build_in_progress_episode&amp;limit=21</property>
+			<property name="widgetPath.1">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21</property>
 			<property name="widgetName.1">Continue Watching TV</property>
 			<property name="widget.2">pov-trending-movies</property>
 			<property name="widgetTarget.2">videos</property>
 			<property name="widgetType.2">movies</property>
-			<property name="widgetPath.2">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10</property>
+			<property name="widgetPath.2">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10</property>
 			<property name="widgetName.2">Trending Movies</property>
 			<property name="widget.3">pov-trending-tv</property>
 			<property name="widgetTarget.3">videos</property>
 			<property name="widgetType.3">tvshows</property>
-			<property name="widgetPath.3">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</property>
+			<property name="widgetPath.3">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</property>
 			<property name="widgetName.3">Trending TV Shows</property>
 			<property name="widget.4">pov-popular-movies</property>
 			<property name="widgetTarget.4">videos</property>
 			<property name="widgetType.4">movies</property>
-			<property name="widgetPath.4">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</property>
+			<property name="widgetPath.4">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</property>
 			<property name="widgetName.4">Popular Movies</property>
 			<property name="widget.5">pov-popular-tv</property>
 			<property name="widgetTarget.5">videos</property>
 			<property name="widgetType.5">tvshows</property>
-			<property name="widgetPath.5">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</property>
+			<property name="widgetPath.5">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</property>
 			<property name="widgetName.5">Popular TV Shows</property>
 			<onclick>ActivateWindow(home,return)</onclick>
 			<property name="path">ActivateWindow(home,return)</property>
@@ -56,9 +56,9 @@
 			<thumb />
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.search,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.search,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=navigator.search</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.search,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.search,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.search</property>
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
 			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
 			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
@@ -142,12 +142,12 @@
 			<property name="id">$NUMBER[7]</property>
 			<label>Discover</label>
 			<label2>Discover</label2>
-			<icon>special://home/addons/plugin.video.pov.lite/resources/skins/Default/media/discover.png</icon>
+			<icon>special://home/addons/skin.titan.bingie.lite/resources/skins/Default/media/discover.png</icon>
 			<thumb />
 			<property name="labelID">discover</property>
 			<property name="defaultID">discover</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.discover_main,return)</onclick>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=navigator.discover_main</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.discover_main,return)</onclick>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.discover_main</property>
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
 			<property name="submenuVisibility">num-10000</property>
 			<property name="group">mainmenu</property>
@@ -164,9 +164,9 @@
 			<thumb />
 			<property name="labelID">all-tv-shows</property>
 			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.main&amp;action=TVShowList,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.main&amp;action=TVShowList,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=navigator.main&amp;action=TVShowList</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.main&amp;action=TVShowList,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.main&amp;action=TVShowList,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.main&amp;action=TVShowList</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -180,9 +180,9 @@
 			<thumb />
 			<property name="labelID">trending-tv-shows</property>
 			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -196,9 +196,9 @@
 			<thumb />
 			<property name="labelID">popular-tv-shows</property>
 			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -212,9 +212,9 @@
 			<thumb />
 			<property name="labelID">new-tv-shows</property>
 			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_premieres</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -228,9 +228,9 @@
 			<thumb />
 			<property name="labelID">tv-genres</property>
 			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=tvshow</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=tvshow</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -244,9 +244,9 @@
 			<thumb />
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=get_search_term&amp;mediatype=tv_show,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=get_search_term&amp;mediatype=tv_show,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=get_search_term&amp;mediatype=tv_show</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -260,9 +260,9 @@
 			<thumb />
 			<property name="labelID">all-movies</property>
 			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.main&amp;action=MovieList,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.main&amp;action=MovieList,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=navigator.main&amp;action=MovieList</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.main&amp;action=MovieList,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.main&amp;action=MovieList,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.main&amp;action=MovieList</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
@@ -276,9 +276,9 @@
 			<thumb />
 			<property name="labelID">trending-movies</property>
 			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
@@ -292,9 +292,9 @@
 			<thumb />
 			<property name="labelID">popular-movies</property>
 			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
@@ -308,9 +308,9 @@
 			<thumb />
 			<property name="labelID">new-releases</property>
 			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_latest_releases</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
@@ -324,9 +324,9 @@
 			<thumb />
 			<property name="labelID">movie-genres</property>
 			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=movie,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=movie</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
@@ -340,9 +340,9 @@
 			<thumb />
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
-			<onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=get_search_term&amp;mediatype=movie,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=get_search_term&amp;mediatype=movie,return)</property>
-			<property name="list">plugin://plugin.video.pov.lite/?mode=get_search_term&amp;mediatype=movie</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
@@ -520,19 +520,19 @@
 	</include>
 	<!-- An empty dynamic content path defers its provider job; container visibility alone does not. -->
 	<variable name="BingieHomeContinueMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),3)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),3)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeContinueTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),4)">plugin://plugin.video.pov.lite/?mode=build_in_progress_episode&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),4)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10</value>
 	</variable>
 	<variable name="BingieHomePopularMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</value>
 	</variable>
 	<variable name="BingieHomePopularTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://plugin.video.pov.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</value>
 	</variable>
 	<include name="StaticHomeWidgetRows">
 		<include content="widget_header_multi">
@@ -548,7 +548,7 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://plugin.video.pov.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10" />
+			<param name="widgetPath" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10" />
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />

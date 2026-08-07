@@ -124,6 +124,14 @@
                         <icon>special://skin/extras/media/backgrounds/settings_services.jpg</icon>
                         <thumb>special://skin/extras/media/backgrounds/services.png</thumb>
                     </item>
+                    <item id="15">
+                        <description>Real Debrid</description>
+                        <label>320213</label>
+                        <label2>320214</label2>
+                        <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=myservices)</onclick>
+                        <icon>special://skin/extras/media/backgrounds/settings_services.jpg</icon>
+                        <thumb>special://skin/extras/media/backgrounds/services.png</thumb>
+                    </item>
                     <item id="9">
                         <description>System</description>
                         <label>13000</label>

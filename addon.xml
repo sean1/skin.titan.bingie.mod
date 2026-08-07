@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.2.80" name="BINGIE Lite" provider-name="AchillesPunks, Matke">
+<addon id="skin.titan.bingie.lite" version="2.3.2" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
-		<import addon="plugin.video.pov.lite" version="6.08.57"/>
+		<import addon="xbmc.python" version="3.0.0"/>
 	</requires>
 	<extension point="xbmc.gui.skin" debugging="false">
 		<res width="1920" height="1080" aspect="16:9" default="true" folder="xml" />
 		<res width="1920" height="1200" aspect="16:10" default="false" folder="xml" />
 	</extension>
+	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
+		<provides>video</provides>
+	</extension>
+	<extension point="xbmc.subtitle.module" library="resources/lib/router.py" />
+	<extension point="xbmc.service" library="resources/lib/service.py" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en_GB">BINGIE Lite, a streamlined Netflix-style skin for Kodi Omega.</summary>
-		<description>BINGIE Lite provides a focused Movies and TV Shows experience for Kodi Omega.</description>
+		<description lang="en_GB">BINGIE Lite provides a focused Movies and TV Shows experience for Kodi Omega.</description>
 		<platform>all</platform>
-		<license>GPL v2.0</license>
+		<license>GPL-2.0, GPL-3.0, Apache-2.0, BSD-3-Clause, MIT, MPL-2.0</license>
 		<forum>https://forum.kodi.tv/showthread.php?tid=355993</forum>
 		<website>https://forum.kodi.tv/showthread.php?tid=355993</website>
 		<email></email>
@@ -33,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite[/B][CR]Based on Titan BINGIE MOD for Kodi Omega.
+			[B]BINGIE Lite 2.3.2[/B][CR]Open a 720p trailer stream directly on BINGIE's embedded preview surface.
 		</news>
 	</extension>
 </addon>

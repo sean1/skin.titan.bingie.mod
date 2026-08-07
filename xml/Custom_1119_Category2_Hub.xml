@@ -60,11 +60,11 @@
             <content>
                 <item id="1">
                     <label>Movie Genres</label>
-                    <onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
+                    <onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
                 </item>
                 <item id="2">
                     <label>TV Show Genres</label>
-                    <onclick>ActivateWindow(Videos,plugin://plugin.video.pov.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</onclick>
+                    <onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</onclick>
                 </item>
             </content>
         </control>

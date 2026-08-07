@@ -51,12 +51,19 @@ def prepare(url):
 	return commit_prepared(prepare_data(url))
 
 
-def prepare_data(url):
+def prepare_data(url, session=None):
 	parsed = urlparse(url)
 	if parsed.scheme != 'plugin' or parsed.netloc != kodi_utils.current_addon_id: return url, ''
 	params = kodi_utils.parsed_query(url)
 	if params.get('mode') != 'play_trailer': return url, ''
-	return _prepare_video_data(str(params.get('video_id') or ''))
+	return _prepare_video_data(str(params.get('video_id') or ''), session)
+
+
+def prepare_data_isolated(url):
+	import requests
+	session = requests.Session()
+	try: return prepare_data(url, session)
+	finally: session.close()
 
 
 def commit_prepared(prepared):
@@ -76,9 +83,10 @@ def prepare_video(video_id):
 	return commit_prepared(_prepare_video_data(video_id))
 
 
-def _prepare_video_data(video_id):
-	master_url = resolve(video_id)
-	response = _http_session().get(master_url, timeout=15)
+def _prepare_video_data(video_id, session=None):
+	session = session or _http_session()
+	master_url = resolve(video_id, session)
+	response = session.get(master_url, timeout=15)
 	response.raise_for_status()
 	return '', _limited_hls_manifest(response.text, master_url)
 
@@ -171,8 +179,9 @@ class _ManifestHandler(BaseHTTPRequestHandler):
 		pass
 
 
-def resolve(video_id):
+def resolve(video_id, session=None):
 	if not YOUTUBE_VIDEO_ID.fullmatch(video_id): raise ValueError('Invalid YouTube video ID')
+	session = session or _http_session()
 	headers = {
 		'Content-Type': 'application/json',
 		'User-Agent': 'com.google.ios.youtube/20.20.7 (iPhone16,2; U; CPU iOS 18_5 like Mac OS X;)',
@@ -197,7 +206,7 @@ def resolve(video_id):
 			},
 		},
 	}
-	response = _http_session().post(YOUTUBE_PLAYER_URL, params={'key': YOUTUBE_API_KEY}, headers=headers, json=payload, timeout=15)
+	response = session.post(YOUTUBE_PLAYER_URL, params={'key': YOUTUBE_API_KEY}, headers=headers, json=payload, timeout=15)
 	response.raise_for_status()
 	data = response.json()
 	playability = data.get('playabilityStatus') or {}

@@ -2,6 +2,7 @@ from threading import Thread
 from datetime import datetime
 from time import monotonic
 from collections import OrderedDict
+from queue import Empty, SimpleQueue
 from modules import kodi_utils, settings
 from modules.prefetch import NextPagePrefetch
 
@@ -21,6 +22,9 @@ TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
 TRAILER_PREVIEW_ACTIVE_POLL = 0.25
 TRAILER_PREVIEW_IDLE_POLL = 1.0
 TRAILER_PREVIEW_CACHE_LIMIT = 128
+TRAILER_PREPARE_WORKERS = 2
+TRAILER_PREPARED_CACHE_LIMIT = 32
+TRAILER_PREPARED_CACHE_TTL = 120.0
 TRAILER_PREVIEW_WINDOWS = ('Home', 'Videos', '1110', '1111', '1112', '1122', '1123', 'DialogVideoInfo.xml')
 TRAILER_PREVIEW_WINDOW_VISIBILITY = ' | '.join('Window.IsActive(%s)' % window for window in TRAILER_PREVIEW_WINDOWS)
 FOCUSED_METADATA_DELAY = 0.25
@@ -164,10 +168,13 @@ class TrailerPreview:
 		self.focused_metadata_retries = OrderedDict()
 		self.lookup_thread = None
 		self.lookup_result = None
-		self.prepare_thread = None
-		self.prepare_result = None
+		self.prepare_workers = {}
+		self.prepare_results = SimpleQueue()
+		self.prepare_pending = None
+		self.prepared_trailers = OrderedDict()
 		self.prepare_generation = 0
 		self.prepare_identity = ''
+		self.prepare_trailer = ''
 		self.closed = False
 		self.focused_metadata_published = False
 		self.manifest_server = None
@@ -224,7 +231,7 @@ class TrailerPreview:
 			return self.active or bool(self.pending_stop_trailer) or self._preparing()
 		self._stop_pending_preview(now)
 		if self._restore_preview_window(now): return True
-		self._consume_prepare_result()
+		self._consume_prepare_results()
 		candidate = self._candidate()
 		manual_required = bool(candidate and candidate[4])
 		if get_property(TRAILER_PREVIEW_REQUEST_PROPERTY):
@@ -450,37 +457,76 @@ class TrailerPreview:
 		return True, trailer
 
 	def _preparing(self):
-		return bool(self.prepare_thread and self.prepare_thread.is_alive())
+		return bool(self.prepare_pending or self.prepare_workers)
 
 	def _invalidate_preparation(self):
 		self.prepare_generation += 1
 		self.prepare_identity = ''
+		self.prepare_trailer = ''
+		self.prepare_pending = None
 
 	def _start_preview_preparation(self, identity, trailer):
-		if self._preparing(): return
+		if identity == self.prepare_identity and trailer == self.prepare_trailer:
+			self._start_pending_preparation()
+			return
 		self.prepare_generation += 1
 		generation = self.prepare_generation
 		self.prepare_identity = identity
+		self.prepare_trailer = trailer
+		self.prepare_pending = generation, identity, trailer
 		clear_property(TRAILER_RESOLVED_PROPERTY)
-		self.prepare_thread = Thread(target=self._prepare_preview, args=(generation, identity, trailer), daemon=True)
-		self.prepare_thread.start()
+		self._start_pending_preparation()
+
+	def _start_pending_preparation(self):
+		if not self.prepare_pending or self.closed: return
+		generation, identity, trailer = self.prepare_pending
+		if generation != self.prepare_generation or identity != self.prepare_identity or trailer != self.prepare_trailer:
+			self.prepare_pending = None
+			return
+		cached = self._cached_prepared_trailer(trailer)
+		if cached is not None:
+			prepared, prepared_at = cached
+			self.prepare_pending = None
+			self.prepare_workers[generation] = None, identity, trailer
+			self.prepare_results.put((generation, identity, trailer, prepared, None, prepared_at))
+			return
+		if any(job[2] == trailer for job in self.prepare_workers.values()): return
+		if sum(1 for worker, _, _ in self.prepare_workers.values() if worker is not None and worker.is_alive()) >= TRAILER_PREPARE_WORKERS: return
+		worker = Thread(target=self._prepare_preview, args=(generation, identity, trailer), name='BINGIE trailer preparation', daemon=True)
+		self.prepare_workers[generation] = worker, identity, trailer
+		self.prepare_pending = None
+		try: worker.start()
+		except Exception as exc:
+			self.prepare_workers[generation] = None, identity, trailer
+			self.prepare_results.put((generation, identity, trailer, None, exc, monotonic()))
 
 	def _prepare_preview(self, generation, identity, trailer):
 		prepared, error = None, None
 		try:
-			from modules.trailers import prepare_data
-			prepared = prepare_data(trailer)
+			from modules.trailers import prepare_data_isolated
+			prepared = prepare_data_isolated(trailer)
 		except Exception as exc:
 			error = exc
-		if not self.closed: self.prepare_result = generation, identity, prepared, error
+		if not self.closed: self.prepare_results.put((generation, identity, trailer, prepared, error, monotonic()))
 
-	def _consume_prepare_result(self):
-		if self.prepare_result is None: return
-		generation, identity, prepared, error = self.prepare_result
-		self.prepare_result = None
-		if generation != self.prepare_generation or identity != self.prepare_identity: return
+	def _consume_prepare_results(self):
+		current_result = None
+		while True:
+			try: result = self.prepare_results.get_nowait()
+			except Empty: break
+			generation, identity, trailer, prepared, error, prepared_at = result
+			self.prepare_workers.pop(generation, None)
+			prepared_valid = error is not None or self._cache_prepared_trailer(trailer, prepared, prepared_at)
+			if generation == self.prepare_generation and identity == self.prepare_identity and trailer == self.prepare_trailer:
+				if prepared_valid: current_result = result
+				else: self.prepare_pending = generation, identity, trailer
+		self._start_pending_preparation()
+		if current_result is None: return
+		generation, identity, trailer, prepared, error, _ = current_result
+		self.prepare_identity = ''
+		self.prepare_trailer = ''
 		candidate = self._candidate()
-		if not candidate or candidate[0] != identity or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'): return
+		if not self._candidate_matches_preparation(candidate, identity, trailer) or self.active or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'): return
 		if candidate[4] and self.manual_identity != identity: return
 		if error is not None:
 			clear_property(TRAILER_RESOLVED_PROPERTY)
@@ -500,13 +546,32 @@ class TrailerPreview:
 			self.played = True
 			return
 		candidate = self._candidate()
-		if not candidate or candidate[0] != identity or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'):
+		if not self._candidate_matches_preparation(candidate, identity, trailer) or self.active or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'):
 			clear_property(TRAILER_RESOLVED_PROPERTY)
 			return
 		if candidate[4] and self.manual_identity != identity:
 			clear_property(TRAILER_RESOLVED_PROPERTY)
 			return
 		self._launch_preview(playback_url, listitem)
+
+	def _candidate_matches_preparation(self, candidate, identity, trailer):
+		if not candidate or candidate[0] != identity: return False
+		return (candidate[1] or self.resolved_trailers.get(identity, '')) == trailer
+
+	def _cache_prepared_trailer(self, trailer, prepared, prepared_at):
+		if not prepared or len(prepared) < 2 or not prepared[1]: return True
+		if monotonic() - prepared_at >= TRAILER_PREPARED_CACHE_TTL: return False
+		self.prepared_trailers.pop(trailer, None)
+		self.prepared_trailers[trailer] = prepared_at, prepared
+		if len(self.prepared_trailers) > TRAILER_PREPARED_CACHE_LIMIT: self.prepared_trailers.popitem(last=False)
+		return True
+
+	def _cached_prepared_trailer(self, trailer):
+		try: prepared_at, prepared = self.prepared_trailers.pop(trailer)
+		except KeyError: return None
+		if monotonic() - prepared_at >= TRAILER_PREPARED_CACHE_TTL: return None
+		self.prepared_trailers[trailer] = prepared_at, prepared
+		return prepared, prepared_at
 
 	def _launch_preview(self, playback_url, listitem):
 		self.manual_identity = ''

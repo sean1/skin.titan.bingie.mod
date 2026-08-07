@@ -48,15 +48,21 @@ def play(params):
 
 
 def prepare(url):
+	return commit_prepared(prepare_data(url))
+
+
+def prepare_data(url):
 	parsed = urlparse(url)
-	if parsed.scheme != 'plugin' or parsed.netloc != kodi_utils.current_addon_id: return url, None
+	if parsed.scheme != 'plugin' or parsed.netloc != kodi_utils.current_addon_id: return url, ''
 	params = kodi_utils.parsed_query(url)
-	if params.get('mode') != 'play_trailer': return url, None
-	return prepare_video(str(params.get('video_id') or ''))
+	if params.get('mode') != 'play_trailer': return url, ''
+	return _prepare_video_data(str(params.get('video_id') or ''))
 
 
-def prepare_video(video_id):
-	stream_url = limit_hls_resolution(resolve(video_id))
+def commit_prepared(prepared):
+	stream_url, manifest = prepared
+	if not manifest: return stream_url, None
+	stream_url = _commit_hls_manifest(manifest)
 	listitem = kodi_utils.make_listitem()
 	listitem.setPath(stream_url)
 	listitem.setMimeType('application/vnd.apple.mpegurl')
@@ -66,10 +72,25 @@ def prepare_video(video_id):
 	return stream_url, listitem
 
 
+def prepare_video(video_id):
+	return commit_prepared(_prepare_video_data(video_id))
+
+
+def _prepare_video_data(video_id):
+	master_url = resolve(video_id)
+	response = _http_session().get(master_url, timeout=15)
+	response.raise_for_status()
+	return '', _limited_hls_manifest(response.text, master_url)
+
+
 def limit_hls_resolution(master_url):
 	response = _http_session().get(master_url, timeout=15)
 	response.raise_for_status()
 	manifest = _limited_hls_manifest(response.text, master_url)
+	return _commit_hls_manifest(manifest)
+
+
+def _commit_hls_manifest(manifest):
 	kodi_utils.make_directorys(kodi_utils.profile_path)
 	manifest_file = kodi_utils.open_file(TRAILER_MANIFEST_FILE, 'w')
 	try: manifest_file.write(manifest)

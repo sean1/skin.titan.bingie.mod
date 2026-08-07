@@ -313,7 +313,7 @@
             <orientation>horizontal</orientation>
             <width>100%</width>
             <include>ScrollTime</include>
-            <preloaditems>2</preloaditems>
+            <preloaditems>1</preloaditems>
             <include content="WidgetBaseBingieIncludes">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>

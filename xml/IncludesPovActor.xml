@@ -110,7 +110,7 @@
 						<label>Movies</label>
 					</control>
 					<control type="panel" id="610">
-						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasMovies),true)</visible>
+						<visible allowhiddenfocus="true">true</visible>
 						<enable>$EXP[PovActorHasCurrentMovies]</enable>
 						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 						<top>55</top>
@@ -146,7 +146,7 @@
 						<label>TV Shows</label>
 					</control>
 					<control type="panel" id="620">
-						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)</visible>
+						<visible allowhiddenfocus="true">true</visible>
 						<enable>$EXP[PovActorHasCurrentTVShows]</enable>
 						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 						<top>55</top>
@@ -181,7 +181,7 @@
 						<label>Directed By</label>
 					</control>
 					<control type="panel" id="630">
-						<visible allowhiddenfocus="true">String.IsEqual(Window(Home).Property(PovActorHasDirected),true)</visible>
+						<visible allowhiddenfocus="true">true</visible>
 						<enable>$EXP[PovActorHasCurrentDirected]</enable>
 						<onfocus condition="System.HasAlarm(PovActorFocus)">CancelAlarm(PovActorFocus,silent)</onfocus>
 						<top>55</top>

@@ -240,7 +240,7 @@
 						<include content="PovCastPlaceholder"><param name="left" value="1428" /></include>
 					</control>
 					<control type="panel" id="550">
-						<visible allowhiddenfocus="true">$EXP[PovInfoHasValidMedia] + String.IsEqual(Window(Home).Property(PovInfoHasCast),true)</visible>
+						<visible allowhiddenfocus="true">true</visible>
 						<enable>$EXP[PovInfoHasCurrentCast]</enable>
 						<top>50</top>
 						<width>1668</width>
@@ -285,7 +285,7 @@
 						<label>In This Collection</label>
 					</control>
 					<control type="panel" id="563">
-						<visible allowhiddenfocus="true">$EXP[PovInfoHasCurrentCollection]</visible>
+						<visible allowhiddenfocus="true">true</visible>
 						<top>50</top>
 						<width>1668</width>
 						<height>220</height>
@@ -331,7 +331,7 @@
 						<label>$LOCALIZE[31622]</label>
 					</control>
 					<control type="panel" id="560">
-						<visible allowhiddenfocus="true">$EXP[PovInfoHasCurrentMoreLikeThis]</visible>
+						<visible allowhiddenfocus="true">true</visible>
 						<top>50</top>
 						<width>1668</width>
 						<height>220</height>

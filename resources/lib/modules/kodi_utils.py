@@ -326,7 +326,7 @@ def build_url(url_params):
 	return 'plugin://%s/?%s' % (current_addon_id, urlencode(url_params))
 
 def add_dir(__handle__, url_params, list_name, iconImage=None, fanartImage=None, isFolder=True):
-	if 'new_page' in url_params: list_name = f"{list_name} >> {url_params['new_page']} <<"
+	if 'new_page' in url_params: list_name = f"{list_name} {url_params['new_page']}"
 	fanart = fanartImage or get_addoninfo('fanart')
 	icon = iconImage or media_path('item_next.png')
 	url = build_url(url_params)

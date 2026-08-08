@@ -1,3 +1,9 @@
+BINGIE Lite 2.3.6
+
+- Prefer a normal English audio track when available, then fall back to the title's original language.
+- Recognize Kodi and TMDB language-code variants and preserve original-language metadata for movies and shows.
+- Avoid commentary, descriptive-audio, and stale playback selections when switching tracks automatically.
+
 BINGIE Lite 2.3.5
 
 - Keep focused artwork visible until embedded trailer previews are ready, then crossfade cleanly.

@@ -5,7 +5,9 @@ from caches import watched_cache as ws
 from windows import open_window
 from indexers.segments import SegmentScraper
 from indexers.metadata import art_infodict, movie_show_infodict, episode_infodict, info_tagger, resized_cast
+from indexers import tmdb_api
 from modules import kodi_utils, settings
+from modules.meta_lists import meta_languages
 from modules.utils import sec2time
 # from modules.kodi_utils import logger
 
@@ -17,6 +19,15 @@ poster_empty = kodi_utils.media_path('box_office.png')
 PLAYBACK_START_TIMEOUT = 30.0
 ENGLISH_AUDIO_LANGUAGES = ('en', 'eng', 'english')
 ALTERNATE_AUDIO_NAMES = ('commentary', 'audio description', 'descriptive audio')
+ISO_639_EQUIVALENTS = (
+	('sq', 'alb', 'sqi'), ('hy', 'arm', 'hye'), ('eu', 'baq', 'eus'), ('my', 'bur', 'mya'), ('zh', 'chi', 'zho'), ('cs', 'cze', 'ces'), ('nl', 'dut', 'nld'),
+	('fr', 'fre', 'fra'), ('ka', 'geo', 'kat'), ('de', 'ger', 'deu'), ('el', 'gre', 'ell'), ('is', 'ice', 'isl'), ('mk', 'mac', 'mkd'), ('mi', 'mao', 'mri'),
+	('ms', 'may', 'msa'), ('fa', 'per', 'fas'), ('ro', 'rum', 'ron'), ('sr', 'scc', 'srp'), ('sk', 'slo', 'slk'), ('bo', 'tib', 'bod'), ('cy', 'wel', 'cym')
+)
+AUDIO_LANGUAGE_GROUPS = tuple(
+	frozenset(str(value).strip().lower().replace('_', '-').split('-', 1)[0] for value in language.values() if value)
+	for language in meta_languages.values()
+)
 
 class POVPlayer(kodi_utils.xbmc_player):
 	def __init__(self):
@@ -39,24 +50,51 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def onAVStarted(self):
 		self.playback_event = True
-		Thread(target=self._select_english_audio, daemon=True).start()
+		try: playback_file = self.getPlayingFile()
+		except: playback_file = ''
+		Thread(target=self._select_preferred_audio, args=(playback_file,), daemon=True).start()
 
-	def _select_english_audio(self):
+	def _select_preferred_audio(self, playback_file=''):
 		try:
+			if not playback_file: playback_file = self.getPlayingFile()
+			if not playback_file: return
 			for _ in range(10):
-				if not self.isPlayingVideo(): return
+				if not self._audio_selection_is_current(playback_file): return
 				request = {'jsonrpc': '2.0', 'id': 1, 'method': 'Player.GetProperties', 'params': {'playerid': 1, 'properties': ['audiostreams', 'currentaudiostream']}}
 				result = json.loads(kodi_utils.execJSONRPC(json.dumps(request))).get('result', {})
 				streams = result.get('audiostreams') or []
 				if streams: break
 				if kodi_utils.monitor.waitForAbort(0.2): return
 			else: return
-			english_streams = [stream for stream in streams if self._is_english_audio(stream)]
-			if not english_streams: return
-			selected = min(english_streams, key=self._english_audio_sort_key)
+			original_language = self.meta_get('original_language', '')
+			selected = self._preferred_audio_stream(streams, original_language)
+			if selected is None and not original_language:
+				original_language = tmdb_api.media_original_language(self.mediatype, self.tmdb_id)
+				if original_language:
+					self.meta['original_language'] = original_language
+					selected = self._preferred_audio_stream(streams, original_language)
+			if selected is None: return
+			if not self._audio_selection_is_current(playback_file): return
 			if selected.get('index') != result.get('currentaudiostream', {}).get('index'):
 				self.setAudioStream(selected['index'])
 		except: pass
+
+	def _audio_selection_is_current(self, playback_file):
+		if not self.isPlayingVideo(): return False
+		if not playback_file: return True
+		try: return self.getPlayingFile() == playback_file
+		except: return False
+
+	@classmethod
+	def _preferred_audio_stream(cls, streams, original_language=''):
+		streams = [stream for stream in streams if isinstance(stream, dict) and isinstance(stream.get('index'), int)]
+		streams = [stream for stream in streams if not cls._is_alternate_audio(stream)]
+		preferred = [stream for stream in streams if cls._is_english_audio(stream)]
+		if not preferred and original_language:
+			preferred = [stream for stream in streams if cls._matches_audio_language(stream, original_language)]
+		if not preferred: preferred = [stream for stream in streams if cls._is_original_audio(stream)]
+		if not preferred: return None
+		return min(preferred, key=cls._preferred_audio_sort_key)
 
 	@staticmethod
 	def _is_english_audio(stream):
@@ -65,10 +103,35 @@ class POVPlayer(kodi_utils.xbmc_player):
 		return language in ENGLISH_AUDIO_LANGUAGES or language.startswith('en-') or (not language and 'english' in name)
 
 	@staticmethod
-	def _english_audio_sort_key(stream):
+	def _audio_language_aliases(language):
+		language = str(language or '').strip().lower().replace('_', '-').split('-', 1)[0]
+		if not language: return frozenset()
+		aliases = next((aliases for aliases in AUDIO_LANGUAGE_GROUPS if language in aliases), frozenset((language,)))
+		try:
+			converted = str(kodi_utils.xbmc.convertLanguage(language, kodi_utils.xbmc.ISO_639_2) or '').strip().lower()
+			if converted: aliases = aliases.union((converted,))
+		except: pass
+		for equivalents in ISO_639_EQUIVALENTS:
+			if aliases.intersection(equivalents): aliases = aliases.union(equivalents)
+		return aliases
+
+	@classmethod
+	def _matches_audio_language(cls, stream, language):
+		stream_aliases = cls._audio_language_aliases(stream.get('language'))
+		return bool(stream_aliases and stream_aliases.intersection(cls._audio_language_aliases(language)))
+
+	@staticmethod
+	def _is_original_audio(stream):
+		return bool(stream.get('isoriginal')) or 'original' in str(stream.get('name') or '').strip().lower()
+
+	@staticmethod
+	def _is_alternate_audio(stream):
 		name = str(stream.get('name') or '').lower()
-		alternate = bool(stream.get('isimpaired')) or any(label in name for label in ALTERNATE_AUDIO_NAMES)
-		return alternate, not bool(stream.get('isoriginal')), not bool(stream.get('isdefault')), stream.get('index', 0)
+		return bool(stream.get('isimpaired')) or any(label in name for label in ALTERNATE_AUDIO_NAMES)
+
+	@classmethod
+	def _preferred_audio_sort_key(cls, stream):
+		return not cls._is_original_audio(stream), not bool(stream.get('isdefault')), stream.get('index', 0)
 
 	def onPlayBackStarted(self):
 		if self.playback_event is None: self.startup_playback_started = True

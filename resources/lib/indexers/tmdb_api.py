@@ -319,6 +319,15 @@ def tvshow_details(tmdb_id, language):
 		return get_tmdb(url)
 	except: return None
 
+def media_original_language(mediatype, tmdb_id):
+	try:
+		mediatype = 'tv' if mediatype in ('episode', 'tvshow') else 'movie'
+		string = 'tmdb_original_language_%s_%s' % (mediatype, tmdb_id)
+		url = '%s/%s/%s?language=en' % (base_url, mediatype, tmdb_id)
+		data = cache_object(get_tmdb, string, url, expiration=EXPIRES_1_MONTH) or {}
+		return data.get('original_language', '')
+	except: return ''
+
 def season_episodes_details(tmdb_id, season_no, language):
 	try:
 		url = '%s/tv/%s/season/%s?language=%s&append_to_response=credits' % (base_url, tmdb_id, season_no, language)

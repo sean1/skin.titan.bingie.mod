@@ -182,6 +182,7 @@ def _movie_meta(id_type, media_id, user_info, current_date, metacache, claim_own
 			'imdbnumber': data.get('imdb_id', ''),
 			'mediatype': parser.mediatype,
 			'meta_language': parser.lang,
+			'original_language': data.get('original_language', ''),
 			'rootname': f"{title} ({year})",
 			'title': title,
 			'original_title': parser.get_text('original_title'),
@@ -292,6 +293,7 @@ def _tvshow_meta(id_type, media_id, user_info, current_date, metacache, claim_ow
 			'imdbnumber': data.get('external_ids', {}).get('imdb_id', ''),
 			'mediatype': parser.mediatype,
 			'meta_language': parser.lang,
+			'original_language': data.get('original_language', ''),
 			'rootname': f"{title} ({year})",
 			'title': title,
 			'tvshowtitle': title, # tvshow

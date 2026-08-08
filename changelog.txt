@@ -1,3 +1,9 @@
+BINGIE Lite 2.3.5
+
+- Keep focused artwork visible until embedded trailer previews are ready, then crossfade cleanly.
+- Stop active previews promptly when focus or navigation context changes.
+- Reduce idle service polling after focused fanart is published.
+
 BINGIE Lite 2.3.4
 
 - Search high-yield torrent providers first and offer a full scrape when additional sources are available.

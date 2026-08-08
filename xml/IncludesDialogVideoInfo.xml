@@ -8,11 +8,11 @@
 				<include>FullscreenDimensions</include>
 				<texture>colors/color_black.png</texture>
 			</control>
+			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
-				<param name="visibility" value="!Player.HasVideo" />
+				<param name="visibility" value="!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewReady))]" />
 				<param name="image" value="$INFO[Window.Property(PovInfoFanart)]" />
 			</include>
-			<include>BingieRowTrailerPreviewWindow</include>
 			<!-- Dialog Info -->
 			<control type="group">
 				<animation effect="fade" start="0" end="100" time="200">Visible</animation>

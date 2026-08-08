@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.3.4" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
+<addon id="skin.titan.bingie.lite" version="2.3.5" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
 		<import addon="xbmc.python" version="3.0.0"/>
@@ -38,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite 2.3.4[/B][CR]Speed source searches with staged providers, provider controls, and reliable pack-request sharing.
+			[B]BINGIE Lite 2.3.5[/B][CR]Crossfade smoothly into ready trailer previews, stop them promptly during navigation, and reduce idle service polling.
 		</news>
 	</extension>
 </addon>

@@ -10,11 +10,11 @@
 				<height>1080</height>
 				<texture>colors/color_black.png</texture>
 			</control>
+			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
-				<param name="visibility" value="String.IsEqual(Window(Home).Property(PovActorReady),true) + !Player.HasVideo" />
+				<param name="visibility" value="String.IsEqual(Window(Home).Property(PovActorReady),true) + [!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewReady))]]" />
 				<param name="image" value="$VAR[PovActorPageBackdrop]" />
 			</include>
-			<include>BingieRowTrailerPreviewWindow</include>
 
 			<control type="group">
 				<control type="label">

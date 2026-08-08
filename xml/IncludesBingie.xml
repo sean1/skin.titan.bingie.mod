@@ -1607,7 +1607,7 @@
             <height>600</height>
 			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
-				<param name="visibility" value="[String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) | !Player.HasVideo] + [!$EXP[IsPlayingRecognizedContent] | [$EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]]]" />
+				<param name="visibility" value="[!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewReady))]] + [!$EXP[IsPlayingRecognizedContent] | [$EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]]]" />
                 <param name="image" value="$VAR[bingieThumb]" />
             </include>
 

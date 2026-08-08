@@ -22,6 +22,7 @@ def load_entry():
 	kodi_utils.set_setting = lambda *args: None
 	kodi_utils.make_settings_dict = lambda: None
 	kodi_utils.xbmc_monitor = object
+	kodi_utils.xbmc_player = object
 	settings = types.ModuleType('modules.settings')
 	prefetch = types.ModuleType('modules.prefetch')
 	prefetch.NextPagePrefetch = object

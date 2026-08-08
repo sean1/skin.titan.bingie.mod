@@ -54,7 +54,7 @@
         <!-- global background -->
         <control type="multiimage" id="99004">
             <include>HiddenObject</include>
-            <include>FullscreenDimensions</include>
+            <include condition="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113)]">FullscreenDimensions</include>
             <imagepath background="true" fallback="colors/color_black.png">$VAR[backgroundVar]</imagepath>
             <aspectratio>scale</aspectratio>
             <fadetime>800</fadetime>
@@ -82,7 +82,7 @@
 
 		<include condition="true + false">Native_extraFanartBackground</include>
 
-		<include>DialogOverlay</include>
+		<include condition="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113)]">DialogOverlay</include>
     </include>
 
 	<!-- Extra Fanart -->

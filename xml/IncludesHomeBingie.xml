@@ -201,14 +201,6 @@
 					</control>
                 </control>
 				</control>
-                <!-- Footer -->
-				<control type="group">
-						<visible>!Window.IsActive(DialogVideoInfo.xml)</visible>
-						<include>Animation_Right_Home</include>
-						<include>Bingie_Footer</include>
-						<top>40</top>
-						<animation effect="fade" start="100" end="0" time="300" condition="$EXP[IsCategoryDBType]">Conditional</animation>
-				</control>
             </control>
 
             <!-- Widgets -->

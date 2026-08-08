@@ -21,6 +21,7 @@ TRAILER_PREVIEW_STOP_TIMEOUT = 10.0
 TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
 TRAILER_PREVIEW_ACTIVE_POLL = 0.25
 TRAILER_PREVIEW_IDLE_POLL = 1.0
+FOCUSED_FANART_STABLE_POLL = 0.5
 TRAILER_PREVIEW_CACHE_LIMIT = 128
 TRAILER_PREPARE_WORKERS = 2
 TRAILER_PREPARED_CACHE_LIMIT = 32
@@ -156,6 +157,7 @@ class FocusedFanart:
 		self.identity = ''
 		self.focused_at = 0.0
 		self.published_identity = ''
+		self.stable = False
 		self._clear(force=True)
 
 	def close(self):
@@ -165,6 +167,7 @@ class FocusedFanart:
 		self._reset()
 
 	def tick(self):
+		self.stable = False
 		if not kodi_utils.get_visibility(FOCUSED_FANART_WINDOW_VISIBILITY):
 			self._reset()
 			return False
@@ -173,7 +176,7 @@ class FocusedFanart:
 		else: content_focused = kodi_utils.get_visibility('ControlGroup(77777).HasFocus()')
 		if not content_focused: return False
 		identity = self._focused_identity()
-		if not identity: return True
+		if not identity: return False
 		now = monotonic()
 		if identity != self.identity:
 			self.identity = identity
@@ -189,7 +192,8 @@ class FocusedFanart:
 			set_property(FOCUSED_FANART_PROPERTY, fanart)
 			set_property(FOCUSED_FANART_IDENTITY_PROPERTY, identity)
 			self.published_identity = identity
-		return True
+		self.stable = self.published_identity == identity
+		return not self.stable
 
 	def _focused_identity(self):
 		identity = self._item_label('Property(PovFocusIdentity)')
@@ -211,6 +215,7 @@ class FocusedFanart:
 	def _reset(self):
 		self.identity = ''
 		self.focused_at = 0.0
+		self.stable = False
 		self._clear()
 
 	def _clear(self, force=False):
@@ -218,6 +223,11 @@ class FocusedFanart:
 		clear_property(FOCUSED_FANART_IDENTITY_PROPERTY)
 		clear_property(FOCUSED_FANART_PROPERTY)
 		self.published_identity = ''
+
+def _service_poll_interval(fanart_pending, fanart_stable, preview_active):
+	if fanart_pending or preview_active: return TRAILER_PREVIEW_ACTIVE_POLL
+	if fanart_stable: return FOCUSED_FANART_STABLE_POLL
+	return TRAILER_PREVIEW_IDLE_POLL
 
 class TrailerPreview:
 	def __init__(self):
@@ -783,9 +793,9 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 					poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.pause() else TRAILER_PREVIEW_IDLE_POLL
 					continue
 				self.next_page_prefetch.tick()
-				fanart_active = self.focused_fanart.tick()
+				fanart_pending = self.focused_fanart.tick()
 				preview_active = self.trailer_preview.tick()
-				poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if fanart_active or preview_active else TRAILER_PREVIEW_IDLE_POLL
+				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active)
 
 	def _deferred_database_maintenance(self):
 		if self.waitForAbort(DATABASE_MAINTENANCE_DELAY): return

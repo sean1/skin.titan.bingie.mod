@@ -1,6 +1,8 @@
 import sys
 import types
 import unittest
+from queue import Empty
+from threading import Event
 from unittest.mock import Mock
 
 from tests.test_focused_fanart import load_entry
@@ -51,6 +53,33 @@ class TrailerPreviewTests(unittest.TestCase):
 	def _candidate(self, identity='movie|1'):
 		return identity, 'trailer-url', 'movie', '1', False, False
 
+	def _lookup_harness(self, results):
+		started = {key: Event() for key in results}
+		released = {key: Event() for key in results}
+		finished = {key: Event() for key in results}
+		calls = []
+
+		def lookup(identity, media_type, tmdb_id, focused):
+			key = identity, focused
+			calls.append(key)
+			started[key].set()
+			try:
+				released[key].wait()
+				if not self.preview.closed: self.preview.lookup_results.put((identity, focused, results[key]))
+			finally: finished[key].set()
+
+		def cleanup():
+			for event in released.values(): event.set()
+			for key, event in started.items():
+				if event.is_set(): finished[key].wait(2.0)
+
+		self.preview._lookup_media = lookup
+		self.addCleanup(cleanup)
+		return started, released, finished, calls
+
+	def _wait(self, event):
+		self.assertTrue(event.wait(2.0))
+
 	def _activate(self):
 		self.entry.monotonic = Mock(return_value=20.0)
 		self.preview.identity = 'movie|1'
@@ -72,6 +101,229 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview._start_preview_preparation.assert_not_called()
 		self.assertTrue(self.preview.tick())
 		self.preview._start_preview_preparation.assert_called_once_with('movie|1', 'trailer-url')
+
+	def test_new_focused_lookup_overtakes_stale_lookup_without_stale_publication(self):
+		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)
+		started, released, finished, _ = self._lookup_harness({
+			old_key: {'genre': 'Old genre', 'trailer': 'old-trailer'},
+			new_key: {'genre': 'New genre', 'trailer': 'new-trailer'},
+		})
+		self.preview.identity = old_key[0]
+		self.preview._start_focused_metadata_lookup(old_key[0], 'movie', '1')
+		self._wait(started[old_key])
+
+		self.preview.identity = new_key[0]
+		self.preview._start_focused_metadata_lookup(new_key[0], 'movie', '2')
+		self._wait(started[new_key])
+		released[new_key].set()
+		self._wait(finished[new_key])
+		self.preview._consume_lookup_results()
+
+		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], new_key[0])
+		self.assertEqual(self.properties['PovFocusedGenre'], 'New genre')
+		released[old_key].set()
+		self._wait(finished[old_key])
+		self.preview._consume_lookup_results()
+
+		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], new_key[0])
+		self.assertEqual(self.properties['PovFocusedGenre'], 'New genre')
+		self.assertEqual(self.preview.resolved_focused_metadata[old_key[0]]['genre'], 'Old genre')
+		self.assertEqual(self.preview.resolved_trailers[old_key[0]], 'old-trailer')
+
+	def test_lookup_workers_are_bounded_and_only_latest_pending_lookup_runs(self):
+		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 5)]
+		started, released, finished, calls = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
+		for key in keys[:2]:
+			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
+			self._wait(started[key])
+		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+		self.preview._start_trailer_lookup(keys[3][0], 'movie', '4')
+
+		self.assertEqual(len(self.preview.lookup_workers), self.entry.TRAILER_LOOKUP_WORKERS)
+		self.assertEqual((self.preview.lookup_pending[0], self.preview.lookup_pending[3]), keys[3])
+		self.assertFalse(started[keys[2]].is_set())
+		self.assertFalse(started[keys[3]].is_set())
+
+		self.preview._start_trailer_lookup(keys[0][0], 'movie', '1')
+		self.assertIsNone(self.preview.lookup_pending)
+		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+		self.preview._start_trailer_lookup(keys[3][0], 'movie', '4')
+		released[keys[0]].set()
+		self._wait(finished[keys[0]])
+		self.preview._consume_lookup_results()
+		self.assertFalse(started[keys[3]].is_set())
+		self.preview._start_trailer_lookup(keys[3][0], 'movie', '4')
+		self._wait(started[keys[3]])
+
+		self.assertFalse(started[keys[2]].is_set())
+		self.assertEqual(calls.count(keys[0]), 1)
+		self.assertLessEqual(len(self.preview.lookup_workers), self.entry.TRAILER_LOOKUP_WORKERS)
+		for key in (keys[1], keys[3]): released[key].set()
+		for key in (keys[1], keys[3]): self._wait(finished[key])
+		self.preview._consume_lookup_results()
+
+	def test_focused_lookup_supersedes_pending_trailer_and_subsumes_duplicates(self):
+		blockers = [('listing|movie|1', False), ('listing|movie|2', False)]
+		trailer_key, focused_key = ('listing|movie|3', False), ('listing|movie|3', True)
+		results = {blockers[0]: 'trailer-1', blockers[1]: 'trailer-2', trailer_key: 'trailer-3', focused_key: {'genre': 'Genre', 'trailer': 'trailer-3'}}
+		started, released, finished, calls = self._lookup_harness(results)
+		for key in blockers:
+			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
+			self._wait(started[key])
+		self.preview._start_trailer_lookup(trailer_key[0], 'movie', '3')
+		self.preview._start_focused_metadata_lookup(focused_key[0], 'movie', '3')
+		self.preview._start_focused_metadata_lookup(focused_key[0], 'movie', '3')
+		self.preview._start_trailer_lookup(trailer_key[0], 'movie', '3')
+
+		self.assertEqual((self.preview.lookup_pending[0], self.preview.lookup_pending[3]), focused_key)
+		released[blockers[0]].set()
+		self._wait(finished[blockers[0]])
+		self.preview._consume_lookup_results()
+		self.assertFalse(started[focused_key].is_set())
+		self.preview._start_focused_metadata_lookup(focused_key[0], 'movie', '3')
+		self._wait(started[focused_key])
+		self.preview._start_trailer_lookup(trailer_key[0], 'movie', '3')
+
+		self.assertIsNone(self.preview.lookup_pending)
+		self.assertFalse(started[trailer_key].is_set())
+		self.assertEqual(calls.count(focused_key), 1)
+		for key in (blockers[1], focused_key): released[key].set()
+		for key in (blockers[1], focused_key): self._wait(finished[key])
+		self.preview._consume_lookup_results()
+
+	def test_tick_drops_stale_pending_lookup_before_scheduling_new_focus(self):
+		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 5)]
+		started, released, finished, _ = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
+		for key in keys[:2]:
+			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
+			self._wait(started[key])
+		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+		self.preview.identity = keys[2][0]
+		self.preview._candidate = Mock(return_value=(keys[3][0], '', 'movie', '4', False, False))
+		self.entry.monotonic = Mock(side_effect=(10.0, 13.0))
+		released[keys[0]].set()
+		self._wait(finished[keys[0]])
+
+		self.assertTrue(self.preview.tick())
+		self.assertIsNone(self.preview.lookup_pending)
+		self.assertFalse(started[keys[2]].is_set())
+		self.assertFalse(started[keys[3]].is_set())
+		self.assertTrue(self.preview.tick())
+		self._wait(started[keys[3]])
+
+		self.assertFalse(started[keys[2]].is_set())
+		self.assertEqual(set(self.preview.lookup_workers), {keys[1], keys[3]})
+		for key in (keys[1], keys[3]): released[key].set()
+		for key in (keys[1], keys[3]): self._wait(finished[key])
+
+	def test_tick_starts_unchanged_pending_lookup_as_soon_as_slot_is_free(self):
+		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
+		started, released, finished, _ = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
+		for key in keys[:2]:
+			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
+			self._wait(started[key])
+		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+		self.preview.identity = keys[2][0]
+		self.preview.focused_at = 7.0
+		self.preview._candidate = Mock(return_value=(keys[2][0], '', 'movie', '3', False, False))
+		self.entry.monotonic = Mock(return_value=10.0)
+		released[keys[0]].set()
+		self._wait(finished[keys[0]])
+
+		self.assertTrue(self.preview.tick())
+		self._wait(started[keys[2]])
+		self.assertIsNone(self.preview.lookup_pending)
+		self.assertEqual(set(self.preview.lookup_workers), {keys[1], keys[2]})
+		for key in (keys[1], keys[2]): released[key].set()
+		for key in (keys[1], keys[2]): self._wait(finished[key])
+
+	def test_empty_candidate_clears_pending_lookup_when_identity_is_already_empty(self):
+		self.preview.lookup_pending = 'listing|movie|1', 'movie', '1', False
+
+		self.preview._track_candidate(None, 10.0)
+
+		self.assertIsNone(self.preview.lookup_pending)
+
+	def test_stale_focused_failure_records_only_its_retry(self):
+		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)
+		started, released, finished, _ = self._lookup_harness({old_key: None, new_key: {'genre': 'New genre', 'trailer': 'new-trailer'}})
+		self.preview.identity = old_key[0]
+		self.preview._start_focused_metadata_lookup(old_key[0], 'movie', '1')
+		self._wait(started[old_key])
+		self.preview.identity = new_key[0]
+		self.preview._start_focused_metadata_lookup(new_key[0], 'movie', '2')
+		self._wait(started[new_key])
+		released[new_key].set()
+		self._wait(finished[new_key])
+		self.preview._consume_lookup_results()
+		self.entry.monotonic = Mock(return_value=40.0)
+		released[old_key].set()
+		self._wait(finished[old_key])
+		self.preview._consume_lookup_results()
+
+		self.assertEqual(self.preview.focused_metadata_retries, {old_key[0]: 42.0})
+		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], new_key[0])
+		self.assertEqual(self.properties['PovFocusedGenre'], 'New genre')
+
+	def test_pause_clears_pending_without_cancelling_running_lookups(self):
+		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
+		started, released, finished, _ = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
+		for key in keys[:2]:
+			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
+			self._wait(started[key])
+		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+
+		self.assertFalse(self.preview.pause())
+		self.assertIsNone(self.preview.lookup_pending)
+		self.assertEqual(set(self.preview.lookup_workers), set(keys[:2]))
+		released[keys[0]].set()
+		self._wait(finished[keys[0]])
+		self.preview._consume_lookup_results()
+		self.assertFalse(started[keys[2]].is_set())
+		released[keys[1]].set()
+		self._wait(finished[keys[1]])
+		self.preview._consume_lookup_results()
+
+	def test_close_discards_pending_and_prevents_results_or_new_workers(self):
+		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
+		started, released, finished, calls = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
+		for key in keys[:2]:
+			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
+			self._wait(started[key])
+		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+		trailers = types.ModuleType('modules.trailers')
+		trailers.stop_manifest_server = Mock()
+		old_trailers = sys.modules.get('modules.trailers')
+		sys.modules['modules.trailers'] = trailers
+		try: self.preview.close()
+		finally:
+			if old_trailers is None: sys.modules.pop('modules.trailers', None)
+			else: sys.modules['modules.trailers'] = old_trailers
+
+		self.assertIsNone(self.preview.lookup_pending)
+		self.assertEqual(set(self.preview.lookup_workers), set(keys[:2]))
+		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+		self.assertEqual(calls, keys[:2])
+		for key in keys[:2]: released[key].set()
+		for key in keys[:2]: self._wait(finished[key])
+		with self.assertRaises(Empty): self.preview.lookup_results.get_nowait()
+
+	def test_lookup_thread_start_failure_uses_normal_failure_result(self):
+		class FailingThread:
+			def __init__(self, **kwargs): pass
+
+			def start(self): raise RuntimeError('cannot start')
+
+		old_thread = self.entry.Thread
+		self.entry.Thread = FailingThread
+		self.addCleanup(setattr, self.entry, 'Thread', old_thread)
+		self.entry.monotonic = Mock(return_value=50.0)
+		identity = 'listing|movie|1'
+		self.preview._start_focused_metadata_lookup(identity, 'movie', '1')
+
+		self.assertEqual(self.preview.lookup_workers, {})
+		self.preview._consume_lookup_results()
+		self.assertEqual(self.preview.focused_metadata_retries, {identity: 52.0})
 
 	def test_first_frame_callback_publishes_ready_only_after_ownership_check(self):
 		self.entry.monotonic = Mock(return_value=20.0)

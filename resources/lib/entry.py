@@ -23,6 +23,7 @@ TRAILER_PREVIEW_ACTIVE_POLL = 0.25
 TRAILER_PREVIEW_IDLE_POLL = 1.0
 FOCUSED_FANART_STABLE_POLL = 0.5
 TRAILER_PREVIEW_CACHE_LIMIT = 128
+TRAILER_LOOKUP_WORKERS = 2
 TRAILER_PREPARE_WORKERS = 2
 TRAILER_PREPARED_CACHE_LIMIT = 32
 TRAILER_PREPARED_CACHE_TTL = 120.0
@@ -261,8 +262,9 @@ class TrailerPreview:
 		self.resolved_trailers = OrderedDict()
 		self.resolved_focused_metadata = OrderedDict()
 		self.focused_metadata_retries = OrderedDict()
-		self.lookup_thread = None
-		self.lookup_result = None
+		self.lookup_workers = {}
+		self.lookup_results = SimpleQueue()
+		self.lookup_pending = None
 		self.prepare_workers = {}
 		self.prepare_results = SimpleQueue()
 		self.prepare_pending = None
@@ -287,6 +289,8 @@ class TrailerPreview:
 
 	def close(self):
 		self.closed = True
+		self.lookup_pending = None
+		self._discard_lookup_results()
 		self._invalidate_preparation()
 		self.manual_identity = ''
 		self._clear_focused_metadata()
@@ -301,6 +305,7 @@ class TrailerPreview:
 		stop_manifest_server(self.manifest_server)
 
 	def pause(self):
+		self.lookup_pending = None
 		self._invalidate_preparation()
 		self._clear_focused_metadata()
 		self._stop_pending_preview(monotonic())
@@ -311,7 +316,7 @@ class TrailerPreview:
 
 	def tick(self):
 		now = monotonic()
-		self._consume_lookup_result()
+		self._consume_lookup_results()
 		cancel_request = get_property(TRAILER_PREVIEW_CANCEL_PROPERTY)
 		if cancel_request:
 			clear_property(TRAILER_PREVIEW_CANCEL_PROPERTY)
@@ -457,6 +462,7 @@ class TrailerPreview:
 
 	def _track_candidate(self, candidate, now):
 		identity = candidate[0] if candidate else ''
+		if self.lookup_pending and self.lookup_pending[0] != identity: self.lookup_pending = None
 		if identity != self.identity:
 			self._clear_focused_metadata()
 			if identity != self.prepare_identity: self._invalidate_preparation()
@@ -467,14 +473,51 @@ class TrailerPreview:
 		self.played = bool(identity and identity == self.suppressed_identity)
 
 	def _start_trailer_lookup(self, identity, media_type, tmdb_id):
-		if self.lookup_thread and self.lookup_thread.is_alive(): return
-		self.lookup_thread = Thread(target=self._lookup_media, args=(identity, media_type, tmdb_id, False), daemon=True)
-		self.lookup_thread.start()
+		self._schedule_lookup(identity, media_type, tmdb_id, False)
 
 	def _start_focused_metadata_lookup(self, identity, media_type, tmdb_id):
-		if self.lookup_thread and self.lookup_thread.is_alive(): return
-		self.lookup_thread = Thread(target=self._lookup_media, args=(identity, media_type, tmdb_id, True), daemon=True)
-		self.lookup_thread.start()
+		self._schedule_lookup(identity, media_type, tmdb_id, True)
+
+	def _schedule_lookup(self, identity, media_type, tmdb_id, focused):
+		if self.closed: return
+		key = identity, focused
+		pending = self.lookup_pending
+		if key in self.lookup_workers:
+			if not pending or focused or pending[0] != identity or not pending[3]: self.lookup_pending = None
+			return
+		if not focused and (identity, True) in self.lookup_workers:
+			if not pending or pending[0] != identity or not pending[3]: self.lookup_pending = None
+			return
+		if pending and (pending[0], pending[3]) == key:
+			self._start_pending_lookup()
+			return
+		if not focused and pending and pending[0] == identity and pending[3]: return
+		job = identity, media_type, tmdb_id, focused
+		if focused and pending and pending[0] == identity and not pending[3]: self.lookup_pending = job
+		elif len(self.lookup_workers) >= TRAILER_LOOKUP_WORKERS:
+			self.lookup_pending = job
+			return
+		else: self.lookup_pending = job
+		self._start_pending_lookup()
+
+	def _start_pending_lookup(self):
+		if not self.lookup_pending or self.closed or len(self.lookup_workers) >= TRAILER_LOOKUP_WORKERS: return
+		identity, media_type, tmdb_id, focused = self.lookup_pending
+		key = identity, focused
+		if key in self.lookup_workers:
+			self.lookup_pending = None
+			return
+		if not focused and (identity, True) in self.lookup_workers:
+			self.lookup_pending = None
+			return
+		worker = Thread(target=self._lookup_media, args=(identity, media_type, tmdb_id, focused), name='BINGIE focused metadata lookup' if focused else 'BINGIE trailer lookup', daemon=True)
+		self.lookup_workers[key] = worker
+		self.lookup_pending = None
+		try: worker.start()
+		except Exception as exc:
+			self.lookup_workers.pop(key, None)
+			logger('BINGIE Lite focused metadata lookup' if focused else 'BINGIE Lite trailer lookup', str(exc))
+			self.lookup_results.put((identity, focused, None))
 
 	def _lookup_media(self, identity, media_type, tmdb_id, focused):
 		result = None
@@ -488,12 +531,25 @@ class TrailerPreview:
 				videos = tmdb_media_videos(media_type, tmdb_id)
 				if videos is not None: result = select_trailer(videos.get('results')) or ''
 		except Exception as exc: logger('BINGIE Lite focused metadata lookup' if focused else 'BINGIE Lite trailer lookup', str(exc))
-		self.lookup_result = identity, focused, result
+		if not self.closed: self.lookup_results.put((identity, focused, result))
 
-	def _consume_lookup_result(self):
-		if self.lookup_result is None: return
-		identity, focused, result = self.lookup_result
-		self.lookup_result = None
+	def _consume_lookup_results(self):
+		if self.closed:
+			self._discard_lookup_results()
+			return
+		while True:
+			try: identity, focused, result = self.lookup_results.get_nowait()
+			except Empty: break
+			self.lookup_workers.pop((identity, focused), None)
+			self._consume_lookup_result(identity, focused, result)
+
+	def _discard_lookup_results(self):
+		while True:
+			try: identity, focused, _ = self.lookup_results.get_nowait()
+			except Empty: break
+			self.lookup_workers.pop((identity, focused), None)
+
+	def _consume_lookup_result(self, identity, focused, result):
 		if focused:
 			if result is None:
 				self.focused_metadata_retries.pop(identity, None)

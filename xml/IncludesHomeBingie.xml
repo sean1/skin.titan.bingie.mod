@@ -264,8 +264,6 @@
 			</control>
         </control>
 
-		<include>Header</include>
-
         <include content="Dim_Overlay">
             <param name="visibility" value="$EXP[IsMainMenuOpened]" />
         </include>

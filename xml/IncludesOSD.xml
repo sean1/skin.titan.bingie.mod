@@ -366,17 +366,6 @@
 					<include>PlayerImageIndicatorDefs</include>
 				</control>
 
-				<!--Player Seek Time Pop Up/Action Label-->
-				<control type="label" id="79591">
-					<visible>false</visible>     <!-- Added to Remove Jump Indicator -->
-					<posy>105</posy>
-					<width>1920</width>
-					<align>center</align>
-					<font>Light38</font>
-					<textcolor>ffffffff</textcolor>
-					<label>[B]$VAR[PlayerActionLabelBingie][/B]</label>
-				</control>
-
 			</control>
 		</control>
 	</include>

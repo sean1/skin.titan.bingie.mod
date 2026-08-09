@@ -10,14 +10,12 @@
             <include>HideWindowOnStartupAndDialogInfoLoad</include>
 
             <!-- Widgets BG -->
-            <control type="group">
-                <control type="image">
-                    <visible>!$EXP[IsPlayingRecognizedContent]</visible>
-                    <include>FullscreenDimensions</include>
-                    <texture background="true" colordiffuse="$VAR[BingiePanelColor]">colors/color_white.png</texture>
-                    <animation effect="fade" start="100" end="90" delay="0" time="400">Visible</animation>
-                    <animation effect="fade" start="90" end="0" delay="0" time="1200">Hidden</animation>
-                </control>
+            <control type="image">
+                <visible>!$EXP[IsPlayingRecognizedContent]</visible>
+                <include>FullscreenDimensions</include>
+                <texture background="true" colordiffuse="$VAR[BingiePanelColor]">colors/color_white.png</texture>
+                <animation effect="fade" start="100" end="90" delay="0" time="400">Visible</animation>
+                <animation effect="fade" start="90" end="0" delay="0" time="1200">Hidden</animation>
             </control>
 
             <!-- Details Section -->

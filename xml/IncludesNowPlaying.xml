@@ -7,10 +7,7 @@
 			<include condition="Player.HasVideo">NowPlayingVideoBackground</include>
 
             <!--Background Overlay-->
-            <control type="group">
-                <visible>true</visible>
-                <include>DialogOverlay</include>
-            </control>
+			<include>DialogOverlay</include>
         </control>
     </include>
 

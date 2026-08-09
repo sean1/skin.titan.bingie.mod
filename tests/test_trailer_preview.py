@@ -3,7 +3,7 @@ import types
 import unittest
 from queue import Empty
 from threading import Event
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from tests.test_focused_fanart import load_entry
 
@@ -101,6 +101,100 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview._start_preview_preparation.assert_not_called()
 		self.assertTrue(self.preview.tick())
 		self.preview._start_preview_preparation.assert_called_once_with('movie|1', 'trailer-url')
+
+	def test_info_candidate_stages_property_reads_until_prerequisites_are_valid(self):
+		self.preview._preview_context_active = Mock(return_value=True)
+		self.visibility['Window.IsActive(1123)'] = True
+		for values, expected, expected_keys in (
+			(('episode',), None, ('PovInfoType',)),
+			(('movie', ''), None, ('PovInfoType', 'PovInfoTmdb')),
+			(('movie', '123', 'trailer-url'), ('info|movie|123', 'trailer-url', 'movie', '123', True, False), ('PovInfoType', 'PovInfoTmdb', 'PovInfoTrailer')),
+		):
+			with self.subTest(values=values):
+				self.entry.get_property = Mock(side_effect=values)
+
+				self.assertEqual(self.preview._candidate(), expected)
+				self.assertEqual(self.entry.get_property.call_args_list, [call(key) for key in expected_keys])
+
+	def test_dialog_candidate_stages_label_reads_until_prerequisites_are_valid(self):
+		self.preview._preview_context_active = Mock(return_value=True)
+		self.entry.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(DialogVideoInfo.xml)'
+		for values, expected, expected_labels in (
+			(('episode',), None, ('Window.Property(PovInfoType)',)),
+			(('tvshow', ''), None, ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)')),
+			(('tvshow', '456', 'trailer-url'), ('info|tvshow|456', 'trailer-url', 'tvshow', '456', False, False), ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)', 'ListItem.Trailer')),
+		):
+			with self.subTest(values=values):
+				self.entry.kodi_utils.get_infolabel = Mock(side_effect=values)
+
+				self.assertEqual(self.preview._candidate(), expected)
+				self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in expected_labels])
+
+	def test_actor_candidate_skips_id_and_label_reads_after_rejection(self):
+		self.preview._preview_context_active = Mock(return_value=True)
+		self.entry.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1122)'
+		self.entry.kodi_utils.get_infolabel = Mock(return_value='episode')
+
+		self.assertIsNone(self.preview._candidate())
+		self.entry.kodi_utils.get_infolabel.assert_called_once_with('Container.ListItem.Property(PovCreditType)')
+
+		values = {
+			'Container.ListItem.Property(PovCreditType)': 'movie',
+			'Container.ListItem.UniqueID(tmdb)': '', 'ListItem.UniqueID(tmdb)': '',
+			'Container.ListItem.Property(tmdb_id)': '', 'ListItem.Property(tmdb_id)': '',
+		}
+		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
+
+		self.assertIsNone(self.preview._candidate())
+		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
+
+		values = {
+			'Container.ListItem.Property(PovCreditType)': 'movie',
+			'Container.ListItem.UniqueID(tmdb)': '789',
+			'Container.ListItem.Label': 'Actor credit',
+		}
+		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
+
+		self.assertEqual(self.preview._candidate(), ('actor|movie|789', '', 'movie', '789', False, False))
+		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
+
+	def test_listing_candidate_rejects_invalid_media_before_dependent_reads(self):
+		self.preview._preview_context_active = Mock(return_value=True)
+		self.entry.kodi_utils.get_infolabel = Mock(return_value='episode')
+
+		self.assertIsNone(self.preview._candidate())
+		self.entry.kodi_utils.get_infolabel.assert_called_once_with('Container.ListItem.DBType')
+
+		values = {
+			'Container.ListItem.DBType': 'movie',
+			'Container.ListItem.Trailer': 'trailer-url',
+			'Container.ListItem.Property(PovLiteSummary)': 'true',
+			'Container.ListItem.Label': 'Movie',
+			'Container.ListItem.UniqueID(tmdb)': '123',
+			'Container.ListItem.Property(PovFocusIdentity)': 'listing|movie|123',
+		}
+		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
+
+		self.assertEqual(self.preview._candidate(), ('listing|movie|123', 'trailer-url', 'movie', '123', False, True))
+		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
+
+	def test_preview_ownership_reads_resolved_fallback_only_after_primary_mismatch(self):
+		self.preview.trailer = 'preview-url'
+		self.entry.get_property = Mock(return_value='resolved-url')
+		self.entry.kodi_utils.get_infolabel = Mock(return_value='preview-url')
+
+		self.assertTrue(self.preview._owns_preview())
+		self.entry.get_property.assert_not_called()
+
+		self.preview.trailer = 'http://127.0.0.1:1234/preview.m3u8?token=old'
+		self.entry.kodi_utils.get_infolabel.return_value = 'http://127.0.0.1:1234/preview.m3u8?token=new'
+		self.assertTrue(self.preview._owns_preview())
+		self.entry.get_property.assert_not_called()
+
+		self.preview.trailer = 'preview-url'
+		self.entry.kodi_utils.get_infolabel.return_value = 'resolved-url'
+		self.assertTrue(self.preview._owns_preview())
+		self.entry.get_property.assert_called_once_with(self.entry.TRAILER_RESOLVED_PROPERTY)
 
 	def test_new_focused_lookup_overtakes_stale_lookup_without_stale_publication(self):
 		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)

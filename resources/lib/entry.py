@@ -22,6 +22,8 @@ TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
 TRAILER_PREVIEW_ACTIVE_POLL = 0.25
 TRAILER_PREVIEW_IDLE_POLL = 1.0
 FOCUSED_FANART_STABLE_POLL = 0.5
+MAIN_MENU_WINDOWS = ('Home', '1110', '1111', '1112', '1113', '1119')
+MAIN_MENU_FOCUS = '[%s] + [ControlGroup(9001).HasFocus() | Control.HasFocus(4444)]' % ' | '.join('Window.IsActive(%s)' % window for window in MAIN_MENU_WINDOWS)
 TRAILER_PREVIEW_CACHE_LIMIT = 128
 TRAILER_LOOKUP_WORKERS = 2
 TRAILER_PREPARE_WORKERS = 2
@@ -230,6 +232,16 @@ def _service_poll_interval(fanart_pending, fanart_stable, preview_active):
 	if fanart_stable: return FOCUSED_FANART_STABLE_POLL
 	return TRAILER_PREVIEW_IDLE_POLL
 
+def _wait_for_service_tick(monitor, poll_interval):
+	if poll_interval != TRAILER_PREVIEW_IDLE_POLL or not kodi_utils.get_visibility(MAIN_MENU_FOCUS): return monitor.waitForAbort(poll_interval)
+	remaining = poll_interval
+	while remaining > 0.0:
+		delay = min(TRAILER_PREVIEW_ACTIVE_POLL, remaining)
+		if monitor.waitForAbort(delay): return True
+		remaining -= delay
+		if remaining and not kodi_utils.get_visibility(MAIN_MENU_FOCUS): return False
+	return False
+
 class TrailerPreviewPlayer(kodi_utils.xbmc_player):
 	def __init__(self, owner, generation):
 		kodi_utils.xbmc_player.__init__(self)
@@ -403,29 +415,34 @@ class TrailerPreview:
 		if not self._preview_context_active(): return None
 		if kodi_utils.get_visibility('Window.IsActive(1123)'):
 			media_type = get_property('PovInfoType').strip().lower()
+			if media_type not in ('movie', 'tvshow'): return None
 			item_id = get_property('PovInfoTmdb').strip()
+			if not item_id: return None
 			trailer = get_property('PovInfoTrailer').strip()
-			if media_type not in ('movie', 'tvshow') or not item_id: return None
 			identity = '|'.join(('info', media_type, item_id))
 			return identity, trailer, media_type, item_id, True, False
 		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)'):
 			media_type = kodi_utils.get_infolabel('Window.Property(PovInfoType)').strip().lower()
+			if media_type not in ('movie', 'tvshow'): return None
 			item_id = kodi_utils.get_infolabel('Window.Property(PovInfoTmdb)').strip()
+			if not item_id: return None
 			trailer = kodi_utils.get_infolabel('ListItem.Trailer').strip()
-			if media_type not in ('movie', 'tvshow') or not item_id: return None
 			identity = '|'.join(('info', media_type, item_id))
 			return identity, trailer, media_type, item_id, False, False
 		if kodi_utils.get_visibility('Window.IsActive(1122)'):
 			media_type = self._item_label('Property(PovCreditType)').lower() or self._item_label('Property(mediatype)').lower() or self._item_label('DBType').lower()
+			if media_type not in ('movie', 'tvshow'): return None
 			item_id = self._item_label('UniqueID(tmdb)') or self._item_label('Property(tmdb_id)')
+			if not item_id: return None
 			label = self._item_label('Label')
-			if media_type not in ('movie', 'tvshow') or not item_id or not label: return None
+			if not label: return None
 			identity = '|'.join(('actor', media_type, item_id))
 			return identity, '', media_type, item_id, False, False
 		media_type = self._item_label('DBType').lower()
+		if media_type not in ('movie', 'tvshow'): return None
 		trailer = self._item_label('Trailer')
 		is_summary = self._item_label('Property(PovLiteSummary)').lower() == 'true'
-		if media_type not in ('movie', 'tvshow') or not trailer and not is_summary: return None
+		if not trailer and not is_summary: return None
 		label = self._item_label('Label')
 		if not label or label.lower().startswith('next page'): return None
 		item_id = self._item_label('UniqueID(tmdb)') or self._item_label('FileNameAndPath')
@@ -825,8 +842,12 @@ class TrailerPreview:
 		playing_file = kodi_utils.get_infolabel('Player.FilenameAndPath').strip()
 		if not playing_file: return None
 		playing_url = playing_file.partition('?')[0]
-		for expected_file in ((trailer or self.trailer), get_property(TRAILER_RESOLVED_PROPERTY)):
-			if not expected_file: continue
+		expected_file = trailer or self.trailer
+		if expected_file:
+			if playing_file == expected_file: return True
+			if expected_file.startswith('http://127.0.0.1:') and playing_url == expected_file.partition('?')[0]: return True
+		expected_file = get_property(TRAILER_RESOLVED_PROPERTY)
+		if expected_file:
 			if playing_file == expected_file: return True
 			if expected_file.startswith('http://127.0.0.1:') and playing_url == expected_file.partition('?')[0]: return True
 		return False
@@ -876,7 +897,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			try: clearSubs()
 			except: pass
 			poll_interval = TRAILER_PREVIEW_IDLE_POLL
-			while not self.waitForAbort(poll_interval):
+			while not _wait_for_service_tick(self, poll_interval):
 				if get_property('pov_lite_pause_services'):
 					self.next_page_prefetch.cancel()
 					self.focused_fanart.pause()

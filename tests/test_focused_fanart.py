@@ -3,7 +3,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,6 +90,44 @@ class FocusedFanartTests(unittest.TestCase):
 		self.assertEqual(poll(False, True, True), 0.25)
 		self.assertEqual(poll(False, True, False), 0.5)
 		self.assertEqual(poll(False, False, False), 1.0)
+
+	def test_idle_menu_wait_wakes_as_soon_as_focus_leaves(self):
+		monitor = Mock()
+		monitor.waitForAbort.return_value = False
+		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, True, False))
+
+		self.assertFalse(self.entry._wait_for_service_tick(monitor, 1.0))
+		self.assertEqual(monitor.waitForAbort.call_args_list, [call(0.25), call(0.25)])
+		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(self.entry.MAIN_MENU_FOCUS)] * 3)
+
+	def test_idle_menu_wait_keeps_one_second_tick_when_focus_stays(self):
+		monitor = Mock()
+		monitor.waitForAbort.return_value = False
+		self.entry.kodi_utils.get_visibility = Mock(return_value=True)
+
+		self.assertFalse(self.entry._wait_for_service_tick(monitor, 1.0))
+		self.assertEqual(monitor.waitForAbort.call_args_list, [call(0.25)] * 4)
+		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(self.entry.MAIN_MENU_FOCUS)] * 4)
+
+	def test_service_wait_honors_abort_during_idle_menu_slices(self):
+		monitor = Mock()
+		monitor.waitForAbort.side_effect = (False, True)
+		self.entry.kodi_utils.get_visibility = Mock(return_value=True)
+
+		self.assertTrue(self.entry._wait_for_service_tick(monitor, 1.0))
+		self.assertEqual(monitor.waitForAbort.call_args_list, [call(0.25), call(0.25)])
+		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(self.entry.MAIN_MENU_FOCUS)] * 2)
+
+	def test_service_wait_preserves_non_menu_active_and_stable_cadence(self):
+		for interval, menu_focused, expected_wait in ((1.0, False, 1.0), (0.5, True, 0.5), (0.25, True, 0.25)):
+			with self.subTest(interval=interval, menu_focused=menu_focused):
+				monitor = Mock()
+				monitor.waitForAbort.return_value = False
+				self.entry.kodi_utils.get_visibility = Mock(return_value=menu_focused)
+
+				self.assertFalse(self.entry._wait_for_service_tick(monitor, interval))
+				monitor.waitForAbort.assert_called_once_with(expected_wait)
+				self.assertEqual(self.entry.kodi_utils.get_visibility.call_count, int(interval == 1.0))
 
 
 if __name__ == '__main__':

@@ -36,14 +36,12 @@
 
 <!-- Side Menu Background Panel Color -->
     <include name="Dim_Overlay">
-        <control type="group">
-            <control type="image">
-                <include>FullscreenDimensions</include>
-                <visible>$PARAM[visibility]</visible>
-				<texture>overlays/background.png</texture>
-                <colordiffuse>black</colordiffuse>
-                <animation time="300" effect="fade" start="0" end="100" reversible="true" easing="inout">Visible</animation>
-            </control>
+        <control type="image">
+            <include>FullscreenDimensions</include>
+            <visible>$PARAM[visibility]</visible>
+			<texture>overlays/background.png</texture>
+            <colordiffuse>black</colordiffuse>
+            <animation time="300" effect="fade" start="0" end="100" reversible="true" easing="inout">Visible</animation>
         </control>
     </include>
 

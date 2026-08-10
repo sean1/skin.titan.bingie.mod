@@ -564,7 +564,8 @@ def clean_settings(silent=False):
 	try:
 		removed_settings = []
 		with _settings_lock:
-			if path_exists(profile_xml):
+			file_exists = path_exists(profile_xml)
+			if file_exists:
 				with open_file(profile_xml) as xml_file: root = ET.fromstring(xml_file.read())
 			else: root = ET.Element('settings', {'version': '2'})
 			for parent in root.iter():
@@ -572,8 +573,9 @@ def clean_settings(silent=False):
 					if item.tag != 'setting' or item.get('id') not in FIXED_SETTINGS: continue
 					removed_settings.append(item)
 					parent.remove(item)
-			make_directorys(profile_path)
-			with open_file(profile_xml, 'w') as xml_file: xml_file.write(ET.tostring(root, encoding='unicode'))
+			if not file_exists or removed_settings:
+				make_directorys(profile_path)
+				with open_file(profile_xml, 'w') as xml_file: xml_file.write(ET.tostring(root, encoding='unicode'))
 		make_settings_dict()
 		text = local_string(32813) % len(removed_settings) if removed_settings else 32576
 		if not silent: notification(text, 1500)

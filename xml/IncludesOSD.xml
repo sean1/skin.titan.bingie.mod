@@ -1153,44 +1153,6 @@
                     <onclick>ActivateWindow(124)</onclick>
                     <include>Top_OSD_Button_Zoom_Anim</include>
                 </control>
-                <control type="button" id="102">
-                    <description>Video Settings</description>
-                    <width>$PARAM[topsize]</width>
-                    <height>$PARAM[topsize]</height>
-                    <label>13395</label>
-                    <align>left</align>
-                    <font/>
-                    <texturefocus colordiffuse="ffffffff">$PARAM[iconspath]video_fo.png</texturefocus>
-                    <texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]video.png</texturenofocus>
-                    <onclick>ActivateWindow(123)</onclick>
-                    <include>Top_OSD_Button_Zoom_Anim</include>
-					<visible>false</visible>
-                </control>
-				<control type="button" id="215">
-					<description>discmenu</description>
-					<width>$PARAM[topsize]</width>
-					<height>$PARAM[topsize]</height>
-					<label/>
-					<font/>
-					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]dvd_fo.png</texturefocus>
-					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]dvd.png</texturenofocus>
-					<onclick>PlayerControl(ShowVideoMenu)</onclick>
-					<visible>VideoPlayer.HasMenu</visible>
-					<include>Top_OSD_Button_Zoom_Anim</include>
-					<visible>false</visible>
-				</control>
-				<control type="button" id="214">
-					<description>bookmarks</description>
-					<width>$PARAM[topsize]</width>
-					<height>$PARAM[topsize]</height>
-					<label/>
-					<font/>
-					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]bookmarks_fo.png</texturefocus>
-					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]bookmarks.png</texturenofocus>
-					<onclick>ActivateWindow(VideoBookmarks)</onclick>
-					<include>Top_OSD_Button_Zoom_Anim</include>
-					<visible>false</visible>
-				</control>
 				<control type="button" id="209">
 					<description>Play From Beginning</description>
 					<width>$PARAM[topsize]</width>
@@ -1355,10 +1317,7 @@
         <value condition="Control.HasFocus(204)">[UPPERCASE]$LOCALIZE[13012][/UPPERCASE]</value>
 		<value condition="Control.HasFocus(209)">[UPPERCASE]$LOCALIZE[12021][/UPPERCASE]</value>
         <value condition="Control.HasFocus(101)">[UPPERCASE]$LOCALIZE[292][/UPPERCASE]</value>
-        <value condition="Control.HasFocus(102)">[UPPERCASE]$LOCALIZE[291][/UPPERCASE]</value>
         <value condition="Control.HasFocus(104)">[UPPERCASE]$LOCALIZE[24012][/UPPERCASE]</value>
-		<value condition="Control.HasFocus(214)">[UPPERCASE]$LOCALIZE[298][/UPPERCASE]</value>
-		<value condition="Control.HasFocus(215)">[UPPERCASE]$LOCALIZE[33061][/UPPERCASE]</value>
 		<value condition="Control.HasFocus(807)">[UPPERCASE]$LOCALIZE[4][/UPPERCASE]</value>
         <value condition="Control.HasFocus(808)">[UPPERCASE]$LOCALIZE[29915][/UPPERCASE]</value>
 		<value>[UPPERCASE]$LOCALIZE[33063][/UPPERCASE]</value>

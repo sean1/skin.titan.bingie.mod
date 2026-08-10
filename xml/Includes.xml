@@ -190,28 +190,8 @@
     </include>
 
 
-    <include name="align_center">
-        <align>center</align>
-    </include>
-
     <include name="left">
         <left>$PARAM[left]</left>
-    </include>
-
-    <include name="right">
-        <right>$PARAM[right]</right>
-    </include>
-
-    <include name="height">
-        <height>$PARAM[height]</height>
-    </include>
-
-    <include name="width">
-        <width>$PARAM[width]</width>
-    </include>
-
-    <include name="top">
-        <top>$PARAM[top]</top>
     </include>
 
     <include name="posx">

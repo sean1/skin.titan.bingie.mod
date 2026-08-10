@@ -2,17 +2,6 @@
 <!-- BINGIE -->
 <includes>
 
-    <include name="SquareThumb">
-        <bordersize>8</bordersize>
-        <texture background="true" diffuse="diffuse/panel.png" fallback="DefaultVideo.png" border="0">$VAR[SquarePosterThumb]</texture>
-        <aspectratio scalediffuse="false" aligny="center">scale</aspectratio>
-    </include>
-    <include name="SquareThumbFO">
-        <aspectratio aligny="top">stretch</aspectratio>
-        <texture>diffuse/panel.png</texture>
-        <colordiffuse>ffffffff</colordiffuse>
-    </include>
-
     <include name="SquarePosterTagOverlayVisibility">
         <visible>
             ![Control.IsVisible(509) + false] +

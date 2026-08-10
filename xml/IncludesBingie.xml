@@ -1317,29 +1317,6 @@
 	    </definition>
     </include>
 
-<!-- SPOTLIGHT IMAGE MAIN HOME-->
-<!--the whole fanart image now fits the spotlight like Netflix -->
-    <include name="BingieSpotlightFullImage">
-        <param name="top" default="0"/>
-        <param name="right" default="0"/>
-        <param name="width" default="1920"/>
-        <param name="height" default="1080"/>
-        <definition>
-<!-- Spotlight Diffuse -->
-			<control type="image">
-                <visible>$PARAM[visibility]</visible>
-                <top>$PARAM[top]</top>
-                <right>$PARAM[right]</right>
-                <width>$PARAM[width]</width>
-                <height>$PARAM[height]</height>
-                <texture background="true">$PARAM[image]</texture>
-                <aspectratio>scale</aspectratio>
-				<animation effect="fade" start="100" end="100" time="300" condition="true">WindowOpen</animation>
-				<animation effect="fade" start="100" end="100" time="300" condition="true">WindowClose</animation>
-            </control>
-	    </definition>
-    </include>
-
 <!-- CLEARLOGO - Home Screen Widgets - Info/Text/Clearlogo -->
     <include name="Bingie_Headline_Item">
         <param name="genre_adjust" default="false" />

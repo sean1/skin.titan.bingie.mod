@@ -22,33 +22,6 @@
 
     <!-- GENERIC LAYOUT FOR POSTERS -->
     <!-- TAG OVERLAYS -->
-    <include name="PosterTagOverlayVisibility">
-        <visible>!String.IsEqual(ListItem.Label,..)</visible>
-        <visible>
-            ![Control.IsVisible(52) + false] +
-            ![Control.IsVisible(53) + false] +
-            ![Control.IsVisible(54) + false] +
-            ![Control.IsVisible(57) + false] +
-            ![Control.IsVisible(59) + false] +
-            ![Control.IsVisible(519) + false] +
-            ![Control.IsVisible(520) + false] +
-            ![Control.IsVisible(526) + false]
-        </visible>
-        <visible>
-            [[Control.IsVisible(52) + false] |
-            [Control.IsVisible(53) + false] |
-            [Control.IsVisible(54) + false] |
-            [Control.IsVisible(57) + false] |
-            [Control.IsVisible(59) + false] |
-            [Control.IsVisible(519) + false] |
-            [Control.IsVisible(520) + false] |
-            [Control.IsVisible(526) + false] |
-            [[String.Contains(Window.Property(xmlfile),Nav) | Window.IsActive(Home)] + String.IsEmpty(ListItem.Art(poster)) + String.IsEmpty(ListItem.Art(tvshow.poster)) + !false] |
-            [String.IsEmpty(ListItem.Art(poster)) + String.IsEmpty(ListItem.Art(tvshow.poster)) + Window.IsActive(DialogVideoInfo.xml)]] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
-        </visible>
-    </include>
-
-
     <!-- New Episodes Tag Overlay -->
 
     <!-- Poster thumb vars -->

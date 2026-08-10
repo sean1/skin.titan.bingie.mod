@@ -801,12 +801,6 @@
 		<value>$INFO[Window.Property(PovInfoType)]</value>
 	</variable>
 
-    <!-- play/resume Sxx: ep. xx label -->
-    <variable name="PlayOrResumeSeasonEpisodeLabel">
-        <value condition="Container(5050).ListItem.IsResumable">$LOCALIZE[13404]$INFO[Container(5050).ListItem.Season, $LOCALIZE[31871],: ]$INFO[Container(5050).ListItem.Episode,$LOCALIZE[31873]. ,]</value>
-        <value>$LOCALIZE[208]$INFO[Container(5050).ListItem.Season, $LOCALIZE[320003] ,: ]$INFO[Container(5050).ListItem.Episode,$LOCALIZE[320004] ,]</value>
-    </variable>
-
     <!-- next-up content for info dialog -->
     <variable name="InfoDialogNextUpContent">
         <value condition="[String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.DBID)">videodb://inprogresstvshows/$INFO[ListItem.DBID]/-2/?tvshowid=$INFO[ListItem.DBID]</value>

@@ -345,8 +345,4 @@
     <include name="widget_base_content_normal">
         <content sortby="$PARAM[widgetSortBy]" sortorder="$PARAM[widgetSortOrder]" limit="$PARAM[widgetLimit]" target="$PARAM[widgetTarget]" browse="never">$PARAM[widgetPath]</content>
     </include>
-    <include name="WidgetTagOverlayAuto">
-        <include>$PARAM[prefix]TagOverlayVisibility</include>
-    </include>
-
 </includes>

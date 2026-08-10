@@ -7,7 +7,6 @@
 			<posx>360</posx>
 			<posy>255</posy>
 			<include>animation_window_open_close</include>
-			<control type="group">
 				<control type="image">
 					<description>Background Image</description>
 					<posx>-20</posx>
@@ -37,8 +36,6 @@
 					<font>Bold38</font>
 					<textcolor>ffffffff</textcolor>
 				</control>
-			</control>
-			<control type="group">
 				<control type="label" id="203">
 					<description>Instructions Label</description>
 					<posx>395</posx>
@@ -77,7 +74,6 @@
 					<align>center</align>
 					<aligny>center</aligny>
 				</control>
-			</control>
 			<control type="image">
 				<description>QR Code</description>
 				<posx>863</posx>

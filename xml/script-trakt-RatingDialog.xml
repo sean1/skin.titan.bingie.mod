@@ -23,7 +23,6 @@
                 <effect type="fade" start="100" end="0" delay="200" time="100" />
             </animation>
             <!-- Dialogue content -->
-            <control type="group">
 			  <control type="image">
                     <description>Trakt Background</description>
                     <posx>-20</posx>
@@ -92,7 +91,6 @@
                     <textcolor>black</textcolor>
 					<shadowcolor>grey</shadowcolor>
                 </control>
-            </control>
             <!-- Dialogue Button content -->
             <control type="group" id="10015">
                 <control type="button" id="11030">

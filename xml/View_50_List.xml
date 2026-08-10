@@ -448,12 +448,6 @@
                     <visible>![ListItem.IsCollection + false]</visible>
 				</control>
                 <control type="image">
-					<aspectratio align="left" aligny="center" scalediffuse="true">keep</aspectratio>
-					<texture background="true" diffuse="diffuse/poster_big.png" fallback="DefaultVideo.png">$VAR[PosterThumb]</texture>
-					<bordersize>8</bordersize>
-                    <visible>[ListItem.IsCollection + false]</visible>
-				</control>
-                <control type="image">
 					<aspectratio align="center" aligny="top" scalediffuse="true">keep</aspectratio>
 					<texture background="true" diffuse="diffuse/panel2.png" fallback="DefaultVideo.png">$VAR[PosterThumb]</texture>
 					<bordersize>8</bordersize>

@@ -22,15 +22,6 @@
             </control>
 
 			<control type="image">
-                <visible>[String.Contains(Player.Volume,-60.0) | Player.Muted] + !player.passthrough + !true + !false</visible>
-                <right>20</right>
-				<top>-21</top>
-				<width>200</width>
-				<height>200</height>
-                <texture colordiffuse="ffe50914">dialogs/volume/mute.png</texture>
-            </control>
-
-			<control type="image">
                 <visible>[String.Contains(Player.Volume,-60.0) | Player.Muted] + !player.passthrough + [true | false]</visible>
                 <right>20</right>
 				<top>-30</top>

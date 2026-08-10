@@ -102,20 +102,6 @@
 				<textcolor>ffffffff</textcolor>
 				<shadowcolor>None</shadowcolor>
 			</control>
-			<control type="label" id="26">
-				<description>buffering label</description>
-				<label>$LOCALIZE[15107]</label>
-				<right>48</right>
-				<top>857</top>
-				<width>120</width>
-				<height>20</height>
-				<aligny>center</aligny>
-				<align>center</align>
-				<font>Bold20</font>
-				<textcolor>white</textcolor>
-				<shadowcolor>black</shadowcolor>
-				<visible>!true</visible>
-			</control>
 		</control>
 	</controls>
 </window>

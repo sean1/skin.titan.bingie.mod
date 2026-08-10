@@ -22,7 +22,7 @@
             </control>
 
 			<control type="image">
-                <visible>[String.Contains(Player.Volume,-60.0) | Player.Muted] + !player.passthrough + [true | false]</visible>
+                <visible>[String.Contains(Player.Volume,-60.0) | Player.Muted] + !player.passthrough</visible>
                 <right>20</right>
 				<top>-30</top>
 				<width>200</width>
@@ -37,7 +37,7 @@
 
 				<!-- Volume Indicator Modern -->
 				<control type="group">
-				<visible>[true | false]</visible>
+				<visible>true</visible>
 					<control type="image">
 						<right>20</right>
 						<top>-30</top>
@@ -54,7 +54,7 @@
 						<height>200</height>
 						<texture colordiffuse="52ffffff">dialogs/volume/modern/icon.png</texture>
 						<animation effect="fade" end="40" time="0" condition="true">Conditional</animation>
-						<visible>!false</visible>
+						<visible>true</visible>
 					</control>
 
 					<control type="image">
@@ -64,7 +64,7 @@
 						<height>200</height>
 						<texture colordiffuse="ffffffff">dialogs/volume/modern/icon.png</texture>
 						<animation effect="fade" end="20" time="0" condition="true">Conditional</animation>
-						<visible>!false</visible>
+						<visible>true</visible>
 					</control>
 
 					<control type="image">

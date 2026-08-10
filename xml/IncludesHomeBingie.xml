@@ -52,7 +52,7 @@
                     <control type="group">
 					<visible>!$EXP[IsMainMenuOpened]</visible>
 					<visible>!$EXP[IsCategoryDBType]</visible>
-                        <visible>true + !Integer.IsGreater(ListItem.PercentPlayed,1) | !true</visible>
+                        <visible>!Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
                         <include>Default_Visible_Fade</include>
                         <top>-7</top>
                         <width>1000</width>
@@ -143,7 +143,7 @@
 							<itemgap>15</itemgap>
 						<!-- Spotlight Details Row Top250 Red Icon -->
 						<control type="image">
-								<visible>!false</visible>
+								<visible>true</visible>
 								<visible>!String.IsEmpty(Control.GetLabel(8231))</visible>
 								<posy>5</posy>
 								<left>1</left>
@@ -179,7 +179,7 @@
                     <control type="textbox" id="90009">
 					<visible>!$EXP[IsMainMenuOpened]</visible>
 					<visible>!$EXP[IsCategoryDBType]</visible>
-                        <visible>true + !Integer.IsGreater(ListItem.PercentPlayed,1) | !true</visible>
+                        <visible>!Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
                         <include>Default_Visible_Fade</include>
 						<top>5</top>
 						<height min="30" max="121">auto</height>

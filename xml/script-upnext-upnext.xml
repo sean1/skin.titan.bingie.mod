@@ -72,7 +72,7 @@
 
             <!-- Full Info Notification -->
             <control type="group">
-                <visible>!false</visible>
+                <visible>true</visible>
                 <!-- gradient overlay, cornered would be better -->
                 <control type="image">
                     <bottom>0</bottom>

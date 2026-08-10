@@ -228,7 +228,7 @@
 
 		<!-- Fallback Audio Codec flag/text -->
 		<control type="button" id="54227">
-				<visible>!false + !String.IsEmpty(Control.GetLabel(54227)) + String.EndsWith(Control.GetLabel(54321),color_transparent.png)</visible>
+				<visible>!String.IsEmpty(Control.GetLabel(54227)) + String.EndsWith(Control.GetLabel(54321),color_transparent.png)</visible>
 				<visible>!String.IsEqual(Window.Property(AdditionalInfo),similar) + !String.IsEqual(Window.Property(AdditionalInfo),cast)</visible>
 				<posy>0</posy>
                 <height>36</height>
@@ -976,7 +976,7 @@
 
             <!-- PowerMenu Buttons -->
             <control type="list" id="40003">
-                <visible>$EXP[IsMainMenuOpened] + !false</visible>
+                <visible>$EXP[IsMainMenuOpened]</visible>
                 <orientation>vertical</orientation>
                 <top>924</top>
 				<left>18</left>
@@ -1416,7 +1416,7 @@
                 <!-- spotlight row details -->
                 <control type="group">
 				<visible>!Container.Content(seasons)</visible>
-				 <visible>true + !Integer.IsGreater(ListItem.PercentPlayed,1) | !true</visible>
+				 <visible>!Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
                     <top>-7</top>
 					<width>1000</width>
                     <height>55</height>
@@ -1458,7 +1458,7 @@
 					<!-- TV shows Episodes -->
                     <control type="grouplist">
                         <visible>Container.Content(episodes)</visible>
-						<visible>[true + !Integer.IsGreater(ListItem.PercentPlayed,1)] | !true</visible>
+						<visible>!Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
                         <include>Default_Visible_Fade</include>
                         <orientation>vertical</orientation>
                         <top>0</top>
@@ -1558,7 +1558,7 @@
 						<itemgap>15</itemgap>
 					<!--top 250 icon color-->
 					<control type="image">
-							<visible>!String.IsEmpty(Control.GetLabel(8231)) + !false</visible>
+							<visible>!String.IsEmpty(Control.GetLabel(8231))</visible>
 							<posy>5</posy>
 							<left>0</left>
 							<height>50</height>
@@ -1569,7 +1569,7 @@
 
 					<control type="label" id="8231">
 						<visible>!String.IsEmpty(Control.GetLabel(8231))</visible>
-						<visible>!false</visible>
+						<visible>true</visible>
 						<font>bold29</font>
 						<textcolor>ffffffff</textcolor>
 						<label>$VAR[IMDBTop250RatingValue,#, $LOCALIZE[320157]]</label>
@@ -1589,7 +1589,7 @@
 				</control>
                 <!-- Plot (Library Bingie) -->
                 <control type="textbox">
-                    <visible>true + !Integer.IsGreater(ListItem.PercentPlayed,1) | !true</visible>
+                    <visible>!Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
 					<height min="30" max="121">auto</height>
 					<top>5</top>
 					<width>820</width>

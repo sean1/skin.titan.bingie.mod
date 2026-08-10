@@ -38,7 +38,7 @@
 					<usecontrolcoords>true</usecontrolcoords>
 					<!-- ClearLogo on Pause -->
 					<control type="image" id="111">
-						<visible>!false</visible>
+						<visible>true</visible>
 						<top>100</top>
 						<width></width>
 						<height>190</height>

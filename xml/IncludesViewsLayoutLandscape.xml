@@ -141,7 +141,7 @@
     <include name="New_Episodes_Tag_Overlay">
         <control type="group">
 			<visible>!$EXP[IsCategoryDBType]</visible>
-            <visible>!false</visible>
+            <visible>true</visible>
             <visible>$EXP[IsTvShowDBType] + $EXP[IsTVShowInLastEpisodes]</visible>
             <width>100%</width>
             <height>30</height>

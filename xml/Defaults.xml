@@ -242,7 +242,7 @@
 		<textureslidernibfocus colordiffuse="ffcc0000">scrollbar/texturesliderbar_nib.png</textureslidernibfocus>
 		<showonepage>false</showonepage>
         <orientation>vertical</orientation>
-        <visible>!false</visible>
+        <visible>true</visible>
     </default>
     <default type="textbox">
         <label/>

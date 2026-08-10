@@ -342,7 +342,7 @@
 			<!-- Blank image for gap -->
 			<control type="image">
 				<visible>String.Contains(Control.GetLabel(22345),landscape)</visible>
-				<visible>!false</visible>
+				<visible>true</visible>
 				<visible>yes</visible>
 				<top>14</top>
 				<left>15</left>
@@ -518,8 +518,8 @@
                     <height>100%</height>
                     <onup>60</onup>
                     <onleft>5027</onleft>
-                    <animation effect="fade" start="0" end="100" time="400" condition="[Control.HasFocus(60) | false] + !Control.IsVisible(6002)">Conditional</animation>
-                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | false] | Control.IsVisible(6002)">Conditional</animation>
+                    <animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) + !Control.IsVisible(6002)">Conditional</animation>
+                    <animation effect="fade" start="100" end="0" time="400" condition="!Control.HasFocus(60) | Control.IsVisible(6002)">Conditional</animation>
                 </control>
 			</control>
 		<!-- Loading Spinner -->

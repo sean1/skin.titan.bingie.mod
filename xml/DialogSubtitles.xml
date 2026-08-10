@@ -300,8 +300,8 @@
                     <height>404</height>
                     <onleft>120</onleft>
 					<onright>150</onright>
-                    <animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(121) | Container.Scrolling | false">Conditional</animation>
-                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(121) | Container.Scrolling | false]">Conditional</animation>
+                    <animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(121) | Container.Scrolling">Conditional</animation>
+                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(121) | Container.Scrolling]">Conditional</animation>
                 </control>
 
 				<control type="label">

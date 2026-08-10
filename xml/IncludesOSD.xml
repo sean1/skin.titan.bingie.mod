@@ -335,7 +335,7 @@
 		<!--BINGIE OSD Info Panel-->
 		<control type="group">
 			<visible>VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)</visible>
-			<visible>!false + !false</visible>
+			<visible>true</visible>
 			<!-- background -->
 			<control type="image">
 				<width>100%</width>
@@ -361,7 +361,7 @@
                     <texture background="true" diffuse="diffuse/cdmask_medium_new.png" fallback="defaultcovers/cd_medium.png">$VAR[PlayerDiscArtImage]</texture>
                     <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
                     <visible>Player.HasVideo + [!String.IsEmpty(Player.Art(poster)) | !String.IsEmpty(Player.Art(tvshow.poster))]</visible>
-					<visible>VideoPlayer.Content(Movies) | false</visible>
+					<visible>VideoPlayer.Content(Movies)</visible>
                </control>
 			   <!-- Clearart -->
 			<!--Poster - Video Cover OSD Pause-->
@@ -407,7 +407,7 @@
 
 				<!-- Clear Logo Title - Your Watching -->
 				<control type="image" id="1">
-					<visible>!false</visible>
+					<visible>true</visible>
 					<visible>!String.IsEmpty(Control.GetLabel(1))</visible>
 					<width>400</width>
 					<height>150</height>

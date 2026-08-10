@@ -392,7 +392,7 @@
 			<!-- Blank image for gap -->
 			<control type="image">
 				<visible>String.Contains(Control.GetLabel(12345),landscape)</visible>
-				<visible>!false</visible>
+				<visible>true</visible>
 				<visible>yes</visible>
 				<top>14</top>
 				<left>15</left>
@@ -552,7 +552,7 @@
                     <ondown>525</ondown>
                     <onleft condition="Control.IsVisible(5250)">5250</onleft>
                     <onleft condition="!Control.IsVisible(5250)">9000</onleft>
-                    <onright condition="!false">60</onright>
+                    <onright condition="true">60</onright>
                     <onback condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">ClearProperty(ListItem.TVShowID,Home)</onback>
                     <pagecontrol>60</pagecontrol>
                     <preloaditems>2</preloaditems>
@@ -599,8 +599,8 @@
                     <height>100%</height>
                     <onup>60</onup>
                     <onleft>525</onleft>
-                    <animation effect="fade" start="0" end="100" time="400" condition="[Control.HasFocus(60) | false] + !Control.IsVisible(6002)">Conditional</animation>
-                    <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | false] | Control.IsVisible(6002)">Conditional</animation>
+                    <animation effect="fade" start="0" end="100" time="400" condition="Control.HasFocus(60) + !Control.IsVisible(6002)">Conditional</animation>
+                    <animation effect="fade" start="100" end="0" time="400" condition="!Control.HasFocus(60) | Control.IsVisible(6002)">Conditional</animation>
                 </control>
 
             </control>

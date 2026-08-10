@@ -1,3 +1,7 @@
+BINGIE Lite 2.3.15
+
+- Reduce the install package by about 3.5 MiB by pruning 626 unused legacy packed textures while preserving active and dynamically referenced artwork.
+
 BINGIE Lite 2.3.14
 
 - Reduce the packaged add-on by about 5.4 MiB through packed-texture deduplication and removal of 114 unused legacy user pictures and four obsolete branding textures.

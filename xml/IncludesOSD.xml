@@ -552,28 +552,6 @@
 		<value>defaultvideo.png</value>
 	 </variable>
 
-	<variable name="OSDImageNoPoster">
-		<value condition="!String.IsEmpty(Player.Icon)">$INFO[Player.Icon]</value>
-		<value condition="!String.IsEmpty(Player.Art(thumb))">$INFO[Player.Art(thumb)]</value>
-        <value condition="!String.IsEmpty(VideoPlayer.Cover)">$INFO[VideoPlayer.Cover]</value>
-	</variable>
-
-	<variable name="OSDLabel1">
-		<value condition="Player.HasVideo + Player.IsInternetStream + !String.IsEmpty(Window(Home).Property(SkinHelper.Player.AddonName)) + String.IsEmpty(VideoPlayer.TvShowTitle)">$INFO[Window(Home).Property(SkinHelper.Player.AddonName)]</value>
-        <value condition="Player.HasVideo + VideoPlayer.Content(episodes) + !String.IsEmpty(VideoPlayer.TvShowTitle)">$INFO[VideoPlayer.TVShowTitle] • $LOCALIZE[20373] $INFO[VideoPlayer.Season]</value>
-        <value>$LOCALIZE[31040]</value>
-	 </variable>
-
-	 <variable name="OSDLabel2">
-        <value condition="Player.HasVideo + VideoPlayer.Content(Episodes)">$INFO[VideoPlayer.Episode]. $INFO[VideoPlayer.Title]</value>
-        <value condition="Player.HasVideo">$INFO[VideoPlayer.Title]</value>
-	 </variable>
-
-	 <variable name="OSDLabel3">
-        <value condition="Player.HasVideo + String.IsEmpty(VideoPlayer.NextTitle) + !Window.IsActive(VideoOSD) + !String.IsEmpty(player.chaptercount) + !String.IsEqual(player.chaptercount,00)">$INFO[player.chapter,[B]$LOCALIZE[21396]:[/B] ,]$INFO[player.chaptercount,/,]$INFO[player.chaptername, - ,]</value>
-        <value condition="!String.IsEmpty(VideoPlayer.Genre) + !Window.IsActive(VideoOSD) + !String.Contains(VideoPlayer.Genre,unknown)">$LOCALIZE[515]: $INFO[VideoPlayer.Genre]</value>
-	 </variable>
-
 	<variable name="OSDLabel4">
 		<value condition="Player.HasVideo + Player.IsInternetStream + !String.IsEmpty(Window(Home).Property(SkinHelper.Player.AddonName)) + String.IsEmpty(VideoPlayer.TvShowTitle)">$INFO[Window(Home).Property(SkinHelper.Player.AddonName)]</value>
 		<value condition="Player.HasVideo + VideoPlayer.Content(episodes) + !String.IsEmpty(VideoPlayer.TvShowTitle)">$INFO[VideoPlayer.TVShowTitle]</value>
@@ -597,14 +575,6 @@
 		<value>$INFO[Player.TimeRemaining]</value>
 	</variable>
 
-	<variable name="PlayTime">
-		<value>$INFO[Player.Time]</value>
-	</variable>
-
-	<variable name="RemainingTime">
-		<value>$INFO[Player.TimeRemaining]</value>
-	</variable>
-
 	<variable name="TotalDuration">
 		<value>$INFO[Player.Duration]</value>
 	</variable>
@@ -622,54 +592,6 @@
 	<variable name="premiered_or_year">
 		<value condition="VideoPlayer.Content(episodes)">$INFO[VideoPlayer.Premiered]</value>
 		<value>$INFO[VideoPlayer.Year]</value>
-	</variable>
-
-     <variable name="PlayerActionLabel">
-		<value condition="[Player.Paused + Player.Caching] + !Player.Seeking">[B]$LOCALIZE[15107]:[/B] $INFO[Player.CacheLevel]%</value>
-		<value condition="!String.IsEmpty(Player.SeekStepSize) + ![Player.Forwarding | Player.Rewinding] + Player.seeking">[B]$LOCALIZE[31255][/B] $INFO[Player.SeekStepSize]</value>
-		<value condition="Player.DisplayAfterSeek  + ![Player.Forwarding | Player.Rewinding] + !String.IsEmpty(Player.SeekOffset)">[B]$LOCALIZE[31255][/B] $INFO[Player.SeekOffset]</value>
-		<value condition="Player.seeking">[B]$LOCALIZE[31255][/B] $VAR[SeekTime] - $VAR[TotalDuration]</value>
-		<value condition="Player.Forwarding2x">[B]$LOCALIZE[31253][/B] x2</value>
-		<value condition="Player.Forwarding4x">[B]$LOCALIZE[31253][/B] x4</value>
-		<value condition="Player.Forwarding8x">[B]$LOCALIZE[31253][/B] x8</value>
-		<value condition="Player.Forwarding16x">[B]$LOCALIZE[31253][/B] x16</value>
-		<value condition="Player.Forwarding32x">[B]$LOCALIZE[31253][/B] x32</value>
-		<value condition="Player.Rewinding2x">[B]$LOCALIZE[31254][/B] x2</value>
-		<value condition="Player.Rewinding4x">[B]$LOCALIZE[31254][/B] x4</value>
-		<value condition="Player.Rewinding8x">[B]$LOCALIZE[31254][/B] x8</value>
-		<value condition="Player.Rewinding16x">[B]$LOCALIZE[31254][/B] x16</value>
-		<value condition="Player.Rewinding32x">[B]$LOCALIZE[31254][/B] x32</value>
-		<value condition="!String.IsEmpty(Player.FinishTime)">$LOCALIZE[31112]: $VAR[FinishTime]</value>
-	 </variable>
-
-
-	 <variable name="PlayerActionLabelLarge">
-		<value condition="[Player.Paused + Player.Caching] + !Player.Seeking">[B]$LOCALIZE[15107]:[/B] $INFO[Player.CacheLevel]%</value>
-		<value condition="!String.IsEmpty(Player.SeekStepSize) + ![Player.Forwarding | Player.Rewinding] + Player.seeking">[B]$LOCALIZE[31255][/B] $INFO[Player.SeekStepSize]</value>
-		<value condition="Player.DisplayAfterSeek  + ![Player.Forwarding | Player.Rewinding] + !String.IsEmpty(Player.SeekOffset)">[B]$LOCALIZE[31255][/B] $INFO[Player.SeekOffset]</value>
-		<value condition="Player.Seeking">[B]$LOCALIZE[31255][/B] $VAR[SeekTime] - $VAR[TotalDuration]</value>
-		<value condition="Player.Forwarding2x">[B]$LOCALIZE[31253][/B] x2</value>
-		<value condition="Player.Forwarding4x">[B]$LOCALIZE[31253][/B] x4</value>
-		<value condition="Player.Forwarding8x">[B]$LOCALIZE[31253][/B] x8</value>
-		<value condition="Player.Forwarding16x">[B]$LOCALIZE[31253][/B] x16</value>
-		<value condition="Player.Forwarding32x">[B]$LOCALIZE[31253][/B] x32</value>
-		<value condition="Player.Rewinding2x">[B]$LOCALIZE[31254][/B] x2</value>
-		<value condition="Player.Rewinding4x">[B]$LOCALIZE[31254][/B] x4</value>
-		<value condition="Player.Rewinding8x">[B]$LOCALIZE[31254][/B] x8</value>
-		<value condition="Player.Rewinding16x">[B]$LOCALIZE[31254][/B] x16</value>
-		<value condition="Player.Rewinding32x">[B]$LOCALIZE[31254][/B] x32</value>
-		<value condition="Player.Paused">[B]$LOCALIZE[31251][/B]</value>
-	 </variable>
-
-	<variable name="PlayerActionLabelBingie">
-		<value condition="Player.DisplayAfterSeek  + ![Player.Forwarding | Player.Rewinding | Player.Paused] + !String.IsEmpty(Player.SeekOffset) + String.StartsWith(Player.SeekOffset,-83)">00:00</value>
-		<value condition="!String.IsEmpty(Player.SeekStepSize) + ![Player.Forwarding | Player.Rewinding] + Player.seeking">$INFO[Player.SeekStepSize]</value>
-		<value condition="!Player.Seeking + Player.DisplayAfterSeek  + ![Player.Forwarding | Player.Rewinding | Player.Paused] + !String.IsEmpty(Player.SeekOffset)">$INFO[Player.SeekOffset]</value>
-		<value condition="Player.Forwarding2x | Player.Rewinding2x">x2</value>
-		<value condition="Player.Forwarding4x | Player.Rewinding4x">x4</value>
-		<value condition="Player.Forwarding8x | Player.Rewinding8x">x8</value>
-		<value condition="Player.Forwarding16x | Player.Rewinding16x">x16</value>
-		<value condition="Player.Forwarding32x | Player.Rewinding32x">x32</value>
 	</variable>
 
      <include name="HideOsdConditions">

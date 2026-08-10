@@ -15,7 +15,6 @@
     <include file="View_525_Bingie_Episodes.xml" />
 	<include file="View_527_Bingie_Seasons.xml" />
     <include file="IncludesViews.xml" />
-    <include file="IncludesMediaFlags.xml" />
     <include file="IncludesViewsLayoutPoster.xml" />
     <include file="IncludesViewsLayoutLandscape.xml" />
     <include file="IncludesViewsLayoutSquare.xml" />

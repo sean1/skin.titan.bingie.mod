@@ -171,13 +171,6 @@
 		<value condition="!String.IsEmpty(ListItem.Art(poster)) + !String.Contains(ListItem.Art(poster),Default) + false">$INFO[ListItem.Art(poster)]</value>
 	 </variable>
 
-    <!-- unused -->
-
-	 <variable name="OSDProgressBarBackgroundColor">
-		<value>bb0f0f0f</value>
-	 </variable>
-
-
      <variable name="MovieGenreIconVar">
        <value>DefaultGenre.png</value>
      </variable>
@@ -187,13 +180,6 @@
          <!-- last resort: use webservice - will only work for non-texture packed resource addons or manual folders -->
          <value>DefaultGenre.png</value>
      </variable>
-
-
-     <variable name="osdpanelimage">
-        <value>diffuse/panel2.png</value>
-     </variable>
-
-
 	 <variable name="VideoHWDecoder">
 		<value condition="Player.Process(videohwdecoder)">$LOCALIZE[13281]</value>
 		<value>$LOCALIZE[31787]</value>

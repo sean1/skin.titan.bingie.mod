@@ -170,7 +170,6 @@
                     </control>
                 </itemlayout>
                 <focusedlayout height="60" width="1100" condition="Control.HasFocus(3)">
-                    <control type="group">
                         <control type="image">
 							<posx>11</posx>
                             <width>1078</width>
@@ -199,10 +198,8 @@
                             <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
-                    </control>
                 </focusedlayout>
 				<focusedlayout height="60" width="1100" condition="!Control.HasFocus(3)">
-                    <control type="group">
                         <control type="image">
 							<animation effect="fade" start="100" end="50" condition="!Control.HasFocus(3)">Conditional</animation>
 							<posx>11</posx>
@@ -232,7 +229,6 @@
                             <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
-                    </control>
                 </focusedlayout>
 
 			</control>
@@ -325,7 +321,6 @@
                     </control>
                 </itemlayout>
                 <focusedlayout height="120" width="610" condition="Control.HasFocus(6)">
-                    <control type="group">
                         <control type="image">
                             <width>610</width>
                             <height>120</height>
@@ -386,10 +381,8 @@
                             <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
-                    </control>
                 </focusedlayout>
 				<focusedlayout height="120" width="610" condition="!Control.HasFocus(6)">
-                    <control type="group">
                         <control type="image">
 							<animation effect="fade" start="100" end="50" condition="!Control.HasFocus(6)">Conditional</animation>
                             <width>610</width>
@@ -451,7 +444,6 @@
                             <colordiffuse>ff000000</colordiffuse>
                             <visible>ListItem.IsSelected</visible>
                         </control>
-                    </control>
                 </focusedlayout>
             </control>
 			<control type="scrollbar" id="1661">

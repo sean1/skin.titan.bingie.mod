@@ -366,7 +366,6 @@
 				<ondown>527</ondown>
 				<include>ScrollTime</include>
 				<focusedlayout height="65" width="565" condition="Control.HasFocus(527)">
-					<control type="group">
 						<!-- Season x label -->
                             <control type="label">
                                 <left>18</left>
@@ -399,10 +398,8 @@
                                 <colordiffuse>ffffffff</colordiffuse>
                                 <texture border="10" background="true" colordiffuse="ffffffff">bingie/border/default_button_fo_4.png</texture>
                             </control>
-					</control>
 				</focusedlayout>
 				<focusedlayout height="65" width="565" condition="!Control.HasFocus(527)">
-					<control type="group">
 						<!-- Season x label -->
                             <control type="label">
                                 <left>18</left>
@@ -434,10 +431,8 @@
                                 <aspectratio align="left" aligny="top">stretch</aspectratio>
                                 <texture border="10" background="true" colordiffuse="a6ffffff">bingie/border/default_button_fo_4.png</texture>
                             </control>
-					</control>
 				</focusedlayout>
 				<itemlayout height="65" width="565" condition="Container.Content(seasons)">
-					<control type="group">
 						<!-- Season x label -->
                             <control type="label">
                                 <left>18</left>
@@ -449,7 +444,6 @@
                                 <textcolor>a6ffffff</textcolor>
                                 <label>$INFO[ListItem.Label]</label>
                             </control>
-					</control>
 				</itemlayout>
 			</control>
 			</control>

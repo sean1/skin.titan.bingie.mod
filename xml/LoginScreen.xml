@@ -61,7 +61,6 @@
                         </control>
 					</itemlayout>
                     <focusedlayout height="320" width="300">
-                        <control type="group">
 							 <control type="image">
 								<visible>Control.HasFocus(52)</visible>
                                 <align>left</align>
@@ -95,7 +94,6 @@
                                 <font>Reg32</font>
                                 <aligny>center</aligny>
                             </control>
-                        </control>
                     </focusedlayout>
                 </control>
             </control>

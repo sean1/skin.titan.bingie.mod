@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.3.16" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
+<addon id="skin.titan.bingie.lite" version="2.3.17" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
 		<import addon="xbmc.python" version="3.0.0"/>
@@ -38,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite 2.3.16[/B][CR]Separate add-on request routing from the long-running preview service while preserving existing route behavior.
+			[B]BINGIE Lite 2.3.17[/B][CR]Reduce cold add-on request startup overhead while preserving route behavior.
 		</news>
 	</extension>
 </addon>

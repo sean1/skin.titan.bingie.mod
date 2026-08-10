@@ -287,10 +287,10 @@ class Discover:
 	def pick_my_night(self):
 		media_options = ((ls(32028), 'movie'), (ls(32029), 'tvshow'))
 		mood_options = (
-			(ls(32908), ''), (ls(32909), 'feel_good'), (ls(32910), 'funny'), (ls(32929), 'action_rush'), (ls(32911), 'thrilling'),
-			(ls(32926), 'big_adventure'), (ls(32927), 'mind_bending'), (ls(32934), 'time_travel'), (ls(32928), 'heartfelt'), (ls(32912), 'dark'),
-			(ls(32930), 'crime_fix'), (ls(32931), 'real_stories'), (ls(32932), 'animated_escape'), (ls(32933), 'war_stories'),
-			(ls(32938), 'apocalyptic_worlds'), (ls(32939), 'space_voyages'), (ls(32940), 'heist'),
+			(ls(32908), ''), (ls(32909), 'comedy_family'), (ls(32929), 'action_adventure_thriller'), (ls(32930), 'crime_mystery'),
+			(ls(32928), 'drama_romance_family'), (ls(32926), 'fantasy'), (ls(32927), 'science_fiction'), (ls(32934), 'time_travel'),
+			(ls(32938), 'apocalypse_survival'), (ls(32939), 'space_voyages'), (ls(32942), 'horror_supernatural'),
+			(ls(32931), 'documentary_history'), (ls(32932), 'animation'), (ls(32933), 'war_politics'),
 			(ls(32935), 'chinese_cinema'), (ls(32936), 'vietnamese_cinema'), (ls(32937), 'korean_cinema')
 		)
 		era_options = ((ls(32913), ''), (ls(32914), '2020s'), (ls(32915), '2010s'), (ls(32916), '2000s'), (ls(32917), 'classic'))
@@ -315,21 +315,20 @@ class Discover:
 		date_key = 'primary_release_date' if mediatype == 'movie' else 'first_air_date'
 		genres = {
 			'movie': {
-				'feel_good': '35|10751|10749', 'funny': '35', 'action_rush': '28', 'thrilling': '28|53', 'big_adventure': '12|14',
-				'mind_bending': '878|9648', 'heartfelt': '18|10749', 'dark': '27|80', 'crime_fix': '80|9648',
-				'real_stories': '99|36', 'animated_escape': '16', 'war_stories': '10752'
+				'comedy_family': '35|10751', 'action_adventure_thriller': '28|12|53', 'crime_mystery': '80|9648',
+				'drama_romance_family': '18|10749|10751', 'fantasy': '14', 'documentary_history': '99|36', 'animation': '16', 'war_politics': '10752'
 			},
 			'tvshow': {
-				'feel_good': '35|10751', 'funny': '35', 'action_rush': '10759', 'thrilling': '9648', 'big_adventure': '10765',
-				'mind_bending': '9648|10765', 'heartfelt': '18|10751', 'dark': '80', 'crime_fix': '80|9648',
-				'real_stories': '99', 'animated_escape': '16', 'war_stories': '10768'
+				'comedy_family': '35|10751', 'action_adventure_thriller': '10759', 'crime_mystery': '80|9648',
+				'drama_romance_family': '18|10751', 'fantasy': '10765', 'documentary_history': '99', 'animation': '16', 'war_politics': '10768'
 			}
 		}
 		special_moods = {
 			'time_travel': ('with_keywords', '4379'),
-			'apocalyptic_worlds': ('with_keywords', '4458|10150|12332|186565|355070|298669'),
-			'space_voyages': ('with_keywords', '252937|3801|1612|4040|161176|252634'),
-			'heist': ('with_keywords', '10051'),
+			'science_fiction': ('with_genres', '878') if mediatype == 'movie' else ('with_keywords', '281358'),
+			'apocalypse_survival': ('with_keywords', '4458|10150|12332|186565|355070|298669|4565|10349'),
+			'space_voyages': ('with_keywords', '252937|3801|1612|161176|252634'),
+			'horror_supernatural': ('with_genres', '27') if mediatype == 'movie' else ('with_keywords', '315058|12377|162846|1299|11100'),
 			'chinese_cinema': ('with_original_language', 'zh'),
 			'vietnamese_cinema': ('with_original_language', 'vi'),
 			'korean_cinema': ('with_original_language', 'ko')
@@ -347,7 +346,7 @@ class Discover:
 			'chinese_cinema': {'crowd_pleasers': '100', 'hidden_gems': '25', 'critically_loved': '100'},
 			'korean_cinema': {'crowd_pleasers': '100', 'hidden_gems': '25', 'critically_loved': '100'}
 		}
-		sparse_moods = ('apocalyptic_worlds', 'space_voyages', 'heist', 'vietnamese_cinema')
+		sparse_moods = ('science_fiction', 'apocalypse_survival', 'space_voyages', 'vietnamese_cinema')
 		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
 		if mood[0]:
 			filter_name, filter_value = special_moods[mood[0]] if mood[0] in special_moods else ('with_genres', genres[mediatype][mood[0]])

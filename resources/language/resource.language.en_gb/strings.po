@@ -1187,7 +1187,7 @@ msgid "Any Mood"
 msgstr ""
 
 msgctxt "#32909"
-msgid "Feel-Good"
+msgid "Comedy / Family"
 msgstr ""
 
 msgctxt "#32910"
@@ -1251,35 +1251,35 @@ msgid "Recommended for You"
 msgstr ""
 
 msgctxt "#32926"
-msgid "Big Adventure"
+msgid "Fantasy / Sci-Fi & Fantasy"
 msgstr ""
 
 msgctxt "#32927"
-msgid "Mind-Bending"
+msgid "Science Fiction"
 msgstr ""
 
 msgctxt "#32928"
-msgid "Heartfelt"
+msgid "Drama / Romance / Family"
 msgstr ""
 
 msgctxt "#32929"
-msgid "Action Rush"
+msgid "Action / Adventure / Thriller"
 msgstr ""
 
 msgctxt "#32930"
-msgid "Crime Fix"
+msgid "Crime / Mystery"
 msgstr ""
 
 msgctxt "#32931"
-msgid "Real Stories"
+msgid "Documentary / History"
 msgstr ""
 
 msgctxt "#32932"
-msgid "Animated Escape"
+msgid "Animation"
 msgstr ""
 
 msgctxt "#32933"
-msgid "War Stories"
+msgid "War / War & Politics"
 msgstr ""
 
 msgctxt "#32934"
@@ -1287,27 +1287,31 @@ msgid "Time Travel"
 msgstr ""
 
 msgctxt "#32935"
-msgid "Chinese Cinema"
+msgid "Chinese Language"
 msgstr ""
 
 msgctxt "#32936"
-msgid "Vietnamese Cinema"
+msgid "Vietnamese Language"
 msgstr ""
 
 msgctxt "#32937"
-msgid "Korean Cinema"
+msgid "Korean Language"
 msgstr ""
 
 msgctxt "#32938"
-msgid "Apocalyptic Worlds"
+msgid "Apocalypse / Dystopia / Survival"
 msgstr ""
 
 msgctxt "#32939"
-msgid "Voyages Through Space"
+msgid "Space Travel / Exploration"
 msgstr ""
 
 msgctxt "#32940"
 msgid "The Big Score"
+msgstr ""
+
+msgctxt "#32942"
+msgid "Horror / Zombie / Ghost / Monster"
 msgstr ""
 
 msgctxt "#32964"

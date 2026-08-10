@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.12
+
+- Reduce skin processing by removing inert textbox autoscroll work, redundant control groups and visibility constants, and duplicate conditional-animation state.
+- Avoid rewriting an unchanged settings file while preserving startup cache refresh and migration behavior.
+
 BINGIE Lite 2.3.11
 
 - Avoid rebuilding widget item layouts when row focus changes while preserving focused Top 250 indicators.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.3.12" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
+<addon id="skin.titan.bingie.lite" version="2.3.13" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
 		<import addon="xbmc.python" version="3.0.0"/>
@@ -38,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite 2.3.12[/B][CR]Reduce skin processing and startup file I/O by removing inert layout, visibility, animation, and autoscroll work.
+			[B]BINGIE Lite 2.3.13[/B][CR]Reduce installation size by losslessly optimizing bundled artwork without changing image quality.
 		</news>
 	</extension>
 </addon>

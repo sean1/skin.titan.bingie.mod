@@ -1,3 +1,7 @@
+BINGIE Lite 2.3.13
+
+- Reduce the install package by about 660 KiB through lossless bundled-artwork optimization with no visual changes.
+
 BINGIE Lite 2.3.12
 
 - Reduce skin processing by removing inert textbox autoscroll work, redundant control groups and visibility constants, and duplicate conditional-animation state.

@@ -8,6 +8,6 @@
     <onunload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID)) + String.IsEmpty(Window(Home).Property(KeepTVShowID))">ClearProperty(ListItem.TVShowID,Home)</onunload>
 	<onunload condition="!String.IsEmpty(Window.Property(AdditionalInfo))">ClearProperty(AdditionalInfo)</onunload>
     <controls>
-        <include condition="true">BingieInfo</include>
+        <include>BingieInfo</include>
 	</controls>
 </window>

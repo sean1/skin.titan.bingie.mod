@@ -265,7 +265,7 @@
             <height>50</height>
             <itemgap>15</itemgap>
 
-            <include condition="!false">Percentage_Rating_Details_Row</include>
+            <include>Percentage_Rating_Details_Row</include>
 
             <!-- Year -->
             <control type="label" id="611111">
@@ -282,7 +282,7 @@
 
 
 
-			<include condition="!false + !false">MPAA_Details_Row</include>
+			<include>MPAA_Details_Row</include>
 
 			<!-- Total Seasons -->
             <control type="label" id="611117">
@@ -413,7 +413,7 @@
                         <left>15</left>
                         <top>9</top>
                         <width>565</width>
-						<include condition="!false">HeightWithoutThumb</include>
+						<include>HeightWithoutThumb</include>
 						<preloaditems>1</preloaditems>
                         <orientation>vertical</orientation>
 						<onleft>9000</onleft>
@@ -562,14 +562,14 @@
                         <!-- landscape content -->
                         <include>View_525_Landscape_Defs</include>
                         <!-- details content -->
-                        <include condition="!false">View_525_Details_Defs</include>
+                        <include>View_525_Details_Defs</include>
                     </itemlayout>
                     <focusedlayout width="1050" height="280">
                         <!-- panel/border -->
                         <!-- landscape content -->
                         <include>View_525_Landscape_Defs</include>
                         <!-- details content -->
-                        <include condition="!false">View_525_Details_Defs_Focus</include>
+                        <include>View_525_Details_Defs_Focus</include>
                     </focusedlayout>
                 </control>
 

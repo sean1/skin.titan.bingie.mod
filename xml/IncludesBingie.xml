@@ -261,10 +261,10 @@
 			<top>10</top>
 			<height>50</height>
 			<itemgap>15</itemgap>
-			<include condition="!false">New_Tag_Details_Row</include>
-            <include condition="!false">Percentage_Rating_Details_Row</include>
+			<include>New_Tag_Details_Row</include>
+            <include>Percentage_Rating_Details_Row</include>
 			<include>Year_Premiered_Details_Row</include>
-			<include condition="!false + !false">MPAA_Details_Row</include>
+			<include>MPAA_Details_Row</include>
 			<include>Duration_TotalSeasonsEpisodes_Details_Row</include>
 			<!-- Resolution_Details_Row -->
 
@@ -273,7 +273,7 @@
 
 			<!-- <include>HDR_Details_Row</include> -->
 			<include>Audio_Channels_Details_Row</include>
-			<include condition="!false">Audiocodec1</include>
+			<include>Audiocodec1</include>
 		</control>
 	</include>
 
@@ -285,7 +285,7 @@
 			<height>50</height>
 			<itemgap>15</itemgap>
 			<include>Duration_TotalSeasonsEpisodes_Details_Row</include>
-			<include condition="!false + !false">MPAA_Details_Row</include>
+			<include>MPAA_Details_Row</include>
 		</control>
 	</include>
 

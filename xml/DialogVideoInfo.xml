@@ -36,6 +36,6 @@
 	<onunload>ClearProperty(PovInfoCollectionReady)</onunload>
 	<onunload>ClearProperty(PovInfoFanart)</onunload>
     <controls>
-        <include condition="true">BingieInfo</include>
+        <include>BingieInfo</include>
 	</controls>
 </window>

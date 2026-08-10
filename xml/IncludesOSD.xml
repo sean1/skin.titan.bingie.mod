@@ -107,8 +107,8 @@
         <!-- <include condition="[!false + !true] + Player.HasVideo">SeekBar_Normal</include> -->
 
 		<!-- OSD buttons -->
-		<include condition="Player.HasVideo + true">OSDButtons_Bingie_Layout_Factory</include>
-		<include condition="![Player.HasVideo + true]">OSDButtons_Default_Layout_Factory</include>
+		<include condition="Player.HasVideo">OSDButtons_Bingie_Layout_Factory</include>
+		<include condition="!Player.HasVideo">OSDButtons_Default_Layout_Factory</include>
 
 	</include>
 
@@ -328,7 +328,7 @@
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Window.IsActive(DialogPlayerProcessInfo.xml)</visible>
 			<animation effect="fade" time="350" condition="true">VisibleChange</animation>
             <include>HideOsdConditions</include>
-			<include condition="true">OSDInfoPanelBingie</include>
+			<include>OSDInfoPanelBingie</include>
         </control>
     </include>
 

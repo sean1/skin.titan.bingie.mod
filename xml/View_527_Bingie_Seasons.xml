@@ -9,7 +9,7 @@
             <height>50</height>
             <itemgap>15</itemgap>
 
-            <include condition="!false">Percentage_Rating_Details_Row_Seasons</include>
+            <include>Percentage_Rating_Details_Row_Seasons</include>
 
             <!-- Year -->
             <control type="label" id="611111">
@@ -24,7 +24,7 @@
                 <include>Default_Visible_Fade</include>
             </control>
 
-			<include condition="!false + !false">MPAA_Details_Row</include>
+			<include>MPAA_Details_Row</include>
             <!-- Total Seasons -->
             <control type="label" id="711117">
                 <posy>6</posy>
@@ -359,7 +359,7 @@
 				<left>16</left>
 				<top>9</top>
 				<width>565</width>
-				<include condition="!false">HeightWithoutThumb</include>
+				<include>HeightWithoutThumb</include>
 				<preloaditems>1</preloaditems>
 				<orientation>vertical</orientation>
 				<onleft>9000</onleft>
@@ -482,13 +482,13 @@
                         <!-- landscape content -->
                         <include>View_527_Landscape_Defs</include>
                         <!-- details content -->
-                        <include condition="!false">View_527_Details_Defs_Focus</include>
+                        <include>View_527_Details_Defs_Focus</include>
                 </focusedlayout>
 				<itemlayout width="1050" height="280">
                         <!-- landscape content -->
                         <include>View_527_Landscape_Defs</include>
                         <!-- details content -->
-                        <include condition="!false">View_527_Details_Defs</include>
+                        <include>View_527_Details_Defs</include>
                     </itemlayout>
 				<content target="videos" sortby="episode" sortorder="ascending">$INFO[Container(527).ListItem.FolderPath]</content>
 				</control>

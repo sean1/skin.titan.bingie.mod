@@ -19,7 +19,7 @@
     </include>
     <include name="SquarePosterTagOverlay">
         <control type="group">
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml) | [false + false]">SquarePosterTagOverlayVisibility</include>
+            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml)">SquarePosterTagOverlayVisibility</include>
             <control type="image">
                 <left>8</left>
                 <right>8</right>

@@ -1402,7 +1402,7 @@
                 <usecontrolcoords>true</usecontrolcoords>
                 <itemgap>10</itemgap>
                 <!-- Movies and Episodes Info Slide-down -->
-                <animation effect="slide" start="0" end="0,140" time="0" condition="true + Integer.IsGreater(ListItem.PercentPlayed,1)">Conditional</animation>
+                <animation effect="slide" start="0" end="0,140" time="0" condition="Integer.IsGreater(ListItem.PercentPlayed,1)">Conditional</animation>
 
                 <include content="Bingie_Headline_Item">
                     <param name="id" value="$PARAM[id]0" />
@@ -1478,7 +1478,6 @@
 
 				<!-- TV shows Seasons and Episodes for Continue Watching -->
                     <control type="grouplist">
-					<visible>true</visible>
 					<visible>Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
 					<visible>!$EXP[IsMainMenuOpened]</visible>
                         <visible>$EXP[IsEpisodeDBType]</visible>
@@ -1505,7 +1504,6 @@
 
 				<!-- Movie and TV Show Continue Watching -->
                         <control type="group">
-                            <visible>true</visible>
 							<visible>Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
                             <top>29</top>
 							<width>650</width>
@@ -1566,7 +1564,6 @@
 
 					<control type="label" id="8231">
 						<visible>!String.IsEmpty(Control.GetLabel(8231))</visible>
-						<visible>true</visible>
 						<font>bold29</font>
 						<textcolor>ffffffff</textcolor>
 						<label>$VAR[IMDBTop250RatingValue,#, $LOCALIZE[320157]]</label>

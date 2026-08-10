@@ -335,7 +335,6 @@
 		<!--BINGIE OSD Info Panel-->
 		<control type="group">
 			<visible>VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)</visible>
-			<visible>true</visible>
 			<!-- background -->
 			<control type="image">
 				<width>100%</width>
@@ -345,8 +344,6 @@
 			</control>
 				<!-- Discart OSD Info-->
                 <control type="image">
-                    <visible>true</visible>
-					<visible>true</visible>
 					<posx>263</posx>
                     <posy>219</posy>
                     <width>304</width>
@@ -407,7 +404,6 @@
 
 				<!-- Clear Logo Title - Your Watching -->
 				<control type="image" id="1">
-					<visible>true</visible>
 					<visible>!String.IsEmpty(Control.GetLabel(1))</visible>
 					<width>400</width>
 					<height>150</height>

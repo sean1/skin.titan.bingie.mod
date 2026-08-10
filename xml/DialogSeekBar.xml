@@ -16,7 +16,6 @@
 				<height>100%</height>
 				<width>100%</width>
 				<!-- CLEAR LOGO or Clearart on PAUSE -->
-				<visible>true</visible>
 				<visible>Player.Paused + System.IdleTime(2)</visible>
 				<visible>![Control.IsVisible(552233) | Window.IsActive(OSDVideoSettings) | Window.IsActive(OSDAudioSettings) | Window.IsActive(OSDSubtitleSettings) | Window.IsActive(subtitlesearch) | Window.IsActive(sliderdialog)]</visible>
 				<animation delay="1000" time="300" effect="fade">Visible</animation>
@@ -38,7 +37,6 @@
 					<usecontrolcoords>true</usecontrolcoords>
 					<!-- ClearLogo on Pause -->
 					<control type="image" id="111">
-						<visible>true</visible>
 						<top>100</top>
 						<width></width>
 						<height>190</height>

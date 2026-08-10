@@ -3,7 +3,7 @@
 <window>
     <zorder>2</zorder>
     <onload>SetFocus(200)</onload>
-    <onload condition="true + !Player.PauseEnabled">SetFocus(300)</onload>
+    <onload condition="!Player.PauseEnabled">SetFocus(300)</onload>
     <onload condition="!Player.Paused">Pause</onload>
 	<onload>ClearProperty(DialogMPAATopBar,home)</onload>
 	<onload>ClearProperty(DisableOSDCast,Home)</onload>

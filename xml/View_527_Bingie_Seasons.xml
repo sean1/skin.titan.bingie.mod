@@ -304,7 +304,6 @@
 				<!-- Blank image for gap -->
 				<control type="image">
 					<visible>String.EndsWith(Control.GetLabel(987767),color_transparent.png)</visible>
-					<visible>true</visible>
 					<top>0</top>
 					<left>0</left>
 					<width>650</width>
@@ -340,8 +339,6 @@
 			<!-- Blank image for gap -->
 			<control type="image">
 				<visible>String.Contains(Control.GetLabel(22345),landscape)</visible>
-				<visible>true</visible>
-				<visible>yes</visible>
 				<top>14</top>
 				<left>15</left>
 				<width>570</width>
@@ -486,7 +483,7 @@
 				</control>
 				<!-- fixed border moving with screen -->
                 <control type="image">
-                    <visible>true + Integer.IsGreater(Container(5027).NumItems,0) + Control.HasFocus(5027)</visible>
+                    <visible>Integer.IsGreater(Container(5027).NumItems,0) + Control.HasFocus(5027)</visible>
 					<animation effect="fade" start="100" end="0" condition="Container(5027).IsUpdating">Conditional</animation>
                     <top>127</top>
                     <posx>781</posx>

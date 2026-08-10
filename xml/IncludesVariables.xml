@@ -162,13 +162,6 @@
      <variable name="PlayerDiscArtImage">
         <value condition="!String.IsEmpty(Player.Art(discart))">$INFO[Player.Art(discart)]</value>
         <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.Player.Art.DiscArt))">$INFO[Window(Home).Property(SkinHelper.Player.Art.DiscArt)]</value>
-		<value condition="!String.IsEmpty(Player.Art(landscape)) + false">$INFO[Player.Art(landscape)]</value>
-		<value condition="!String.IsEmpty(Player.Art(fanart)) + false">$INFO[Player.Art(fanart)]</value>
-		<value condition="!String.IsEmpty(Player.Art(poster)) + false">$INFO[Player.Art(poster)]</value>
-		<value condition="!String.IsEmpty(Player.Art(tvshow.poster)) + false">$INFO[Player.Art(tvshow.poster)]</value>
-        <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.Player.Art.FanArt)) + false">$INFO[Window(Home).Property(SkinHelper.Player.Art.FanArt)]</value>
-        <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.Player.Art.Thumb)) + false">$INFO[Window(Home).Property(SkinHelper.Player.Art.Thumb)]</value>
-		<value condition="!String.IsEmpty(ListItem.Art(poster)) + !String.Contains(ListItem.Art(poster),Default) + false">$INFO[ListItem.Art(poster)]</value>
 	 </variable>
 
      <variable name="MovieGenreIconVar">

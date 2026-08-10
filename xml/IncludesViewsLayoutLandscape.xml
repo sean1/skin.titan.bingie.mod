@@ -193,8 +193,6 @@
     <variable name="LandscapeImage">
 		<value condition="!String.IsEmpty(ListItem.Art(thumb)) + [String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + ![Window.IsActive(Home) + false]">$INFO[ListItem.Art(thumb)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Property(DBTYPE),category)">$INFO[ListItem.Art(thumb)]</value>
-        <value condition="false + !String.IsEmpty(ListItem.Art(clearart)) + !false">$INFO[ListItem.Art(clearart)]</value>
-        <value condition="false + !String.IsEmpty(ListItem.Art(tvshow.clearart)) + !false">$INFO[ListItem.Art(tvshow.clearart)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(season.landscape)) + !false">$INFO[ListItem.Art(season.landscape)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(landscape)) + !false">$INFO[ListItem.Art(landscape)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(tvshow.landscape)) + !false">$INFO[ListItem.Art(tvshow.landscape)]</value>

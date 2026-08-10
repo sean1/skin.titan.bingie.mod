@@ -451,8 +451,6 @@
         <value condition="$EXP[IsMainMenuOpened] + !false + Integer.IsGreater(Window(Home).Property(ListItem.Duration.Hours),0)">$INFO[Window(Home).Property(ListItem.Duration.Hours),,h ]$INFO[Window(Home).Property(ListItem.Duration.M),,m]</value>
         <value condition="$EXP[IsMainMenuOpened] + !false + !String.IsEmpty(Window(Home).Property(ListItem.Duration.Hours)) + Integer.IsEqual(Window(Home).Property(ListItem.Duration.Hours),0)">$INFO[Window(Home).Property(ListItem.Duration.Mins),,m]</value>
         <!-- Hours disabled -->
-        <value condition="false + !String.IsEmpty(ListItem.Duration)">$INFO[ListItem.Duration(mins),,m]</value>
-        <value condition="$EXP[IsMainMenuOpened] + false + !String.IsEmpty(Window(Home).Property(ListItem.Duration))">$INFO[Window(Home).Property(ListItem.Duration.Mins),,m]</value>
         <!-- regular format fallback -->
         <value condition="!String.IsEmpty(ListItem.Duration)">$INFO[ListItem.Duration]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Duration))">$INFO[Window(Home).Property(ListItem.Duration)]</value>
@@ -687,7 +685,6 @@
 
     <!-- 'SxxExx "episode_title"' format-->
     <variable name="BingieDialogEpisodeInfoLabel">
-        <value condition="[String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(Container(5050).ListItem.Title) + false + !String.IsEmpty(ListItem.DBID)">$INFO[Container(5050).ListItem.Title]</value>
 		<value condition="[String.IsEqual(ListItem.DBType,episode) | Container.Content(episodes)] + !String.IsEmpty(ListItem.Title)">$INFO[ListItem.Title]</value>
     </variable>
 
@@ -721,8 +718,6 @@
 
         <value condition="![String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.Plot)">$INFO[ListItem.Plot]</value>
         <value condition="![String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.Property(Plot))">$INFO[ListItem.Property(Plot)]</value>
-		<value condition="[String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(Container(5050).ListItem.Plot) + false + Control.IsVisible(5050)">$INFO[Container(5050).ListItem.Plot]</value>
-        <value condition="[String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(Container(5050).ListItem.Property(Plot)) + false + Control.IsVisible(5050)">$INFO[Container(5050).ListItem.Property(Plot)]</value>
 		<value condition="[String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.Plot)">$INFO[ListItem.Plot]</value>
         <value condition="[String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.Property(Plot))">$INFO[ListItem.Property(Plot)]</value>
         <value condition="!String.IsEmpty(ListItem.Property(Album_Description))">$INFO[ListItem.Property(Album_Description)]</value>
@@ -775,18 +770,15 @@
     <!-- Global Background with Fade-Panel Overlay -->
 
     <variable name="WidgetBusySpinnerPath">
-        <value condition="System.HasAddon(resource.images.busyspinners.basic) + false"></value>
         <value>spinner/widgets_busy_loader/</value>
     </variable>
 
     <variable name="DialogBusySpinnerPath">
-        <value condition="System.HasAddon(resource.images.busyspinners.basic) + false"></value>
         <value>spinner/busy_spinner/</value>
     </variable>
 
     <!-- Next Up Thumb Episode/TvShow Based on Setting Preference -->
     <variable name="NextUpThumb">
-        <value condition="!String.IsEmpty(Window.Property(fanart)) + false">$INFO[Window.Property(thumb)]</value>
         <value condition="!String.IsEmpty(Window.Property(fanart)) + !false">$INFO[Window.Property(fanart)]</value>
     </variable>
 

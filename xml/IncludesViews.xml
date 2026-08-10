@@ -124,14 +124,18 @@
     </include>
 
     <include name="Top250Indicator">
-        <control type="image">
-            <visible>!$EXP[IsEpisodeDBType] + !String.IsEmpty(Control.GetLabel(8231)) + !$EXP[IsCategoryDBType]</visible>
-            <posy>8</posy>
-            <left>8</left>
-            <height>60</height>
-            <width>50</width>
-            <aspectratio>keep</aspectratio>
-            <texture>bingie/top250p.png</texture>
-        </control>
+        <param name="visibility" default="true" />
+        <definition>
+            <control type="image">
+                <visible>$PARAM[visibility]</visible>
+                <visible>!$EXP[IsEpisodeDBType] + !String.IsEmpty(Control.GetLabel(8231)) + !$EXP[IsCategoryDBType]</visible>
+                <posy>8</posy>
+                <left>8</left>
+                <height>60</height>
+                <width>50</width>
+                <aspectratio>keep</aspectratio>
+                <texture>bingie/top250p.png</texture>
+            </control>
+        </definition>
     </include>
 </includes>

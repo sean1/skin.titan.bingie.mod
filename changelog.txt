@@ -1,3 +1,9 @@
+BINGIE Lite 2.3.9
+
+- Reduce trailer-preview polling overhead and repeated context checks, and batch database cleanup work.
+- Remove unreachable skin controls and definitions while simplifying always-resolved include and variable conditions.
+- Remove orphaned backgrounds and font data to shrink the install package by about 1 MiB.
+
 BINGIE Lite 2.3.8
 
 - Render Home content sooner and avoid unnecessary focused-metadata lookups.

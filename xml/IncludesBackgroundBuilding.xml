@@ -12,11 +12,6 @@
         </control>
     </include>
 
-    <include name="bgColorDiffuse">
-        <colordiffuse>None</colordiffuse>
-    </include>
-
-
     <include name="DialogOverlayExtra">
         <!-- dim screen overlay used in certain dialogs -->
         <control type="image">
@@ -56,7 +51,6 @@
             <imagepath background="true" fallback="colors/color_black.png">$VAR[backgroundVar]</imagepath>
             <aspectratio>scale</aspectratio>
             <fadetime>800</fadetime>
-            <include condition="true + !true + !true">bgColorDiffuse</include>
             <loop>yes</loop>
         </control>
         <!-- fanart image background (hidden with visibility conditions)-->
@@ -66,8 +60,6 @@
             <width>1</width>
             <height>1</height>
             <texture background="true">$VAR[fanartBackground]</texture>
-            <visible>true | !String.IsEmpty(Window(Home).Property(bingieviews)) | Control.IsVisible(523) | Control.IsVisible(526)</visible>
-            <include condition="Window.IsMedia">disabledFanart</include>
         </control>
         <!-- hidden container for categories fanart -->
         <control type="list" id="99007">
@@ -77,167 +69,10 @@
             <focusedlayout/>
             <content limit="5" sortby="random">$VAR[ItemArtContentRandomizer]</content>
         </control>
-
-		<include condition="true + false">Native_extraFanartBackground</include>
-
 		<include condition="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113)]">DialogOverlay</include>
     </include>
 
-	<!-- Extra Fanart -->
-	<include name="Native_extraFanartBackground">
-		<control type="fadelabel" id="99008">
-			<left>-1</left>
-            <top>-1</top>
-            <width>1</width>
-            <height>1</height>
-			<!-- common visibility conditions -->
-			<visible>false</visible>
-			<visible>
-                [Window.IsActive(Home) + [Control.HasFocus(77777) | ControlGroup(77777).HasFocus()]] | $EXP[IsBingieHubsActive] | $EXP[IsBingieListsActive] | Window.IsActive(DialogVideoInfo.xml) |
-				[$EXP[IsBingieCategoriesActive] + [Control.HasFocus(117) | ControlGroup(117).HasFocus()]] |
-                [Container.Content(Genres) + false + !String.IsEmpty(ListItem.label) + !String.IsEqual(ListItem.label,..)] |
-                [Container.Content(movies) | Container.Content(sets) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)]
-            </visible>
-			<include condition="Window.IsMedia">disabledFanart</include>
-            <include condition="Window.IsMedia">disabledExtraFanart</include>
-			<!-- common movie and TV show art -->
-			<info>ListItem.Art(fanart1)</info>
-			<info>ListItem.Art(fanart2)</info>
-			<info>ListItem.Art(fanart3)</info>
-			<info>ListItem.Art(fanart4)</info>
-			<info>ListItem.Art(fanart5)</info>
-			<info>ListItem.Art(fanart6)</info>
-			<info>ListItem.Art(fanart7)</info>
-			<info>ListItem.Art(fanart8)</info>
-			<info>ListItem.Art(fanart9)</info>
-			<info>ListItem.Art(fanart10)</info>
-			<info>ListItem.Art(fanart11)</info>
-			<info>ListItem.Art(fanart12)</info>
-			<info>ListItem.Art(fanart13)</info>
-			<info>ListItem.Art(fanart14)</info>
-			<info>ListItem.Art(fanart15)</info>
-			<info>ListItem.Art(fanart16)</info>
-			<info>ListItem.Art(fanart17)</info>
-			<info>ListItem.Art(fanart18)</info>
-			<info>ListItem.Art(fanart19)</info>
-			<info>ListItem.Art(fanart20)</info>
-			<info>Container.ListItem.Art(fanart1)</info>
-			<info>Container.ListItem.Art(fanart2)</info>
-			<info>Container.ListItem.Art(fanart3)</info>
-			<info>Container.ListItem.Art(fanart4)</info>
-			<info>Container.ListItem.Art(fanart5)</info>
-			<info>Container.ListItem.Art(fanart6)</info>
-			<info>Container.ListItem.Art(fanart7)</info>
-			<info>Container.ListItem.Art(fanart8)</info>
-			<info>Container.ListItem.Art(fanart9)</info>
-			<info>Container.ListItem.Art(fanart10)</info>
-			<info>Container.ListItem.Art(fanart11)</info>
-			<info>Container.ListItem.Art(fanart12)</info>
-			<info>Container.ListItem.Art(fanart13)</info>
-			<info>Container.ListItem.Art(fanart14)</info>
-			<info>Container.ListItem.Art(fanart15)</info>
-			<info>Container.ListItem.Art(fanart16)</info>
-			<info>Container.ListItem.Art(fanart17)</info>
-			<info>Container.ListItem.Art(fanart18)</info>
-			<info>Container.ListItem.Art(fanart19)</info>
-			<info>Container.ListItem.Art(fanart20)</info>
-			<!-- variabel - tvshow for seasons,episodes -->
-			<info>Container.ListItem.Art(tvshow.fanart1)</info>
-			<info>Container.ListItem.Art(tvshow.fanart2)</info>
-			<info>Container.ListItem.Art(tvshow.fanart3)</info>
-			<info>Container.ListItem.Art(tvshow.fanart4)</info>
-			<info>Container.ListItem.Art(tvshow.fanart5)</info>
-			<info>Container.ListItem.Art(tvshow.fanart6)</info>
-			<info>Container.ListItem.Art(tvshow.fanart7)</info>
-			<info>Container.ListItem.Art(tvshow.fanart8)</info>
-			<info>Container.ListItem.Art(tvshow.fanart9)</info>
-			<info>Container.ListItem.Art(tvshow.fanart10)</info>
-			<info>Container.ListItem.Art(tvshow.fanart11)</info>
-			<info>Container.ListItem.Art(tvshow.fanart12)</info>
-			<info>Container.ListItem.Art(tvshow.fanart13)</info>
-			<info>Container.ListItem.Art(tvshow.fanart14)</info>
-			<info>Container.ListItem.Art(tvshow.fanart15)</info>
-			<info>Container.ListItem.Art(tvshow.fanart16)</info>
-			<info>Container.ListItem.Art(tvshow.fanart17)</info>
-			<info>Container.ListItem.Art(tvshow.fanart18)</info>
-			<info>Container.ListItem.Art(tvshow.fanart19)</info>
-			<info>Container.ListItem.Art(tvshow.fanart20)</info>
-			<randomize>false</randomize>
-			<scroll>false</scroll>
-			<scrollout>false</scrollout>
-			<resetonlabelchange>true</resetonlabelchange>
-		</control>
-	</include>
 
-	<!-- Extrafanart Fadelabel Pause -->
-
-    <include name="disabledFanart">
-        <!-- disabled fanart per view -->
-        <visible>
-            ![Control.IsVisible(10) + false] +
-            ![Control.IsVisible(50) + false] +
-            ![Control.IsVisible(51) + false] +
-            ![Control.IsVisible(52) + false] +
-            ![Control.IsVisible(53) + false] +
-            ![Control.IsVisible(54) + false] +
-            ![Control.IsVisible(55) + false] +
-            ![Control.IsVisible(56) + false] +
-            ![Control.IsVisible(57) + false] +
-            ![Control.IsVisible(59) + false] +
-            ![Control.IsVisible(501) + false] +
-            ![Control.IsVisible(502) + false] +
-            ![Control.IsVisible(504) + false] +
-            ![Control.IsVisible(505) + false] +
-            ![Control.IsVisible(507) + false] +
-            ![Control.IsVisible(508) + false] +
-            ![Control.IsVisible(509) + false] +
-            ![Window.IsMedia + Control.IsVisible(510) + false] +
-            ![Window.IsMedia + Control.IsVisible(511) + false] +
-            ![Control.IsVisible(512) + false] +
-            ![Control.IsVisible(513) + false] +
-            ![Control.IsVisible(514) + false] +
-            ![Control.IsVisible(519) + false] +
-            ![Window.IsMedia + Control.IsVisible(520) + false] +
-            ![Control.IsVisible(524) + false] +
-            ![Control.IsVisible(525) + false] +
-			![Control.IsVisible(527) + false]
-        </visible>
-    </include>
-
-    <include name="disabledExtraFanart">
-        <!-- disabled fanart per view -->
-        <visible>
-            ![Control.IsVisible(10) + false] +
-            ![Control.IsVisible(50) + false] +
-            ![Control.IsVisible(51) + false] +
-            ![Control.IsVisible(52) + false] +
-            ![Control.IsVisible(53) + false] +
-            ![Control.IsVisible(54) + false] +
-            ![Control.IsVisible(55) + false] +
-            ![Control.IsVisible(56) + false] +
-            ![Control.IsVisible(57) + false] +
-            ![Control.IsVisible(59) + false] +
-            ![Control.IsVisible(501) + false] +
-            ![Control.IsVisible(502) + false] +
-            ![Control.IsVisible(504) + false] +
-            ![Control.IsVisible(505) + false] +
-            ![Control.IsVisible(507) + false] +
-            ![Control.IsVisible(508) + false] +
-            ![Control.IsVisible(509) + false] +
-            ![Window.IsMedia + Control.IsVisible(510) + false] +
-            ![Window.IsMedia + Control.IsVisible(511) + false] +
-            ![Control.IsVisible(512) + false] +
-            ![Control.IsVisible(513) + false] +
-            ![Control.IsVisible(514) + false] +
-            ![Control.IsVisible(519) + false] +
-            ![Window.IsMedia + Control.IsVisible(520) + false] +
-            ![Control.IsVisible(523) + false] +
-            ![Control.IsVisible(524) + false] +
-            ![Control.IsVisible(525) + false] +
-			![Control.IsVisible(527) + false] +
-            ![Control.IsVisible(526) + false]
-        </visible>
-    </include>
 
     <variable name="CategoriesRandomArt">
         <value condition="!String.IsEmpty(Container(99007).ListItemAbsolute(0).Art(tvshow.fanart))">$INFO[Container(99007).ListItemAbsolute(0).Art(tvshow.fanart)]</value>
@@ -261,10 +96,6 @@
     </variable>
 
     <variable name="fanartBackground">
-		<value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
-        <!-- genre fanart -->
-        <value condition="Container.Content(Genres) + false + !String.IsEmpty(ListItem.label) + !String.IsEqual(ListItem.label,..)">http://localhost:52307/getmoviegenreimagesrandom&amp;title=$INFO[Listitem.Label]&amp;type=fanart.0</value>
-        <value condition="Container.Content(Genres) + false + !String.IsEmpty(ListItem.label) + !String.IsEqual(ListItem.label,..)">/$INFO[ListItem.Label].jpg</value>
         <!-- categories fanart -->
         <value condition="String.IsEmpty(ListItem.DBType) + String.IsEqual(ListItem.Property(DBTYPE),categorie)">$VAR[CategoriesFanart]</value>
         <value condition="$EXP[IsCategoryDBType]">$VAR[CategoriesRandomArt]</value>
@@ -281,7 +112,6 @@
     </variable>
 
 	<variable name="fanartBackground_something">
-		<value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
 		<value
 			condition="[$EXP[IsBingieViewsActive] | Window.IsActive(Videos)] + !Container.Content(Genres) + !$EXP[IsCategoryDBType]
 				+ !String.IsEmpty(Window(Home).Property(PovFocusedFanartIdentity))">$INFO[Window(Home).Property(PovFocusedFanart)]</value>
@@ -292,19 +122,11 @@
     </variable>
 
     <variable name="backgroundVar">
-        <!-- animated fanart background -->
-        <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)) + false">$INFO[Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)]</value>
-        <!-- nativ extrafanart background -->
-		<value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
         <!-- normal fanart background -->
         <value condition="Control.IsVisible(99006) + !String.IsEmpty(Control.GetLabel(99006))">$INFO[Control.GetLabel(99006)]</value>
     </variable>
 
     <variable name="bingieThumb">
-        <!-- animated fanart background -->
-        <value condition="!String.IsEmpty(Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)) + false">$INFO[Window(Home).Property(SkinHelper.ListItem.Art.AnimatedFanArt)]</value>
-		<!-- native extrafanart background -->
-        <value condition="Control.IsVisible(99008) + !String.IsEmpty(Control.GetLabel(99008))">$INFO[Control.GetLabel(99008)]</value>
         <!-- normal fanart background -->
         <value condition="Control.IsVisible(99006) + !String.IsEmpty(Control.GetLabel(99006))">$INFO[Control.GetLabel(99006)]</value>
     </variable>

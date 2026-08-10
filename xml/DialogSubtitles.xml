@@ -51,7 +51,6 @@
                     <wrapmultiline>false</wrapmultiline>
 				</control>
             <!--Left Menu-->
-            <control type="group">
                 <control type="image">
                     <!--Inner-->
                     <posx>273</posx>
@@ -313,10 +312,8 @@
                     <wrapmultiline>false</wrapmultiline>
                     <scroll>true</scroll>
                 </control>
-            </control>
 
             <!--Right Menu-->
-            <control type="group">
                 <control type="image">
                     <!--Inner-->
                     <posx>1368</posx>
@@ -469,7 +466,6 @@
                     </focusedlayout>
                 </control>
 
-            </control>
         </control>
     </controls>
 </window>

@@ -216,7 +216,6 @@
 								<align>left</align>
 								<aligny>top</aligny>
 								<texture>forward_arrow.png</texture>
-								<visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
 							</control>
 							<control type="label">
 								<top>30</top>
@@ -378,7 +377,6 @@
 								<align>left</align>
 								<aligny>top</aligny>
 								<texture colordiffuse="FF4a4347">forward_arrow.png</texture>
-								<visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
 							</control>
 							<control type="label">
 								<top>30</top>
@@ -483,7 +481,6 @@
 				</animation>
 				<left>1110</left>
 				<top>220</top>
-				<control type="group">
 					<control type="image">
 						<width>770</width>
 						<height>825</height>
@@ -512,7 +509,6 @@
 						<aspectratio aligny="top">keep</aspectratio>
 						<texture colordiffuse="$INFO[Container(2001).ListItem().Property(tikiskins.highlight)]">$INFO[Container(2001).ListItem().Property(tikiskins.quality_icon)]</texture>
 					</control>
-				</control>
 				<control type="group">
 					<visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
 					<left>10</left>
@@ -743,7 +739,6 @@
 								<align>left</align>
 								<aligny>top</aligny>
 								<texture>forward_arrow.png</texture>
-								<visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
 							</control>
 							<control type="label">
 								<top>40</top>
@@ -905,7 +900,6 @@
 								<align>left</align>
 								<aligny>top</aligny>
 								<texture colordiffuse="FF4a4347">forward_arrow.png</texture>
-								<visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
 							</control>
 							<control type="label">
 								<top>40</top>
@@ -1146,7 +1140,6 @@
 								<align>left</align>
 								<aligny>top</aligny>
 								<texture>forward_arrow.png</texture>
-								<visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
 							</control>
 							<control type="label">
 								<top>30</top>
@@ -1308,7 +1301,6 @@
 								<align>left</align>
 								<aligny>top</aligny>
 								<texture colordiffuse="FF4a4347">forward_arrow.png</texture>
-								<visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
 							</control>
 							<control type="label">
 								<top>30</top>

@@ -24,7 +24,6 @@
             </control>
 
             <!--Login Screen-->
-            <control type="group">
                 <control type="list" id="52">
                     <orientation>horizontal</orientation>
                     <posx>836</posx>
@@ -96,7 +95,6 @@
                             </control>
                     </focusedlayout>
                 </control>
-            </control>
 
 			<!-- Surprise Me -->
 			<control type="group">

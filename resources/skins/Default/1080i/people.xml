@@ -137,7 +137,6 @@
 			<control type="group">
 				<animation effect="fade" start="100" end="0" time="200" tween="sine" condition="Control.HasFocus(50)">conditional</animation>
 				<height>150</height>
-				<control type="group">
 					<control type="button" id="10">
 						<description>Images</description>
 						<animation effect="zoom" start="100" end="102" time="100" tween="sine" easing="inout" center="487,58">Focus</animation>
@@ -176,12 +175,10 @@
 						<texturenofocus colordiffuse="FF302F2F">white.png</texturenofocus>
 						<align>center</align>
 					</control>
-				</control>
 			</control>
 			<!-- Biography -->
 			<control type="group">
 				<height>430</height>
-				<control type="group">
 					<control type="label">
 						<width max="1160">auto</width>
 						<height>20</height>
@@ -227,13 +224,11 @@
 						<autoscroll time="2000" delay="12000" repeat="5000">true</autoscroll>
 						<visible>Control.HasFocus(50)</visible>
 					</control>
-				</control>
 			</control>
 			<!-- More from Movies -->
 			<control type="group">
 				<visible>Integer.IsGreater(Container(2050).NumItems,0)</visible>
 				<height>880</height>
-				<control type="group">
 					<control type="label">
 						<width min="30" max="1160">auto</width>
 						<height>20</height>
@@ -348,13 +343,11 @@
 						<visible>Control.HasFocus(2050) + Container(2050).HasNext</visible>
 						<texture>arrow_right.png</texture>
 					</control>
-				</control>
 			</control>
 			<!-- More from TV Shows -->
 			<control type="group">
 				<visible>Integer.IsGreater(Container(2051).NumItems,0)</visible>
 				<height>880</height>
-				<control type="group">
 					<control type="label">
 						<width min="30" max="1160">auto</width>
 						<height>20</height>
@@ -469,13 +462,11 @@
 						<visible>Control.HasFocus(2051) + Container(2051).HasNext</visible>
 						<texture>arrow_right.png</texture>
 					</control>
-				</control>
 			</control>
 			<!-- IMDb Videos -->
 			<control type="group">
 				<visible>Integer.IsGreater(Container(2052).NumItems,0)</visible>
 				<height>520</height>
-				<control type="group">
 					<control type="label">
 						<width min="30" max="1160">auto</width>
 						<height>20</height>
@@ -590,13 +581,11 @@
 						<visible>Control.HasFocus(2052) + Container(2052).HasNext</visible>
 						<texture>arrow_right.png</texture>
 					</control>
-				</control>
 			</control>
 			<!-- More from Directed -->
 			<control type="group">
 				<visible>Integer.IsGreater(Container(2053).NumItems,0)</visible>
 				<height>880</height>
-				<control type="group">
 					<control type="label">
 						<width min="30" max="1160">auto</width>
 						<height>20</height>
@@ -711,9 +700,7 @@
 						<visible>Control.HasFocus(2053) + Container(2053).HasNext</visible>
 						<texture>arrow_right.png</texture>
 					</control>
-				</control>
 			</control>
 		</control>
 	</controls>
 </window>
-

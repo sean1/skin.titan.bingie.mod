@@ -50,7 +50,6 @@
             </control>
 
 		   <!-- scrollbar -->
-            <control type="group">
                 <control type="scrollbar" id="60">
 					<texturesliderbackground border="5" colordiffuse="ff141414">scrollbar/texturesliderbar_small.png</texturesliderbackground>
 					<texturesliderbar colordiffuse="ff646464" border="5">scrollbar/texturesliderbar_small.png</texturesliderbar>
@@ -67,7 +66,6 @@
                     <animation effect="fade" start="0" end="100" time="400" condition="[Control.HasFocus(60) | Container.Scrolling]">Conditional</animation>
                     <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling]">Conditional</animation>
                 </control>
-            </control>
         </control>
     </include>
 

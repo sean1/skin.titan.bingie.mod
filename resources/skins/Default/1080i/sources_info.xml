@@ -17,7 +17,6 @@
 			<centertop>50%</centertop>
 			<width>1152</width>
 			<height>868</height>
-			<control type="group">
 				<control type="image">
 					<texture colordiffuse="80343434">white.png</texture>
 				</control>
@@ -35,8 +34,6 @@
 					<aspectratio aligny="top">keep</aspectratio>
 					<texture>$INFO[Window.Property(tikiskins.pov.icon)]</texture>
 				</control>
-			</control>
-			<control type="group">
 				<control type="image">
 					<top>115</top>
 					<centerleft>50%</centerleft>
@@ -140,8 +137,6 @@
 						<label>[UPPERCASE][COLOR $INFO[Window.Property(tikiskins.results.info.highlight)]][B]Title: [/B][/COLOR]$INFO[Window.Property(tikiskins.results.info.name)][/UPPERCASE]</label>
 					</control>
 				</control>
-			</control>
 		</control>
 	</controls>
 </window>
-

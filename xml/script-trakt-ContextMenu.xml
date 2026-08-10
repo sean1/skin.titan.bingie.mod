@@ -5,7 +5,6 @@
 	<control type="group">
         <posx>705</posx>
         <posy>378</posy>
-		<control type="group">
 			<control type="image">
 				<posx>-10</posx>
 				<posy>-10</posy>
@@ -107,7 +106,6 @@
 					</control>
 				</focusedlayout>
 			</control>
-		</control>
 	</control>
 </controls>
 </window>

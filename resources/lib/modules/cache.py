@@ -239,14 +239,12 @@ def clean_databases(current_time=None, database_check=True, silent=False):
 	if database_check: check_databases()
 	if not current_time: from datetime import datetime
 	current_time = current_time or int(datetime.now().timestamp())
-	for db, table in (
-		(maincache_db, 'maincache'),
-		(external_db, 'results_data'),
-		(debridcache_db, 'debrid_data'),
-		(metacache_db, 'function_cache'),
-		(metacache_db, 'season_metadata'),
-		(metacache_db, 'metadata')
-	): purge_database(db, table, current_time)
+	for db, tables in (
+		(maincache_db, ('maincache',)),
+		(external_db, ('results_data',)),
+		(debridcache_db, ('debrid_data',)),
+		(metacache_db, ('function_cache', 'season_metadata', 'metadata'))
+	): purge_database(db, tables, current_time)
 	dbcon = database_connect(watched_db, isolation_level=None)
 	dbcon.execute("""VACUUM""")
 	dbcon.close()
@@ -255,14 +253,16 @@ def clean_databases(current_time=None, database_check=True, silent=False):
 	remove_old_packages()
 	if not silent: kodi_utils.notification(32576, 1500)
 
-def purge_database(db, table, expiry):
+def purge_database(db, tables, expiry):
+	if isinstance(tables, str): tables = (tables,)
 	dbcon = database_connect(db)
 	dbcur = dbcon.cursor()
 	dbcur.execute("""PRAGMA synchronous = OFF""")
 	dbcur.execute("""PRAGMA journal_mode = OFF""")
-	dbcur.execute("""DELETE FROM %s WHERE expires <= ?""" % table, (expiry,))
+	for table in tables: dbcur.execute("""DELETE FROM %s WHERE expires <= ?""" % table, (expiry,))
 	dbcon.commit()
 	dbcur.execute("""VACUUM""")
+	dbcon.close()
 
 def limit_metacache_database(max_size=50):
 	with kodi_utils.open_file(metacache_db) as f: fsize = f.size()

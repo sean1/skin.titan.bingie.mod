@@ -452,8 +452,8 @@ class TrailerPreview:
 		return identity, trailer, media_type, item_id, False, is_summary
 
 	def _preview_context_active(self):
-		if get_property('PovInfoTransition'): return False
 		if not self._preview_window_active(): return False
+		if get_property('PovInfoTransition'): return False
 		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1123)'): return True
 		if kodi_utils.get_visibility('Window.IsActive(1122)'):
 			return kodi_utils.get_visibility('Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)')
@@ -470,8 +470,8 @@ class TrailerPreview:
 		return kodi_utils.get_visibility('ControlGroup(9001).HasFocus() | Control.HasFocus(900) | Control.HasFocus(4444)')
 
 	def _preview_window_active(self):
-		if kodi_utils.xbmc.getSkinDir() != 'skin.titan.bingie.lite': return False
 		if not kodi_utils.get_visibility(TRAILER_PREVIEW_WINDOW_VISIBILITY): return False
+		if kodi_utils.xbmc.getSkinDir() != 'skin.titan.bingie.lite': return False
 		return not kodi_utils.get_visibility('Window.IsActive(VideoOSD)')
 
 	def _item_label(self, label):

@@ -102,6 +102,41 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertTrue(self.preview.tick())
 		self.preview._start_preview_preparation.assert_called_once_with('movie|1', 'trailer-url')
 
+	def test_inactive_preview_window_skips_skin_and_transition_reads(self):
+		self.entry.kodi_utils.get_visibility = Mock(return_value=False)
+		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
+		self.entry.get_property = Mock(return_value='')
+
+		self.assertFalse(self.preview._preview_context_active())
+		self.entry.kodi_utils.get_visibility.assert_called_once_with(self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY)
+		self.entry.kodi_utils.xbmc.getSkinDir.assert_not_called()
+		self.entry.get_property.assert_not_called()
+
+	def test_active_preview_context_preserves_skin_and_transition_guards(self):
+		visibility = {
+			self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY: True,
+			'Window.IsActive(VideoOSD)': False,
+			'Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1123)': False,
+			'Window.IsActive(1122)': False,
+			'Window.IsActive(Videos)': False,
+			'ControlGroup(77777).HasFocus()': True,
+		}
+		self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: visibility[condition])
+		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
+		self.entry.get_property = Mock(return_value='')
+
+		self.assertTrue(self.preview._preview_context_active())
+		self.entry.kodi_utils.xbmc.getSkinDir.assert_called_once_with()
+		self.entry.get_property.assert_called_once_with('PovInfoTransition')
+
+		self.entry.kodi_utils.xbmc.getSkinDir.reset_mock()
+		self.entry.get_property.reset_mock()
+		self.entry.kodi_utils.xbmc.getSkinDir.return_value = 'skin.other'
+
+		self.assertFalse(self.preview._preview_context_active())
+		self.entry.kodi_utils.xbmc.getSkinDir.assert_called_once_with()
+		self.entry.get_property.assert_not_called()
+
 	def test_info_candidate_stages_property_reads_until_prerequisites_are_valid(self):
 		self.preview._preview_context_active = Mock(return_value=True)
 		self.visibility['Window.IsActive(1123)'] = True

@@ -2,6 +2,7 @@ BINGIE Lite 2.3.10
 
 - Prevent list and task-pool workers from blocking when another worker drains the shared queue.
 - Reduce navigator cleanup serialization and repeated landscape-card visibility work.
+- Speed up IMDb and TVDB metadata cache lookups while preserving deterministic duplicate selection.
 - Fold constant skin conditions across dialogs, views, and playback overlays without changing behavior.
 
 BINGIE Lite 2.3.9

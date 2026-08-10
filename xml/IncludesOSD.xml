@@ -150,9 +150,8 @@
 			<onleft>200</onleft>
 			<onright>200</onright>
 			<orientation>horizontal</orientation>
-			<animation effect="slide" end="-56,-71" time="0" condition="Player.HasVideo + false">Conditional</animation>
-			<animation effect="slide" end="-55,-8" time="0" condition="Player.HasVideo + !true + !false | Player.HasVideo + true + !VideoPlayer.Content(Movies) + !false + !false">Conditional</animation>
-			<animation effect="slide" end="45,-8" time="0" condition="Player.HasVideo + true + !false + VideoPlayer.Content(Movies) | Player.HasVideo + true + !false + !VideoPlayer.Content(Movies) + false">Conditional</animation>
+			<animation effect="slide" end="-55,-8" time="0" condition="Player.HasVideo + !VideoPlayer.Content(Movies)">Conditional</animation>
+			<animation effect="slide" end="45,-8" time="0" condition="Player.HasVideo + VideoPlayer.Content(Movies)">Conditional</animation>
 			<animation effect="slide" end="4" time="0" condition="Player.HasVideo">Conditional</animation>
 			<visible>![Window.IsVisible(OSDVideoSettings) | Window.IsVisible(OSDAudioSettings) | Window.IsVisible(osdsubtitlesettings) | Window.IsVisible(subtitlesearch) | Window.IsVisible(selectdialog)]</visible>
 			<control type="button" id="201">
@@ -324,7 +323,7 @@
 
     <include name="OSDInfoPanel">
         <control type="group" id="552233">
-            <visible>[false + [[Player.Paused + false] | Window.IsActive(videoosd)]] | [Player.ShowInfo + !Window.IsActive(videoosd)]</visible>
+            <visible>Player.ShowInfo + !Window.IsActive(videoosd)</visible>
             <visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Window.IsActive(DialogPlayerProcessInfo.xml)</visible>
 			<animation effect="fade" time="350" condition="true">VisibleChange</animation>
             <include>HideOsdConditions</include>
@@ -490,7 +489,7 @@
 	<include name="OSDInfoPanelBingie2">
 		<control type="group">
 					<visible>VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)</visible>
-					<visible>[false + [[Player.Paused + false] | Window.IsActive(videoosd)]] | [Player.ShowInfo + !Window.IsActive(videoosd)]</visible>
+					<visible>Player.ShowInfo + !Window.IsActive(videoosd)</visible>
 					<visible>!Window.IsActive(notification) + !Window.IsActive(extendedprogressdialog) + !Window.IsActive(DialogPlayerProcessInfo.xml)</visible>
 					<include>HideOsdConditions</include>
 					<animation effect="slide" start="0,0" end="0,400" tween="cubic" easing="out" delay="0" time="450" reversible="false" condition="Control.IsVisible(1) + !Window.IsActive(videoosd)">Hidden</animation>
@@ -527,7 +526,7 @@
 				<control type="label">
 					<description>Total Duration</description>
 					<visible>true</visible>
-					<animation end="-45,0" time="0" effect="slide" condition="[!String.IsEqual(Player.Duration(hh),00) + Player.Seeking + String.IsEqual(Player.TimeRemaining(hh),00)] | [!String.IsEqual(Player.Duration(hh),00) + String.IsEqual(Player.TimeRemaining(hh),00)]">Conditional</animation>
+					<animation end="-45,0" time="0" effect="slide" condition="!String.IsEqual(Player.Duration(hh),00) + String.IsEqual(Player.TimeRemaining(hh),00)">Conditional</animation>
 					<bottom>25</bottom>
 					<right>190</right>
 					<width>300</width>

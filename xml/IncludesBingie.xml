@@ -1751,17 +1751,6 @@
 						<aligny>center</aligny>
 						<usecontrolcoords>true</usecontrolcoords>
 						<itemgap>15</itemgap>
-					<!--top 250 icon White-->
-					<control type="image">
-							<visible>!String.IsEmpty(Control.GetLabel(8231)) + false</visible>
-							<posy>5</posy>
-							<left>0</left>
-							<height>50</height>
-							<width>50</width>
-							<aspectratio>keep</aspectratio>
-							<colordiffuse>ffffffff</colordiffuse>
-							<texture>bingie/top2501.png</texture>
-					</control>
 					<!--top 250 icon color-->
 					<control type="image">
 							<visible>!String.IsEmpty(Control.GetLabel(8231)) + !false</visible>

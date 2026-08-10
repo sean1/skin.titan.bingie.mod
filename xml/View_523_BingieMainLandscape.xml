@@ -124,7 +124,6 @@
 					</control>
                     <include>ThumbsViewItemBingieLayout</include>
                     <include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include>
-                    <animation effect="zoom" end="103,103" center="auto" time="100" condition="false + false">focus</animation>
                 </control>
 				<!--Top 250 1-->
 				<control type="image">
@@ -134,16 +133,6 @@
 				</visible>
 				<posy>8</posy>
 				<left>8</left>
-                <height>60</height>
-                <width>50</width>
-				<aspectratio>keep</aspectratio>
-                <texture>bingie/top250p.png</texture>
-		        </control>
-				<!--Top 250 2-->
-				<control type="image">
-				<visible>!Container.Content(episodes) + !Container.Content(seasons) + !String.IsEmpty(Control.GetLabel(8231)) + !false + false + false</visible>
-				<posy>5</posy>
-				<left>3</left>
                 <height>60</height>
                 <width>50</width>
 				<aspectratio>keep</aspectratio>

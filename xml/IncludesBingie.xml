@@ -1396,27 +1396,6 @@
         </control>
     </include>
 
-<!-- Bingie Elements / Footer on Home Transparent-->
-    <include name="Bingie_Footer">
-        <control type="group">
-            <top>520</top>
-            <width>100%</width>
-			<visible>!$EXP[IsMainMenuOpened]</visible>
-
-			<!-- New Footer on HOME -->
-			<control type="group">
-				<include content="right" condition="$EXP[IsBingieCategoriesActive]">
-                <param name="right" value="130" />
-                </include>
-				<right>14</right>
-                <height></height>
-                <width></width>
-				<top>-30</top>
-				<include>new_footer</include>
-			</control>
-		</control>
-	</include>
-
 <!-- Left Panel Behind Icons/Over Movie Poster -->
     <include name="Bingie_Left_Gradient">
         <control type="image">

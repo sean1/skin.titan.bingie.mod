@@ -20,12 +20,6 @@
             <include condition="Window.IsActive(MyVideoNav.xml)">View_525_Episodes</include>
             <include condition="Window.IsActive(MyVideoNav.xml)">View_527_Seasons</include>
         </control>
-
-        <control type="group">
-            <visible>!Window.IsActive(DialogVideoInfo.xml)</visible>
-            <include>Animation_Right_Home</include>
-            <include>Footer2</include>
-        </control>
     </include>
 
     <include name="thumbsborder_focused">

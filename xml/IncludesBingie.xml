@@ -133,76 +133,6 @@
 
 	<!-- MPAA icon -->
 
-	<!-- MPAA Color Icons -->
-    <include name="MPAA_Details_RowUS">
-	<include>Default_Visible_Fade</include>
-	<!-- Icon display -->
-	<control type="button" id="123456">
-			<visible>$EXP[HasBingieMpaa]</visible>
-			<posy>8</posy>
-				<height>34</height>
-                <width min="42">auto</width>
-				<align>center</align>
-				<aligny>top</aligny>
-				<textwidth>140</textwidth>
-				<textcolor>ffffffff</textcolor>
-				<disabledcolor>ffffffff</disabledcolor>
-				<colordiffuse>$VAR[MPAAColors]</colordiffuse>
-				<texturenofocus border="10">bingie/square-rounded.png</texturenofocus>
-				<texturefocus border="10">bingie/square-rounded.png</texturefocus>
-				<textoffsetx>7</textoffsetx>
-				<textoffsety>-1</textoffsety>
-				<font>Bold26</font>
-				<label>$VAR[GetMPAA]</label>
-				<enable>false</enable>
-        </control>
-    </include>
-
-	<!-- MPAA Color Icons - Fixed panel size -->
-    <include name="MPAA_Details_RowUS_Fixed_Size">
-	<include>Default_Visible_Fade</include>
-	<!-- Icon display -->
-	<control type="group" id="123456">
-			<visible>$EXP[HasBingieMpaa]</visible>
-			<height>34</height>
-            <width>106</width>
-	<control type="image" id="123456">
-			<visible>$EXP[HasBingieMpaa]</visible>
-			<top>8</top>
-			<width>106</width>
-			<height>34</height>
-            <aspectratio>keep</aspectratio>
-			<texture border="6">bingie/usicons/usfixed/fixedpanel.png</texture>
-			<colordiffuse>ffffffff</colordiffuse>
-			<include>Default_Visible_Fade</include>
-        </control>
-	<control type="image" id="123456">
-			<visible>$EXP[HasBingieMpaa]</visible>
-			<right>3</right>
-			<top>11</top>
-			<width>100</width>
-			<height>28</height>
-			<aspectratio>keep</aspectratio>
-			<texture border="4">bingie/usicons/usfixed/fixedpanel2.png</texture>
-			<colordiffuse>$VAR[MPAAColors]</colordiffuse>
-			<include>Default_Visible_Fade</include>
-    </control>
-		<control type="label" id="123456">
-				<visible>$EXP[HasBingieMpaa]</visible>
-				<posy>8</posy>
-				<align>center</align>
-				<aligny>top</aligny>
-				<textwidth>96</textwidth>
-				<textcolor>ffffffff</textcolor>
-				<textoffsetx>7</textoffsetx>
-				<textoffsety>-1</textoffsety>
-				<font>Bold26</font>
-				<label>$VAR[GetMPAA]</label>
-				<scroll>true</scroll>
-        </control>
-	</control>
-    </include>
-
 	<!-- Original MPAA details row -->
 	<include name="MPAA_Details_Row">
             <include>Default_Visible_Fade</include>
@@ -335,8 +265,6 @@
             <include condition="!false">Percentage_Rating_Details_Row</include>
 			<include>Year_Premiered_Details_Row</include>
 			<include condition="!false + !false">MPAA_Details_Row</include>
-			<include condition="false + !false">MPAA_Details_RowUS</include>
-			<include condition="false + false">MPAA_Details_RowUS_Fixed_Size</include>
 			<include>Duration_TotalSeasonsEpisodes_Details_Row</include>
 			<!-- Resolution_Details_Row -->
 
@@ -358,8 +286,6 @@
 			<itemgap>15</itemgap>
 			<include>Duration_TotalSeasonsEpisodes_Details_Row</include>
 			<include condition="!false + !false">MPAA_Details_Row</include>
-			<include condition="false + !false">MPAA_Details_RowUS</include>
-			<include condition="false + false">MPAA_Details_RowUS_Fixed_Size</include>
 		</control>
 	</include>
 

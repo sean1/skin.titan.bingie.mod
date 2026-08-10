@@ -283,8 +283,6 @@
 
 
 			<include condition="!false + !false">MPAA_Details_Row</include>
-			<include condition="false + !false">MPAA_Details_RowUS</include>
-			<include condition="false + false">MPAA_Details_RowUS_Fixed_Size</include>
 
 			<!-- Total Seasons -->
             <control type="label" id="611117">

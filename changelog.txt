@@ -1,3 +1,9 @@
+BINGIE Lite 2.3.8
+
+- Render Home content sooner and avoid unnecessary focused-metadata lookups.
+- Wake Home content promptly while reducing idle background work.
+- Remove unreachable seek-overlay controls without changing playback behavior.
+
 BINGIE Lite 2.3.7
 
 - Display pagination destinations as plain page numbers without decorative arrows.

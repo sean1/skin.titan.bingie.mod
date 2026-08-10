@@ -184,7 +184,6 @@
                 <font>Reg26</font>
                 <textcolor>b3ffffff</textcolor>
                 <label>$VAR[ViewsPlotWithOutline]</label>
-                <autoscroll delay="7000" time="3000" repeat="4000">!true + Control.HasFocus(5027)</autoscroll>
             </control>
             <!-- duration -->
             <control type="label">
@@ -232,7 +231,6 @@
                 <font>Reg26</font>
                 <textcolor>b3ffffff</textcolor>
                 <label>$VAR[ViewsPlotWithOutline]</label>
-                <autoscroll>false</autoscroll>
             </control>
             <!-- duration -->
             <control type="label">

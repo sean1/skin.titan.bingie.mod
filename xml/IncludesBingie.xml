@@ -334,7 +334,6 @@
                       <align>left</align>
                       <aligny>center</aligny>
                       <font>Reg28</font>
-                      <autoscroll>false</autoscroll>
                   </control>
               </control>
           </definition>

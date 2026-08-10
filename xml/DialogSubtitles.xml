@@ -101,7 +101,6 @@
 							<aligny>center</aligny>
 							<wrapmultiline>true</wrapmultiline>
 							<label>$INFO[ListItem.Label]</label>
-							<autoscroll>false</autoscroll>
 						</control>
 
                         <!--Rating-->
@@ -131,7 +130,6 @@
                                 <align>left</align>
 								<label>$INFO[ListItem.Label2]</label>
 								<wrapmultiline>true</wrapmultiline>
-								<autoscroll>false</autoscroll>
                             </control>
 						 <!-- sync image - ON -->
                             <control type="image">

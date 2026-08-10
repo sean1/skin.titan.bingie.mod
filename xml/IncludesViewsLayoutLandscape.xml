@@ -191,11 +191,11 @@
     </include>
 
     <variable name="LandscapeImage">
-		<value condition="!String.IsEmpty(ListItem.Art(thumb)) + [String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + ![Window.IsActive(Home) + false]">$INFO[ListItem.Art(thumb)]</value>
+		<value condition="!String.IsEmpty(ListItem.Art(thumb)) + [String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)]">$INFO[ListItem.Art(thumb)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(thumb)) + String.IsEqual(ListItem.Property(DBTYPE),category)">$INFO[ListItem.Art(thumb)]</value>
-        <value condition="!String.IsEmpty(ListItem.Art(season.landscape)) + !false">$INFO[ListItem.Art(season.landscape)]</value>
-        <value condition="!String.IsEmpty(ListItem.Art(landscape)) + !false">$INFO[ListItem.Art(landscape)]</value>
-        <value condition="!String.IsEmpty(ListItem.Art(tvshow.landscape)) + !false">$INFO[ListItem.Art(tvshow.landscape)]</value>
+        <value condition="!String.IsEmpty(ListItem.Art(season.landscape))">$INFO[ListItem.Art(season.landscape)]</value>
+        <value condition="!String.IsEmpty(ListItem.Art(landscape))">$INFO[ListItem.Art(landscape)]</value>
+        <value condition="!String.IsEmpty(ListItem.Art(tvshow.landscape))">$INFO[ListItem.Art(tvshow.landscape)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(tvshow.fanart)) + !String.IsEmpty(ListItem.DBType)">$INFO[ListItem.Art(tvshow.fanart)]</value>
         <value condition="!String.IsEmpty(ListItem.Art(fanart)) + !String.IsEmpty(ListItem.DBType)">$INFO[ListItem.Art(fanart)]</value>
 		<value condition="!String.IsEmpty(ListItem.Property(landscape))">$INFO[ListItem.Property(landscape)]</value>

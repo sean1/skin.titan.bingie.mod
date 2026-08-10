@@ -445,11 +445,11 @@
 		<value condition="$EXP[PovFocusedMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedDuration))">$INFO[Window(Home).Property(PovFocusedDuration)]</value>
         <!-- Hours not disabled -->
         <!-- normal -->
-        <value condition="!false + Integer.IsGreater(ListItem.Duration(h),0)">$INFO[ListItem.Duration(h),,h ]$INFO[ListItem.Duration(m),,m]</value>
-        <value condition="!false + !String.IsEmpty(ListItem.Duration) + Integer.IsEqual(ListItem.Duration(h),0)">$INFO[ListItem.Duration(mins),,m]</value>
+        <value condition="Integer.IsGreater(ListItem.Duration(h),0)">$INFO[ListItem.Duration(h),,h ]$INFO[ListItem.Duration(m),,m]</value>
+        <value condition="!String.IsEmpty(ListItem.Duration) + Integer.IsEqual(ListItem.Duration(h),0)">$INFO[ListItem.Duration(mins),,m]</value>
         <!-- fallback -->
-        <value condition="$EXP[IsMainMenuOpened] + !false + Integer.IsGreater(Window(Home).Property(ListItem.Duration.Hours),0)">$INFO[Window(Home).Property(ListItem.Duration.Hours),,h ]$INFO[Window(Home).Property(ListItem.Duration.M),,m]</value>
-        <value condition="$EXP[IsMainMenuOpened] + !false + !String.IsEmpty(Window(Home).Property(ListItem.Duration.Hours)) + Integer.IsEqual(Window(Home).Property(ListItem.Duration.Hours),0)">$INFO[Window(Home).Property(ListItem.Duration.Mins),,m]</value>
+        <value condition="$EXP[IsMainMenuOpened] + Integer.IsGreater(Window(Home).Property(ListItem.Duration.Hours),0)">$INFO[Window(Home).Property(ListItem.Duration.Hours),,h ]$INFO[Window(Home).Property(ListItem.Duration.M),,m]</value>
+        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Duration.Hours)) + Integer.IsEqual(Window(Home).Property(ListItem.Duration.Hours),0)">$INFO[Window(Home).Property(ListItem.Duration.Mins),,m]</value>
         <!-- Hours disabled -->
         <!-- regular format fallback -->
         <value condition="!String.IsEmpty(ListItem.Duration)">$INFO[ListItem.Duration]</value>
@@ -691,8 +691,8 @@
 
     <variable name="BingiePlot">
         <!-- Spotlight Widget (Inside Container) -->
-        <value condition="true + !String.IsEmpty(ListItem.PlotOutline)">$INFO[ListItem.PlotOutline]</value>
-        <value condition="$EXP[IsMainMenuOpened] + true + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline))">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
+        <value condition="!String.IsEmpty(ListItem.PlotOutline)">$INFO[ListItem.PlotOutline]</value>
+        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline))">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
 
         <value condition="!String.IsEmpty(ListItem.Plot)">$INFO[ListItem.Plot]</value>
         <value condition="!String.IsEmpty(ListItem.Property(Plot))">$INFO[ListItem.Property(Plot)]</value>
@@ -702,7 +702,7 @@
         <value condition="!String.IsEmpty(ListItem.PictureComment)">$INFO[ListItem.PictureComment]</value>
         <value condition="!String.IsEmpty(ListItem.PictureKeywords)">$INFO[ListItem.PictureKeywords]</value>
         <!-- Normal Widgets Info -->
-        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline)) + true">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
+        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline))">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Plot))">$INFO[Window(Home).Property(ListItem.Plot)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Album_Description))">$INFO[Window(Home).Property(ListItem.Album_Description)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Artist_Description))">$INFO[Window(Home).Property(ListItem.Artist_Description)]</value>
@@ -713,8 +713,8 @@
 
 	<variable name="BingieDialogInfoPlot">
         <!-- Spotlight Widget (Inside Container) -->
-        <value condition="true + !String.IsEmpty(ListItem.PlotOutline)">$INFO[ListItem.PlotOutline]</value>
-        <value condition="$EXP[IsMainMenuOpened] + true + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline))">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
+        <value condition="!String.IsEmpty(ListItem.PlotOutline)">$INFO[ListItem.PlotOutline]</value>
+        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline))">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
 
         <value condition="![String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.Plot)">$INFO[ListItem.Plot]</value>
         <value condition="![String.IsEqual(ListItem.DBType,tvshow) | Container.Content(tvshows)] + !String.IsEmpty(ListItem.Property(Plot))">$INFO[ListItem.Property(Plot)]</value>
@@ -726,7 +726,7 @@
         <value condition="!String.IsEmpty(ListItem.PictureComment)">$INFO[ListItem.PictureComment]</value>
         <value condition="!String.IsEmpty(ListItem.PictureKeywords)">$INFO[ListItem.PictureKeywords]</value>
         <!-- Normal Widgets Info -->
-        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline)) + true">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
+        <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.PlotOutline))">$INFO[Window(Home).Property(ListItem.PlotOutline)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Plot))">$INFO[Window(Home).Property(ListItem.Plot)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Album_Description))">$INFO[Window(Home).Property(ListItem.Album_Description)]</value>
         <value condition="$EXP[IsMainMenuOpened] + !String.IsEmpty(Window(Home).Property(ListItem.Artist_Description))">$INFO[Window(Home).Property(ListItem.Artist_Description)]</value>
@@ -739,7 +739,7 @@
 
     <!-- Plot Outline Prioritized for Views -->
     <variable name="ViewsPlotWithOutline">
-        <value condition="!String.IsEmpty(ListItem.PlotOutline) + true + !String.Contains(ListItem.PlotOutline,$LOCALIZE[20339]: )">$INFO[ListItem.PlotOutline]</value>
+        <value condition="!String.IsEmpty(ListItem.PlotOutline) + !String.Contains(ListItem.PlotOutline,$LOCALIZE[20339]: )">$INFO[ListItem.PlotOutline]</value>
         <value>$VAR[Plots]</value>
     </variable>
 
@@ -779,7 +779,7 @@
 
     <!-- Next Up Thumb Episode/TvShow Based on Setting Preference -->
     <variable name="NextUpThumb">
-        <value condition="!String.IsEmpty(Window.Property(fanart)) + !false">$INFO[Window.Property(fanart)]</value>
+        <value condition="!String.IsEmpty(Window.Property(fanart))">$INFO[Window.Property(fanart)]</value>
     </variable>
 
 

@@ -28,7 +28,6 @@
             </control>
 
             <!--Top Label-->
-            <control type="group">
                 <control type="label" id="100">
                     <!--textarea-->
                     <posx>303</posx>
@@ -51,7 +50,6 @@
 					<align>Left</align>
                     <wrapmultiline>false</wrapmultiline>
 				</control>
-            </control>
             <!--Left Menu-->
             <control type="group">
                 <control type="image">

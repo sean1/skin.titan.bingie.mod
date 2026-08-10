@@ -8,7 +8,6 @@
 
 		<include>DialogOverlayExtra</include>
 
-			<control type="group">
                 <control type="image">
                     <posx>367</posx>
                     <posy>236</posy>
@@ -49,7 +48,6 @@
                     <aspectratio aligny="center">keep</aspectratio>
                     <texture background="true" fallback="DefaultAddon.png">$INFO[Container(450).ListItem.Icon]</texture>
                 </control>
-            </control>
 
 			 <!--Header-->
             <control type="label" id="20">

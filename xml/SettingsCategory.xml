@@ -164,7 +164,6 @@
 
 		<!--Footer-->
 
-        <control type="group">
             <control type="textbox" id="6">
                 <description>description area</description>
                 <left>90</left>
@@ -176,7 +175,6 @@
                 <textcolor>ffffffff</textcolor>
                 <autoscroll time="3000" delay="5000" repeat="5000">true</autoscroll>
             </control>
-        </control>
         <control type="label" id="2">
             <description>breadcrumbs label</description>
             <visible>False</visible>

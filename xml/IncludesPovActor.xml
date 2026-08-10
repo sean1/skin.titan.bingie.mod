@@ -16,7 +16,6 @@
 				<param name="image" value="$VAR[PovActorPageBackdrop]" />
 			</include>
 
-			<control type="group">
 				<control type="label">
 					<left>138</left>
 					<top>88</top>
@@ -46,7 +45,6 @@
 					<textcolor>a6ffffff</textcolor>
 					<label>$INFO[Window(Home).Property(PovActorBirthplace),Born in ]</label>
 				</control>
-			</control>
 			<control type="textbox">
 				<visible>String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorBiography))</visible>
 				<left>138</left>

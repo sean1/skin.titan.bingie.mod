@@ -386,7 +386,6 @@
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), plot) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)">Conditional</animation>
 						<animation effect="slide" start="0,0" end="0,41" time="0" delay="0" condition="String.IsEqual(Window.Property(AdditionalInfo),set)">Conditional</animation>
 						<!-- progress bar for resume buttons -->
-						<control type="group">
 
 							<control type="progress">
 								<visible>Control.HasFocus(90) | [Control.HasFocus(51) + Container(5050).ListItem.IsResumable]</visible>
@@ -414,7 +413,6 @@
 								<righttexture/>
 								<info>Container(5050).ListItem.PercentPlayed</info>
 							</control>
-						</control>
 
 						<control type="grouplist" id="8000">
 							<width>550</width>

@@ -27,7 +27,6 @@
     </include>
 
 	<include name="TimeInfo">
-        <control type="group">
             <!--Time-->
             <control type="label">
                 <right>60</right>
@@ -52,7 +51,6 @@
                 <textcolor>ffffffff</textcolor>
                 <shadowcolor>None</shadowcolor>
             </control>
-		</control>
 	</include>
 
 </includes>

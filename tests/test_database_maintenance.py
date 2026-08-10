@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sqlite3
 import sys
 import tempfile
@@ -37,6 +38,25 @@ def load_cache_module():
 class DatabaseMaintenanceTests(unittest.TestCase):
 	def setUp(self):
 		self.cache = load_cache_module()
+
+	def test_marker_filter_serializes_each_item_once_and_preserves_order_and_identity(self):
+		kept_first = {'name': 'first'}
+		removed_early = {'name': 'blocked'}
+		kept_last = {'name': 'last'}
+		removed_late = {'name': 'later'}
+		items = [kept_first, removed_early, kept_last, removed_late]
+		markers = ('blocked', 'later')
+		expected = [item for item in items if all(marker not in json.dumps(item).lower() for marker in markers)]
+		calls = {id(item): 0 for item in items}
+		def serialize(item):
+			calls[id(item)] += 1
+			return json.dumps(item)
+
+		result = self.cache._filter_items_without_markers(items, markers, serialize)
+
+		self.assertEqual(result, expected)
+		self.assertEqual(list(map(id, result)), [id(kept_first), id(kept_last)])
+		self.assertEqual(calls, {id(item): 1 for item in items})
 
 	def test_purge_database_deletes_expired_rows_from_all_tables_and_vacuums_once(self):
 		with tempfile.TemporaryDirectory() as temp_dir:

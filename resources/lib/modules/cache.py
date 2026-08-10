@@ -14,6 +14,13 @@ databases_path = kodi_utils.databases_path
 packages_path = kodi_utils.packages_path
 database_connect = kodi_utils.database_connect
 
+def _filter_items_without_markers(items, markers, serialize):
+	filtered = []
+	for item in items:
+		serialized = serialize(item).lower()
+		if all(marker not in serialized for marker in markers): filtered.append(item)
+	return filtered
+
 def _trunc(file):
 	try:
 		with open(kodi_utils.translate_path(file), 'w') as f: pass
@@ -137,7 +144,7 @@ def purge_removed_list_data():
 		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
 		for list_name, list_type, list_contents in rows:
 			items = navigator_cache.jsloads(list_contents)
-			filtered = [item for item in items if all(marker not in navigator_cache.jsdumps(item).lower() for marker in markers)]
+			filtered = _filter_items_without_markers(items, markers, navigator_cache.jsdumps)
 			changed = len(filtered) != len(items)
 			if list_name == 'RootList' and list_type == 'default' and not any(item.get('action') == 'dropped_tvshows' for item in filtered):
 				from modules.menu_lists import root_list
@@ -172,7 +179,7 @@ def purge_removed_personal_trakt_data():
 		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
 		for list_name, list_type, list_contents in rows:
 			items = navigator_cache.jsloads(list_contents)
-			filtered = [item for item in items if all(marker not in navigator_cache.jsdumps(item).lower() for marker in markers)]
+			filtered = _filter_items_without_markers(items, markers, navigator_cache.jsdumps)
 			changed = len(filtered) != len(items)
 			if list_type == 'default':
 				for item in filtered:

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.3.10" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
+<addon id="skin.titan.bingie.lite" version="2.3.11" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
 		<import addon="xbmc.python" version="3.0.0"/>
@@ -38,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite 2.3.10[/B][CR]Prevent worker stalls, reduce repeated cleanup and landscape-card work, and streamline skin condition evaluation.
+			[B]BINGIE Lite 2.3.11[/B][CR]Reduce Home and hub widget navigation overhead by avoiding focused-layout rebuilds when row focus changes.
 		</news>
 	</extension>
 </addon>

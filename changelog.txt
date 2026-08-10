@@ -1,3 +1,7 @@
+BINGIE Lite 2.3.11
+
+- Avoid rebuilding widget item layouts when row focus changes while preserving focused Top 250 indicators.
+
 BINGIE Lite 2.3.10
 
 - Prevent list and task-pool workers from blocking when another worker drains the shared queue.

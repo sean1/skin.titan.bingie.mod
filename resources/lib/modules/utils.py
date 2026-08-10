@@ -5,7 +5,7 @@ import hashlib
 import unicodedata
 import _strptime  # fix bug in python import
 from html import unescape
-from queue import SimpleQueue
+from queue import Empty, SimpleQueue
 from importlib import import_module
 from datetime import datetime, timedelta, date
 from modules.kodi_utils import local_string as ls, get_setting, logger
@@ -60,8 +60,13 @@ class TaskPool:
 		self._queue = SimpleQueue()
 
 	def _thread_target(self, queue, target):
-		while not queue.empty():
-			try: target(*queue.get())
+		while True:
+			try: args = queue.get_nowait()
+			except Empty: break
+			except Exception as e:
+				logger('queue error', f"{e}")
+				continue
+			try: target(*args)
 			except Exception as e: logger('queue error', f"{e}")
 
 	def tasks(self, _target, _list, _thread):

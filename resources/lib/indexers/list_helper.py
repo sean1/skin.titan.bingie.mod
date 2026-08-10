@@ -1,5 +1,5 @@
 from threading import Thread
-from queue import SimpleQueue
+from queue import Empty, SimpleQueue
 from modules import kodi_utils
 from modules.utils import LIST_WORKERS, paginate_list, TaskPool
 from modules.settings import paginate, page_limit, nav_jump_use_alphabet
@@ -59,9 +59,10 @@ class BaseMediaListBuilder:
 		self.name = params.get('name')
 
 	def _thread_target(self, q):
-		while not q.empty():
-			try: target, *args = q.get()
-			except: pass
+		while True:
+			try: target, *args = q.get_nowait()
+			except Empty: break
+			except: continue
 			else: target(*args)
 
 	def fetch_results(self):

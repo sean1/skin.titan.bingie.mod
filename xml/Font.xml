@@ -2,11 +2,6 @@
 <!-- BINGIE -->
 <fonts>
 	<fontset id="Default" unicode="true"> <!--Netflix sans font now default-->
-		<font>
-            <name>IBold30</name>
-            <filename>Impact.ttf</filename>
-            <size>30</size>
-        </font>
 		<!-- confluence compatibility fonts -->
         <font>
             <name>font10</name>

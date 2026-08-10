@@ -38,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite 2.3.14[/B][CR]Reduce bundled texture size and skin control overhead by deduplicating packed artwork, removing unused legacy user pictures, and simplifying redundant XML controls and visibility checks.
+			[B]BINGIE Lite 2.3.14[/B][CR]Reduce bundled texture size and skin control overhead by deduplicating packed artwork, removing unused legacy artwork, and simplifying redundant XML controls and visibility checks.
 		</news>
 	</extension>
 </addon>

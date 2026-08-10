@@ -31,6 +31,10 @@ TRAILER_PREPARED_CACHE_LIMIT = 32
 TRAILER_PREPARED_CACHE_TTL = 120.0
 TRAILER_PREVIEW_WINDOWS = ('Home', 'Videos', '1110', '1111', '1112', '1113', '1122', '1123', 'DialogVideoInfo.xml')
 TRAILER_PREVIEW_WINDOW_VISIBILITY = ' | '.join('Window.IsActive(%s)' % window for window in TRAILER_PREVIEW_WINDOWS)
+TRAILER_PREVIEW_INFO_CONTEXTS = 'Window.IsActive(1123) | Window.IsActive(DialogVideoInfo.xml)'
+TRAILER_PREVIEW_ACTOR_CONTEXT = 'Window.IsActive(1122) + ![%s]' % TRAILER_PREVIEW_INFO_CONTEXTS
+TRAILER_PREVIEW_NON_LISTING_CONTEXTS = TRAILER_PREVIEW_INFO_CONTEXTS + ' | Window.IsActive(1122)'
+TRAILER_PREVIEW_SPECIAL_CONTEXTS = 'Window.IsActive(1123) | Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1122) | Window.IsActive(Videos)'
 FOCUSED_FANART_PROPERTY = 'PovFocusedFanart'
 FOCUSED_FANART_IDENTITY_PROPERTY = 'PovFocusedFanartIdentity'
 FOCUSED_FANART_SETTLE_DELAY = 0.25
@@ -412,8 +416,9 @@ class TrailerPreview:
 		return True
 
 	def _candidate(self):
-		if not self._preview_context_active(): return None
-		if kodi_utils.get_visibility('Window.IsActive(1123)'):
+		context = self._preview_context()
+		if not context: return None
+		if context == 'info':
 			media_type = get_property('PovInfoType').strip().lower()
 			if media_type not in ('movie', 'tvshow'): return None
 			item_id = get_property('PovInfoTmdb').strip()
@@ -421,7 +426,7 @@ class TrailerPreview:
 			trailer = get_property('PovInfoTrailer').strip()
 			identity = '|'.join(('info', media_type, item_id))
 			return identity, trailer, media_type, item_id, True, False
-		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)'):
+		if context == 'dialog':
 			media_type = kodi_utils.get_infolabel('Window.Property(PovInfoType)').strip().lower()
 			if media_type not in ('movie', 'tvshow'): return None
 			item_id = kodi_utils.get_infolabel('Window.Property(PovInfoTmdb)').strip()
@@ -429,7 +434,7 @@ class TrailerPreview:
 			trailer = kodi_utils.get_infolabel('ListItem.Trailer').strip()
 			identity = '|'.join(('info', media_type, item_id))
 			return identity, trailer, media_type, item_id, False, False
-		if kodi_utils.get_visibility('Window.IsActive(1122)'):
+		if context == 'actor':
 			media_type = self._item_label('Property(PovCreditType)').lower() or self._item_label('Property(mediatype)').lower() or self._item_label('DBType').lower()
 			if media_type not in ('movie', 'tvshow'): return None
 			item_id = self._item_label('UniqueID(tmdb)') or self._item_label('Property(tmdb_id)')
@@ -451,15 +456,24 @@ class TrailerPreview:
 		if not identity: identity = '|'.join(('listing', media_type, item_id)) if is_summary else '|'.join((media_type, item_id or label, trailer))
 		return identity, trailer, media_type, item_id, False, is_summary
 
-	def _preview_context_active(self):
-		if not self._preview_window_active(): return False
-		if get_property('PovInfoTransition'): return False
-		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1123)'): return True
-		if kodi_utils.get_visibility('Window.IsActive(1122)'):
-			return kodi_utils.get_visibility('Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)')
-		if kodi_utils.get_visibility('Window.IsActive(Videos)'):
-			return kodi_utils.get_visibility('Control.HasFocus(523)')
-		return kodi_utils.get_visibility('ControlGroup(77777).HasFocus()')
+	def _preview_context(self):
+		if not self._preview_window_active() or get_property('PovInfoTransition'): return ''
+		if not kodi_utils.get_visibility(TRAILER_PREVIEW_SPECIAL_CONTEXTS):
+			if not kodi_utils.get_visibility('ControlGroup(77777).HasFocus()'): return ''
+			if not kodi_utils.get_visibility(TRAILER_PREVIEW_SPECIAL_CONTEXTS): return 'listing'
+		for _ in range(2):
+			if kodi_utils.get_visibility('Window.IsActive(1123)'): return 'info'
+			if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)'): return 'dialog'
+			if kodi_utils.get_visibility('Window.IsActive(1122)'):
+				if not kodi_utils.get_visibility('Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'): return ''
+				if kodi_utils.get_visibility(TRAILER_PREVIEW_ACTOR_CONTEXT): return 'actor'
+				continue
+			if kodi_utils.get_visibility('Window.IsActive(Videos)'):
+				if not kodi_utils.get_visibility('Control.HasFocus(523)'): return ''
+				if kodi_utils.get_visibility(TRAILER_PREVIEW_NON_LISTING_CONTEXTS): continue
+				return 'listing'
+			return 'listing' if kodi_utils.get_visibility('ControlGroup(77777).HasFocus()') else ''
+		return ''
 
 	def _preview_navigation_away(self):
 		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1123)'): return False

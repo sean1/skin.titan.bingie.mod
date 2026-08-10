@@ -107,7 +107,7 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
 		self.entry.get_property = Mock(return_value='')
 
-		self.assertFalse(self.preview._preview_context_active())
+		self.assertEqual(self.preview._preview_context(), '')
 		self.entry.kodi_utils.get_visibility.assert_called_once_with(self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY)
 		self.entry.kodi_utils.xbmc.getSkinDir.assert_not_called()
 		self.entry.get_property.assert_not_called()
@@ -116,16 +116,14 @@ class TrailerPreviewTests(unittest.TestCase):
 		visibility = {
 			self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY: True,
 			'Window.IsActive(VideoOSD)': False,
-			'Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1123)': False,
-			'Window.IsActive(1122)': False,
-			'Window.IsActive(Videos)': False,
+			self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: False,
 			'ControlGroup(77777).HasFocus()': True,
 		}
 		self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: visibility[condition])
 		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
 		self.entry.get_property = Mock(return_value='')
 
-		self.assertTrue(self.preview._preview_context_active())
+		self.assertEqual(self.preview._preview_context(), 'listing')
 		self.entry.kodi_utils.xbmc.getSkinDir.assert_called_once_with()
 		self.entry.get_property.assert_called_once_with('PovInfoTransition')
 
@@ -133,13 +131,140 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.entry.get_property.reset_mock()
 		self.entry.kodi_utils.xbmc.getSkinDir.return_value = 'skin.other'
 
-		self.assertFalse(self.preview._preview_context_active())
+		self.assertEqual(self.preview._preview_context(), '')
 		self.entry.kodi_utils.xbmc.getSkinDir.assert_called_once_with()
 		self.entry.get_property.assert_not_called()
 
+		self.entry.kodi_utils.xbmc.getSkinDir.return_value = 'skin.titan.bingie.lite'
+		self.entry.get_property.return_value = 'true'
+		self.entry.kodi_utils.get_visibility.reset_mock()
+
+		self.assertEqual(self.preview._preview_context(), '')
+		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [
+			call(self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY), call('Window.IsActive(VideoOSD)')
+		])
+
+	def test_preview_context_resolves_special_windows_once_with_existing_precedence(self):
+		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
+		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
+		actor_context = self.entry.TRAILER_PREVIEW_ACTOR_CONTEXT
+		non_listing = self.entry.TRAILER_PREVIEW_NON_LISTING_CONTEXTS
+		osd = 'Window.IsActive(VideoOSD)'
+		actor_focus = 'Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'
+		for expected, values, expected_calls in (
+			('info', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True}, (window, osd, special, 'Window.IsActive(1123)')),
+			('dialog', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': True},
+				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)')),
+			('actor', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
+				'Window.IsActive(1122)': True, actor_focus: True, actor_context: True},
+				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', actor_focus, actor_context)),
+			('listing', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
+				'Window.IsActive(1122)': False, 'Window.IsActive(Videos)': True, 'Control.HasFocus(523)': True, non_listing: False},
+				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
+					'Control.HasFocus(523)', non_listing)),
+		):
+			with self.subTest(expected=expected):
+				self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: values[condition])
+				self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
+				self.entry.get_property = Mock(return_value='')
+
+				self.assertEqual(self.preview._preview_context(), expected)
+				self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in expected_calls])
+
+	def test_preview_context_preserves_focus_rejections(self):
+		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
+		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
+		osd = 'Window.IsActive(VideoOSD)'
+		actor_focus = 'Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'
+		for label, values in (
+			('actor', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
+				'Window.IsActive(1122)': True, actor_focus: False}),
+			('videos', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
+				'Window.IsActive(1122)': False, 'Window.IsActive(Videos)': True, 'Control.HasFocus(523)': False}),
+			('default', {window: True, osd: False, special: False, 'ControlGroup(77777).HasFocus()': False}),
+		):
+			with self.subTest(label=label):
+				self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: values[condition])
+				self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
+				self.entry.get_property = Mock(return_value='')
+
+				self.assertEqual(self.preview._preview_context(), '')
+
+	def test_preview_context_rechecks_window_transitions_before_selecting_data_source(self):
+		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
+		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
+		osd = 'Window.IsActive(VideoOSD)'
+		for label, results, expected, expected_calls in (
+			('opening', (True, False, False, True, True, True), 'info',
+				(window, osd, special, 'ControlGroup(77777).HasFocus()', special, 'Window.IsActive(1123)')),
+			('closing', (True, False, True, False, False, False, False, True), 'listing',
+				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
+					'ControlGroup(77777).HasFocus()')),
+		):
+			with self.subTest(label=label):
+				self.entry.kodi_utils.get_visibility = Mock(side_effect=results)
+				self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
+				self.entry.get_property = Mock(return_value='')
+
+				self.assertEqual(self.preview._preview_context(), expected)
+				self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in expected_calls])
+
+	def test_preview_context_rechecks_higher_priority_windows_after_focus(self):
+		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
+		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
+		non_listing = self.entry.TRAILER_PREVIEW_NON_LISTING_CONTEXTS
+		osd = 'Window.IsActive(VideoOSD)'
+		conditions = (
+			window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
+			'Control.HasFocus(523)', non_listing, 'Window.IsActive(1123)'
+		)
+		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, False, True, True, True, True))
+		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
+		self.entry.get_property = Mock(return_value='')
+
+		self.assertEqual(self.preview._preview_context(), 'info')
+		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
+
+	def test_preview_context_retries_when_actor_window_closes_after_focus(self):
+		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
+		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
+		actor_context = self.entry.TRAILER_PREVIEW_ACTOR_CONTEXT
+		osd = 'Window.IsActive(VideoOSD)'
+		actor_focus = 'Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'
+		conditions = (
+			window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', actor_focus, actor_context,
+			'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)', 'ControlGroup(77777).HasFocus()'
+		)
+		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, True, True, False, False, False, False, False, True))
+		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
+		self.entry.get_property = Mock(return_value='')
+
+		self.assertEqual(self.preview._preview_context(), 'listing')
+		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
+
+	def test_home_candidate_uses_single_context_resolution(self):
+		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
+		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
+		visibility = {window: True, 'Window.IsActive(VideoOSD)': False, special: False, 'ControlGroup(77777).HasFocus()': True}
+		labels = {
+			'Container.ListItem.DBType': 'movie',
+			'Container.ListItem.Trailer': 'trailer-url',
+			'Container.ListItem.Property(PovLiteSummary)': 'true',
+			'Container.ListItem.Label': 'Movie',
+			'Container.ListItem.UniqueID(tmdb)': '123',
+			'Container.ListItem.Property(PovFocusIdentity)': 'listing|movie|123',
+		}
+		self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: visibility[condition])
+		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: labels[label])
+		self.entry.get_property = Mock(return_value='')
+
+		self.assertEqual(self.preview._candidate(), ('listing|movie|123', 'trailer-url', 'movie', '123', False, True))
+		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [
+			call(window), call('Window.IsActive(VideoOSD)'), call(special), call('ControlGroup(77777).HasFocus()'), call(special)
+		])
+
 	def test_info_candidate_stages_property_reads_until_prerequisites_are_valid(self):
-		self.preview._preview_context_active = Mock(return_value=True)
-		self.visibility['Window.IsActive(1123)'] = True
+		self.preview._preview_context = Mock(return_value='info')
 		for values, expected, expected_keys in (
 			(('episode',), None, ('PovInfoType',)),
 			(('movie', ''), None, ('PovInfoType', 'PovInfoTmdb')),
@@ -152,8 +277,7 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.assertEqual(self.entry.get_property.call_args_list, [call(key) for key in expected_keys])
 
 	def test_dialog_candidate_stages_label_reads_until_prerequisites_are_valid(self):
-		self.preview._preview_context_active = Mock(return_value=True)
-		self.entry.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(DialogVideoInfo.xml)'
+		self.preview._preview_context = Mock(return_value='dialog')
 		for values, expected, expected_labels in (
 			(('episode',), None, ('Window.Property(PovInfoType)',)),
 			(('tvshow', ''), None, ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)')),
@@ -166,8 +290,7 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in expected_labels])
 
 	def test_actor_candidate_skips_id_and_label_reads_after_rejection(self):
-		self.preview._preview_context_active = Mock(return_value=True)
-		self.entry.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1122)'
+		self.preview._preview_context = Mock(return_value='actor')
 		self.entry.kodi_utils.get_infolabel = Mock(return_value='episode')
 
 		self.assertIsNone(self.preview._candidate())
@@ -194,7 +317,7 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
 
 	def test_listing_candidate_rejects_invalid_media_before_dependent_reads(self):
-		self.preview._preview_context_active = Mock(return_value=True)
+		self.preview._preview_context = Mock(return_value='listing')
 		self.entry.kodi_utils.get_infolabel = Mock(return_value='episode')
 
 		self.assertIsNone(self.preview._candidate())

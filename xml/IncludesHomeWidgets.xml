@@ -172,10 +172,7 @@
                 <width>landscape_width</width>
                 <height>210</height>
                 <include>ThumbsViewBingieLayout</include>
-                <control type="group">
-                    <description>widget label overlay</description>
                     <include>ThumbsTagOverlayBingie</include>
-                </control>
                 <include>New_Episodes_Tag_Overlay</include>
             </control>
         </itemlayout>
@@ -187,10 +184,7 @@
                 <width>landscape_width</width>
                 <height>210</height>
                 <include>ThumbsViewItemBingieLayout</include>
-                <control type="group">
-                    <description>widget label overlay</description>
                     <include>ThumbsTagOverlayBingie</include>
-                </control>
                 <include content="Top250Indicator">
                     <param name="visibility" value="Control.HasFocus($PARAM[widgetid])" />
                 </include>

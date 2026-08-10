@@ -1023,8 +1023,6 @@
             </animation>
             <animation type="Conditional" condition="!Control.IsVisible(4444)">
                 <effect type="fade" start="100" end="0" time="150" delay="0" />
-            </animation>
-            <animation type="Conditional" condition="!Control.IsVisible(4444)">
                 <effect type="slide" start="0" end="-300" time="5" delay="145" />
             </animation>
             <animation type="Conditional" condition="Integer.IsGreater(Container(900).Position,0)">

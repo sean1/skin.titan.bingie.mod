@@ -122,8 +122,10 @@
                 <visible>Container(1510).HasPrevious + Container(1510).HasNext</visible>
             </control>
 			<control type="group">
-				<animation effect="slide" start="0,0" end="0,-450" tween="sine" easing="in" time="300" delay="0" reversible="false" condition="System.IdleTime(1)">Conditional</animation>
-				<animation effect="fade" start="0" end="100" tween="sine" easing="in" time="300" delay="0" reversible="false" condition="System.IdleTime(1)">Conditional</animation>
+				<animation type="Conditional" condition="System.IdleTime(1)" reversible="false">
+					<effect type="slide" start="0,0" end="0,-450" tween="sine" easing="in" time="300" delay="0" />
+					<effect type="fade" start="0" end="100" tween="sine" easing="in" time="300" delay="0" />
+				</animation>
 				<top>1100</top>
 				<left>150</left>
 				<include content="Bingie_Headline_Item_2">

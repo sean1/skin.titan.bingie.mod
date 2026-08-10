@@ -2,24 +2,7 @@
 <!-- BINGIE -->
 <includes>
 
-    <include name="SquarePosterTagOverlayVisibility">
-        <visible>
-            ![Control.IsVisible(509) + false] +
-            ![Control.IsVisible(510) + false] +
-            !String.IsEqual(ListItem.Label,..) +
-            ![!String.IsEmpty(ListItem.Property(defaultID))] +
-            !String.IsEqual(ListItem.Property(disableLabel), disable) | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
-        </visible>
-        <visible>
-            [[Control.IsVisible(509) + false] |
-            [Control.IsVisible(510) + false] |
-            !String.IsEmpty(ListItem.Property(defaultID)) |
-            Window.IsActive(settings) | Window.IsActive(DialogVideoInfo.xml)] | [[String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode)] + false + [false | false | false]]
-        </visible>
-    </include>
     <include name="SquarePosterTagOverlay">
-        <control type="group">
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Window.IsActive(DialogVideoInfo.xml)">SquarePosterTagOverlayVisibility</include>
             <control type="image">
                 <left>8</left>
                 <right>8</right>
@@ -55,7 +38,6 @@
                 <textcolor>ffffffff</textcolor>
                 <visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
             </control>
-        </control>
     </include>
 
     <variable name="SquarePosterThumb">

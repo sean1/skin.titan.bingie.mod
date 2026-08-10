@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.14
+
+- Reduce the packaged add-on by about 5.1 MiB through packed-texture deduplication and removal of 114 unused legacy user pictures.
+- Reduce skin control overhead by removing 32 redundant XML groups and six duplicate visibility predicates without visual, focus, or navigation changes.
+
 BINGIE Lite 2.3.13
 
 - Reduce the install package by about 660 KiB through lossless bundled-artwork optimization with no visual changes.

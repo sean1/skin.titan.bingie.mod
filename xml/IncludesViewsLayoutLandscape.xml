@@ -93,51 +93,49 @@
 		<visible>false</visible>
 	</include>
 	<include name="ThumbsTagOverlayBingie">
-        <control type="image">
-            <!--Panel Ovelay-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-            <left>8</left>
-            <right>8</right>
-			<bottom>8</bottom>
-            <height>128</height>
-            <texture>overlays/gradient_episodes.png</texture>
-            <aspectratio>stretch</aspectratio>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523)">LandscapeTagOverlayVisibility</include>
-            <colordiffuse>ffffffff</colordiffuse>
-        </control>
-        <control type="label">
-            <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-            <left>16</left>
-            <right>16</right>
-            <bottom>8</bottom>
-            <height>38</height>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg20</font>
-			<scroll>false</scroll>
-			<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523)">LandscapeTagOverlayVisibility</include>
-        </control>
-		<control type="label">
-            <!--Label-->
-            <visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]] + [!false]]</visible>
-            <left>16</left>
-            <right>16</right>
-            <bottom>8</bottom>
-            <height>38</height>
-            <align>left</align>
-            <aligny>center</aligny>
-            <label>$VAR[ThumbListDetails]</label>
-            <font>Reg20</font>
-			<scroll>true</scroll>
-			<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
-            <textcolor>ffffffff</textcolor>
-            <include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523)">LandscapeTagOverlayVisibility</include>
-        </control>
-    </include>
+		<control type="group">
+			<visible>![[$EXP[IsTvShowDBType] | $EXP[IsMovieDBType]] + [$EXP[IsTVShowInLastEpisodes] | $EXP[IsNewMovie]]]</visible>
+			<include condition="!Window.IsActive(Home) + !$EXP[IsBingieHubsActive] + !Control.IsVisible(523)">LandscapeTagOverlayVisibility</include>
+			<control type="image">
+				<!--Panel Ovelay-->
+				<left>8</left>
+				<right>8</right>
+				<bottom>8</bottom>
+				<height>128</height>
+				<texture>overlays/gradient_episodes.png</texture>
+				<aspectratio>stretch</aspectratio>
+				<colordiffuse>ffffffff</colordiffuse>
+			</control>
+			<control type="label">
+				<!--Label-->
+				<left>16</left>
+				<right>16</right>
+				<bottom>8</bottom>
+				<height>38</height>
+				<align>left</align>
+				<aligny>center</aligny>
+				<label>$VAR[ThumbListDetails]</label>
+				<font>Reg20</font>
+				<scroll>false</scroll>
+				<visible>!String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
+				<textcolor>ffffffff</textcolor>
+			</control>
+			<control type="label">
+				<!--Label-->
+				<left>16</left>
+				<right>16</right>
+				<bottom>8</bottom>
+				<height>38</height>
+				<align>left</align>
+				<aligny>center</aligny>
+				<label>$VAR[ThumbListDetails]</label>
+				<font>Reg20</font>
+				<scroll>true</scroll>
+				<visible>String.IsEqual(System.CurrentControl,ListItem.Label)</visible>
+				<textcolor>ffffffff</textcolor>
+			</control>
+		</control>
+	</include>
 
     <!-- New Episodes Tag Overlay -->
     <include name="New_Episodes_Tag_Overlay">

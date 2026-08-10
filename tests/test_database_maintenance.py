@@ -35,9 +35,66 @@ def load_cache_module():
 	return module
 
 
+def load_meta_cache_module():
+	caches = types.ModuleType('caches')
+	caches.BaseCache = object
+	caches.metacache_db = 'metacache_db'
+	window_property_cache = types.ModuleType('caches.window_property_cache')
+	window_property_cache.WindowPropertyCache = lambda *args: None
+	modules = types.ModuleType('modules')
+	modules.kodi_utils = types.ModuleType('modules.kodi_utils')
+	module_names = ('caches', 'caches.window_property_cache', 'modules', 'modules.kodi_utils')
+	old_modules = {name: sys.modules.get(name) for name in module_names}
+	sys.modules.update({
+		'caches': caches,
+		'caches.window_property_cache': window_property_cache,
+		'modules': modules,
+		'modules.kodi_utils': modules.kodi_utils
+	})
+	try:
+		path = ROOT / 'resources' / 'lib' / 'caches' / 'meta_cache.py'
+		spec = importlib.util.spec_from_file_location('test_database_maintenance_meta_cache', path)
+		module = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(module)
+	finally:
+		for name, old_module in old_modules.items():
+			if old_module is None: sys.modules.pop(name, None)
+			else: sys.modules[name] = old_module
+	return module
+
+
 class DatabaseMaintenanceTests(unittest.TestCase):
 	def setUp(self):
 		self.cache = load_cache_module()
+		self.meta_cache = load_meta_cache_module()
+
+	def _configure_database_check(self, temp_dir):
+		for name in ('navigator_db', 'watched_db', 'views_db', 'trakt_db', 'maincache_db', 'metacache_db', 'debridcache_db', 'external_db'):
+			setattr(self.cache, name, str(Path(temp_dir) / ('%s.db' % name)))
+		self.cache.databases_path = temp_dir
+		self.cache.database_connect = sqlite3.connect
+		self.cache.kodi_utils.path_exists = lambda path: True
+		self.cache.kodi_utils.make_directory = lambda path: None
+		self.cache.kodi_utils.get_setting = lambda setting: 'true'
+		self.cache.remove_old_databases = lambda: None
+
+	def _create_legacy_metacache(self):
+		with sqlite3.connect(self.cache.metacache_db) as dbcon:
+			dbcon.execute('CREATE TABLE metadata (db_type TEXT not null, tmdb_id TEXT not null, imdb_id TEXT, tvdb_id TEXT, expires INTEGER, meta TEXT, UNIQUE (db_type, tmdb_id))')
+			dbcon.execute('CREATE INDEX pov_select_id_media ON metadata (tmdb_id, db_type)')
+			dbcon.executemany('INSERT INTO metadata VALUES (?, ?, ?, ?, ?, ?)', (
+				('tvshow', 'z-tmdb', 'duplicate-imdb', 'duplicate-tvdb', 4102444800, 'z-meta'),
+				('tvshow', 'a-tmdb', 'duplicate-imdb', 'duplicate-tvdb', 4102444800, 'a-meta')
+			))
+
+	def _external_id_result(self, id_column, media_id, reverse_unordered_selects=False):
+		with sqlite3.connect(self.cache.metacache_db) as dbcon:
+			dbcon.execute('PRAGMA reverse_unordered_selects = %s' % ('ON' if reverse_unordered_selects else 'OFF'))
+			return dbcon.execute(self.meta_cache.GET_MOVIE_SHOW % id_column, ('tvshow', media_id, 0)).fetchone()[0]
+
+	def _metadata_indexes(self):
+		with sqlite3.connect(self.cache.metacache_db) as dbcon:
+			return {name: sql for name, sql in dbcon.execute("SELECT name, sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'metadata'")}
 
 	def test_marker_filter_serializes_each_item_once_and_preserves_order_and_identity(self):
 		kept_first = {'name': 'first'}
@@ -57,6 +114,43 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 		self.assertEqual(result, expected)
 		self.assertEqual(list(map(id, result)), [id(kept_first), id(kept_last)])
 		self.assertEqual(calls, {id(item): 1 for item in items})
+
+	def test_metacache_external_id_index_migration_preserves_lookup_order_and_is_idempotent(self):
+		with tempfile.TemporaryDirectory() as temp_dir:
+			self._configure_database_check(temp_dir)
+			self._create_legacy_metacache()
+			before = {
+				'imdb_id': self._external_id_result('imdb_id', 'duplicate-imdb'),
+				'tvdb_id': self._external_id_result('tvdb_id', 'duplicate-tvdb')
+			}
+			self.assertEqual(before, {'imdb_id': 'a-meta', 'tvdb_id': 'a-meta'})
+			self.assertEqual(self._external_id_result('imdb_id', 'duplicate-imdb', reverse_unordered_selects=True), before['imdb_id'])
+			self.assertEqual(self._external_id_result('tvdb_id', 'duplicate-tvdb', reverse_unordered_selects=True), before['tvdb_id'])
+
+			self.cache.check_databases()
+
+			indexes = self._metadata_indexes()
+			self.assertNotIn('pov_select_id_media', indexes)
+			self.assertEqual(indexes['pov_select_imdb_media'], 'CREATE INDEX pov_select_imdb_media ON metadata (db_type, imdb_id, tmdb_id)')
+			self.assertEqual(indexes['pov_select_tvdb_media'], 'CREATE INDEX pov_select_tvdb_media ON metadata (db_type, tvdb_id, tmdb_id)')
+			with sqlite3.connect(self.cache.metacache_db) as dbcon:
+				for id_column, index_name in (('imdb_id', 'pov_select_imdb_media'), ('tvdb_id', 'pov_select_tvdb_media')):
+					plan = dbcon.execute('EXPLAIN QUERY PLAN ' + self.meta_cache.GET_MOVIE_SHOW % id_column, ('tvshow', 'missing', 0)).fetchone()[3]
+					self.assertIn('USING INDEX %s' % index_name, plan)
+			self.assertEqual(self._external_id_result('imdb_id', 'duplicate-imdb'), before['imdb_id'])
+			self.assertEqual(self._external_id_result('tvdb_id', 'duplicate-tvdb'), before['tvdb_id'])
+			self.assertEqual(self._external_id_result('imdb_id', 'duplicate-imdb', reverse_unordered_selects=True), before['imdb_id'])
+			self.assertEqual(self._external_id_result('tvdb_id', 'duplicate-tvdb', reverse_unordered_selects=True), before['tvdb_id'])
+			with sqlite3.connect(self.cache.metacache_db) as dbcon:
+				schema_version = dbcon.execute('PRAGMA schema_version').fetchone()[0]
+
+			self.cache.check_databases()
+
+			self.assertEqual(self._metadata_indexes(), indexes)
+			self.assertEqual(self._external_id_result('imdb_id', 'duplicate-imdb'), before['imdb_id'])
+			self.assertEqual(self._external_id_result('tvdb_id', 'duplicate-tvdb'), before['tvdb_id'])
+			with sqlite3.connect(self.cache.metacache_db) as dbcon:
+				self.assertEqual(dbcon.execute('PRAGMA schema_version').fetchone()[0], schema_version)
 
 	def test_purge_database_deletes_expired_rows_from_all_tables_and_vacuums_once(self):
 		with tempfile.TemporaryDirectory() as temp_dir:

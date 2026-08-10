@@ -43,7 +43,9 @@ def check_databases():
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS season_metadata (tmdb_id TEXT not null UNIQUE, expires INTEGER, meta TEXT)""")
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS function_cache (string_id TEXT not null, expires INTEGER, data TEXT)""")
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS metadata_claims (db_type TEXT not null, id_type TEXT not null, media_id TEXT not null, owner TEXT not null, claimed_at INTEGER not null, UNIQUE (db_type, id_type, media_id))""")
-	dbcon.execute("""CREATE INDEX IF NOT EXISTS pov_select_id_media ON metadata (tmdb_id, db_type)""")
+	dbcon.execute("""DROP INDEX IF EXISTS pov_select_id_media""")
+	dbcon.execute("""CREATE INDEX IF NOT EXISTS pov_select_imdb_media ON metadata (db_type, imdb_id, tmdb_id)""")
+	dbcon.execute("""CREATE INDEX IF NOT EXISTS pov_select_tvdb_media ON metadata (db_type, tvdb_id, tmdb_id)""")
 	dbcon.close()
 	dbcon = database_connect(views_db) # Views
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS views (view_type TEXT, view_id TEXT, UNIQUE (view_type))""")

@@ -6,7 +6,7 @@ from caches.window_property_cache import WindowPropertyCache
 from modules import kodi_utils
 # from modules.kodi_utils import logger
 
-GET_MOVIE_SHOW = 'SELECT meta, expires FROM metadata WHERE db_type = ? AND %s = ? and expires > ?'
+GET_MOVIE_SHOW = 'SELECT meta, expires FROM metadata WHERE db_type = ? AND %s = ? and expires > ? ORDER BY tmdb_id'
 GET_SEASON = 'SELECT meta, expires FROM season_metadata WHERE tmdb_id = ? AND expires > ?'
 GET_FUNCTION = 'SELECT data, expires FROM function_cache WHERE string_id = ? AND expires > ?'
 GET_ALL = 'SELECT db_type, tmdb_id, meta FROM metadata'

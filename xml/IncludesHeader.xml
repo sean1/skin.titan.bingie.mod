@@ -3,7 +3,7 @@
 <includes>
 
     <include name="Header">
-        <include condition="!false + false | !false + !false">Header_Normal</include>
+        <include>Header_Normal</include>
     </include>
 
     <include name="Header_Normal">
@@ -22,76 +22,9 @@
                 <include>animation_fade_visible</include>
                 <visible>![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]]</visible>
 			</control>
-
-            <!-- Header Logo left -->
-            <control type="group">
-                <include condition="[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]">HeaderLogo</include>
-                <include>animation_fade_visible</include>
-                <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882) | !String.IsEmpty(Control.GetLabel(29476))]</visible>
-            </control>
-
-            <!-- Time right -->
-            <control type="group">
-                <include condition="[![Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false] | [[Window.IsActive(Home) | $EXP[IsBingieHubsActive] | $EXP[IsBingieCategoriesActive]] + false]">TimeInfo</include>
-                <include>animation_fade_visible</include>
-                <visible>![Window.IsActive(volumebar) | Control.IsVisible(881)]</visible>
-            </control>
-
-            <!-- Title left -->
-            <control type="group">
-                <include condition="[!Window.IsActive(Home) + false] | [Window.IsActive(Home) + false]">HeaderTitle</include>
-                <include>animation_fade_visible</include>
-                <visible>![String.IsEqual(Window(Home).Property(ShowViewSubMenu),show) | Control.IsVisible(882) | !String.IsEmpty(Control.GetLabel(29476))]</visible>
-            </control>
-
-            <!-- Profile right -->
-            <control type="group">
-                <right>60</right>
-                <include condition="Window.IsActive(Home) + false">ProfileInfo</include>
-                <include>animation_fade_visible</include>
-                <visible>![Window.IsActive(volumebar)]</visible>
-            </control>
-
-            <!-- Profile left -->
-            <control type="group">
-                <left>60</left>
-                <include>ProfileInfo</include>
-                <include>animation_fade_visible</include>
-                <visible>![Window.IsActive(volumebar) | !String.IsEmpty(Control.GetLabel(29476))]</visible>
-                <visible>Window.IsActive(Home) + false</visible>
-            </control>
-
         </control>
 
     </include>
-    <include name="HeaderTitle">
-
-        <control type="group">
-            <control type="label">
-                <posx>60</posx>
-                <posy>0</posy>
-                <width min="80" max="1400">auto</width>
-                <height>100</height>
-                <font>Bold45</font>
-                <align>left</align>
-                <textcolor>ffffffff</textcolor>
-                <label>$VAR[value_header]</label>
-                <shadowcolor>None</shadowcolor>
-            </control>
-             <control type="label">
-                <posy>75</posy>
-                <posx>60</posx>
-                <width min="0" max="1400">auto</width>
-                <height>50</height>
-                <label>$VAR[value_subheader]</label>
-                <font>Reg28</font>
-                <textcolor>ffffffff</textcolor>
-                <shadowcolor>None</shadowcolor>
-            </control>
-        </control>
-
-    </include>
-
 
 	<include name="TimeInfo">
         <control type="group">
@@ -119,87 +52,7 @@
                 <textcolor>ffffffff</textcolor>
                 <shadowcolor>None</shadowcolor>
             </control>
-        </control>
-	</include>
-
-
-	<include name="ProfileInfo">
-		<control type="group" id="891">
-			<defaultcontrol>890</defaultcontrol>
-			<posy>15</posy>
-            <width>150</width>
-            <height>110</height>
-			<control type="image">
-				<texture diffuse="home/home_matte2.png">colors/color_white.png</texture>
-				<colordiffuse>cc0a0a0a</colordiffuse>
-				<visible>!Control.HasFocus(890)</visible>
-			</control>
-			<control type="image">
-				<texture diffuse="home/home_matte2.png">colors/color_white.png</texture>
-				<colordiffuse>cce0e0e0</colordiffuse>
-				<visible>Control.HasFocus(890)</visible>
-			</control>
-			<control type="image" id="888">
-				<bordersize>8</bordersize>
-                <height>75%</height>
-				<texture fallback="common/profil/avatar.png">$INFO[System.ProfileThumb]</texture>
-				<aspectratio align="center" aligny="top">keep</aspectratio>
-				<visible>!Control.HasFocus(890)</visible>
-			</control>
-			<control type="image" id="889">
-				<bordersize>8</bordersize>
-                <height>75%</height>
-				<texture fallback="common/profil/avatar.png">$INFO[System.ProfileThumb]</texture>
-				<aspectratio align="center" aligny="top">keep</aspectratio>
-				<visible>Control.HasFocus(890)</visible>
-			</control>
-			<control type="button" id="890">
-				<ondown>900</ondown>
-				<width>100%</width>
-				<height>100%</height>
-				<texturefocus/>
-				<texturenofocus/>
-				<onclick>System.LogOff</onclick>
-			</control>
-			<control type="label">
-				<!--Profile name-->
-				<left>4%</left>
-                <width>92%</width>
-				<bottom>0</bottom>
-                <height>25%</height>
-				<label>$VAR[ProfileLabel]</label>
-				<align>center</align>
-                <aligny>center</aligny>
-				<font>Reg22</font>
-				<textcolor>ffffffff</textcolor>
-			</control>
 		</control>
 	</include>
-
-    <include name="HeaderLogo">
-        <!-- Kodi Logo image -->
-        <control type="image">
-            <posx>45</posx>
-            <posy>-30</posy>
-            <height>196</height>
-            <width></width>
-            <aspectratio align="left">keep</aspectratio>
-            <colordiffuse>ffffffff</colordiffuse>
-            <texture>bingie_mod_logo.png</texture>
-            <visible>String.IsEmpty(Control.GetLabel(198754))</visible>
-            <visible>![false]</visible>
-        </control>
-		<control type="image">
-            <posx>43</posx>
-            <posy>-13</posy>
-            <height>132</height>
-            <width></width>
-            <aspectratio align="left">keep</aspectratio>
-            <colordiffuse>ffffffff</colordiffuse>
-            <texture>home/bingie_mod_logo.png</texture>
-            <visible>String.IsEmpty(Control.GetLabel(198754))</visible>
-            <visible>![!false]</visible>
-        </control>
-    </include>
 
 </includes>

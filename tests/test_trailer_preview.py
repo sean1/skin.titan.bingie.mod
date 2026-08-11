@@ -102,6 +102,31 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertTrue(self.preview.tick())
 		self.preview._start_preview_preparation.assert_called_once_with('movie|1', 'trailer-url')
 
+	def test_cached_summary_metadata_publishes_on_identity_change_tick(self):
+		identity = 'listing|movie|2'
+		self.preview.identity = 'listing|movie|1'
+		self.preview.resolved_focused_metadata[identity] = {'genre': 'Cached genre'}
+		self.preview._candidate = Mock(return_value=(identity, 'trailer-url', 'movie', '2', False, True))
+		self.preview._start_focused_metadata_lookup = Mock()
+		self.entry.monotonic = Mock(return_value=10.0)
+
+		self.assertTrue(self.preview.tick())
+		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], identity)
+		self.assertEqual(self.properties['PovFocusedGenre'], 'Cached genre')
+		self.assertIn(identity, self.preview.resolved_focused_metadata)
+		self.preview._start_focused_metadata_lookup.assert_not_called()
+
+	def test_uncached_summary_metadata_keeps_identity_change_debounce(self):
+		identity = 'listing|movie|2'
+		self.preview.identity = 'listing|movie|1'
+		self.preview._candidate = Mock(return_value=(identity, 'trailer-url', 'movie', '2', False, True))
+		self.preview._start_focused_metadata_lookup = Mock()
+		self.entry.monotonic = Mock(return_value=10.0)
+
+		self.assertTrue(self.preview.tick())
+		self.assertNotIn(self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY, self.properties)
+		self.preview._start_focused_metadata_lookup.assert_not_called()
+
 	def test_inactive_preview_window_skips_skin_and_transition_reads(self):
 		self.entry.kodi_utils.get_visibility = Mock(return_value=False)
 		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')

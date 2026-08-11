@@ -286,6 +286,8 @@ class TrailerPreview:
 			return bool(self.pending_stop_trailer) or self._preparing()
 		if candidate[0] != self.identity:
 			self._track_candidate(candidate, now)
+			if candidate[5] and candidate[0] in self.resolved_focused_metadata:
+				self._ensure_focused_metadata(candidate[0], candidate[2], candidate[3])
 			if not manual_requested: return True
 		if candidate[5] and now - self.focused_at >= FOCUSED_METADATA_DELAY:
 			self._ensure_focused_metadata(candidate[0], candidate[2], candidate[3])

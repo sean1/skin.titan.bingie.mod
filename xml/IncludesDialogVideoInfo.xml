@@ -178,7 +178,7 @@
 							<height>330</height>
 							<orientation>horizontal</orientation>
 							<preloaditems>4</preloaditems>
-							<scrolltime tween="quadratic">400</scrolltime>
+							<scrolltime tween="quadratic">300</scrolltime>
 							<onup>8000</onup>
 							<ondown condition="Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
 							<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
@@ -213,7 +213,7 @@
 							<height>220</height>
 							<orientation>horizontal</orientation>
 							<preloaditems>2</preloaditems>
-							<scrolltime tween="quadratic">400</scrolltime>
+							<scrolltime tween="quadratic">300</scrolltime>
 							<onup condition="Integer.IsGreater(Container(50).NumItems,0)">550</onup>
 							<onup condition="!Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
 							<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
@@ -255,7 +255,7 @@
 							<height>220</height>
 							<orientation>horizontal</orientation>
 							<preloaditems>2</preloaditems>
-							<scrolltime tween="quadratic">400</scrolltime>
+							<scrolltime tween="quadratic">300</scrolltime>
 							<onup condition="Integer.IsGreater(Container(563).NumItems,0)">563</onup>
 							<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(50).NumItems,0)">550</onup>
 							<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(50).NumItems,0)">8000</onup>

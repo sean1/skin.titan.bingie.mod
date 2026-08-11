@@ -247,7 +247,7 @@
 						<height>330</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>4</preloaditems>
-						<scrolltime tween="quadratic">400</scrolltime>
+						<scrolltime tween="quadratic">300</scrolltime>
 						<onup>8000</onup>
 						<ondown condition="$EXP[PovInfoHasCurrentCollection]">563</ondown>
 						<ondown condition="!$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentMoreLikeThis]">560</ondown>
@@ -291,7 +291,7 @@
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
-						<scrolltime tween="quadratic">400</scrolltime>
+						<scrolltime tween="quadratic">300</scrolltime>
 						<onup condition="$EXP[PovInfoHasCurrentCast]">550</onup>
 						<onup condition="!$EXP[PovInfoHasCurrentCast]">8000</onup>
 						<ondown condition="$EXP[PovInfoHasCurrentMoreLikeThis]">560</ondown>
@@ -337,7 +337,7 @@
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
-						<scrolltime tween="quadratic">400</scrolltime>
+						<scrolltime tween="quadratic">300</scrolltime>
 						<onup condition="$EXP[PovInfoHasCurrentCollection]">563</onup>
 						<onup condition="!$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentCast]">550</onup>
 						<onup condition="!$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentCast]">8000</onup>

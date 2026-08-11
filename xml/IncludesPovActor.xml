@@ -116,7 +116,7 @@
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
-						<scrolltime tween="quadratic">350</scrolltime>
+						<scrolltime tween="quadratic">300</scrolltime>
 						<onup>610</onup>
 						<ondown condition="$EXP[PovActorHasCurrentTVShows]">620</ondown>
 						<ondown condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentDirected]">630</ondown>
@@ -152,7 +152,7 @@
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
-						<scrolltime tween="quadratic">350</scrolltime>
+						<scrolltime tween="quadratic">300</scrolltime>
 						<onup condition="$EXP[PovActorHasCurrentMovies]">610</onup>
 						<onup condition="!$EXP[PovActorHasCurrentMovies]">620</onup>
 						<ondown condition="$EXP[PovActorHasCurrentDirected]">630</ondown>
@@ -187,7 +187,7 @@
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
-						<scrolltime tween="quadratic">350</scrolltime>
+						<scrolltime tween="quadratic">300</scrolltime>
 						<onup condition="$EXP[PovActorHasCurrentTVShows]">620</onup>
 						<onup condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentMovies]">610</onup>
 						<onup condition="!$EXP[PovActorHasCurrentTVShows] + !$EXP[PovActorHasCurrentMovies]">630</onup>

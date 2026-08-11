@@ -14,6 +14,20 @@ class WindowAnimationTimingTests(unittest.TestCase):
 		effects = includes[0].findall("./animation[@type='WindowOpen']/effect[@type='fade']")
 		self.assertEqual([(effect.get('start'), effect.get('end'), effect.get('time')) for effect in effects], [('0', '100', '300')])
 
+	def test_circular_home_and_hub_wrap_fades_keep_layout_mask_and_reveal_quickly(self):
+		root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
+		for include_name in ('Fixed_Focus_Navigation', 'Fixed_Focus_Navigation1'):
+			with self.subTest(include_name=include_name):
+				includes = [include for include in root.findall('include') if include.get('name') == include_name]
+				self.assertEqual(len(includes), 1)
+				wrap_fades = []
+				for animation in includes[0].findall('animation'):
+					condition = animation.get('condition') or ''
+					if animation.get('effect') == 'fade' and animation.get('start') == '0' and animation.get('end') == '100' and all(marker in condition for marker in ('Container(77777).NumItems', 'PrevWidgetPos', 'CurrentWidgetPos')):
+						wrap_fades.append(animation)
+				self.assertEqual(len(wrap_fades), 2)
+				self.assertEqual([(animation.get('delay'), animation.get('time'), animation.get('reversible')) for animation in wrap_fades], [('300', '150', 'false'), ('300', '150', 'false')])
+
 	def test_visible_detail_shelves_use_300_millisecond_scrolls(self):
 		targets = {
 			'IncludesPovActor.xml': (610, 620, 630),

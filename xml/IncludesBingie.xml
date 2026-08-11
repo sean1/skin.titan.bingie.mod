@@ -11,8 +11,8 @@
         <animation effect="slide" end="0,$PARAM[FixedAnimationHeight]" time="300" condition="Integer.IsGreater(Container(77777).Position,10)">Conditional</animation>
 
         <animation effect="fade" start="100" end="0" time="250" condition="Integer.IsGreater(Window(Home).Property(CurrentWidgetID), $PARAM[widgetid])">Conditional</animation>
-        <animation effect="fade" start="0" end="100" delay="300" time="300" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>
-        <animation effect="fade" start="0" end="100" delay="300" time="300" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),Container(77777).NumItems) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),1)">Conditional</animation>
+        <animation effect="fade" start="0" end="100" delay="300" time="150" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>
+        <animation effect="fade" start="0" end="100" delay="300" time="150" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),Container(77777).NumItems) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),1)">Conditional</animation>
     </include>
 
 	<!-- Fixed Focus Navigation for Hubs -->
@@ -25,8 +25,8 @@
 		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight1]" time="300" condition="Integer.IsGreater(Container(77777).Position,12)">Conditional</animation>
 
         <animation effect="fade" start="100" end="0" time="250" condition="Integer.IsGreater(Window(Home).Property(CurrentWidgetID), $PARAM[widgetid])">Conditional</animation>
-        <animation effect="fade" start="0" end="100" delay="300" time="300" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>
-        <animation effect="fade" start="0" end="100" delay="300" time="300" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),Container(77777).NumItems) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),1)">Conditional</animation>
+        <animation effect="fade" start="0" end="100" delay="300" time="150" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),1) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),Container(77777).NumItems)">Conditional</animation>
+        <animation effect="fade" start="0" end="100" delay="300" time="150" reversible="false" condition="Integer.IsGreater(Container(77777).NumItems,2) + String.IsEqual(Window(Home).Property(PrevWidgetPos),Container(77777).NumItems) + String.IsEqual(Window(Home).Property(CurrentWidgetPos),1)">Conditional</animation>
     </include>
 
     <include name="SetFixedVerticalNavigationProps">

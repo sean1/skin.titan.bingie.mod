@@ -13,8 +13,10 @@
     <onload condition="String.IsEqual(ListItem.DBTYPE,movie)">SetProperty(PovInfoType,movie)</onload>
 	<onload condition="String.IsEqual(ListItem.DBTYPE,tvshow)">SetProperty(PovInfoType,tvshow)</onload>
 	<onload condition="String.IsEqual(ListItem.DBTYPE,movie) + !String.IsEmpty(ListItem.Property(PovInfoCollectionId))">SetProperty(PovInfoCollectionId,$INFO[ListItem.Property(PovInfoCollectionId)])</onload>
-	<onload condition="!String.IsEmpty(Window.Property(PovInfoTmdb))">AlarmClock(PovDialogMoreLikeThisShelf,SetProperty(PovInfoMoreLikeThisReady,1),00:00:01,silent)</onload>
-	<onload condition="String.IsEqual(Window.Property(PovInfoType),movie) + !String.IsEmpty(Window.Property(PovInfoTmdb))">AlarmClock(PovDialogCollectionShelf,SetProperty(PovInfoCollectionReady,1),00:00:02,silent)</onload>
+	<onload
+		condition="[String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow)] + !String.IsEmpty(ListItem.UniqueID(tmdb))">
+		AlarmClock(PovDialogMoreLikeThisShelf,SetProperty(PovInfoMoreLikeThisReady,1,12003),00:00:01,silent)</onload>
+	<onload condition="String.IsEqual(ListItem.DBTYPE,movie) + !String.IsEmpty(ListItem.UniqueID(tmdb))">AlarmClock(PovDialogCollectionShelf,SetProperty(PovInfoCollectionReady,1,12003),00:00:02,silent)</onload>
 	<onload condition="!String.IsEmpty(ListItem.Art(fanart))">SetProperty(PovInfoFanart,$INFO[ListItem.Art(fanart)])</onload>
 	<onload condition="String.IsEmpty(ListItem.Art(fanart)) + !String.IsEmpty(ListItem.Art(tvshow.fanart))">SetProperty(PovInfoFanart,$INFO[ListItem.Art(tvshow.fanart)])</onload>
     <onload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">ClearProperty(ListItem.TVShowID,Home)</onload>
@@ -27,14 +29,14 @@
 		condition="Window.IsActive(1122) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">AlarmClock(PovActorFocus,SetFocus(620),00:00:01,silent,loop)</onunload>
 	<onunload
 		condition="Window.IsActive(1122) + !String.IsEqual(Window(Home).Property(PovActorHasMovies),true) + !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true) + String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">AlarmClock(PovActorFocus,SetFocus(630),00:00:01,silent,loop)</onunload>
-	<onunload>ClearProperty(PovInfoTmdb)</onunload>
-	<onunload>ClearProperty(PovInfoType)</onunload>
+	<onunload>ClearProperty(PovInfoTmdb,12003)</onunload>
+	<onunload>ClearProperty(PovInfoType,12003)</onunload>
 	<onunload condition="System.HasAlarm(PovDialogMoreLikeThisShelf)">CancelAlarm(PovDialogMoreLikeThisShelf,silent)</onunload>
 	<onunload condition="System.HasAlarm(PovDialogCollectionShelf)">CancelAlarm(PovDialogCollectionShelf,silent)</onunload>
-	<onunload>ClearProperty(PovInfoCollectionId)</onunload>
-	<onunload>ClearProperty(PovInfoMoreLikeThisReady)</onunload>
-	<onunload>ClearProperty(PovInfoCollectionReady)</onunload>
-	<onunload>ClearProperty(PovInfoFanart)</onunload>
+	<onunload>ClearProperty(PovInfoCollectionId,12003)</onunload>
+	<onunload>ClearProperty(PovInfoMoreLikeThisReady,12003)</onunload>
+	<onunload>ClearProperty(PovInfoCollectionReady,12003)</onunload>
+	<onunload>ClearProperty(PovInfoFanart,12003)</onunload>
     <controls>
         <include>BingieInfo</include>
 	</controls>

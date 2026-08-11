@@ -28,6 +28,19 @@ class WindowAnimationTimingTests(unittest.TestCase):
 				self.assertEqual(len(wrap_fades), 2)
 				self.assertEqual([(animation.get('delay'), animation.get('time'), animation.get('reversible')) for animation in wrap_fades], [('300', '150', 'false'), ('300', '150', 'false')])
 
+	def test_native_info_entrance_keeps_stagger_and_uses_300_millisecond_reveals(self):
+		root = ET.parse(ROOT / 'xml' / 'IncludesAnimations.xml').getroot()
+		for include_name, delay in (('Animation_Right_Delay', '300'), ('Animation_Right_Delay_2', '200')):
+			with self.subTest(include_name=include_name):
+				includes = [include for include in root.findall('include') if include.get('name') == include_name]
+				self.assertEqual(len(includes), 1)
+				window_open = includes[0].find("animation[@type='WindowOpen']")
+				self.assertIsNotNone(window_open)
+				effects = window_open.findall('effect')
+				self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in effects], [('fade', '300', delay), ('slide', '300', delay)])
+				window_close = includes[0].find("animation[@type='WindowClose']")
+				self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in window_close.findall('effect')], [('fade', '300', None), ('slide', '300', None)])
+
 	def test_visible_detail_shelves_use_300_millisecond_scrolls(self):
 		targets = {
 			'IncludesPovActor.xml': (610, 620, 630),

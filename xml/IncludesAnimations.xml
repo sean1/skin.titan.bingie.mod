@@ -173,8 +173,8 @@
 
 	<include name="Animation_Right_Delay">
 		<animation type="WindowOpen" reversible="false">
-		  <effect type="fade" start="0" end="100" time="500" delay="300" tween="sine" easing="out" />
-		  <effect type="slide" start="150" end="0" time="500" delay="300" tween="cubic" easing="out" />
+		  <effect type="fade" start="0" end="100" time="300" delay="300" tween="sine" easing="out" />
+		  <effect type="slide" start="150" end="0" time="300" delay="300" tween="cubic" easing="out" />
 		</animation>
 		<animation type="WindowClose" reversible="false">
 		  <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out" />
@@ -184,8 +184,8 @@
 
 	<include name="Animation_Right_Delay_2">
 		<animation type="WindowOpen" reversible="false" condition="!String.IsEmpty(Window(Home).Property(FullImage)) | !String.IsEmpty(Window(Home).Property(Animation)) | Integer.IsGreater(ListItem.PercentPlayed,1)">
-		  <effect type="fade" start="0" end="100" time="500" delay="200" tween="sine" easing="out" />
-		  <effect type="slide" start="150" end="0" time="500" delay="200" tween="cubic" easing="out" />
+		  <effect type="fade" start="0" end="100" time="300" delay="200" tween="sine" easing="out" />
+		  <effect type="slide" start="150" end="0" time="300" delay="200" tween="cubic" easing="out" />
 		</animation>
 		<animation type="WindowClose" reversible="false" condition="!String.IsEmpty(Window(Home).Property(FullImage)) | !String.IsEmpty(Window(Home).Property(Animation)) | Integer.IsGreater(ListItem.PercentPlayed,1)">
 		  <effect type="fade" start="100" end="0" time="300" tween="sine" easing="out" />

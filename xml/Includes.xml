@@ -202,7 +202,7 @@
 
 
     <include name="ScrollTime">
-        <scrolltime tween="cubic" easing="out">600</scrolltime>
+        <scrolltime tween="cubic" easing="out">300</scrolltime>
     </include>
 
     <include name="BingieLeftDefs">

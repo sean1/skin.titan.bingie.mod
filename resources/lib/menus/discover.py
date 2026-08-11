@@ -371,7 +371,7 @@ class Discover:
 		mode, action = ('build_movie_list', 'tmdb_movies_discover') if mediatype == 'movie' else ('build_tvshow_list', 'tmdb_tv_discover')
 		url = build_url({'mode': mode, 'action': action, 'query': query, 'fallback_query': fallback_query, 'target_results': '200', 'max_pages': '10', 'name': name})
 		kodi_utils.execute_builtin('CancelAlarm(BingiePickMyNight,silent)')
-		return kodi_utils.execute_builtin('AlarmClock(BingiePickMyNight,ActivateWindow(Videos,%s,return),00:00:01,silent)' % url)
+		return kodi_utils.execute_builtin('AlarmClock(BingiePickMyNight,ActivateWindow(Videos,%s,return),00:00,silent)' % url)
 
 	def _set_default_params(self, mediatype):
 		self._clear_property()

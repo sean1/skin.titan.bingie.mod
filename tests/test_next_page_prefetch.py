@@ -56,6 +56,36 @@ class NextPagePrefetchTests(unittest.TestCase):
 				self.labels.update({'Container.CurrentItem': current_item, 'Container.NumItems': num_items})
 				self.assertFalse(self.worker._near_end())
 
+	def test_tmdb_summary_routes_use_eight_item_boundary(self):
+		for action in ('tmdb_movies_popular', 'tmdb_movies_search_collections', 'tmdb_tv_discover', 'tmdb_tv_genres'):
+			with self.subTest(action=action, current_item='13'):
+				self.worker.request = {'origin': {'action': action}}
+				self.labels['Container.CurrentItem'] = '13'
+				self.assertFalse(self.worker._near_end())
+			with self.subTest(action=action, current_item='14'):
+				self.labels['Container.CurrentItem'] = '14'
+				self.assertTrue(self.worker._near_end())
+
+	def test_personal_routes_keep_five_item_boundary(self):
+		for action in ('watched_movies', 'in_progress_movies', 'watched_tvshows', 'dropped_tvshows'):
+			with self.subTest(action=action, current_item='14'):
+				self.worker.request = {'origin': {'action': action}}
+				self.labels['Container.CurrentItem'] = '14'
+				self.assertFalse(self.worker._near_end())
+			with self.subTest(action=action, current_item='17'):
+				self.labels['Container.CurrentItem'] = '17'
+				self.assertTrue(self.worker._near_end())
+
+	def test_missing_or_malformed_actions_keep_five_item_boundary(self):
+		for action in (None, 1, [], {}):
+			with self.subTest(action=action):
+				self.worker.request = {'origin': {}}
+				if action is not None: self.worker.request['origin']['action'] = action
+				self.labels['Container.CurrentItem'] = '14'
+				self.assertFalse(self.worker._near_end())
+				self.labels['Container.CurrentItem'] = '17'
+				self.assertTrue(self.worker._near_end())
+
 	def test_tick_launches_prefetch_from_grid_near_end(self):
 		origin = {'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'new_page': '1'}
 		request = {'url': 'plugin://next', 'origin': origin, 'not_before': 10.0, 'idle_after': 20.0}

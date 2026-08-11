@@ -7,6 +7,8 @@ NEXT_PAGE_PREFETCH_DELAY = 2.0
 NEXT_PAGE_PREFETCH_IDLE_DELAY = 10.0
 NEXT_PAGE_PREFETCH_IDLE_SECONDS = 10
 NEXT_PAGE_PREFETCH_NEAR_END_ITEMS = 5
+NEXT_PAGE_PREFETCH_SUMMARY_NEAR_END_ITEMS = 8
+NEXT_PAGE_PREFETCH_SUMMARY_ACTION_PREFIXES = ('tmdb_movies_', 'tmdb_tv_')
 
 
 def schedule_next_page_prefetch(url, origin_params):
@@ -74,7 +76,10 @@ class NextPagePrefetch:
 			current_item = int(kodi_utils.get_infolabel('Container.CurrentItem'))
 			num_items = int(kodi_utils.get_infolabel('Container.NumItems'))
 		except (TypeError, ValueError): return False
-		return 0 < current_item <= num_items and current_item > num_items - NEXT_PAGE_PREFETCH_NEAR_END_ITEMS
+		action = self.request.get('origin', {}).get('action', '') if self.request else ''
+		is_summary = isinstance(action, str) and action.startswith(NEXT_PAGE_PREFETCH_SUMMARY_ACTION_PREFIXES)
+		near_end_items = NEXT_PAGE_PREFETCH_SUMMARY_NEAR_END_ITEMS if is_summary else NEXT_PAGE_PREFETCH_NEAR_END_ITEMS
+		return 0 < current_item <= num_items and current_item > num_items - near_end_items
 
 	def _finish(self):
 		self.request = None

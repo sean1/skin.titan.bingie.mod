@@ -71,10 +71,10 @@ class NextPagePrefetch:
 
 	def _near_end(self):
 		try:
-			position = int(kodi_utils.get_infolabel('Container.Position'))
+			current_item = int(kodi_utils.get_infolabel('Container.CurrentItem'))
 			num_items = int(kodi_utils.get_infolabel('Container.NumItems'))
 		except (TypeError, ValueError): return False
-		return num_items > 0 and position >= max(0, num_items - NEXT_PAGE_PREFETCH_NEAR_END_ITEMS)
+		return 0 < current_item <= num_items and current_item > num_items - NEXT_PAGE_PREFETCH_NEAR_END_ITEMS
 
 	def _finish(self):
 		self.request = None

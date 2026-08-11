@@ -70,11 +70,11 @@ def pov_page_back(params=None):
 			set_property('PovInfoTmdb', str(tmdb_id)) if tmdb_id else clear_property('PovInfoTmdb')
 		if history: set_property(POV_PAGE_HISTORY_PROPERTY, json.dumps(history, separators=(',', ':')))
 		else: clear_property(POV_PAGE_HISTORY_PROPERTY)
-		if page_type == 'info' and kodi_utils.get_visibility('Window.IsActive(%s)' % POV_INFO_WINDOW_ID):
+		if page_type == 'info':
 			execute_builtin('ReplaceWindow(%s)' % POV_INFO_WINDOW_ID)
 			_reset_info_page_focus(get_property('PovInfoType'))
 			return
-		if page_type == 'actor' and kodi_utils.get_visibility('Window.IsActive(1122)'):
+		if page_type == 'actor':
 			execute_builtin('ReplaceWindow(1122)')
 			return
 	execute_builtin('PreviousMenu')

@@ -108,7 +108,7 @@ def execute_skip_intro(player, meta):
 			if _continue_action(True, meta, 'skip_intro'):
 				player.seekTime(intro_end)
 			return
-		kodi_utils.sleep(1000)
+		kodi_utils.sleep(200)
 
 def execute_scrape_nextep(player, meta):
 	nextep_meta, nextep_params = nextep_playback_info(meta)

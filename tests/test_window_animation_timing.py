@@ -49,6 +49,15 @@ class WindowAnimationTimingTests(unittest.TestCase):
 		self.assertIsNotNone(visible)
 		self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in visible.findall('effect')], [('fade', '300', '200'), ('slide', '300', '200')])
 
+	def test_episode_view_entrance_keeps_mask_and_uses_300_millisecond_reveal(self):
+		root = ET.parse(ROOT / 'xml' / 'IncludesAnimations.xml').getroot()
+		includes = [include for include in root.findall('include') if include.get('name') == 'Animation_Right_Bingie']
+		self.assertEqual(len(includes), 1)
+		window_open = includes[0].find("animation[@type='WindowOpen']")
+		self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in window_open.findall('effect')], [('fade', '300', '300'), ('slide', '300', '300')])
+		window_close = includes[0].find("animation[@type='WindowClose']")
+		self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in window_close.findall('effect')], [('fade', '300', None), ('slide', '300', None)])
+
 	def test_visible_detail_shelves_use_300_millisecond_scrolls(self):
 		targets = {
 			'IncludesPovActor.xml': (610, 620, 630),

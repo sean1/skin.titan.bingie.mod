@@ -59,7 +59,6 @@ class Subtitles(kodi_utils.xbmc_player):
 		try: content = response.text
 		except: content = response.content
 		with kodi_utils.open_file(final_path, 'w') as file: file.write(content)
-		kodi_utils.sleep(1000)
 		self.setSubtitles(final_path)
 		return True
 

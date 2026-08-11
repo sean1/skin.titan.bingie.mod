@@ -41,6 +41,14 @@ class WindowAnimationTimingTests(unittest.TestCase):
 				window_close = includes[0].find("animation[@type='WindowClose']")
 				self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in window_close.findall('effect')], [('fade', '300', None), ('slide', '300', None)])
 
+	def test_home_content_reveal_keeps_mask_and_uses_300_milliseconds(self):
+		root = ET.parse(ROOT / 'xml' / 'IncludesAnimations.xml').getroot()
+		includes = [include for include in root.findall('include') if include.get('name') == 'Animation_Right_Home']
+		self.assertEqual(len(includes), 1)
+		visible = includes[0].find("animation[@type='Visible']")
+		self.assertIsNotNone(visible)
+		self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in visible.findall('effect')], [('fade', '300', '200'), ('slide', '300', '200')])
+
 	def test_visible_detail_shelves_use_300_millisecond_scrolls(self):
 		targets = {
 			'IncludesPovActor.xml': (610, 620, 630),

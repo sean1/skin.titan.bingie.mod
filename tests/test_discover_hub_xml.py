@@ -8,31 +8,41 @@ XML = ROOT / 'xml'
 
 
 class DiscoverHubXmlTests(unittest.TestCase):
-	def test_discover_hub_only_contains_recommendation_rows(self):
+	def test_discover_hub_contains_options_and_recommendation_rows(self):
 		root = ET.parse(XML / 'IncludesHubs.xml').getroot()
 		discover = next(include for include in root.findall('include') if include.get('name') == 'bingie_items_discover')
 		self.assertEqual(
 			[(include.get('content'), (include.text or '').strip()) for include in discover.findall('include')],
-			[(None, 'Empty_Hub_Alt_Buttons'), ('bingie_pov_hub_item', ''), ('bingie_pov_hub_item', '')],
+			[(None, 'Empty_Hub_Alt_Buttons'), ('bingie_pov_hub_action_item', ''), ('bingie_pov_hub_item', ''), ('bingie_pov_hub_item', '')],
 		)
+		action_params = {param.get('name'): param.get('value') for param in discover.find("include[@content='bingie_pov_hub_action_item']").findall('param')}
+		self.assertEqual(action_params, {
+			'widgetid': '1510',
+			'label': 'Discover Options',
+			'path': 'plugin://skin.titan.bingie.lite/?mode=navigator.discover_hub_actions&name=32451',
+		})
+		action_include = next(include for include in root.findall('include') if include.get('name') == 'bingie_pov_hub_action_item')
+		action_list = action_include.find("control[@type='fixedlist']")
+		self.assertEqual(action_list.find('visible').get('allowhiddenfocus'), 'true')
 		rows = discover.findall("include[@content='bingie_pov_hub_item']")
 		row_params = [{param.get('name'): param.get('value') for param in row.findall('param')} for row in rows]
 		self.assertEqual(row_params, [
 			{
-				'widgetid': '1510',
+				'widgetid': '1520',
 				'pollEmpty': 'true',
 				'widgetStyle': 'widget_layout_default',
 				'label': 'Recommended for You • Movies',
 				'path': '$VAR[BingieDiscoverBecauseMoviesPath]',
 			},
 			{
-				'widgetid': '1520',
+				'widgetid': '1530',
 				'pollEmpty': 'true',
 				'widgetStyle': 'widget_layout_default',
 				'label': 'Recommended for You • TV Shows',
 				'path': '$VAR[BingieDiscoverBecauseTVPath]',
 			},
 		])
+
 	def test_discover_recommendations_load_without_staging(self):
 		hubs = ET.parse(XML / 'IncludesHubs.xml').getroot()
 		for name in ('BingieDiscoverBecauseMoviesPath', 'BingieDiscoverBecauseTVPath'):

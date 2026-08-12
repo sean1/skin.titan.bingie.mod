@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.3.26" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
+<addon id="skin.titan.bingie.lite" version="2.3.27" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
 		<import addon="xbmc.python" version="3.0.0"/>
@@ -38,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite 2.3.26[/B][CR]Show only personalized movie and TV recommendations in Discover and load them reliably.
+			[B]BINGIE Lite 2.3.27[/B][CR]Restore Discover options above personalized movie and TV recommendations.
 		</news>
 	</extension>
 </addon>

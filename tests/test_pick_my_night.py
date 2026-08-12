@@ -3,7 +3,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import unquote, urlencode
 from unittest.mock import Mock, call
 
 
@@ -54,7 +54,7 @@ class PickMyNightTests(unittest.TestCase):
 	def setUp(self):
 		self.discover.kodi_utils.execute_builtin = Mock(side_effect=lambda command: command)
 
-	def test_movie_and_tv_results_use_zero_delay_alarm_after_cancel(self):
+	def test_movie_and_tv_results_wait_for_dialog_to_close_after_cancel(self):
 		for mediatype, mode, action in (
 			('movie', 'build_movie_list', 'tmdb_movies_discover'),
 			('tvshow', 'build_tvshow_list', 'tmdb_tv_discover')
@@ -70,7 +70,7 @@ class PickMyNightTests(unittest.TestCase):
 				alarm = commands[1].args[0]
 				self.assertIn('mode=%s' % mode, alarm)
 				self.assertIn('action=%s' % action, alarm)
-				self.assertTrue(alarm.endswith(',00:00,silent)'))
+				self.assertTrue(alarm.endswith(',00:00:01,silent)'))
 				self.assertEqual(result, alarm)
 				self.discover.kodi_utils.execute_builtin.reset_mock()
 
@@ -80,6 +80,21 @@ class PickMyNightTests(unittest.TestCase):
 
 		self.assertIsNone(menu.pick_my_night())
 		self.discover.kodi_utils.execute_builtin.assert_not_called()
+
+	def test_horror_slasher_mood_uses_movie_genre_and_tv_keywords(self):
+		for mediatype, expected_filter in (
+			('movie', '&with_genres=27'),
+			('tvshow', '&with_keywords=315058|12377|162846|1299|11100|12339')
+		):
+			with self.subTest(mediatype=mediatype):
+				menu = self.discover.Discover({})
+				menu._selection_dialog = Mock(side_effect=(mediatype, 'horror_supernatural', '', 'crowd_pleasers'))
+
+				menu.pick_my_night()
+
+				alarm = unquote(self.discover.kodi_utils.execute_builtin.call_args_list[1].args[0])
+				self.assertIn(expected_filter, alarm)
+				self.discover.kodi_utils.execute_builtin.reset_mock()
 
 
 if __name__ == '__main__':

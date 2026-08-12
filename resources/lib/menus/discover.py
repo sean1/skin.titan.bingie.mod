@@ -328,7 +328,7 @@ class Discover:
 			'science_fiction': ('with_genres', '878') if mediatype == 'movie' else ('with_keywords', '281358'),
 			'apocalypse_survival': ('with_keywords', '4458|10150|12332|186565|355070|298669|4565|10349'),
 			'space_voyages': ('with_keywords', '252937|3801|1612|161176|252634'),
-			'horror_supernatural': ('with_genres', '27') if mediatype == 'movie' else ('with_keywords', '315058|12377|162846|1299|11100'),
+			'horror_supernatural': ('with_genres', '27') if mediatype == 'movie' else ('with_keywords', '315058|12377|162846|1299|11100|12339'),
 			'chinese_cinema': ('with_original_language', 'zh'),
 			'vietnamese_cinema': ('with_original_language', 'vi'),
 			'korean_cinema': ('with_original_language', 'ko')
@@ -371,7 +371,7 @@ class Discover:
 		mode, action = ('build_movie_list', 'tmdb_movies_discover') if mediatype == 'movie' else ('build_tvshow_list', 'tmdb_tv_discover')
 		url = build_url({'mode': mode, 'action': action, 'query': query, 'fallback_query': fallback_query, 'target_results': '200', 'max_pages': '10', 'name': name})
 		kodi_utils.execute_builtin('CancelAlarm(BingiePickMyNight,silent)')
-		return kodi_utils.execute_builtin('AlarmClock(BingiePickMyNight,ActivateWindow(Videos,%s,return),00:00,silent)' % url)
+		return kodi_utils.execute_builtin('AlarmClock(BingiePickMyNight,ActivateWindow(Videos,%s,return),00:00:01,silent)' % url)
 
 	def _set_default_params(self, mediatype):
 		self._clear_property()

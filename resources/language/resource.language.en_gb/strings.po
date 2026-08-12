@@ -1311,7 +1311,7 @@ msgid "The Big Score"
 msgstr ""
 
 msgctxt "#32942"
-msgid "Horror / Zombie / Ghost / Monster"
+msgid "Horror / Zombie / Ghost / Monster / Slasher"
 msgstr ""
 
 msgctxt "#32964"

@@ -46,7 +46,10 @@
 					<label>$INFO[Window(Home).Property(PovActorBirthplace),Born in ]</label>
 				</control>
 			<control type="textbox">
-				<visible>String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorBiography))</visible>
+				<visible>
+					String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorBiography)) +
+					![[Control.HasFocus(610) + $EXP[PovActorHasCurrentMovies]] | [Control.HasFocus(620) + $EXP[PovActorHasCurrentTVShows]] | [Control.HasFocus(630) + $EXP[PovActorHasCurrentDirected]]]
+				</visible>
 				<left>138</left>
 				<top>300</top>
 				<width>540</width>
@@ -57,6 +60,43 @@
 				<aligny>top</aligny>
 				<label>$INFO[Window(Home).Property(PovActorBiography)]</label>
 				<autoscroll delay="9000" time="2500" repeat="6500">true</autoscroll>
+			</control>
+			<control type="group">
+				<visible>
+					[Control.HasFocus(610) + $EXP[PovActorHasCurrentMovies]] | [Control.HasFocus(620) + $EXP[PovActorHasCurrentTVShows]] |
+					[Control.HasFocus(630) + $EXP[PovActorHasCurrentDirected]]
+				</visible>
+				<left>138</left>
+				<top>300</top>
+				<width>540</width>
+				<height>280</height>
+				<control type="label">
+					<width>540</width>
+					<height>45</height>
+					<font>Bold31</font>
+					<textcolor>ffffffff</textcolor>
+					<label>$VAR[PovActorFocusedTitle]</label>
+					<scroll>true</scroll>
+				</control>
+				<control type="label">
+					<top>50</top>
+					<width>540</width>
+					<height>34</height>
+					<font>Reg24</font>
+					<textcolor>d9ffffff</textcolor>
+					<label>$VAR[PovActorFocusedDetails]</label>
+				</control>
+				<control type="textbox">
+					<top>95</top>
+					<width>540</width>
+					<height>185</height>
+					<font>Reg24</font>
+					<textcolor>e6ffffff</textcolor>
+					<align>left</align>
+					<aligny>top</aligny>
+					<label>$VAR[PovActorFocusedPlot]</label>
+					<autoscroll delay="9000" time="2500" repeat="6500">true</autoscroll>
+				</control>
 			</control>
 			<control type="button" id="600">
 				<visible allowhiddenfocus="true">true</visible>
@@ -253,6 +293,31 @@
 			</control>
 		</focusedlayout>
 	</include>
+
+	<variable name="PovActorFocusedTitle">
+		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610)">$INFO[Container(610).ListItem.Label]</value>
+		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620)">$INFO[Container(620).ListItem.Label]</value>
+		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630)">$INFO[Container(630).ListItem.Label]</value>
+	</variable>
+
+	<variable name="PovActorFocusedMediaType">
+		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610)">Movie</value>
+		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620)">TV Show</value>
+		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630) + String.IsEqual(Container(630).ListItem.Property(PovCreditType),tvshow)">TV Show</value>
+		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630)">Movie</value>
+	</variable>
+
+	<variable name="PovActorFocusedDetails">
+		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610)">$VAR[PovActorFocusedMediaType]$INFO[Container(610).ListItem.Property(year_range), • ]$INFO[Container(610).ListItem.Property(rating), • ]</value>
+		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620)">$VAR[PovActorFocusedMediaType]$INFO[Container(620).ListItem.Property(year_range), • ]$INFO[Container(620).ListItem.Property(rating), • ]</value>
+		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630)">$VAR[PovActorFocusedMediaType]$INFO[Container(630).ListItem.Property(year_range), • ]$INFO[Container(630).ListItem.Property(rating), • ]</value>
+	</variable>
+
+	<variable name="PovActorFocusedPlot">
+		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610)">$INFO[Container(610).ListItem.Plot]</value>
+		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620)">$INFO[Container(620).ListItem.Plot]</value>
+		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630)">$INFO[Container(630).ListItem.Plot]</value>
+	</variable>
 
 	<variable name="PovActorPageBackdrop">
 		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610) + !String.IsEmpty(Container(610).ListItem.Property(landscape))">$INFO[Container(610).ListItem.Property(landscape)]</value>

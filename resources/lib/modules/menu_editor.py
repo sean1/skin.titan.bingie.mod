@@ -215,7 +215,6 @@ class MenuEditor:
 		elif db_action == 'delete': navigator_cache.delete_list(list_name, list_type)
 		elif db_action == 'make_new_folder': navigator_cache.set_list(list_name, 'shortcut_folder', list_contents)
 		kodi_utils.notification(32576, 1500)
-		kodi_utils.sleep(200)
 		if refresh: kodi_utils.container_refresh()
 
 	def shortcut_folder_contents_adjust(self):

@@ -1,10 +1,10 @@
-import importlib.util
-import sys
 import types
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,20 +36,7 @@ def load_subtitle_service():
 	subtitles.subtitle_languages = ('eng', 'vie')
 	subtitles.subtitle_manifest = 'https://example.test/manifest.json'
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'indexers': indexers, 'indexers.subtitles': subtitles}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	path_was_present = str(LIB_PATH) in sys.path
-	sys.modules.update(stubs)
-	try:
-		path = LIB_PATH / 'subtitle_service.py'
-		spec = importlib.util.spec_from_file_location('test_subtitle_service_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-		if not path_was_present and str(LIB_PATH) in sys.path: sys.path.remove(str(LIB_PATH))
-	return module
+	return load_module('test_subtitle_service_module', LIB_PATH / 'subtitle_service.py', stubs)
 
 
 class SubtitleServiceTests(unittest.TestCase):

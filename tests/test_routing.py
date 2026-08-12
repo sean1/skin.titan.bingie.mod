@@ -1,10 +1,11 @@
-import importlib.util
 import runpy
 import sys
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import Mock
+
+from tests.module_isolation import load_module, temporary_modules
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,18 +18,7 @@ def load_routing(params):
 	kodi_utils.parsed_query = Mock(return_value=params)
 	modules.kodi_utils = kodi_utils
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = LIB_PATH / 'routing.py'
-		spec = importlib.util.spec_from_file_location('test_routing_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	return load_module('test_routing_module', LIB_PATH / 'routing.py', stubs)
 
 
 class RoutingTests(unittest.TestCase):
@@ -39,14 +29,9 @@ class RoutingTests(unittest.TestCase):
 		play = Mock(return_value='played')
 		trailers = types.ModuleType('modules.trailers')
 		trailers.play = play
-		previous = sys.modules.get('modules.trailers')
-		sys.modules['modules.trailers'] = trailers
-		try:
+		with temporary_modules({'modules.trailers': trailers}):
 			sys_obj = types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '1', '?mode=play_trailer'])
 			self.assertEqual(routing.Router().run(sys_obj), 'played')
-		finally:
-			if previous is None: sys.modules.pop('modules.trailers', None)
-			else: sys.modules['modules.trailers'] = previous
 
 		routing.kodi_utils.parsed_query.assert_called_once_with(sys_obj.argv[2])
 		play.assert_called_once_with(params)
@@ -57,14 +42,9 @@ class RoutingTests(unittest.TestCase):
 		run = Mock(return_value='subtitles')
 		subtitle_service = types.ModuleType('subtitle_service')
 		subtitle_service.run = run
-		previous = sys.modules.get('subtitle_service')
-		sys.modules['subtitle_service'] = subtitle_service
-		try:
+		with temporary_modules({'subtitle_service': subtitle_service}):
 			sys_obj = types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '2', '?action=search'])
 			self.assertEqual(routing.routing(sys_obj), 'subtitles')
-		finally:
-			if previous is None: sys.modules.pop('subtitle_service', None)
-			else: sys.modules['subtitle_service'] = previous
 
 		run.assert_called_once_with(sys_obj)
 
@@ -77,14 +57,11 @@ class RoutingTests(unittest.TestCase):
 				seen.append(sys_obj)
 
 		routing.Router = Router
-		previous = sys.modules.get('routing')
 		path_was_present = str(LIB_PATH) in sys.path
-		sys.modules['routing'] = routing
-		try: runpy.run_path(str(LIB_PATH / 'router.py'), run_name='__main__')
+		try:
+			with temporary_modules({'routing': routing}): runpy.run_path(str(LIB_PATH / 'router.py'), run_name='__main__')
 		finally:
 			if not path_was_present: sys.path.remove(str(LIB_PATH))
-			if previous is None: sys.modules.pop('routing', None)
-			else: sys.modules['routing'] = previous
 
 		self.assertEqual(seen, [sys])
 

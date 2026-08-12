@@ -1,10 +1,10 @@
-import importlib.util
-import sys
 import types
 import unittest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import Mock
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,18 +49,8 @@ def load_watched_cache():
 		'caches': caches, 'caches.dropped_cache': dropped_cache, 'indexers': indexers, 'indexers.metadata': metadata,
 		'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.utils': utils
 	}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'caches' / 'watched_cache.py'
-		spec = importlib.util.spec_from_file_location('test_watched_cache_refactor_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'caches' / 'watched_cache.py'
+	return load_module('test_watched_cache_refactor_module', path, stubs)
 
 
 class WatchedCacheRefactorTests(unittest.TestCase):

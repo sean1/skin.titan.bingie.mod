@@ -1,11 +1,11 @@
-import importlib.util
 import json
 import sqlite3
-import sys
 import tempfile
 import types
 import unittest
 from pathlib import Path
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,19 +20,9 @@ def load_cache_module():
 	kodi_utils.local_string = lambda value: str(value)
 	modules = types.ModuleType('modules')
 	modules.kodi_utils = kodi_utils
-	old_modules = {name: sys.modules.get(name) for name in ('modules', 'modules.kodi_utils')}
-	sys.modules['modules'] = modules
-	sys.modules['modules.kodi_utils'] = kodi_utils
-	try:
-		path = ROOT / 'resources' / 'lib' / 'modules' / 'cache.py'
-		spec = importlib.util.spec_from_file_location('test_database_maintenance_cache', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in old_modules.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils}
+	path = ROOT / 'resources' / 'lib' / 'modules' / 'cache.py'
+	return load_module('test_database_maintenance_cache', path, stubs)
 
 
 def load_meta_cache_module():
@@ -43,24 +33,14 @@ def load_meta_cache_module():
 	window_property_cache.WindowPropertyCache = lambda *args: None
 	modules = types.ModuleType('modules')
 	modules.kodi_utils = types.ModuleType('modules.kodi_utils')
-	module_names = ('caches', 'caches.window_property_cache', 'modules', 'modules.kodi_utils')
-	old_modules = {name: sys.modules.get(name) for name in module_names}
-	sys.modules.update({
+	stubs = {
 		'caches': caches,
 		'caches.window_property_cache': window_property_cache,
 		'modules': modules,
 		'modules.kodi_utils': modules.kodi_utils
-	})
-	try:
-		path = ROOT / 'resources' / 'lib' / 'caches' / 'meta_cache.py'
-		spec = importlib.util.spec_from_file_location('test_database_maintenance_meta_cache', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in old_modules.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	}
+	path = ROOT / 'resources' / 'lib' / 'caches' / 'meta_cache.py'
+	return load_module('test_database_maintenance_meta_cache', path, stubs)
 
 
 class DatabaseMaintenanceTests(unittest.TestCase):

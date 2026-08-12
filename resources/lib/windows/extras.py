@@ -45,7 +45,6 @@ class Extras(BaseDialog):
 			futures = [
 				tpe.submit(self.make_imdb_extended_info),
 				tpe.submit(self.make_recommended),
-				tpe.submit(self.make_videos),
 				tpe.submit(self.make_year),
 				tpe.submit(self.make_genres),
 				tpe.submit(self.make_network),
@@ -324,23 +323,6 @@ class Extras(BaseDialog):
 		self.setProperty('tikiskins.extras.imdb_blunders.number', '(x%02d)' % len(item_list))
 		self.item_action_dict[blunders_id] = 'tikiskins.extras.text'
 		self.add_items(blunders_id, item_list)
-
-	def make_videos(self):
-		if videos_id not in self.enabled_lists: return
-		data = []
-		item_list = []
-		for count, item in enumerate(data, 1):
-			try:
-				listitem = self.make_listitem()
-				listitem.setProperty('tikiskins.extras.name', '%01d. %s' % (count, item['title']))
-				listitem.setProperty('tikiskins.extras.thumbnail', item['poster'])
-				listitem.setProperty('tikiskins.extras.qualities', json.dumps(item['videos']))
-				item_list.append(listitem)
-			except: pass
-		if not item_list: return
-		self.setProperty('tikiskins.extras.imdb_videos.number', '(x%02d)' % len(item_list))
-		self.item_action_dict[videos_id] = 'tikiskins.extras.qualities'
-		self.add_items(videos_id, item_list)
 
 	def make_artwork(self, image_type):
 		_id = posters_id if image_type == 'posters' else backdrops_id

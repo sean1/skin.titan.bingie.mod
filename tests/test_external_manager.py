@@ -1,10 +1,11 @@
-import importlib.util
 import sys
 import time
 import types
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,18 +54,8 @@ def load_sources_module():
 		),
 		'modules.utils': module_stub(manual_function_import=lambda *args: None, get_datetime=lambda: None, safe_string=str, string_to_float=float),
 	}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'modules' / 'sources.py'
-		spec = importlib.util.spec_from_file_location('test_sources_runtime', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'modules' / 'sources.py'
+	return load_module('test_sources_runtime', path, stubs)
 
 
 SOURCES = load_sources_module()

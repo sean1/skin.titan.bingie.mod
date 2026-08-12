@@ -1,9 +1,9 @@
-import importlib.util
 import json
-import sys
 import types
 import unittest
 from pathlib import Path
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,18 +26,8 @@ def load_dialogs():
 	utils.safe_string = str
 	utils.valid_tmdb_id = lambda value: bool(value)
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.cache': cache, 'modules.utils': utils}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'modules' / 'dialogs.py'
-		spec = importlib.util.spec_from_file_location('test_dialog_navigation_dialogs', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'modules' / 'dialogs.py'
+	return load_module('test_dialog_navigation_dialogs', path, stubs)
 
 
 class DialogNavigationTests(unittest.TestCase):

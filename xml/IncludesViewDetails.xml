@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BINGIE -->
+<includes>
+	<include name="BingieEpisodeSeasonDetailCard">
+		<param name="label" />
+		<param name="focus_condition" />
+		<param name="content_visibility" />
+		<param name="scroll" default="false" />
+		<definition>
+			<control type="group">
+				<animation effect="fade" start="100" end="60" time="150" condition="$PARAM[focus_condition]">Conditional</animation>
+				<left>495</left>
+				<height>episodes_thumb_height</height>
+				<width>600</width>
+				<control type="label">
+					<top>35</top>
+					<width>100%</width>
+					<aligny>center</aligny>
+					<height>35</height>
+					<align>left</align>
+					<font>Reg30</font>
+					<textcolor>ffffffff</textcolor>
+					<label>[B]$PARAM[label][/B]</label>
+					<scroll>$PARAM[scroll]</scroll>
+				</control>
+				<control type="textbox">
+					<visible>$PARAM[content_visibility]</visible>
+					<width>100%</width>
+					<top>81</top>
+					<height max="105">auto</height>
+					<align>left</align>
+					<font>Reg26</font>
+					<textcolor>b3ffffff</textcolor>
+					<label>$VAR[ViewsPlotWithOutline]</label>
+				</control>
+				<control type="label">
+					<visible>$PARAM[content_visibility]</visible>
+					<width>100%</width>
+					<bottom>41</bottom>
+					<height>35</height>
+					<align>left</align>
+					<font>Reg26</font>
+					<textcolor>73ffffff</textcolor>
+					<label>$INFO[ListItem.Duration(mins),(,m)]</label>
+				</control>
+			</control>
+		</definition>
+	</include>
+</includes>

@@ -1,10 +1,10 @@
-import importlib.util
-import sys
 import types
 import unittest
 from pathlib import Path
 from urllib.parse import unquote, urlencode
 from unittest.mock import Mock, call
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,18 +32,8 @@ def load_discover_module():
 		'indexers': indexers, 'indexers.tmdb_api': tmdb_api, 'modules': modules,
 		'modules.kodi_utils': kodi_utils, 'modules.meta_lists': meta_lists, 'modules.utils': utils
 	}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'menus' / 'discover.py'
-		spec = importlib.util.spec_from_file_location('test_pick_my_night_discover', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'menus' / 'discover.py'
+	return load_module('test_pick_my_night_discover', path, stubs)
 
 
 class PickMyNightTests(unittest.TestCase):

@@ -1,10 +1,10 @@
-import importlib.util
-import sys
 import types
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,18 +35,8 @@ def load_subtitles():
 	requests.ConnectionError = ConnectionError
 	requests.get = Mock()
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'requests': requests}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'indexers' / 'subtitles.py'
-		spec = importlib.util.spec_from_file_location('test_subtitle_timing_indexer', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'indexers' / 'subtitles.py'
+	return load_module('test_subtitle_timing_indexer', path, stubs)
 
 
 class RecordingFile:

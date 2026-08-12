@@ -6,6 +6,8 @@ from queue import Empty
 from threading import Barrier, Lock, Thread
 from pathlib import Path
 
+from tests.module_isolation import load_module, temporary_modules
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -43,22 +45,15 @@ def load_worker_modules():
 	settings.paginate = lambda: True
 	settings.page_limit = lambda: 100
 	settings.nav_jump_use_alphabet = lambda: 0
-	old_modules = {name: sys.modules.get(name) for name in ('modules', 'modules.kodi_utils', 'modules.settings', 'modules.utils')}
-	sys.modules.update({'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings})
-	try:
+	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings}
+	with temporary_modules(stubs, isolate=('modules.utils',)):
 		utils_path = ROOT / 'resources' / 'lib' / 'modules' / 'utils.py'
 		utils_spec = importlib.util.spec_from_file_location('modules.utils', utils_path)
 		utils = importlib.util.module_from_spec(utils_spec)
 		sys.modules['modules.utils'] = utils
 		utils_spec.loader.exec_module(utils)
 		list_helper_path = ROOT / 'resources' / 'lib' / 'indexers' / 'list_helper.py'
-		list_helper_spec = importlib.util.spec_from_file_location('test_task_pool_list_helper', list_helper_path)
-		list_helper = importlib.util.module_from_spec(list_helper_spec)
-		list_helper_spec.loader.exec_module(list_helper)
-	finally:
-		for name, old_module in old_modules.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
+		list_helper = load_module('test_task_pool_list_helper', list_helper_path)
 	return utils, list_helper
 
 

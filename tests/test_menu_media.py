@@ -1,9 +1,9 @@
-import importlib.util
-import sys
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, call
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,18 +21,8 @@ def load_media_module():
 	metadata.tmdb_image_base = 'https://image/%s%s'
 	indexers = types.ModuleType('indexers')
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.utils': utils, 'indexers': indexers, 'indexers.metadata': metadata}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'menus' / 'media.py'
-		spec = importlib.util.spec_from_file_location('test_menu_media_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'menus' / 'media.py'
+	return load_module('test_menu_media_module', path, stubs)
 
 
 class MenuMediaTests(unittest.TestCase):

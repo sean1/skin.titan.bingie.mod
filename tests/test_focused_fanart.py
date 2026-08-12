@@ -1,9 +1,10 @@
-import importlib.util
 import sys
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, call
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,20 +28,11 @@ def load_entry():
 	prefetch = types.ModuleType('modules.prefetch')
 	prefetch.NextPagePrefetch = object
 	stubs = {'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.prefetch': prefetch}
-	previous = {name: sys.modules.get(name) for name in stubs}
 	sys.path.insert(0, str(ROOT / 'resources' / 'lib'))
-	sys.modules.update(stubs)
 	try:
 		path = ROOT / 'resources' / 'lib' / 'entry.py'
-		spec = importlib.util.spec_from_file_location('test_focused_fanart_entry', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		sys.path.pop(0)
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+		return load_module('test_focused_fanart_entry', path, stubs)
+	finally: sys.path.pop(0)
 
 
 class FocusedFanartTests(unittest.TestCase):

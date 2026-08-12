@@ -3,8 +3,7 @@ from indexers.metadata import movie_meta, art_infodict, movie_show_infodict, tmd
 from caches.watched_cache import get_watched_info_movie, get_watched_status_movie, get_bookmarks, get_resumetime, set_resumetime
 from modules import kodi_utils, settings
 from modules.meta_lists import movie_genres
-from modules.prefetch import schedule_next_page_prefetch
-from menus.media import build_tmdb_detail_shelf_item
+from menus.media import build_tmdb_detail_shelf_item, complete_media_directory
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate, chunks
 from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
 # logger = kodi_utils.logger
@@ -205,10 +204,11 @@ class Menu(Movies):
 		__handle__ = int(kodi_utils.argv1())
 		prefetch = self.params.get('prefetch') == 'true'
 		limited_tmdb = False
+		params_get = self.params.get
+		worker, view_type, content_type = self.build_movies_results, 'view.movies', 'movies'
+		mode, category = params_get('mode'), ''
 		try:
-			params_get = self.params.get
-			worker, view_type, content_type = self.build_movies_results, 'view.movies', 'movies'
-			mode, category = params_get('mode'), ls(params_get('name'))
+			category = ls(params_get('name'))
 			try: item_limit = int(params_get('limit', '0'))
 			except (TypeError, ValueError): item_limit = 0
 			limited_tmdb = item_limit > 0 and self.action in Menu.tmdb_main
@@ -302,19 +302,9 @@ class Menu(Movies):
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, worker())
-			if self.new_page and not self.is_widget:
-				if limited_tmdb:
-					browse_params = {'mode': mode, 'action': self.action, 'exit_list_params': self.exit_list_params, 'name': category}
-					kodi_utils.add_dir(__handle__, browse_params, nextpage_str, item_next)
-				else:
-					self.new_page.update({'mode': mode, 'action': self.action, 'exit_list_params': self.exit_list_params, 'name': category})
-					kodi_utils.add_dir(__handle__, self.new_page, nextpage_str, item_next)
 		except: pass
 		if prefetch: return
-		kodi_utils.set_category(__handle__, category)
-		kodi_utils.set_sort_method(__handle__, content_type)
-		kodi_utils.set_content(__handle__, content_type)
-		kodi_utils.end_directory(__handle__, False if self.is_widget else None)
-		if self.new_page and not self.is_widget and not limited_tmdb:
-			schedule_next_page_prefetch(build_url({**self.new_page, 'prefetch': 'true'}), self.params)
-		kodi_utils.set_view_mode(view_type, content_type, self.is_widget)
+		complete_media_directory(
+			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_tmdb,
+			self.params, nextpage_str, item_next
+		)

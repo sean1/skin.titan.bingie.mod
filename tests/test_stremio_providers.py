@@ -1,9 +1,10 @@
-import importlib.util
 import json
 import sys
 import types
 import unittest
 from pathlib import Path
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,29 +46,12 @@ def load_provider(name, fake_utils):
 	fenom = types.ModuleType('fenom')
 	fenom.source_utils = fake_utils
 	fenom.client = types.SimpleNamespace(request=lambda *args, **kwargs: json.dumps({'streams': [{'infoHash': 'hash', 'title': 'Show Season 1\n👤 12 💾 1.5 GB'}]}))
-	old_fenom = sys.modules.get('fenom')
-	old_magneto = sys.modules.get('magneto')
-	old_common = sys.modules.pop('magneto.common', None)
-	old_helper = sys.modules.pop('magneto.common.stremio_utils', None)
 	magneto = types.ModuleType('magneto')
 	magneto.__path__ = [str(LIB / 'magneto')]
-	sys.modules['magneto'] = magneto
-	sys.modules['fenom'] = fenom
-	try:
-		path = LIB / 'magneto' / ('%s.py' % name)
-		spec = importlib.util.spec_from_file_location('test_stremio_%s' % name, path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		if old_fenom is None: sys.modules.pop('fenom', None)
-		else: sys.modules['fenom'] = old_fenom
-		if old_magneto is None: sys.modules.pop('magneto', None)
-		else: sys.modules['magneto'] = old_magneto
-		if old_common is None: sys.modules.pop('magneto.common', None)
-		else: sys.modules['magneto.common'] = old_common
-		if old_helper is None: sys.modules.pop('magneto.common.stremio_utils', None)
-		else: sys.modules['magneto.common.stremio_utils'] = old_helper
-	return module
+	path = LIB / 'magneto' / ('%s.py' % name)
+	stubs = {'magneto': magneto, 'fenom': fenom}
+	isolate = ('magneto.common', 'magneto.common.stremio_utils')
+	return load_module('test_stremio_%s' % name, path, stubs, isolate)
 
 
 class StremioProviderTests(unittest.TestCase):

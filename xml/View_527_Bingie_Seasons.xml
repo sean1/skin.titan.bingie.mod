@@ -156,94 +156,24 @@
 
 	<!-- view527 container item details focused -->
     <include name="View_527_Details_Defs_Focus">
-        <!-- details -->
-        <control type="group">
-            <animation effect="fade" start="100" end="60" time="150" condition="!Control.HasFocus(5027) + !Control.HasFocus(60)">Conditional</animation>
-            <left>495</left>
-            <height>episodes_thumb_height</height>
-            <width>600</width>
-            <!-- item title -->
-            <control type="label">
-                <top>35</top>
-                <width>100%</width>
-                <aligny>center</aligny>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg30</font>
-                <textcolor>ffffffff</textcolor>
-                <label>[B]$VAR[View527MainLabel][/B]</label>
-                <scroll>true</scroll>
-            </control>
-            <!-- plot -->
-            <control type="textbox">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <top>81</top>
-                <height max="105">auto</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>b3ffffff</textcolor>
-                <label>$VAR[ViewsPlotWithOutline]</label>
-            </control>
-            <!-- duration -->
-            <control type="label">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <bottom>41</bottom>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>73ffffff</textcolor>
-                <label>$INFO[ListItem.Duration(mins),(,m)]</label>
-            </control>
-        </control>
+		<include content="BingieEpisodeSeasonDetailCard">
+			<param name="label" value="$VAR[View527MainLabel]" />
+			<param name="focus_condition" value="!Control.HasFocus(5027) + !Control.HasFocus(60)" />
+			<param name="content_visibility" value="Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)" />
+			<param name="scroll" value="true" />
+		</include>
     </include>
 
 	<!-- view527 container item details focused with air date -->
 
 	<!-- view527 container item details -->
     <include name="View_527_Details_Defs">
-        <!-- details -->
-        <control type="group">
-            <animation effect="fade" start="100" end="60" time="150" condition="!Control.HasFocus(5027) + !Control.HasFocus(60)">Conditional</animation>
-            <left>495</left>
-            <height>episodes_thumb_height</height>
-            <width>600</width>
-            <!-- item title -->
-            <control type="label">
-                <top>35</top>
-                <width>100%</width>
-                <aligny>center</aligny>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg30</font>
-                <textcolor>ffffffff</textcolor>
-                <label>[B]$VAR[View527MainLabel][/B]</label>
-                <scroll>false</scroll>
-            </control>
-            <!-- plot -->
-            <control type="textbox">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <top>81</top>
-                <height max="105">auto</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>b3ffffff</textcolor>
-                <label>$VAR[ViewsPlotWithOutline]</label>
-            </control>
-            <!-- duration -->
-            <control type="label">
-				<visible>Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)</visible>
-                <width>100%</width>
-                <bottom>41</bottom>
-                <height>35</height>
-                <align>left</align>
-                <font>Reg26</font>
-                <textcolor>73ffffff</textcolor>
-                <label>$INFO[ListItem.Duration(mins),(,m)]</label>
-            </control>
-        </control>
+		<include content="BingieEpisodeSeasonDetailCard">
+			<param name="label" value="$VAR[View527MainLabel]" />
+			<param name="focus_condition" value="!Control.HasFocus(5027) + !Control.HasFocus(60)" />
+			<param name="content_visibility" value="Container(5027).Content(episodes) | String.IsEqual(ListItem.DBTYPE,episode)" />
+			<param name="scroll" value="false" />
+		</include>
     </include>
 
 	<!-- view527 container item details with air date -->

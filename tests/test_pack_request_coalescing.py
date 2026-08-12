@@ -1,10 +1,11 @@
-import importlib.util
 import json
 import sys
 import threading
 import types
 import unittest
 from pathlib import Path
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,17 +32,10 @@ def load_provider(name, client):
 	fenom = types.ModuleType('fenom')
 	fenom.client = client
 	fenom.source_utils = types.SimpleNamespace(scraper_error=lambda provider: None)
-	old_fenom = sys.modules.get('fenom')
-	sys.modules['fenom'] = fenom
-	try:
-		path = ROOT / 'resources' / 'lib' / 'magneto' / f'{name}.py'
-		spec = importlib.util.spec_from_file_location(f'test_{name}_provider', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		if old_fenom is None: sys.modules.pop('fenom', None)
-		else: sys.modules['fenom'] = old_fenom
-	return module
+	magneto = types.ModuleType('magneto')
+	magneto.__path__ = [str(ROOT / 'resources' / 'lib' / 'magneto')]
+	path = ROOT / 'resources' / 'lib' / 'magneto' / f'{name}.py'
+	return load_module(f'test_{name}_provider', path, {'fenom': fenom, 'magneto': magneto}, ('magneto.common', 'magneto.common.provider_utils'))
 
 
 class PackRequestCoalescingTests(unittest.TestCase):

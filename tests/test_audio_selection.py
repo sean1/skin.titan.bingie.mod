@@ -1,10 +1,11 @@
-import importlib.util
 import json
 import sys
 import types
 import unittest
 from pathlib import Path
 from unittest import mock
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,18 +49,8 @@ def load_player():
 		'modules.settings': settings,
 		'modules.utils': types.SimpleNamespace(sec2time=lambda value: value),
 	}
-	old_modules = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'modules' / 'player.py'
-		spec = importlib.util.spec_from_file_location('test_audio_player_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in old_modules.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'modules' / 'player.py'
+	return load_module('test_audio_player_module', path, stubs)
 
 
 class AudioSelectionTests(unittest.TestCase):

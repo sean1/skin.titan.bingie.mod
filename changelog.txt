@@ -1,3 +1,9 @@
+BINGIE Lite 2.3.25
+
+- Share repeated DMM and Torz request, filtering, and pack-processing logic while preserving provider behavior.
+- Centralize movie and TV-show directory completion so failed list requests still close cleanly, and remove inactive Extras video work.
+- Reuse episode and season detail-view definitions without visual or navigation changes.
+
 BINGIE Lite 2.3.24
 
 - Consolidate duplicate settings, Up Next, and detail-page focus definitions into shared skin components.

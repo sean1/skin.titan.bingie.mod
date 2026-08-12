@@ -1,9 +1,9 @@
-import importlib.util
-import sys
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import Mock
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,18 +31,8 @@ def load_metadata():
 		'indexers': indexers, 'indexers.tmdb_api': tmdb_api, 'caches': caches, 'caches.meta_cache': meta_cache,
 		'modules': modules, 'modules.utils': utils
 	}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'indexers' / 'metadata.py'
-		spec = importlib.util.spec_from_file_location('test_metadata_lifecycle_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	path = ROOT / 'resources' / 'lib' / 'indexers' / 'metadata.py'
+	return load_module('test_metadata_lifecycle_module', path, stubs)
 
 
 class MetadataLifecycleTests(unittest.TestCase):

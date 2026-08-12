@@ -1,10 +1,10 @@
-import importlib.util
 import json
-import sys
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, call
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,18 +14,9 @@ def load_prefetch_module():
 	kodi_utils = types.ModuleType('modules.kodi_utils')
 	modules = types.ModuleType('modules')
 	modules.kodi_utils = kodi_utils
-	previous = {name: sys.modules.get(name) for name in ('modules', 'modules.kodi_utils')}
-	sys.modules.update({'modules': modules, 'modules.kodi_utils': kodi_utils})
-	try:
-		path = ROOT / 'resources' / 'lib' / 'modules' / 'prefetch.py'
-		spec = importlib.util.spec_from_file_location('test_next_page_prefetch_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module
+	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils}
+	path = ROOT / 'resources' / 'lib' / 'modules' / 'prefetch.py'
+	return load_module('test_next_page_prefetch_module', path, stubs)
 
 
 class NextPagePrefetchTests(unittest.TestCase):

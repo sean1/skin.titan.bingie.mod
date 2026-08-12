@@ -1,9 +1,9 @@
-import importlib.util
-import sys
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import Mock
+
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,18 +30,8 @@ def load_menu_editor():
 		'caches': caches, 'caches.navigator_cache': navigator_module, 'modules': modules,
 		'modules.kodi_utils': kodi_utils, 'modules.menu_lists': menu_lists
 	}
-	previous = {name: sys.modules.get(name) for name in stubs}
-	sys.modules.update(stubs)
-	try:
-		path = ROOT / 'resources' / 'lib' / 'modules' / 'menu_editor.py'
-		spec = importlib.util.spec_from_file_location('test_menu_editor_timing_module', path)
-		module = importlib.util.module_from_spec(spec)
-		spec.loader.exec_module(module)
-	finally:
-		for name, old_module in previous.items():
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
-	return module, navigator
+	path = ROOT / 'resources' / 'lib' / 'modules' / 'menu_editor.py'
+	return load_module('test_menu_editor_timing_module', path, stubs), navigator
 
 
 class MenuEditorTimingTests(unittest.TestCase):

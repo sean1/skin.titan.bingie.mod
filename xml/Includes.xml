@@ -14,6 +14,7 @@
 	<include file="IncludesPovActor.xml" />
     <include file="View_50_List.xml" />
     <include file="View_523_BingieMainLandscape.xml" />
+    <include file="IncludesViewDetails.xml" />
     <include file="View_525_Bingie_Episodes.xml" />
 	<include file="View_527_Bingie_Seasons.xml" />
     <include file="IncludesViews.xml" />

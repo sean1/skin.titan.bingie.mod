@@ -64,98 +64,6 @@
         </control>
     </include>
 
-    <include name="bingie_discover_action_card">
-        <control type="group">
-            <include content="left">
-                <param name="left" value="bingie_no_circular_posx" />
-            </include>
-            <width>landscape_width</width>
-            <height>210</height>
-            <control type="image">
-                <left>8</left>
-                <top>8</top>
-                <right>8</right>
-                <bottom>8</bottom>
-                <texture border="10" colordiffuse="f2151515">diffuse/panel3.png</texture>
-            </control>
-            <control type="image">
-                <left>28</left>
-                <top>79</top>
-                <width>52</width>
-                <height>52</height>
-                <aspectratio>keep</aspectratio>
-                <texture background="true">$INFO[ListItem.Icon]</texture>
-            </control>
-            <control type="label">
-                <left>104</left>
-                <right>24</right>
-                <top>58</top>
-                <height>94</height>
-                <align>left</align>
-                <aligny>center</aligny>
-                <font>Bold24</font>
-                <textcolor>ffffffff</textcolor>
-                <label>$INFO[ListItem.Label]</label>
-                <scroll>false</scroll>
-            </control>
-        </control>
-    </include>
-
-    <include name="bingie_discover_action_layout">
-        <height>212</height>
-        <itemlayout width="364" height="212">
-            <include>bingie_discover_action_card</include>
-        </itemlayout>
-        <focusedlayout width="364" height="212">
-            <include>bingie_discover_action_card</include>
-        </focusedlayout>
-    </include>
-
-    <!-- Local Discover actions use their plugin paths directly instead of opening media info. -->
-    <include name="bingie_pov_hub_action_item">
-        <control type="group" id="20$PARAM[widgetid]">
-            <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
-            <width>100%</width>
-            <height>40</height>
-            <include content="BingieUnfocusedWidgetFade">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>
-            <include>BingieNoCircularWidgetHeaderAnim</include>
-            <include content="SetFixedVerticalNavigationProps">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>
-            <include content="Fixed_Focus_Navigation_Factory1">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>
-            <include content="Hub_Widget_Label">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-                <param name="visibility" value="true" />
-                <param name="label" value="$PARAM[label]" />
-            </include>
-        </control>
-        <control type="fixedlist" id="$PARAM[widgetid]">
-            <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
-            <width>100%</width>
-            <include content="BingieUnfocusedWidgetFade">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>
-            <include>ScrollTime</include>
-            <preloaditems>2</preloaditems>
-            <orientation>horizontal</orientation>
-            <onback condition="$EXP[IsPlayingRecognizedContent]">SetFocus(509)</onback>
-            <onback condition="!$EXP[IsPlayingRecognizedContent]">900</onback>
-            <include content="SetFixedVerticalNavigationProps">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>
-            <include content="Fixed_Focus_Navigation_Factory1">
-                <param name="widgetid" value="$PARAM[widgetid]" />
-            </include>
-            <onfocus>SetProperty(BingieTrailerPreviewCancel,true,Home)</onfocus>
-            <include>bingie_discover_action_layout</include>
-            <content limit="10" target="videos" browse="never">$PARAM[path]</content>
-        </control>
-    </include>
-
     <!-- Empty staged paths defer their provider jobs; the hub fixedlists poll until each stage becomes active. -->
     <variable name="BingieMoviesHubTrendingWeekPath">
         <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10</value>
@@ -188,24 +96,11 @@
         <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated&amp;limit=10</value>
     </variable>
     <variable name="BingieDiscoverBecauseMoviesPath">
-        <value condition="Integer.IsGreater(Window(1113).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_because_you_watched&amp;name=Because+You+Watched&amp;limit=10</value>
+        <value>plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_because_you_watched&amp;name=Because+You+Watched&amp;limit=10</value>
     </variable>
     <variable name="BingieDiscoverBecauseTVPath">
-        <value condition="Integer.IsGreater(Window(1113).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_because_you_watched&amp;name=Because+You+Watched&amp;limit=10</value>
+        <value>plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_because_you_watched&amp;name=Because+You+Watched&amp;limit=10</value>
     </variable>
-    <variable name="BingieDiscoverHiddenGemsMoviesPath">
-        <value condition="Integer.IsGreater(Window(1113).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_discover&amp;name=Hidden+Gems&amp;limit=10&amp;query=https%3A%2F%2Fapi.themoviedb.org%2F3%2Fdiscover%2Fmovie%3Flanguage%3Den-US%26page%3D%25s%26sort_by%3Dvote_average.desc%26vote_count.gte%3D200%26vote_average.gte%3D7%26with_release_type%3D4%7C5%7C6</value>
-    </variable>
-    <variable name="BingieDiscoverCriticallyLovedTVPath">
-        <value condition="Integer.IsGreater(Window(1113).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_discover&amp;name=Critically+Loved&amp;limit=10&amp;query=https%3A%2F%2Fapi.themoviedb.org%2F3%2Fdiscover%2Ftv%3Flanguage%3Den-US%26page%3D%25s%26sort_by%3Dvote_average.desc%26vote_count.gte%3D500%26vote_average.gte%3D7.5%26include_null_first_air_dates%3Dfalse</value>
-    </variable>
-    <variable name="BingieDiscoverShortMoviesPath">
-        <value condition="Integer.IsGreater(Window(1113).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_discover&amp;name=Short+%26+Sweet&amp;limit=10&amp;query=https%3A%2F%2Fapi.themoviedb.org%2F3%2Fdiscover%2Fmovie%3Flanguage%3Den-US%26page%3D%25s%26sort_by%3Dpopularity.desc%26vote_count.gte%3D100%26with_runtime.lte%3D100</value>
-    </variable>
-    <variable name="BingieDiscoverFamilyMoviesPath">
-        <value condition="Integer.IsGreater(Window(1113).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_discover&amp;name=Family+Night&amp;limit=10&amp;query=https%3A%2F%2Fapi.themoviedb.org%2F3%2Fdiscover%2Fmovie%3Flanguage%3Den-US%26page%3D%25s%26sort_by%3Dpopularity.desc%26vote_count.gte%3D100%26with_genres%3D10751%26certification_country%3DUS%26certification.lte%3DPG</value>
-    </variable>
-
     <!-- Bingie Items Movies -->
     <include name="bingie_items_movies">
         <include>Empty_Hub_Alt_Buttons</include>
@@ -317,52 +212,19 @@
     <!-- Bingie Items Discover -->
     <include name="bingie_items_discover">
         <include>Empty_Hub_Alt_Buttons</include>
-        <include content="bingie_pov_hub_action_item">
-            <param name="widgetid" value="1510" />
-            <param name="label" value="Discover Options" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=navigator.discover_hub_actions&amp;name=32451" />
-        </include>
         <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1520" />
+            <param name="widgetid" value="1510" />
             <param name="pollEmpty" value="true" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Recommended for You • Movies" />
             <param name="path" value="$VAR[BingieDiscoverBecauseMoviesPath]" />
         </include>
         <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1530" />
+            <param name="widgetid" value="1520" />
             <param name="pollEmpty" value="true" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Recommended for You • TV Shows" />
             <param name="path" value="$VAR[BingieDiscoverBecauseTVPath]" />
-        </include>
-        <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1540" />
-            <param name="pollEmpty" value="true" />
-            <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Hidden Gems • Movies" />
-            <param name="path" value="$VAR[BingieDiscoverHiddenGemsMoviesPath]" />
-        </include>
-        <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1550" />
-            <param name="pollEmpty" value="true" />
-            <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Critically Loved • TV Shows" />
-            <param name="path" value="$VAR[BingieDiscoverCriticallyLovedTVPath]" />
-        </include>
-        <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1560" />
-            <param name="pollEmpty" value="true" />
-            <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Short &amp; Sweet • Movies" />
-            <param name="path" value="$VAR[BingieDiscoverShortMoviesPath]" />
-        </include>
-        <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1570" />
-            <param name="pollEmpty" value="true" />
-            <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Family Night • Movies" />
-            <param name="path" value="$VAR[BingieDiscoverFamilyMoviesPath]" />
         </include>
     </include>
 

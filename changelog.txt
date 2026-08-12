@@ -1,3 +1,7 @@
+BINGIE Lite 2.3.26
+
+- Limit Discover to personalized movie and TV recommendation rows, load them immediately, and keep focus visible as results arrive.
+
 BINGIE Lite 2.3.25
 
 - Share repeated DMM and Torz request, filtering, and pack-processing logic while preserving provider behavior.

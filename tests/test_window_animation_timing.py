@@ -14,6 +14,15 @@ class WindowAnimationTimingTests(unittest.TestCase):
 		effects = includes[0].findall("./animation[@type='WindowOpen']/effect[@type='fade']")
 		self.assertEqual([(effect.get('start'), effect.get('end'), effect.get('time')) for effect in effects], [('0', '100', '300')])
 
+	def test_shutdown_panel_opens_and_closes_in_300_milliseconds(self):
+		root = ET.parse(ROOT / 'xml' / 'IncludesAnimations.xml').getroot()
+		includes = [include for include in root.findall('include') if include.get('name') == 'animation_dialog_button_modern']
+		self.assertEqual(len(includes), 1)
+		for animation_type in ('WindowOpen', 'WindowClose'):
+			with self.subTest(animation_type=animation_type):
+				effects = includes[0].find("animation[@type='%s']" % animation_type).findall('effect')
+				self.assertEqual([(effect.get('type'), effect.get('time')) for effect in effects], [('slide', '300'), ('fade', '300')])
+
 	def test_circular_home_and_hub_wrap_fades_keep_layout_mask_and_reveal_quickly(self):
 		root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
 		for include_name in ('Fixed_Focus_Navigation', 'Fixed_Focus_Navigation1'):

@@ -58,6 +58,15 @@ class WindowAnimationTimingTests(unittest.TestCase):
 		window_close = includes[0].find("animation[@type='WindowClose']")
 		self.assertEqual([(effect.get('type'), effect.get('time'), effect.get('delay')) for effect in window_close.findall('effect')], [('fade', '300', None), ('slide', '300', None)])
 
+	def test_select_dialog_lists_use_300_millisecond_scrolls(self):
+		root = ET.parse(ROOT / 'xml' / 'DialogSelect.xml').getroot()
+		for control_id in ('3', '6'):
+			with self.subTest(control_id=control_id):
+				lists = [control for control in root.iter('control') if control.get('type') == 'list' and control.get('id') == control_id]
+				self.assertEqual(len(lists), 1)
+				scrolltime = lists[0].find('scrolltime')
+				self.assertEqual((scrolltime.text, scrolltime.get('tween'), scrolltime.get('easing')), ('300', 'cubic', 'out'))
+
 	def test_visible_detail_shelves_use_300_millisecond_scrolls(self):
 		targets = {
 			'IncludesPovActor.xml': (610, 620, 630),

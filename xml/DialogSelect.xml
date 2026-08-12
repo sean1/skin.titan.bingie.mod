@@ -138,7 +138,7 @@
                 <ondown>3</ondown>
                 <onleft>8000</onleft>
                 <pagecontrol>60</pagecontrol>
-                <scrolltime tween="cubic" easing="out">500</scrolltime>
+                <scrolltime tween="cubic" easing="out">300</scrolltime>
                 <itemlayout height="60" width="1100">
                     <control type="image">
                         <posx>11</posx>
@@ -256,7 +256,7 @@
                 <onup>6</onup>
                 <ondown>6</ondown>
                 <pagecontrol>1661</pagecontrol>
-                <scrolltime tween="cubic" easing="out">500</scrolltime>
+                <scrolltime tween="cubic" easing="out">300</scrolltime>
                 <itemlayout height="120" width="610">
                     <control type="image">
                         <posx>1</posx>

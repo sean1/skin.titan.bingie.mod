@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.23
+
+- Retry transient subtitle failures, safely contain playback changes and malformed responses, and avoid attaching incomplete subtitle files.
+- Show focused artwork and descriptions while browsing collection and recommendation shelves on movie and TV-show detail pages.
+
 BINGIE Lite 2.3.17
 
 - Reduce cold add-on request startup overhead by avoiding an unnecessary standard-library import while preserving route behavior.

@@ -1142,6 +1142,10 @@ msgctxt "#32855"
 msgid "Show Log Errors Only?"
 msgstr ""
 
+msgctxt "#32856"
+msgid "Unable to load subtitles. Try again later."
+msgstr ""
+
 msgctxt "#32857"
 msgid "New"
 msgstr ""

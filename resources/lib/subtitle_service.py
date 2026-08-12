@@ -5,7 +5,7 @@ import sys
 lib_path = str(Path(__file__).parent)
 if lib_path not in sys.path: sys.path.insert(0, lib_path)
 
-from indexers.subtitles import Subtitles, subtitle_context_property, subtitle_file_prefix, subtitle_languages, subtitle_manifest
+from indexers.subtitles import SubtitleCancelled, Subtitles, subtitle_context_property, subtitle_file_prefix, subtitle_languages, subtitle_manifest
 from modules import kodi_utils
 
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
@@ -44,6 +44,7 @@ def _client():
 	client.manifest, client.languages = subtitle_manifest, subtitle_languages
 	client.imdb_id, client.season, client.episode = imdb_id, season, episode
 	client.poster, client.subtitle_path = context.get('poster', ''), 'special://temp/'
+	client.expected_playing_file = playing_file
 	if season not in (None, ''): client.sub_filename = '%s%s_%s_%s' % (subtitle_file_prefix, imdb_id, season, episode)
 	else: client.sub_filename = '%s%s' % (subtitle_file_prefix, imdb_id)
 	return client, context
@@ -52,10 +53,11 @@ def _search(handle):
 	configured = _client()
 	if not configured: return kodi_utils.notification('Play a BINGIE Lite video before searching SubMaker subtitles.')
 	client, context = configured
-	kodi_utils.logger('BINGIE Lite Subtitles', 'Searching IMDb %s season %s episode %s' % (client.imdb_id, client.season, client.episode))
+	kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=search outcome=started')
 	subtitles = context.get('subtitles') or client.subtitles_search()
-	if isinstance(subtitles, str): return kodi_utils.notification('Subtitles Error: %s' % subtitles)
-	kodi_utils.logger('BINGIE Lite Subtitles', 'SubMaker returned %s results' % len(subtitles))
+	if isinstance(subtitles, str): return kodi_utils.notification(32856)
+	client._ensure_current_playback()
+	kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=search outcome=complete count=%s' % len(subtitles))
 	client._set_context(subtitles)
 	for language in subtitle_languages:
 		for result_number, subtitle in enumerate((item for item in subtitles if item.get('lang') == language and item.get('url')), 1):
@@ -67,15 +69,17 @@ def _search(handle):
 
 def _download(handle, params):
 	configured = _client()
-	if not configured: return kodi_utils.notification('The BINGIE Lite video is no longer playing.')
+	if not configured:
+		kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=download outcome=cancelled category=playback_stopped')
+		return
 	client = configured[0]
 	response = client.subtitles_download(params['url'])
-	if isinstance(response, str): return kodi_utils.notification('Subtitles Error: %s' % response)
+	if isinstance(response, str): return
+	if client._cancelled(): return
 	language, result_number = params.get('language', 'eng'), params.get('result', '1')
 	final_path = '%s%s_%s_%s.srt' % (client.subtitle_path, client.sub_filename, language, result_number)
-	try: content = response.text
-	except: content = response.content
-	with kodi_utils.open_file(final_path, 'w') as file: file.write(content)
+	if not client.save_subtitle(response, final_path): return
+	if client._cancelled(): return
 	listitem = kodi_utils.make_listitem()
 	listitem.setLabel(final_path)
 	kodi_utils.add_item(handle, final_path, listitem, False)
@@ -86,6 +90,11 @@ def run(sys_obj):
 	try:
 		if params.get('action') in ('search', 'manualsearch'): _search(handle)
 		elif params.get('action') == 'download': _download(handle, params)
+	except SubtitleCancelled:
+		kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=%s outcome=cancelled category=playback_changed' % params.get('action', 'unknown'))
+	except Exception as error:
+		kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=%s outcome=failed category=unexpected detail=%s' % (params.get('action', 'unknown'), type(error).__name__))
+		if params.get('action') in ('search', 'manualsearch'): kodi_utils.notification(32856)
 	finally: kodi_utils.end_directory(handle, False)
 
 if __name__ == '__main__': run(sys)

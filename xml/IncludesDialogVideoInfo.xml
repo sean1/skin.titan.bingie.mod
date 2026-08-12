@@ -11,7 +11,7 @@
 			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
 				<param name="visibility" value="!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewReady))]" />
-				<param name="image" value="$INFO[Window.Property(PovInfoFanart)]" />
+				<param name="image" value="$VAR[PovDialogInfoFanart]" />
 			</include>
 			<!-- Dialog Info -->
 			<control type="group">
@@ -363,7 +363,7 @@
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
-							<label>$VAR[BingieDialogInfoPlot]</label>
+							<label>$VAR[PovDialogInfoPlot]</label>
 							<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
 						</control>
 						<control type="textbox">
@@ -373,7 +373,7 @@
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
-							<label>$VAR[BingieDialogInfoPlot]</label>
+							<label>$VAR[PovDialogInfoPlot]</label>
 							<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
 						</control>
 					</control>
@@ -722,6 +722,8 @@
 			<property name="DBTYPE">$INFO[Container(565).ListItemAbsolute($PARAM[index]).DBType]</property>
 			<property name="tmdb_id">$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
 			<property name="landscape">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Art(landscape)]</property>
+			<property name="fanart">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="plot">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Plot]</property>
 			<property name="rating">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Rating]</property>
 			<property name="year">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Year]</property>
 			<property name="year_range">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(year_range)]</property>
@@ -757,6 +759,8 @@
 			<property name="DBTYPE">$INFO[Container(566).ListItemAbsolute($PARAM[index]).DBType]</property>
 			<property name="tmdb_id">$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
 			<property name="landscape">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Art(landscape)]</property>
+			<property name="fanart">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="plot">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Plot]</property>
 			<property name="rating">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Rating]</property>
 			<property name="year">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Year]</property>
 			<property name="PovInfoSourceTmdb">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovInfoSourceTmdb)]</property>
@@ -782,6 +786,18 @@
 		<include content="PovCollectionItem"><param name="index" value="13" /></include>
 		<include content="PovCollectionItem"><param name="index" value="14" /></include>
 	</include>
+
+	<variable name="PovDialogInfoFanart">
+		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(fanart))">$INFO[Container(560).ListItem.Property(fanart)]</value>
+		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(fanart))">$INFO[Container(563).ListItem.Property(fanart)]</value>
+		<value>$INFO[Window.Property(PovInfoFanart)]</value>
+	</variable>
+
+	<variable name="PovDialogInfoPlot">
+		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(plot))">$INFO[Container(560).ListItem.Property(plot)]</value>
+		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(plot))">$INFO[Container(563).ListItem.Property(plot)]</value>
+		<value>$VAR[BingieDialogInfoPlot]</value>
+	</variable>
 
 	<variable name="PovMoreLikeThisPath">
 		<value condition="$EXP[PovDialogMoreLikeThisReady] + String.IsEqual(Window.Property(PovInfoType),movie)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>

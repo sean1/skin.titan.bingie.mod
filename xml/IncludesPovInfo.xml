@@ -13,7 +13,7 @@
 			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
 				<param name="visibility" value="!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewReady))]" />
-				<param name="image" value="$VAR[PovInfoPageFanart]" />
+				<param name="image" value="$VAR[PovInfoResolvedFanart]" />
 			</include>
 
 			<control type="image" id="9105">
@@ -101,7 +101,7 @@
 				<textcolor>b3ffffff</textcolor>
 				<align>left</align>
 				<aligny>top</aligny>
-				<label>$VAR[PovInfoPagePlot]</label>
+				<label>$VAR[PovInfoResolvedPlot]</label>
 				<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
 			</control>
 
@@ -378,18 +378,6 @@
 			<colordiffuse>99ffffff</colordiffuse>
 		</control>
 	</include>
-
-	<variable name="PovInfoPageFanart">
-		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(fanart))">$INFO[Container(560).ListItem.Property(fanart)]</value>
-		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(fanart))">$INFO[Container(563).ListItem.Property(fanart)]</value>
-		<value>$INFO[Window(Home).Property(PovInfoFanart)]</value>
-	</variable>
-
-	<variable name="PovInfoPagePlot">
-		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(plot))">$INFO[Container(560).ListItem.Property(plot)]</value>
-		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(plot))">$INFO[Container(563).ListItem.Property(plot)]</value>
-		<value>$INFO[Window(Home).Property(PovInfoPlot)]</value>
-	</variable>
 
 	<variable name="PovInfoPageMoreLikeThisPath">
 		<value condition="$EXP[PovInfoMoreLikeThisReady] + String.IsEqual(Window(Home).Property(PovInfoType),movie)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>

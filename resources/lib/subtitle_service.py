@@ -5,7 +5,7 @@ import sys
 lib_path = str(Path(__file__).parent)
 if lib_path not in sys.path: sys.path.insert(0, lib_path)
 
-from indexers.subtitles import SubtitleCancelled, Subtitles, subtitle_context_property, subtitle_file_prefix, subtitle_languages, subtitle_manifest
+from indexers.subtitles import SubtitleCancelled, Subtitles, subtitle_context_property, subtitle_languages
 from modules import kodi_utils
 
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
@@ -40,13 +40,7 @@ def _client():
 	season = context.get('season')
 	episode = context.get('episode')
 	if season in (None, '') and metadata['is_episode']: season, episode = metadata['season'], metadata['episode']
-	client = Subtitles()
-	client.manifest, client.languages = subtitle_manifest, subtitle_languages
-	client.imdb_id, client.season, client.episode = imdb_id, season, episode
-	client.poster, client.subtitle_path = context.get('poster', ''), 'special://temp/'
-	client.expected_playing_file = playing_file
-	if season not in (None, ''): client.sub_filename = '%s%s_%s_%s' % (subtitle_file_prefix, imdb_id, season, episode)
-	else: client.sub_filename = '%s%s' % (subtitle_file_prefix, imdb_id)
+	client = Subtitles().configure(imdb_id, season, episode, context.get('poster', ''), playing_file)
 	return client, context
 
 def _search(handle):

@@ -4,6 +4,7 @@ from caches.watched_cache import get_watched_info_movie, get_watched_status_movi
 from modules import kodi_utils, settings
 from modules.meta_lists import movie_genres
 from modules.prefetch import schedule_next_page_prefetch
+from menus.media import build_tmdb_detail_shelf_item
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate, chunks
 from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
 # logger = kodi_utils.logger
@@ -56,42 +57,8 @@ class Movies:
 
 	def build_movie_shelf_content(self, position, item):
 		try:
-			item_get = item.get
-			tmdb_id, title = item_get('id'), item_get('title') or item_get('original_title')
-			if not tmdb_id or not title: return
-			release_date = item_get('release_date') or ''
-			year = release_date[:4] if len(release_date) >= 4 else ''
-			rating = item_get('vote_average') or 0
-			genres = [MOVIE_GENRE_NAMES[genre_id] for genre_id in item_get('genre_ids') or () if genre_id in MOVIE_GENRE_NAMES]
-			poster_path, backdrop_path = item_get('poster_path'), item_get('backdrop_path')
-			poster = tmdb_image_base % ('w342', poster_path) if poster_path else poster_empty
-			fanart = tmdb_image_base % ('w1280', backdrop_path) if backdrop_path else fanart_empty
-			landscape = tmdb_image_base % ('w780', backdrop_path) if backdrop_path else fanart
-			url_params = build_url({'mode': 'show_media_info', 'mediatype': 'movie', 'tmdb_id': tmdb_id})
-			props = {
-				'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|movie|%s' % tmdb_id,
-				'pov_lite_sort_order': string(position), 'tmdb_id': string(tmdb_id),
-				'PovInfoSourceTmdb': string(self.params.get('tmdb_id') or '')
-			}
-			props.update(media_percentage_properties(rating))
-			listitem = kodi_utils.make_listitem()
-			listitem.setLabel(title)
-			listitem.setProperties(props)
-			listitem.setArt({'poster': poster, 'icon': poster, 'fanart': fanart, 'thumb': landscape, 'landscape': landscape})
-			if KODI_VERSION < 20:
-				listitem.setUniqueIDs({'tmdb': string(tmdb_id)})
-				listitem.setInfo('video', {'title': title, 'plot': item_get('overview') or '', 'premiered': release_date, 'year': year, 'rating': rating, 'genre': genres, 'mediatype': 'movie'})
-			else:
-				videoinfo = listitem.getVideoInfoTag(offscreen=True)
-				videoinfo.setTitle(title)
-				videoinfo.setUniqueIDs({'tmdb': string(tmdb_id)})
-				videoinfo.setMediaType('movie')
-				videoinfo.setPlot(item_get('overview') or '')
-				if genres: videoinfo.setGenres(genres)
-				if release_date: videoinfo.setPremiered(release_date)
-				if year: videoinfo.setYear(int(year))
-				if rating: videoinfo.setRating(float(rating))
-			self.append((url_params, listitem, False))
+			result = build_tmdb_detail_shelf_item(position, item, self.params.get('tmdb_id'), 'movie', MOVIE_GENRE_NAMES, poster_empty, fanart_empty, KODI_VERSION)
+			if result: self.append(result)
 		except: pass
 
 	def build_movie_content(self, position, tag):

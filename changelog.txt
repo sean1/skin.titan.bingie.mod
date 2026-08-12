@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.24
+
+- Consolidate duplicate settings, Up Next, and detail-page focus definitions into shared skin components.
+- Share repeated metadata, watched-state, subtitle, recommendation-item, and torrent-provider processing while preserving existing behavior.
+
 BINGIE Lite 2.3.23
 
 - Retry transient subtitle failures, safely contain playback changes and malformed responses, and avoid attaching incomplete subtitle files.

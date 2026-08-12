@@ -11,7 +11,7 @@
 			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
 				<param name="visibility" value="!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewReady))]" />
-				<param name="image" value="$VAR[PovDialogInfoFanart]" />
+				<param name="image" value="$VAR[PovInfoResolvedFanart]" />
 			</include>
 			<!-- Dialog Info -->
 			<control type="group">
@@ -363,7 +363,7 @@
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
-							<label>$VAR[PovDialogInfoPlot]</label>
+							<label>$VAR[PovInfoResolvedPlot]</label>
 							<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
 						</control>
 						<control type="textbox">
@@ -373,7 +373,7 @@
 							<textcolor>b3ffffff</textcolor>
 							<align>left</align>
 							<font>Plots</font>
-							<label>$VAR[PovDialogInfoPlot]</label>
+							<label>$VAR[PovInfoResolvedPlot]</label>
 							<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
 						</control>
 					</control>
@@ -786,18 +786,6 @@
 		<include content="PovCollectionItem"><param name="index" value="13" /></include>
 		<include content="PovCollectionItem"><param name="index" value="14" /></include>
 	</include>
-
-	<variable name="PovDialogInfoFanart">
-		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(fanart))">$INFO[Container(560).ListItem.Property(fanart)]</value>
-		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(fanart))">$INFO[Container(563).ListItem.Property(fanart)]</value>
-		<value>$INFO[Window.Property(PovInfoFanart)]</value>
-	</variable>
-
-	<variable name="PovDialogInfoPlot">
-		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(plot))">$INFO[Container(560).ListItem.Property(plot)]</value>
-		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(plot))">$INFO[Container(563).ListItem.Property(plot)]</value>
-		<value>$VAR[BingieDialogInfoPlot]</value>
-	</variable>
 
 	<variable name="PovMoreLikeThisPath">
 		<value condition="$EXP[PovDialogMoreLikeThisReady] + String.IsEqual(Window.Property(PovInfoType),movie)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_more_like_this&amp;s=i&amp;tmdb_id=$INFO[Window.Property(PovInfoTmdb)]</value>

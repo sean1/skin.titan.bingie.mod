@@ -1,9 +1,10 @@
 from threading import Thread
-from indexers.metadata import tvshow_meta, art_infodict, movie_show_infodict, tmdb_image_base, main_actors, resized_cast
+from indexers.metadata import tvshow_meta, art_infodict, movie_show_infodict, main_actors, resized_cast
 from caches.watched_cache import get_watched_info_tv, get_watched_status_tvshow
 from modules import kodi_utils, settings
 from modules.meta_lists import tvshow_genres
 from modules.prefetch import schedule_next_page_prefetch
+from menus.media import build_tmdb_detail_shelf_item
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate
 from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
 # logger = kodi_utils.logger
@@ -60,43 +61,8 @@ class TVShows:
 
 	def build_tvshow_shelf_content(self, position, item):
 		try:
-			item_get = item.get
-			tmdb_id, title = item_get('id'), item_get('name') or item_get('original_name')
-			if not tmdb_id or not title: return
-			premiered = item_get('first_air_date') or ''
-			year = premiered[:4] if len(premiered) >= 4 else ''
-			rating = item_get('vote_average') or 0
-			genres = [TVSHOW_GENRE_NAMES[genre_id] for genre_id in item_get('genre_ids') or () if genre_id in TVSHOW_GENRE_NAMES]
-			poster_path, backdrop_path = item_get('poster_path'), item_get('backdrop_path')
-			poster = tmdb_image_base % ('w342', poster_path) if poster_path else poster_empty
-			fanart = tmdb_image_base % ('w1280', backdrop_path) if backdrop_path else fanart_empty
-			landscape = tmdb_image_base % ('w780', backdrop_path) if backdrop_path else fanart
-			url_params = build_url({'mode': 'show_media_info', 'mediatype': 'tvshow', 'tmdb_id': tmdb_id})
-			props = {
-				'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|tvshow|%s' % tmdb_id,
-				'pov_lite_sort_order': string(position), 'tmdb_id': string(tmdb_id),
-				'PovInfoSourceTmdb': string(self.params.get('tmdb_id') or '')
-			}
-			props.update(media_percentage_properties(rating))
-			listitem = kodi_utils.make_listitem()
-			listitem.setLabel(title)
-			listitem.setProperties(props)
-			listitem.setArt({'poster': poster, 'icon': poster, 'fanart': fanart, 'thumb': landscape, 'landscape': landscape, 'tvshow.poster': poster, 'tvshow.landscape': landscape})
-			if KODI_VERSION < 20:
-				listitem.setUniqueIDs({'tmdb': string(tmdb_id)})
-				listitem.setInfo('video', {'title': title, 'tvshowtitle': title, 'plot': item_get('overview') or '', 'premiered': premiered, 'year': year, 'rating': rating, 'genre': genres, 'mediatype': 'tvshow'})
-			else:
-				videoinfo = listitem.getVideoInfoTag(offscreen=True)
-				videoinfo.setTitle(title)
-				videoinfo.setTvShowTitle(title)
-				videoinfo.setUniqueIDs({'tmdb': string(tmdb_id)})
-				videoinfo.setMediaType('tvshow')
-				videoinfo.setPlot(item_get('overview') or '')
-				if genres: videoinfo.setGenres(genres)
-				if premiered: videoinfo.setPremiered(premiered)
-				if year: videoinfo.setYear(int(year))
-				if rating: videoinfo.setRating(float(rating))
-			self.append((url_params, listitem, False))
+			result = build_tmdb_detail_shelf_item(position, item, self.params.get('tmdb_id'), 'tvshow', TVSHOW_GENRE_NAMES, poster_empty, fanart_empty, KODI_VERSION)
+			if result: self.append(result)
 		except: pass
 
 	def build_tvshow_content(self, position, tag):

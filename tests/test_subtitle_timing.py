@@ -206,6 +206,26 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.subtitles.kodi_utils.logger.assert_called_once()
 		response.close.assert_called_once_with()
 
+	def test_configure_uses_series_filename_for_season_zero(self):
+		client = self.subtitles.Subtitles().configure('tt123', 0, 4, 'poster.jpg', 'video.mkv')
+
+		self.assertEqual(client.manifest, self.subtitles.subtitle_manifest)
+		self.assertEqual(client.languages, self.subtitles.subtitle_languages)
+		self.assertEqual((client.imdb_id, client.season, client.episode), ('tt123', 0, 4))
+		self.assertEqual((client.poster, client.subtitle_path, client.expected_playing_file), ('poster.jpg', 'special://temp/', 'video.mkv'))
+		self.assertEqual(client.sub_filename, 'POVLiteSubs_tt123_0_4')
+
+	def test_search_uses_series_endpoint_for_season_zero(self):
+		response = Mock(ok=True, status_code=200, headers={})
+		response.json.return_value = {'subtitles': []}
+		self.subtitles.requests.get.return_value = response
+		client = self.subtitles.Subtitles().configure('tt123', 0, 4, expected_playing_file=None)
+
+		result = client.subtitles_search()
+
+		self.assertEqual(result, [])
+		self.subtitles.requests.get.assert_called_once_with('https://submaker.elfhosted.com/addon/0784f5f345ca13ddd7296af5f0bde65d/subtitles/series/tt123:0:4.json', params=None, stream=False, timeout=20.0)
+
 	def test_retryable_http_failure_retries_once(self):
 		first = Mock(ok=False, status_code=503, reason='Unavailable', headers={})
 		second = SimpleNamespace(ok=True, status_code=200, reason='OK', headers={})

@@ -118,20 +118,34 @@ def resized_cast(cast, resolution='w342'):
 		result.append(item)
 	return result
 
-def movie_meta(id_type, media_id, user_info, current_date):
-	if id_type == 'trakt_dict':
-		if media_id.get('tmdb'): id_type, media_id = 'tmdb_id', media_id['tmdb']
-		elif media_id.get('imdb'): id_type, media_id = 'imdb_id', media_id['imdb']
-		else: id_type, media_id = None, None
+def _normalize_media_id(id_type, media_id, id_keys):
+	if id_type != 'trakt_dict': return id_type, media_id
+	for key in id_keys:
+		if media_id.get(key): return '%s_id' % key, media_id[key]
+	return None, None
+
+def _cached_meta(mediatype, id_type, media_id, fetch, prepare=lambda meta: meta):
 	if media_id is None: return {}
 	metacache = MetaCache()
-	meta = metacache.get('movie', id_type, media_id)
-	if meta: return _set_best_trailer(meta)
-	meta, claim_owner, fetch_allowed = metacache.get_or_claim('movie', id_type, media_id)
-	if meta is not None: return _set_best_trailer(meta)
+	meta = metacache.get(mediatype, id_type, media_id)
+	if meta: return prepare(meta)
+	meta, claim_owner, fetch_allowed = metacache.get_or_claim(mediatype, id_type, media_id)
+	if meta is not None: return prepare(meta)
 	if not fetch_allowed: return None
-	try: return _movie_meta(id_type, media_id, user_info, current_date, metacache, claim_owner)
-	finally: metacache.release_claim('movie', id_type, media_id, claim_owner)
+	try: return fetch(metacache, claim_owner)
+	finally: metacache.release_claim(mediatype, id_type, media_id, claim_owner)
+
+def _renew_metadata_claim(metacache, mediatype, id_type, media_id, claim_owner, prepare=lambda meta: meta):
+	if metacache.renew_claim(mediatype, id_type, media_id, claim_owner): return True, None
+	return False, prepare(metacache.get(mediatype, id_type, media_id))
+
+def movie_meta(id_type, media_id, user_info, current_date):
+	id_type, media_id = _normalize_media_id(id_type, media_id, ('tmdb', 'imdb'))
+	return _cached_meta(
+		'movie', id_type, media_id,
+		lambda metacache, claim_owner: _movie_meta(id_type, media_id, user_info, current_date, metacache, claim_owner),
+		_set_best_trailer
+	)
 
 def _movie_meta(id_type, media_id, user_info, current_date, metacache, claim_owner=None):
 	meta, metacache_set = None, metacache.set
@@ -142,7 +156,8 @@ def _movie_meta(id_type, media_id, user_info, current_date, metacache, claim_own
 			external_result = tmdb_api.movie_external_id(id_type, media_id)
 			if not external_result: data = None
 			else:
-				if not metacache.renew_claim('movie', id_type, media_id, claim_owner): return metacache.get('movie', id_type, media_id)
+				renewed, cached = _renew_metadata_claim(metacache, 'movie', id_type, media_id, claim_owner)
+				if not renewed: return cached
 				data = tmdb_api.movie_details(external_result['id'], user_info['language'])
 		if not data or data.get('success', True) is False:
 			if id_type == 'tmdb_id': meta = {'blank_entry': True, 'tmdb_id': media_id, 'imdb_id': 'tt0000000', 'tvdb_id': '0000000'}
@@ -150,7 +165,8 @@ def _movie_meta(id_type, media_id, user_info, current_date, metacache, claim_own
 			metacache_set('movie', id_type, meta, EXPIRES_2_DAYS)
 			return meta
 		if user_info['language'] != 'en' and data['overview'] in empty_value_check:
-			if not metacache.renew_claim('movie', id_type, media_id, claim_owner): return metacache.get('movie', id_type, media_id)
+			renewed, cached = _renew_metadata_claim(metacache, 'movie', id_type, media_id, claim_owner)
+			if not renewed: return cached
 			eng_all_trailers = english_trailers(tmdb_api.movie_details, data)
 			if eng_all_trailers: data['videos']['results'] = eng_all_trailers
 #		meta = build_movie_meta(data, user_info)
@@ -215,20 +231,12 @@ def _movie_meta(id_type, media_id, user_info, current_date, metacache, claim_own
 	return meta
 
 def tvshow_meta(id_type, media_id, user_info, current_date):
-	if id_type == 'trakt_dict':
-		if media_id.get('tmdb'): id_type, media_id = 'tmdb_id', media_id['tmdb']
-		elif media_id.get('imdb'): id_type, media_id = 'imdb_id', media_id['imdb']
-		elif media_id.get('tvdb'): id_type, media_id = 'tvdb_id', media_id['tvdb']
-		else: id_type, media_id = None, None
-	if media_id is None: return {}
-	metacache = MetaCache()
-	meta = metacache.get('tvshow', id_type, media_id)
-	if meta: return _prepare_tvshow_meta(meta, current_date)
-	meta, claim_owner, fetch_allowed = metacache.get_or_claim('tvshow', id_type, media_id)
-	if meta is not None: return _prepare_tvshow_meta(meta, current_date)
-	if not fetch_allowed: return None
-	try: return _tvshow_meta(id_type, media_id, user_info, current_date, metacache, claim_owner)
-	finally: metacache.release_claim('tvshow', id_type, media_id, claim_owner)
+	id_type, media_id = _normalize_media_id(id_type, media_id, ('tmdb', 'imdb', 'tvdb'))
+	return _cached_meta(
+		'tvshow', id_type, media_id,
+		lambda metacache, claim_owner: _tvshow_meta(id_type, media_id, user_info, current_date, metacache, claim_owner),
+		lambda meta: _prepare_tvshow_meta(meta, current_date)
+	)
 
 def _prepare_tvshow_meta(meta, current_date):
 	if meta is None: return None
@@ -243,7 +251,8 @@ def _tvshow_meta(id_type, media_id, user_info, current_date, metacache, claim_ow
 			external_result = tmdb_api.tvshow_external_id(id_type, media_id)
 			if not external_result: data = None
 			else:
-				if not metacache.renew_claim('tvshow', id_type, media_id, claim_owner): return _prepare_tvshow_meta(metacache.get('tvshow', id_type, media_id), current_date)
+				renewed, cached = _renew_metadata_claim(metacache, 'tvshow', id_type, media_id, claim_owner, lambda meta: _prepare_tvshow_meta(meta, current_date))
+				if not renewed: return cached
 				data = tmdb_api.tvshow_details(external_result['id'], user_info['language'])
 		if not data or data.get('success', True) is False:
 			if id_type == 'tmdb_id': meta = {'blank_entry': True, 'tmdb_id': media_id, 'imdb_id': 'tt0000000', 'tvdb_id': '0000000'}
@@ -252,7 +261,8 @@ def _tvshow_meta(id_type, media_id, user_info, current_date, metacache, claim_ow
 			metacache_set('tvshow', id_type, meta, EXPIRES_2_DAYS)
 			return meta
 		if user_info['language'] != 'en' and data['overview'] in empty_value_check:
-			if not metacache.renew_claim('tvshow', id_type, media_id, claim_owner): return _prepare_tvshow_meta(metacache.get('tvshow', id_type, media_id), current_date)
+			renewed, cached = _renew_metadata_claim(metacache, 'tvshow', id_type, media_id, claim_owner, lambda meta: _prepare_tvshow_meta(meta, current_date))
+			if not renewed: return cached
 			eng_all_trailers = english_trailers(tmdb_api.tvshow_details, data)
 			if eng_all_trailers: data['videos']['results'] = eng_all_trailers
 #		meta = build_tvshow_meta(data, user_info)

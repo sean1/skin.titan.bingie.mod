@@ -212,4 +212,19 @@
 		<value>$INFO[Window.Property(textbox)]</value>
 	</variable>
 
+	<!-- Focused previews shared by the dialog and full-page detail views. -->
+	<variable name="PovInfoResolvedFanart">
+		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(fanart))">$INFO[Container(560).ListItem.Property(fanart)]</value>
+		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(fanart))">$INFO[Container(563).ListItem.Property(fanart)]</value>
+		<value condition="Window.IsActive(1123)">$INFO[Window(Home).Property(PovInfoFanart)]</value>
+		<value>$INFO[Window.Property(PovInfoFanart)]</value>
+	</variable>
+
+	<variable name="PovInfoResolvedPlot">
+		<value condition="Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(plot))">$INFO[Container(560).ListItem.Property(plot)]</value>
+		<value condition="Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(plot))">$INFO[Container(563).ListItem.Property(plot)]</value>
+		<value condition="Window.IsActive(1123)">$INFO[Window(Home).Property(PovInfoPlot)]</value>
+		<value>$VAR[BingieDialogInfoPlot]</value>
+	</variable>
+
 </includes>

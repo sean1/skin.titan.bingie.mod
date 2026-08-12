@@ -114,9 +114,16 @@ def mark_as_watched_unwatched_episode(params):
 	mark_as_watched_unwatched(watched_indicators, mediatype, tmdb_id, action, season, episode, title)
 	if refresh: kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
 
-def mark_as_watched_unwatched_tvshow(params):
+def _tvshow_episodes_meta(meta, meta_user_info):
+	ep_data = []
+	for item in meta['season_data']:
+		season = item['season_number']
+		if season > 0: ep_data += metadata.season_episodes_meta(season, meta, meta_user_info)
+	return ep_data
+
+def _mark_episode_batch(params, episode_loader, title):
 	action = params.get('action')
-	tmdb_id, title = params.get('tmdb_id'), params.get('title', '')
+	tmdb_id = params.get('tmdb_id')
 	watched_indicators = settings.watched_indicators()
 	data_base = get_database(watched_indicators)
 	meta_user_info = settings.metadata_user_info()
@@ -128,10 +135,7 @@ def mark_as_watched_unwatched_tvshow(params):
 	kodi_utils.progressDialogBG.create(wait_str, '')
 	try:
 		meta = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
-		season_data = meta['season_data']
-		season_data = [i for i in season_data if i['season_number'] > 0]
-		ep_data = []
-		for i in season_data: ep_data += metadata.season_episodes_meta(i['season_number'], meta, meta_user_info)
+		ep_data = episode_loader(meta, meta_user_info)
 		total = len(ep_data)
 		for count, item in enumerate(ep_data, 1):
 			season_number = item['season']
@@ -145,34 +149,13 @@ def mark_as_watched_unwatched_tvshow(params):
 	finally: kodi_utils.progressDialogBG.close()
 	kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
 
+def mark_as_watched_unwatched_tvshow(params):
+	return _mark_episode_batch(params, _tvshow_episodes_meta, params.get('title', ''))
+
 def mark_as_watched_unwatched_season(params):
-	season, action = int(params.get('season')), params.get('action')
+	season = int(params.get('season'))
 	if season == 0: return kodi_utils.notification(32575)
-	tmdb_id, title = params.get('tmdb_id'), params.get('title')
-	watched_indicators = settings.watched_indicators()
-	data_base = get_database(watched_indicators)
-	meta_user_info = settings.metadata_user_info()
-	adjust_hours = settings.date_offset()
-	current_date = get_datetime()
-	last_played = get_last_played_value(data_base)
-	insert_list = []
-	insert_append = insert_list.append
-	kodi_utils.progressDialogBG.create(wait_str, '')
-	try:
-		meta = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
-		ep_data = metadata.season_episodes_meta(season, meta, meta_user_info)
-		total = len(ep_data)
-		for count, item in enumerate(ep_data, 1):
-			season_number = item['season']
-			ep_number = item['episode']
-			display = 'S%.2dE%.2d' % (int(season_number), int(ep_number))
-			kodi_utils.progressDialogBG.update(int(float(count)/float(total)*100), wait_str, display)
-			episode_date, premiered = adjust_premiered_date(item['premiered'], adjust_hours)
-			if not episode_date or current_date < episode_date: continue
-			insert_append(make_batch_insert(action, 'episode', tmdb_id, season_number, ep_number, last_played, title))
-		batch_mark_as_watched_unwatched(watched_indicators, insert_list, action)
-	finally: kodi_utils.progressDialogBG.close()
-	kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
+	return _mark_episode_batch(params, lambda meta, meta_user_info: metadata.season_episodes_meta(season, meta, meta_user_info), params.get('title'))
 
 def mark_as_watched_unwatched(watched_indicators, mediatype='', tmdb_id='', action='', season='', episode='', title=''):
 	try:
@@ -324,23 +307,20 @@ def get_watched_status_movie(watched_info, tmdb_id):
 	except: pass
 	return 0, 4
 
-def get_watched_status_tvshow(watched_info, tmdb_id, aired_eps):
+def _get_watched_status(watched_info, tmdb_id, aired_eps, matches):
 	playcount, overlay, watched, unwatched = 0, 4, 0, aired_eps
 	try:
-		watched = sum(True for i in watched_info[tmdb_id] if i[3])
+		watched = sum(True for item in watched_info[tmdb_id] if matches(item))
 		unwatched = aired_eps - watched
 		if watched >= aired_eps and aired_eps != 0: playcount, overlay = 1, 5
 	except: pass
 	return playcount, overlay, watched, unwatched
 
+def get_watched_status_tvshow(watched_info, tmdb_id, aired_eps):
+	return _get_watched_status(watched_info, tmdb_id, aired_eps, lambda item: item[3])
+
 def get_watched_status_season(watched_info, tmdb_id, season, aired_eps):
-	playcount, overlay, watched, unwatched = 0, 4, 0, aired_eps
-	try:
-		watched = sum(True for i in watched_info[tmdb_id] if i[3] == season)
-		unwatched = aired_eps - watched
-		if watched >= aired_eps and aired_eps != 0: playcount, overlay = 1, 5
-	except: pass
-	return playcount, overlay, watched, unwatched
+	return _get_watched_status(watched_info, tmdb_id, aired_eps, lambda item: item[3] == season)
 
 def get_watched_status_episode(watched_info, tmdb_id, season='', episode=''):
 	try:

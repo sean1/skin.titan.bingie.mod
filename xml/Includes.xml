@@ -3,6 +3,8 @@
 <includes>
     <include file="Defaults.xml" />
     <include file="IncludesVariables.xml" />
+    <include file="IncludesSettingsMainWindow.xml" />
+    <include file="IncludesUpNextSimple.xml" />
     <include file="IncludesBingie.xml" />
     <include file="IncludesHomeWidgets.xml" />
     <include file="IncludesAnimations.xml" />

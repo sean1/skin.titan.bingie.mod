@@ -63,6 +63,14 @@ def _http_failure(operation, response):
 	return result
 
 class Subtitles(kodi_utils.xbmc_player):
+	def configure(self, imdb_id, season=None, episode=None, poster='', expected_playing_file=None):
+		self.manifest, self.languages = subtitle_manifest, subtitle_languages
+		self.imdb_id, self.season, self.episode, self.poster = imdb_id, season, episode, poster
+		self.subtitle_path, self.expected_playing_file = 'special://temp/', expected_playing_file
+		if season not in (None, ''): self.sub_filename = '%s%s_%s_%s' % (subtitle_file_prefix, imdb_id, season, episode)
+		else: self.sub_filename = '%s%s' % (subtitle_file_prefix, imdb_id)
+		return self
+
 	def _cancelled(self):
 		try:
 			if kodi_utils.monitor.abortRequested(): return True
@@ -81,7 +89,7 @@ class Subtitles(kodi_utils.xbmc_player):
 		return response if response.ok else _http_failure('download', response)
 
 	def subtitles_search(self):
-		if self.season: params = 'subtitles/series/%s:%s:%s' % (self.imdb_id, self.season, self.episode)
+		if self.season not in (None, ''): params = 'subtitles/series/%s:%s:%s' % (self.imdb_id, self.season, self.episode)
 		else: params = 'subtitles/movie/%s' % self.imdb_id
 		try: response = _get(self.manifest.replace('manifest', params), operation='search', cancelled=self._cancelled)
 		except requests.RequestException as error: return _failure('search', 'network', type(error).__name__)
@@ -190,11 +198,7 @@ class Subtitles(kodi_utils.xbmc_player):
 		try:
 			try: self.expected_playing_file = self.getPlayingFile()
 			except Exception: self.expected_playing_file = ''
-			self.manifest, self.languages = subtitle_manifest, subtitle_languages
-			self.imdb_id, self.season, self.episode, self.poster = imdb_id, season, episode, poster
-			self.subtitle_path = 'special://temp/'
-			if season: self.sub_filename = '%s%s_%s_%s' % (subtitle_file_prefix, self.imdb_id, self.season, self.episode)
-			else: self.sub_filename = '%s%s' % (subtitle_file_prefix, self.imdb_id)
+			self.configure(imdb_id, season, episode, poster, self.expected_playing_file)
 			self._set_context()
 			_wait_for_retry(2.5, self._cancelled)
 			return self._video_file_subs() or self._downloaded_subs() or self._searched_subs()

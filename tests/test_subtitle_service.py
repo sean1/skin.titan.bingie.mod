@@ -55,6 +55,7 @@ def load_subtitle_service():
 class SubtitleServiceTests(unittest.TestCase):
 	def setUp(self):
 		self.service = load_subtitle_service()
+		self.real_client = self.service._client
 		self.client = Mock()
 		self.client.subtitle_path = 'special://temp/'
 		self.client.sub_filename = 'fixture'
@@ -71,6 +72,21 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.notification.assert_not_called()
 		self.service.kodi_utils.add_item.assert_not_called()
 		self.client.save_subtitle.assert_not_called()
+
+	def test_client_delegates_season_zero_configuration(self):
+		self.service._client = self.real_client
+		self.service.kodi_utils.player.isPlayingVideo.return_value = True
+		self.service.kodi_utils.player.getPlayingFile.return_value = 'video.mkv'
+		self.service._context = Mock(return_value={'imdb_id': 'tt123', 'season': 0, 'episode': 4, 'poster': 'poster.jpg'})
+		self.service._video_metadata = Mock(return_value={'imdb_id': 'tt123', 'season': 0, 'episode': 4, 'is_episode': True})
+		configured_client = Mock()
+		self.service.Subtitles = Mock()
+		self.service.Subtitles.return_value.configure.return_value = configured_client
+
+		result = self.service._client()
+
+		self.service.Subtitles.return_value.configure.assert_called_once_with('tt123', 0, 4, 'poster.jpg', 'video.mkv')
+		self.assertEqual(result, (configured_client, {'imdb_id': 'tt123', 'season': 0, 'episode': 4, 'poster': 'poster.jpg'}))
 
 	def test_download_without_active_playback_adds_no_item_or_notification(self):
 		self.service._client.return_value = None

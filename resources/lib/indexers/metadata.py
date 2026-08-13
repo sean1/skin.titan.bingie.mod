@@ -450,6 +450,7 @@ def select_trailer(videos):
 		if video.get('site') == 'YouTube'
 		and video.get('type') in trailers_test
 		and video.get('key')
+		and _english_trailer(video)
 		and not any(marker in _trailer_name(video) for marker in trailer_name_reject)
 	]
 	trailers = [video for video in candidates if video.get('type') == 'Trailer']
@@ -465,6 +466,10 @@ def _set_best_trailer(meta):
 
 def _trailer_name(video):
 	return ' '.join(str(video.get('name') or '').lower().split())
+
+def _english_trailer(video):
+	language = str(video.get('iso_639_1') or '').strip().lower().replace('_', '-')
+	return language == 'en' or language.startswith('en-')
 
 def _trailer_rank(video):
 	name = _trailer_name(video)

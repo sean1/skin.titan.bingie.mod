@@ -55,8 +55,8 @@ def tmdb_media_images(mediatype, tmdb_id):
 def tmdb_media_videos(mediatype, tmdb_id):
 	if mediatype == 'movies': mediatype = 'movie'
 	if mediatype in ('tvshow', 'tvshows'): mediatype = 'tv'
-	string = 'tmdb_media_videos_%s_%s' % (mediatype, tmdb_id)
-	url = '%s/%s/%s/videos' % (base_url, mediatype, tmdb_id)
+	string = 'tmdb_media_videos_en_%s_%s' % (mediatype, tmdb_id)
+	url = '%s/%s/%s/videos?language=en-US' % (base_url, mediatype, tmdb_id)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
 
 def tmdb_movies_discover(query, page_no):

@@ -122,16 +122,41 @@ def _limited_hls_manifest(manifest, master_url):
 	if not variants: raise RuntimeError('YouTube did not return a 1280x720 trailer stream')
 	_, _, _, _, stream_line, stream_url, stream_attributes = max(variants, key=lambda variant: variant[:4])
 	audio_group = stream_attributes.get('AUDIO', '').strip('"')
-	audio_lines = [
-		_absolute_hls_uri(line, master_url) for line in lines
+	audio_entries = [
+		(line, _hls_attributes(line)) for line in lines
 		if line.startswith('#EXT-X-MEDIA:') and _hls_attributes(line).get('TYPE') == 'AUDIO' and _hls_attributes(line).get('GROUP-ID', '').strip('"') == audio_group
 	]
+	audio_lines = [_absolute_hls_uri(line, master_url) for line in _english_audio_lines(audio_entries)]
 	header_lines = [line for line in lines if line.startswith('#EXT-X-VERSION:') or line == '#EXT-X-INDEPENDENT-SEGMENTS']
 	return '\n'.join(['#EXTM3U', *header_lines, *audio_lines, stream_line, stream_url, ''])
 
 
 def _hls_attributes(line):
 	return dict(HLS_ATTRIBUTE.findall(line.partition(':')[2]))
+
+
+def _english_audio_lines(audio_entries):
+	if not audio_entries: return ()
+	english = [(line, attributes) for line, attributes in audio_entries if _english_hls_audio(attributes)]
+	if english:
+		line, _ = max(english, key=lambda item: _hls_audio_rank(item[1]))
+		return (line,)
+	if not any(attributes.get('LANGUAGE', '').strip('"') for _, attributes in audio_entries):
+		line, _ = max(audio_entries, key=lambda item: _hls_audio_rank(item[1]))
+		return (line,)
+	raise RuntimeError('YouTube did not return an English trailer audio track')
+
+
+def _english_hls_audio(attributes):
+	language = attributes.get('LANGUAGE', '').strip('"').strip().lower().replace('_', '-')
+	name = attributes.get('NAME', '').strip('"').strip().lower()
+	return language == 'en' or language.startswith('en-') or (not language and 'english' in name)
+
+
+def _hls_audio_rank(attributes):
+	name = attributes.get('NAME', '').strip('"').strip().lower()
+	normal = not any(marker in name for marker in ('audio description', 'descriptive', 'commentary'))
+	return normal, attributes.get('DEFAULT') == 'YES', attributes.get('AUTOSELECT') == 'YES'
 
 
 def _absolute_hls_uri(line, master_url):

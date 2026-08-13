@@ -141,7 +141,7 @@ class Episodes:
 			props['watchedprogress'] = progress
 			props['pov_lite_unaired'] = 'true' if unaired else 'false'
 			props['pov_lite_name'] = '%s - %sx%s' % (title, str_season_zfill2, str_episode_zfill2)
-			props['pov_lite_first_aired'] = premiered
+			props['pov_lite_first_aired'] = premiered or ''
 			props['main_actors'] = main_actors(cast + item_get('guest_stars', []))
 			props.update(media_percentage_properties(item_get('rating'), progress))
 			listitem = kodi_utils.make_listitem()

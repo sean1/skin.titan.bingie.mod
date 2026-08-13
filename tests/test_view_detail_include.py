@@ -52,7 +52,7 @@ class ViewDetailIncludeTests(unittest.TestCase):
 					</control>
 					<control type="label">
 						<visible>$PARAM[content_visibility]</visible><width>100%</width><bottom>41</bottom><height>35</height><align>left</align><font>Reg26</font>
-						<textcolor>73ffffff</textcolor><label>$INFO[ListItem.Duration(mins),(,m)]</label>
+						<textcolor>73ffffff</textcolor><label>$INFO[ListItem.Property(pov_lite_first_aired),, • ]$INFO[ListItem.Duration(mins),(,m)]</label>
 					</control>
 				</control>
 			</definition>

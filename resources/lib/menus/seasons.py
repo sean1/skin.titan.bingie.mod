@@ -197,7 +197,7 @@ class Episodes(BaseSeason):
 						'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_watched', 'year': show.year,
 						'tmdb_id': show.tmdb_id, 'tvdb_id': show.tvdb_id, 'season': season, 'episode': episode, 'title': show.title
 					})))
-				props = {'episode_type': item_get('episode_type'), 'watchedprogress': progress, 'main_actors': main_actors(cast)}
+				props = {'episode_type': item_get('episode_type'), 'watchedprogress': progress, 'pov_lite_first_aired': premiered or '', 'main_actors': main_actors(cast)}
 				props.update(media_percentage_properties(item_get('rating'), progress))
 				listitem = kodi_utils.make_listitem()
 				listitem.addContextMenuItems(cm)

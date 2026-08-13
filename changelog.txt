@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.28
+
+- Prefer English trailer videos and normal English audio tracks, rejecting explicitly foreign-only alternatives.
+- Replace the detail-page Trailer button with one-shot autoplay after one second, stop it when focus leaves, and hand preview playback between focused media cards.
+
 BINGIE Lite 2.3.27
 
 - Restore the three Discover option cards above personalized movie and TV recommendation rows while preserving immediate loading and visible focus.

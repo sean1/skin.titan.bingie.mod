@@ -16,7 +16,7 @@ TRAILER_PREVIEW_READY_PROPERTY = 'BingieTrailerPreviewReady'
 TRAILER_PREVIEW_CANCEL_PROPERTY = 'BingieTrailerPreviewCancel'
 TRAILER_PREVIEW_REQUEST_PROPERTY = 'BingieTrailerPreviewRequest'
 TRAILER_RESOLVED_PROPERTY = 'BingieTrailerResolved'
-TRAILER_PREVIEW_DELAY = 3.0
+TRAILER_PREVIEW_DELAY = 1.0
 TRAILER_PREVIEW_STOP_TIMEOUT = 10.0
 TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
 TRAILER_PREVIEW_ACTIVE_POLL = 0.25
@@ -32,6 +32,8 @@ TRAILER_PREPARED_CACHE_TTL = 120.0
 TRAILER_PREVIEW_WINDOWS = ('Home', 'Videos', '1110', '1111', '1112', '1113', '1122', '1123', 'DialogVideoInfo.xml')
 TRAILER_PREVIEW_WINDOW_VISIBILITY = ' | '.join('Window.IsActive(%s)' % window for window in TRAILER_PREVIEW_WINDOWS)
 TRAILER_PREVIEW_INFO_CONTEXTS = 'Window.IsActive(1123) | Window.IsActive(DialogVideoInfo.xml)'
+TRAILER_PREVIEW_INFO_CARD_FOCUS = 'Control.HasFocus(563) | Control.HasFocus(560)'
+TRAILER_PREVIEW_INFO_CAST_FOCUS = 'Control.HasFocus(550)'
 TRAILER_PREVIEW_ACTOR_CONTEXT = 'Window.IsActive(1122) + ![%s]' % TRAILER_PREVIEW_INFO_CONTEXTS
 TRAILER_PREVIEW_NON_LISTING_CONTEXTS = TRAILER_PREVIEW_INFO_CONTEXTS + ' | Window.IsActive(1122)'
 TRAILER_PREVIEW_SPECIAL_CONTEXTS = 'Window.IsActive(1123) | Window.IsActive(DialogVideoInfo.xml) | Window.IsActive(1122) | Window.IsActive(Videos)'
@@ -316,11 +318,21 @@ class TrailerPreview:
 		if context == 'info':
 			media_type = get_property('PovInfoType').strip().lower()
 			if media_type not in ('movie', 'tvshow'): return None
-			item_id = get_property('PovInfoTmdb').strip()
+			item_id = get_property('PovInfoTmdb').strip() or get_property('PovInfoPendingTmdb').strip()
 			if not item_id: return None
 			trailer = get_property('PovInfoTrailer').strip()
 			identity = '|'.join(('info', media_type, item_id))
 			return identity, trailer, media_type, item_id, True, False
+		if context == 'info_card':
+			media_type = self._item_label('Property(DBTYPE)').lower()
+			if media_type not in ('movie', 'tvshow'): return None
+			item_id = self._item_label('Property(tmdb_id)')
+			if not item_id: return None
+			label = self._item_label('Label')
+			if not label: return None
+			trailer = self._item_label('Property(trailer)')
+			identity = '|'.join(('info-card', media_type, item_id))
+			return identity, trailer, media_type, item_id, False, True
 		if context == 'dialog':
 			media_type = kodi_utils.get_infolabel('Window.Property(PovInfoType)').strip().lower()
 			if media_type not in ('movie', 'tvshow'): return None
@@ -357,7 +369,10 @@ class TrailerPreview:
 			if not kodi_utils.get_visibility('ControlGroup(77777).HasFocus()'): return ''
 			if not kodi_utils.get_visibility(TRAILER_PREVIEW_SPECIAL_CONTEXTS): return 'listing'
 		for _ in range(2):
-			if kodi_utils.get_visibility('Window.IsActive(1123)'): return 'info'
+			if kodi_utils.get_visibility('Window.IsActive(1123)'):
+				if kodi_utils.get_visibility(TRAILER_PREVIEW_INFO_CARD_FOCUS): return 'info_card'
+				if kodi_utils.get_visibility(TRAILER_PREVIEW_INFO_CAST_FOCUS): return ''
+				return 'info'
 			if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)'): return 'dialog'
 			if kodi_utils.get_visibility('Window.IsActive(1122)'):
 				if not kodi_utils.get_visibility('Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'): return ''

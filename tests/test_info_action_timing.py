@@ -7,6 +7,24 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InfoActionTimingTests(unittest.TestCase):
+	def test_custom_info_autoplays_trailer_once_after_one_second(self):
+		window = ET.parse(ROOT / 'xml' / 'Custom_1123_PovInfo.xml').getroot()
+		autoplay = [node for node in window.findall('onload') if 'PovInfoTrailerPreview' in (node.text or '')]
+		self.assertEqual(len(autoplay), 1)
+		self.assertEqual(
+			(autoplay[0].get('condition'), (autoplay[0].text or '').strip()),
+			(
+				'$EXP[PovInfoHasValidMedia] | !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))',
+				'AlarmClock(PovInfoTrailerPreview,SetProperty(BingieTrailerPreviewRequest,true,Home),00:00:01,silent)'
+			)
+		)
+		cancellations = [(node.get('condition'), (node.text or '').strip()) for node in window.findall('onunload') if 'PovInfoTrailerPreview' in (node.text or '')]
+		self.assertEqual(cancellations, [('System.HasAlarm(PovInfoTrailerPreview)', 'CancelAlarm(PovInfoTrailerPreview,silent)')])
+
+		page = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()
+		self.assertFalse(any(control.get('id') == '55' for control in page.iter('control')))
+		self.assertFalse(any((label.text or '').strip() == 'Trailer' for label in page.iter('label')))
+
 	def test_related_shelf_alarms_use_listitem_source_conditions(self):
 		root = ET.parse(ROOT / 'xml' / 'DialogVideoInfo.xml').getroot()
 		alarms = [(node.get('condition'), (node.text or '').strip()) for node in root.findall('onload') if (node.text or '').strip().startswith('AlarmClock(PovDialog')]

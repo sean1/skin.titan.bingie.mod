@@ -90,11 +90,11 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview._preview_window_active = Mock(return_value=True)
 		self.preview._owns_preview = Mock(return_value=True)
 
-	def test_stable_focus_waits_exactly_three_seconds(self):
+	def test_stable_focus_waits_exactly_one_second(self):
 		candidate = self._candidate()
 		self.preview._candidate = Mock(return_value=candidate)
 		self.preview._start_preview_preparation = Mock()
-		self.entry.monotonic = Mock(side_effect=(10.0, 12.99, 13.0))
+		self.entry.monotonic = Mock(side_effect=(10.0, 10.99, 11.0))
 
 		self.assertTrue(self.preview.tick())
 		self.assertTrue(self.preview.tick())
@@ -172,12 +172,19 @@ class TrailerPreviewTests(unittest.TestCase):
 	def test_preview_context_resolves_special_windows_once_with_existing_precedence(self):
 		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
 		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
+		info_card_focus = self.entry.TRAILER_PREVIEW_INFO_CARD_FOCUS
+		info_cast_focus = self.entry.TRAILER_PREVIEW_INFO_CAST_FOCUS
 		actor_context = self.entry.TRAILER_PREVIEW_ACTOR_CONTEXT
 		non_listing = self.entry.TRAILER_PREVIEW_NON_LISTING_CONTEXTS
 		osd = 'Window.IsActive(VideoOSD)'
 		actor_focus = 'Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'
 		for expected, values, expected_calls in (
-			('info', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True}, (window, osd, special, 'Window.IsActive(1123)')),
+			('info', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True, info_card_focus: False, info_cast_focus: False},
+				(window, osd, special, 'Window.IsActive(1123)', info_card_focus, info_cast_focus)),
+			('info_card', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True, info_card_focus: True},
+				(window, osd, special, 'Window.IsActive(1123)', info_card_focus)),
+			('', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True, info_card_focus: False, info_cast_focus: True},
+				(window, osd, special, 'Window.IsActive(1123)', info_card_focus, info_cast_focus)),
 			('dialog', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': True},
 				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)')),
 			('actor', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
@@ -220,8 +227,8 @@ class TrailerPreviewTests(unittest.TestCase):
 		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
 		osd = 'Window.IsActive(VideoOSD)'
 		for label, results, expected, expected_calls in (
-			('opening', (True, False, False, True, True, True), 'info',
-				(window, osd, special, 'ControlGroup(77777).HasFocus()', special, 'Window.IsActive(1123)')),
+			('opening', (True, False, False, True, True, True, False, False), 'info',
+				(window, osd, special, 'ControlGroup(77777).HasFocus()', special, 'Window.IsActive(1123)', self.entry.TRAILER_PREVIEW_INFO_CARD_FOCUS, self.entry.TRAILER_PREVIEW_INFO_CAST_FOCUS)),
 			('closing', (True, False, True, False, False, False, False, True), 'listing',
 				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
 					'ControlGroup(77777).HasFocus()')),
@@ -241,9 +248,9 @@ class TrailerPreviewTests(unittest.TestCase):
 		osd = 'Window.IsActive(VideoOSD)'
 		conditions = (
 			window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
-			'Control.HasFocus(523)', non_listing, 'Window.IsActive(1123)'
+			'Control.HasFocus(523)', non_listing, 'Window.IsActive(1123)', self.entry.TRAILER_PREVIEW_INFO_CARD_FOCUS, self.entry.TRAILER_PREVIEW_INFO_CAST_FOCUS
 		)
-		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, False, True, True, True, True))
+		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, False, True, True, True, True, False, False))
 		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
 		self.entry.get_property = Mock(return_value='')
 
@@ -292,7 +299,8 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview._preview_context = Mock(return_value='info')
 		for values, expected, expected_keys in (
 			(('episode',), None, ('PovInfoType',)),
-			(('movie', ''), None, ('PovInfoType', 'PovInfoTmdb')),
+			(('movie', '', ''), None, ('PovInfoType', 'PovInfoTmdb', 'PovInfoPendingTmdb')),
+			(('movie', '', '123', ''), ('info|movie|123', '', 'movie', '123', True, False), ('PovInfoType', 'PovInfoTmdb', 'PovInfoPendingTmdb', 'PovInfoTrailer')),
 			(('movie', '123', 'trailer-url'), ('info|movie|123', 'trailer-url', 'movie', '123', True, False), ('PovInfoType', 'PovInfoTmdb', 'PovInfoTrailer')),
 		):
 			with self.subTest(values=values):
@@ -300,6 +308,27 @@ class TrailerPreviewTests(unittest.TestCase):
 
 				self.assertEqual(self.preview._candidate(), expected)
 				self.assertEqual(self.entry.get_property.call_args_list, [call(key) for key in expected_keys])
+
+	def test_detail_card_candidate_uses_its_own_trailer(self):
+		self.preview._preview_context = Mock(return_value='info_card')
+		values = {
+			'Container.ListItem.Property(DBTYPE)': 'movie', 'Container.ListItem.Property(tmdb_id)': '456',
+			'Container.ListItem.Label': 'Related movie', 'Container.ListItem.Property(trailer)': 'card-trailer-url'
+		}
+		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
+
+		self.assertEqual(self.preview._candidate(), ('info-card|movie|456', 'card-trailer-url', 'movie', '456', False, True))
+		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
+
+	def test_detail_card_focus_stops_active_page_trailer_in_same_tick(self):
+		self._activate()
+		self.preview._candidate = Mock(return_value=('info-card|movie|456', 'card-trailer-url', 'movie', '456', False, True))
+		self.preview._preview_navigation_away = Mock(return_value=False)
+
+		self.assertTrue(self.preview.tick())
+		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
+		self.assertFalse(self.preview.active)
+		self.assertEqual(self.preview.identity, 'info-card|movie|456')
 
 	def test_dialog_candidate_stages_label_reads_until_prerequisites_are_valid(self):
 		self.preview._preview_context = Mock(return_value='dialog')

@@ -156,20 +156,6 @@
 					<onclick condition="String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoPendingTmdb)],return)</onclick>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
-				<control type="radiobutton" id="55">
-					<visible>!String.IsEmpty(Window(Home).Property(PovInfoTmdb))</visible>
-					<include>Bingie_InfoDialog_Button_Default_Defs</include>
-					<include content="Bingie_InfoDialog_Button_Texture">
-						<param name="radiotexture" value="dialogs/videoinfo/info/play.png" />
-					</include>
-					<label>Trailer</label>
-					<radioposx>17</radioposx>
-					<radiowidth>22</radiowidth>
-					<radioheight>22</radioheight>
-					<ondown>8010</ondown>
-					<onclick>SetProperty(BingieTrailerPreviewRequest,true,Home)</onclick>
-					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
-				</control>
 			</control>
 			<control type="button" id="8010">
 				<visible allowhiddenfocus="true">true</visible>

@@ -6,8 +6,10 @@
 	<onload condition="$EXP[PovInfoHasValidMedia] + String.IsEqual(Window(Home).Property(PovInfoType),movie) + !String.IsEmpty(Window(Home).Property(PovInfoCollectionId))">SetProperty(PovInfoCollectionReady,1,Home)</onload>
 	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">SetFocus(80)</onload>
 	<onload condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">SetFocus(51)</onload>
+	<onload condition="$EXP[PovInfoHasValidMedia] | !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">AlarmClock(PovInfoTrailerPreview,SetProperty(BingieTrailerPreviewRequest,true,Home),00:00:01,silent)</onload>
 	<onunload>SetProperty(BingieTrailerPreviewCancel,true,Home)</onunload>
 	<onunload>ClearProperty(BingieTrailerPreviewRequest,Home)</onunload>
+	<onunload condition="System.HasAlarm(PovInfoTrailerPreview)">CancelAlarm(PovInfoTrailerPreview,silent)</onunload>
 	<onunload>ClearProperty(PovInfoMoreLikeThisReady,Home)</onunload>
 	<onunload>ClearProperty(PovInfoCollectionReady,Home)</onunload>
 	<defaultcontrol always="true">8000</defaultcontrol>

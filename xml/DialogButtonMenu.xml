@@ -100,21 +100,6 @@
                     <onclick condition="Window.IsActive(shutdownmenu)">Dialog.Close(all)</onclick>
                     <onclick>Quit()</onclick>
                 </item>
-                <item id="998">
-                    <property name="id">$NUM[4]</property>
-                    <label>$LOCALIZE[13005]</label>
-                    <icon>common/shutdown1.png</icon>
-                    <visible>System.CanPowerDown + Window.IsActive(loginscreen)</visible>
-                    <onclick condition="Window.IsActive(shutdownmenu)">Dialog.Close(all)</onclick>
-                    <onclick>PowerDown</onclick>
-                </item>
-                <item id="999">
-                    <label>$LOCALIZE[13013]</label>
-                    <icon>common/reboot1.png</icon>
-                    <visible>System.CanReboot + Window.IsActive(loginscreen)</visible>
-                    <onclick condition="Window.IsActive(shutdownmenu)">Dialog.Close(all)</onclick>
-                    <onclick>Reboot</onclick>
-                </item>
             </content>
         </control>
 	 </control>

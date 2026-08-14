@@ -92,14 +92,14 @@
                     <!--Button Movie Search-->
                     <include>SideBladeMenuButton</include>
                     <label>137</label>
-					<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie,return)</onclick>
+					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie)</onclick>
 					<visible>!String.Contains(Container.FolderPath,plugin://plugin.video) + [$EXP[IsMovieDBType] + !String.IsEmpty(ListItem.DBID)]</visible>
                 </control>
 				<control type="button" id="389">
                     <!--Button TVShow Search-->
                     <include>SideBladeMenuButton</include>
                     <label>137</label>
-					<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show,return)</onclick>
+					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show)</onclick>
 					<visible>!String.Contains(Container.FolderPath,plugin://plugin.video) + [$EXP[IsTvShowDBType] + !String.IsEmpty(ListItem.DBID)]</visible>
                 </control>
 				<control type="button" id="4401">

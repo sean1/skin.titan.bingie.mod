@@ -50,60 +50,6 @@
 		</item>
 		<item id="2">
 			<property name="id">$NUMBER[2]</property>
-			<label>$LOCALIZE[137]</label>
-			<label2>Search</label2>
-			<icon>shortcuts/search.png</icon>
-			<thumb />
-			<property name="labelID">137</property>
-			<property name="defaultID">137</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.search,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.search,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.search</property>
-			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
-			<property name="submenuVisibility">num-137</property>
-			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">False</property>
-		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
-			<label>$LOCALIZE[320032]</label>
-			<label2>New &amp; Popular</label2>
-			<icon>shortcuts/new.png</icon>
-			<thumb />
-			<property name="labelID">320032</property>
-			<property name="defaultID">320032</property>
-			<onclick>ActivateWindow(1112,return)</onclick>
-			<property name="path">ActivateWindow(1112,return)</property>
-			<property name="list">1112</property>
-			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
-			<property name="submenuVisibility">num-320032</property>
-			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">False</property>
-		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
-			<label>$LOCALIZE[20343]</label>
-			<label2>TV shows</label2>
-			<icon>shortcuts/tv.png</icon>
-			<thumb />
-			<property name="labelID">tvshows</property>
-			<property name="defaultID">tvshows</property>
-			<onclick>ActivateWindow(1110,return)</onclick>
-			<property name="path">ActivateWindow(1110,return)</property>
-			<property name="list">1110</property>
-			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
-			<property name="submenuVisibility">tvshows</property>
-			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">True</property>
-		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
 			<label>$LOCALIZE[342]</label>
 			<label2>Movies</label2>
 			<icon>shortcuts/clapperboard.png</icon>
@@ -120,26 +66,26 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">True</property>
 		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
-			<label>$LOCALIZE[31025]</label>
-			<label2>Categories</label2>
-			<icon>shortcuts/categories.png</icon>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<label>$LOCALIZE[20343]</label>
+			<label2>TV shows</label2>
+			<icon>shortcuts/tv.png</icon>
 			<thumb />
-			<property name="labelID">31025</property>
-			<property name="defaultID">31025</property>
-			<onclick>ActivateWindow(1119,return)</onclick>
-			<property name="path">ActivateWindow(1119,return)</property>
-			<property name="list">1119</property>
+			<property name="labelID">tvshows</property>
+			<property name="defaultID">tvshows</property>
+			<onclick>ActivateWindow(1110,return)</onclick>
+			<property name="path">ActivateWindow(1110,return)</property>
+			<property name="list">1110</property>
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
 			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
 			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
-			<property name="submenuVisibility">num-31025</property>
+			<property name="submenuVisibility">tvshows</property>
 			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">False</property>
+			<property name="hasSubmenu">True</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
 			<label>Discover</label>
 			<label2>Discover</label2>
 			<icon>special://home/addons/skin.titan.bingie.lite/resources/skins/Default/media/discover.png</icon>
@@ -152,15 +98,15 @@
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
 			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
 			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
-			<property name="submenuVisibility">num-10000</property>
+			<property name="submenuVisibility">discover</property>
 			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">False</property>
+			<property name="hasSubmenu">True</property>
 		</item>
 	</include>
 	<include name="StaticSubmenu">
 		<item id="1">
 			<property name="id">$NUMBER[1]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>All TV Shows</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -176,7 +122,7 @@
 		</item>
 		<item id="2">
 			<property name="id">$NUMBER[2]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>Trending TV Shows Today</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -192,7 +138,7 @@
 		</item>
 		<item id="3">
 			<property name="id">$NUMBER[3]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>Trending TV Shows This Week</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -208,7 +154,7 @@
 		</item>
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>Popular TV Shows</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -224,7 +170,7 @@
 		</item>
 		<item id="5">
 			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>Airing Today</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -240,7 +186,7 @@
 		</item>
 		<item id="6">
 			<property name="id">$NUMBER[6]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>On the Air</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -256,7 +202,7 @@
 		</item>
 		<item id="7">
 			<property name="id">$NUMBER[7]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>Top Rated TV Shows</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -272,7 +218,7 @@
 		</item>
 		<item id="8">
 			<property name="id">$NUMBER[8]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>TV Genres</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -288,15 +234,18 @@
 		</item>
 		<item id="10">
 			<property name="id">$NUMBER[10]</property>
-			<property name="mainmenuid">4</property>
+			<property name="mainmenuid">3</property>
 			<label>Search</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
 			<thumb />
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show,return)</property>
+			<onclick>SetFocus(1510)</onclick>
+			<onclick>ClearProperty(submenu,Home)</onclick>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show)</property>
 			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
@@ -304,7 +253,58 @@
 		</item>
 		<item id="1">
 			<property name="id">$NUMBER[1]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">4</property>
+			<label>Pick My Night</label>
+			<label2>Discover</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">32900</property>
+			<property name="defaultID">32900</property>
+			<onclick>SetFocus(1510)</onclick>
+			<onclick>ClearProperty(submenu,Home)</onclick>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;name=32900&amp;exclude_external=true)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;name=32900&amp;exclude_external=true)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;name=32900&amp;exclude_external=true</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)</visible>
+			<property name="group">discover</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">4</property>
+			<label>Build a Movie Mix</label>
+			<label2>Discover</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">32901</property>
+			<property name="defaultID">32901</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=movie&amp;name=32901&amp;exclude_external=true,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=movie&amp;name=32901&amp;exclude_external=true,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=movie&amp;name=32901&amp;exclude_external=true</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)</visible>
+			<property name="group">discover</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
+			<property name="mainmenuid">4</property>
+			<label>Build a TV Mix</label>
+			<label2>Discover</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">32902</property>
+			<property name="defaultID">32902</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=tvshow&amp;name=32902&amp;exclude_external=true,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=tvshow&amp;name=32902&amp;exclude_external=true,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=tvshow&amp;name=32902&amp;exclude_external=true</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)</visible>
+			<property name="group">discover</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">2</property>
 			<label>All Movies</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -320,7 +320,7 @@
 		</item>
 		<item id="2">
 			<property name="id">$NUMBER[2]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Trending Movies Today</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -336,7 +336,7 @@
 		</item>
 		<item id="3">
 			<property name="id">$NUMBER[3]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Trending Movies This Week</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -352,7 +352,7 @@
 		</item>
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Popular Movies</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -368,7 +368,7 @@
 		</item>
 		<item id="5">
 			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Now Playing</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -384,7 +384,7 @@
 		</item>
 		<item id="6">
 			<property name="id">$NUMBER[6]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Upcoming Movies</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -400,7 +400,7 @@
 		</item>
 		<item id="7">
 			<property name="id">$NUMBER[7]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Top Rated Movies</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -416,7 +416,7 @@
 		</item>
 		<item id="8">
 			<property name="id">$NUMBER[8]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Movie Genres</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -432,15 +432,18 @@
 		</item>
 		<item id="10">
 			<property name="id">$NUMBER[10]</property>
-			<property name="mainmenuid">5</property>
+			<property name="mainmenuid">2</property>
 			<label>Search</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
 			<thumb />
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie,return)</property>
+			<onclick>SetFocus(1510)</onclick>
+			<onclick>ClearProperty(submenu,Home)</onclick>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie)</property>
 			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
@@ -476,40 +479,6 @@
 			<onclick>Quit()</onclick>
 			<property name="path">Quit()</property>
 			<property name="list">Quit()</property>
-			<property name="group">powermenu</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">8</property>
-			<label>$LOCALIZE[320030]</label>
-			<label2>Kodi Command</label2>
-			<icon>common/reboot1.png</icon>
-			<thumb />
-			<property name="labelID">320030</property>
-			<property name="defaultID">13013</property>
-			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
-			<onclick>Reboot</onclick>
-			<property name="path">Reboot</property>
-			<property name="list">Reboot</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
-			<property name="group">powermenu</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">8</property>
-			<label>$LOCALIZE[320031]</label>
-			<label2>Kodi Command</label2>
-			<icon>common/shutdown1.png</icon>
-			<thumb />
-			<property name="labelID">320031</property>
-			<property name="defaultID">13016</property>
-			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
-			<onclick>ShutDown</onclick>
-			<property name="path">ShutDown</property>
-			<property name="list">ShutDown</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
 			<property name="group">powermenu</property>
 			<property name="isSubmenu">True</property>
 		</item>
@@ -561,38 +530,6 @@
 			<onclick>Quit()</onclick>
 			<property name="path">Quit()</property>
 			<property name="list">Quit()</property>
-			<property name="group">powermenu</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">8</property>
-			<label>$LOCALIZE[320030]</label>
-			<label2>Kodi Command</label2>
-			<icon>common/reboot1.png</icon>
-			<thumb />
-			<property name="labelID">320030</property>
-			<property name="defaultID">13013</property>
-			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
-			<onclick>Reboot</onclick>
-			<property name="path">Reboot</property>
-			<property name="list">Reboot</property>
-			<property name="group">powermenu</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">8</property>
-			<label>$LOCALIZE[320031]</label>
-			<label2>Kodi Command</label2>
-			<icon>common/shutdown1.png</icon>
-			<thumb />
-			<property name="labelID">320031</property>
-			<property name="defaultID">13016</property>
-			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
-			<onclick>ShutDown</onclick>
-			<property name="path">ShutDown</property>
-			<property name="list">ShutDown</property>
 			<property name="group">powermenu</property>
 			<property name="isSubmenu">True</property>
 		</item>

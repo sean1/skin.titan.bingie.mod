@@ -304,20 +304,15 @@
     <!-- Bingie Items Discover -->
     <include name="bingie_items_discover">
         <include>Empty_Hub_Alt_Buttons</include>
-        <include content="bingie_pov_hub_action_item">
-            <param name="widgetid" value="1510" />
-            <param name="label" value="Discover Options" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=navigator.discover_hub_actions&amp;name=32451" />
-        </include>
         <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1520" />
+			<param name="widgetid" value="1510" />
             <param name="pollEmpty" value="true" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Recommended for You • Movies" />
             <param name="path" value="$VAR[BingieDiscoverBecauseMoviesPath]" />
         </include>
         <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1530" />
+			<param name="widgetid" value="1520" />
             <param name="pollEmpty" value="true" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Recommended for You • TV Shows" />

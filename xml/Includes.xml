@@ -56,7 +56,7 @@
 
     <expression name="IsPlayingRecognizedContent">Player.Paused + Player.HasVideo | Player.HasVideo + Player.Playing + [VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)]</expression>
 
-    <expression name="IsMainMenuOpened">ControlGroup(9001).HasFocus() | Control.HasFocus(900) | String.IsEqual(Window(Home).Property(ShowViewSubMenu),show)</expression>
+    <expression name="IsMainMenuOpened">ControlGroup(9001).HasFocus() | Control.HasFocus(900) | Control.HasFocus(4444) | String.IsEqual(Window(Home).Property(ShowViewSubMenu),show)</expression>
 
     <expression name="IsTVShowInLastEpisodes">String.IsEqual(Window(Home).Property(LatestEpisode.10.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.9.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.8.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.7.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.6.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.5.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.4.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.3.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.2.ShowTitle),ListItem.Title) | String.IsEqual(Window(Home).Property(LatestEpisode.1.ShowTitle),ListItem.Title)</expression>
 

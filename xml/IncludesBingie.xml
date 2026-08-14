@@ -61,8 +61,10 @@
 
     <include name="CustomBingieWinProps">
         <onload>ClearProperty(ShowViewSubMenu,Home)</onload>
+		<onload>ClearProperty(submenu,Home)</onload>
         <onload>SetProperty(bingieviews,1,Home)</onload>
         <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
+		<onunload>ClearProperty(submenu,Home)</onunload>
     </include>
 
     <!-- DETAILS ROW INCLUDES -->
@@ -795,80 +797,6 @@
             <posy>0</posy>
 				<include>No_Circular_Menu_Animations</include>
 
-
-		<!-- Logo / User Profile Button -->
-        <control type="group">
-                <visible>$EXP[IsMainMenuOpened]</visible>
-                <top>54</top>
-				<left>20</left>
-                <width>bingie_menu_width</width>
-                <height>80</height>
-					<!-- Profile Picture -->
-					<control type="image">
-						<left>50</left>
-						<top>10</top>
-						<width>50</width>
-						<height>50</height>
-						<texture background="true" fallback="defaultactor.png">$INFO[System.ProfileThumb]</texture>
-					</control>
-					<!-- Picture Border -->
-					<control type="button" id="40000">
-						<top>6</top>
-						<left>46</left>
-                        <align>left</align>
-                        <width>58</width>
-                        <height>58</height>
-                        <texturefocus border="10" colordiffuse="ffffffff">diffuse/border.png</texturefocus>
-                        <texturenofocus/>
-                        <onup>noop</onup>
-                        <ondown>900</ondown>
-                        <onback>ClearProperty(ShowViewSubMenu,Home)</onback>
-                        <onback>77777</onback>
-                        <onright>ClearProperty(ShowViewSubMenu,Home)</onright>
-                        <onright>77777</onright>
-                        <onclick>System.LogOff</onclick>
-					</control>
-					<!-- Profile Name -->
-					<control type="label">
-						<visible>!Control.HasFocus(40000)</visible>
-						<top>-21</top>
-						<label>$INFO[System.ProfileName]</label>
-						<textoffsetx>130</textoffsetx>
-                        <align>left</align>
-                        <width>250</width>
-                        <textwidth>250</textwidth>
-                        <height>80</height>
-                        <font>Reg28</font>
-                        <textcolor>80ffffff</textcolor>
-					</control>
-					<!-- Main Menu Focus Text Color -->
-					<control type="label">
-						<visible>Control.HasFocus(40000)</visible>
-						<top>-21</top>
-						<label>$INFO[System.ProfileName]</label>
-						<textoffsetx>130</textoffsetx>
-                        <align>left</align>
-                        <width>250</width>
-                        <textwidth>250</textwidth>
-                        <height>80</height>
-                        <font>Bold28</font>
-                        <textcolor>ffffffff</textcolor>
-					</control>
-					<!-- "Switch Profile" TEXT -->
-					<control type="label">
-                        <label>[CR]$LOCALIZE[31839]</label>
-						<top>-3</top>
-						<posx>1</posx>
-                        <textoffsetx>130</textoffsetx>
-                        <align>left</align>
-                        <width>250</width>
-                        <textwidth>250</textwidth>
-                        <height>80</height>
-                        <font>reg22</font>
-                        <textcolor>80ffffff</textcolor>
-                    </control>
-		</control>
-
 			<!--Main Menu Items 900-->
             <control type="list" id="900">
                 <top>199</top>
@@ -890,9 +818,8 @@
                 <onright condition="Integer.IsEqual(Container(4445).NumItems,0) + Window.IsActive(1119)">SetFocus(9000)</onright>
                 <onback>ClearProperty(ShowViewSubMenu,Home)</onback>
                 <onback>77777</onback>
-				<onup condition="Control.IsVisible(40000)">40000</onup>
                 <ondown>40003</ondown>
-                <itemlayout height="84" width="bingie_menu_width" condition="[Control.HasFocus(900) | Control.HasFocus(4444) | Control.HasFocus(40000) | Control.HasFocus(40003)]">
+				<itemlayout height="84" width="bingie_menu_width" condition="[Control.HasFocus(900) | Control.HasFocus(4444) | Control.HasFocus(40003)]">
                     <!--This RED Line Just for Slim Menu-->
                     <include content="Bingie_Menu_Current_Indicator">
                          <param name="keepvisible" value="true" />
@@ -911,7 +838,7 @@
                         <param name="textcolor" value="80ffffff" />
                     </include>
                 </itemlayout>
-				<itemlayout height="84" width="bingie_menu_width" condition="![Control.HasFocus(900) | Control.HasFocus(4444) | Control.HasFocus(40000) | Control.HasFocus(40003)]">
+				<itemlayout height="84" width="bingie_menu_width" condition="![Control.HasFocus(900) | Control.HasFocus(4444) | Control.HasFocus(40003)]">
                     <!-- This RED Lines Just for Slim Menu -->
                     <include content="Bingie_Menu_Current_Indicator">
                          <param name="keepvisible" value="true" />
@@ -941,7 +868,7 @@
 						<param name="left" value="70" />
                     </include>
                 </focusedlayout>
-				<focusedlayout height="84" width="bingie_menu_width" condition="[Control.HasFocus(40000) | Control.HasFocus(40003)]">
+				<focusedlayout height="84" width="bingie_menu_width" condition="Control.HasFocus(40003)">
                     <include content="Bingie_Menu_Icon">
                         <param name="includeAnimCond" value="false" />
                     </include>
@@ -1006,48 +933,28 @@
     <include name="SideBladeSubMenu">
         <!-- submenu -->
         <control type="group">
-            <posx>378</posx>
-            <posy>146</posy>
-			<animation effect="slide" end="0,42" condition="Integer.IsEqual(Container(900).NumItems,7)">Conditional</animation>
-			<animation effect="slide" end="0,84" condition="Integer.IsEqual(Container(900).NumItems,6)">Conditional</animation>
-			<animation effect="slide" end="0,126" condition="Integer.IsEqual(Container(900).NumItems,5)">Conditional</animation>
-			<animation effect="slide" end="0,168" condition="Integer.IsEqual(Container(900).NumItems,4)">Conditional</animation>
-			<animation effect="slide" end="0,210" condition="Integer.IsEqual(Container(900).NumItems,3)">Conditional</animation>
-			<animation effect="slide" end="0,252" condition="Integer.IsEqual(Container(900).NumItems,2)">Conditional</animation>
-			<animation effect="slide" end="0,294" condition="Integer.IsEqual(Container(900).NumItems,1)">Conditional</animation>
+            <posx>330</posx>
+            <posy>0</posy>
             <animation type="Conditional" condition="Control.IsVisible(4444)">
                 <effect type="slide" start="-10" end="0" time="200" delay="0" tween="cubic" easing="inout"/>
             </animation>
-            <animation type="Conditional" condition="String.IsEmpty(Window(Home).Property(ShowViewSubMenu))">
+            <animation type="Conditional" condition="Integer.IsEqual(Container(4445).NumItems,0)">
                 <effect type="slide" start="0" end="-800" time="0" delay="0" />
             </animation>
             <animation type="Conditional" condition="!Control.IsVisible(4444)">
                 <effect type="fade" start="100" end="0" time="150" delay="0" />
                 <effect type="slide" start="0" end="-300" time="5" delay="145" />
             </animation>
-            <animation type="Conditional" condition="Integer.IsGreater(Container(900).Position,0)">
-                <effect type="slide" end="0,85" time="0" delay="0" />
-            </animation>
-            <animation type="Conditional" condition="Integer.IsGreater(Container(900).Position,1)">
-                <effect type="slide" end="0,85" time="0" delay="0" />
-            </animation>
-            <animation type="Conditional" condition="Integer.IsGreater(Container(900).Position,2)">
-                <effect type="slide" end="0,85" time="0" delay="0" />
-            </animation>
-            <animation type="Conditional" condition="Integer.IsGreater(Container(900).Position,3)">
-                <effect type="slide" end="0,85" time="0" delay="0" />
-            </animation>
-            <animation type="Conditional" condition="Integer.IsGreater(Container(900).Position,4)">
-                <effect type="slide" end="0,85" time="0" delay="0" />
-            </animation>
-
             <!--Panel on Home (submenu Panel) -->
             <control type="list" id="4444">
                 <posx>110</posx>
-				<posy>72</posy>
-                <visible allowhiddenfocus="true">[String.IsEqual(Window(Home).Property(submenu),show) | Control.HasFocus(4444)] + Integer.IsGreater(Container(4445).NumItems,0)</visible>
+				<posy>303</posy>
+				<animation effect="slide" end="0,-47" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
+				<animation effect="slide" end="0,37" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
+				<animation effect="slide" end="0,280" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)">Conditional</animation>
+                <visible allowhiddenfocus="true">[Control.HasFocus(900) | Control.HasFocus(4444)] + Integer.IsGreater(Container(4445).NumItems,0)</visible>
                 <width>450</width>
-                <height>250</height>
+                <height>500</height>
                 <itemgap>3</itemgap>
                 <focusposition>0</focusposition>
                 <movement>3</movement>

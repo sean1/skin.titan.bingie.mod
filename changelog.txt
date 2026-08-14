@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.30
+
+- Automatically prepare and play the next aired TV episode, with Play, Cancel, and Close actions available from a credits-aware Up Next prompt.
+- Keep a full-screen loading transition visible between episodes and cancel queued playback when the user stops manually.
+
 BINGIE Lite 2.3.28
 
 - Prefer English trailer videos and normal English audio tracks, rejecting explicitly foreign-only alternatives.

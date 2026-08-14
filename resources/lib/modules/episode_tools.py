@@ -91,7 +91,7 @@ def nextep_playback_info(meta):
 			'premiered': premiered, 'ep_name': ep_data['title'], 'plot': ep_data['plot']
 		})
 		url_params = {
-			'mode': 'play_media', 'mediatype': 'episode', 'season': season, 'episode': episode,
+			'mode': 'play_media', 'mediatype': 'episode', 'autoplay': 'true', 'autoplay_next': 'true', 'season': season, 'episode': episode,
 			'tmdb_id': meta_get('tmdb_id'), 'tvshowtitle': meta_get('rootname')
 		}
 		if custom_title: url_params['custom_title'] = custom_title
@@ -120,7 +120,7 @@ def execute_scrape_nextep(player, meta):
 	if action == 'cancel':
 		Sources.nextep_params.clear()
 		return kodi_utils.notification(32736)
-	if action == 'play': player.stop()
+	if action == 'play': player.request_next_episode()
 
 def execute_nextep(player, meta, nextep_settings):
 	if 'random_continual' in meta: nextep_meta, nextep_params = get_random_episode(meta['tmdb_id'], True)
@@ -138,7 +138,7 @@ def execute_nextep(player, meta, nextep_settings):
 		if nextep_settings['run_popup']: return
 		text = '%s %s S%02dE%02d' % (ls(32801), nextep_meta['title'], nextep_meta['season'], nextep_meta['episode'])
 		kodi_utils.notification(text, 6500, nextep_meta['poster'])
-	if action == 'play': player.stop()
+	if action == 'play': player.request_next_episode()
 
 def _continue_action(run_popup, nextep_meta, function='next_ep'):
 	if not run_popup: return 'close'

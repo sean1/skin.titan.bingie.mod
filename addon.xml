@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
-<addon id="skin.titan.bingie.lite" version="2.3.29" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
+<addon id="skin.titan.bingie.lite" version="2.3.30" name="BINGIE Lite" provider-name="AchillesPunks, Matke, kodifitzwell">
 	<requires>
 		<import version="5.17.0" addon="xbmc.gui"/>
 		<import addon="xbmc.python" version="3.0.0"/>
@@ -38,7 +38,7 @@
 			<screenshot>resources/screenshot009.jpg</screenshot>
 		</assets>
 		<news>
-			[B]BINGIE Lite 2.3.28[/B][CR]Autoplay English trailers after one second and hand playback between focused detail cards.
+			[B]BINGIE Lite 2.3.30[/B][CR]Autoplay the next TV episode with a credits-aware Up Next prompt and covered fullscreen handoff.
 		</news>
 	</extension>
 </addon>

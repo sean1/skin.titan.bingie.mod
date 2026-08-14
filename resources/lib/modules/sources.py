@@ -276,6 +276,12 @@ class ConfigLoader:
 		if source.include_prerelease_results and 'SD' in filter_list: filter_list += ['SCR', 'CAM', 'TELE']
 		return filter_list
 
+	def _use_full_screen_progress(self, source):
+		if source.background: return False
+		if self._as_bool(source.params.get('autoplay_next'), False): return True
+		if get_property('pov_lite_total_autoplays') != '': return False
+		return get_setting('load_action') == '1'
+
 	def apply(self, source, params=None):
 		if params: source.params = params
 		params_get = source.params.get
@@ -310,8 +316,7 @@ class ConfigLoader:
 		source.hybrid_allowed = source.filter_hdr in (0, 2)
 		source.include_prerelease_results, source.include_3D_results = settings.include_prerelease_3d_results()
 		source.quality_filter = self.quality_filter(source)
-		if get_property('pov_lite_total_autoplays') != '': source.full_screen = False
-		else: source.full_screen = get_setting('load_action') == '1'
+		source.full_screen = self._use_full_screen_progress(source)
 		source.size_filter = int(get_setting('results.size_filter', '0'))
 		source.include_unknown_size = self._as_bool(get_setting('results.include.unknown.size'), False)
 		source.sleep_time = settings.display_sleep_time()

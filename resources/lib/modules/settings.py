@@ -21,8 +21,7 @@ def auto_play(mediatype):
 	return get_setting('auto_play_%s' % mediatype) == 'true'
 
 def autoplay_next_episode():
-	if auto_play('episode') and get_setting('autoplay_next_episode') == 'true': return True
-	else: return False
+	return get_setting('autoplay_next_episode') == 'true'
 
 def autoplay_next_check_threshold():
 	return int(get_setting('autoplay_next_check_threshold', '3'))

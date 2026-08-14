@@ -399,7 +399,7 @@ FIXED_SETTINGS = {
 	'auto_resume_movie': '0',
 	'auto_start_pov': 'false',
 	'autoplay_next_check_threshold': '3',
-	'autoplay_next_episode': 'false',
+	'autoplay_next_episode': 'true',
 	'autoplay_next_show_window': 'true',
 	'autoplay_next_window_percentage': '95',
 	'autoplay_next_window_time': '20',

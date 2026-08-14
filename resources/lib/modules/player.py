@@ -37,7 +37,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.ignore_startup_stop, self.startup_playback_started = False, False
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
-		self.nextep_started, self.play_random_continual = False, False
+		self.nextep_started, self.next_episode_requested, self.play_random_continual = False, False, False
 		self.autoplay_next_episode = False
 		self.autoplay_nextep = settings.autoplay_next_episode()
 		self.autoscrape_next_episode = False
@@ -139,7 +139,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 		except: pass
 
 	def onPlayBackStopped(self):
-		self._set_terminal_playback_event()
+		if not self._set_terminal_playback_event() or self.next_episode_requested: return
+		from modules.sources import Sources
+		Sources.nextep_params.clear()
+		kodi_utils.clear_property('pov_lite_total_autoplays')
 
 	def onPlayBackEnded(self):
 		self._set_terminal_playback_event()
@@ -150,8 +153,13 @@ class POVPlayer(kodi_utils.xbmc_player):
 	def _set_terminal_playback_event(self):
 		if self.playback_event is None and self.ignore_startup_stop and not self.startup_playback_started:
 			self.ignore_startup_stop = False
-			return
+			return False
 		self.playback_event = False
+		return True
+
+	def request_next_episode(self):
+		self.next_episode_requested = True
+		self.stop()
 
 	def run(self, url=None, meta=None, progress_media=None):
 		if not url: return

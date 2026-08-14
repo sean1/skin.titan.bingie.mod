@@ -43,11 +43,22 @@ class MainMenuTests(unittest.TestCase):
 		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'discover']
 		self.assertEqual(items, [])
 
-	def test_video_sideblade_searches_run_prompt_as_actions(self):
-		root = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()
-		for control_id in ('388', '389'):
-			button = root.find(".//control[@type='button'][@id='%s']" % control_id)
-			self.assertTrue(button.findtext('onclick').startswith('RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term'))
+	def test_legacy_options_sideblade_is_removed(self):
+		for filename in ('MyVideoNav.xml', 'MyPrograms.xml', 'MyPlaylist.xml', 'MyFavourites.xml', 'AddonBrowser.xml'):
+			root = ET.parse(ROOT / 'xml' / filename).getroot()
+			self.assertIsNone(root.find(".//include[.='SideBladeModern']"), filename)
+			self.assertIsNone(root.find(".//control[@id='9000']"), filename)
+		includes = ET.parse(ROOT / 'xml' / 'IncludesViews.xml').getroot()
+		for name in ('videoViewIds', 'genericViewIds'):
+			self.assertIsNone(includes.find("include[@name='%s']/menucontrol" % name))
+		for filename in ('View_50_List.xml', 'View_523_BingieMainLandscape.xml', 'View_525_Bingie_Episodes.xml', 'View_527_Bingie_Seasons.xml'):
+			root = ET.parse(ROOT / 'xml' / filename).getroot()
+			self.assertFalse(any((action.text or '').strip() == '9000' for action in root.findall('.//onleft')), filename)
+		context_includes = ET.parse(ROOT / 'xml' / 'IncludesContextMenu.xml').getroot()
+		self.assertIsNone(context_includes.find("include[@name='SideBladeModern']"))
+		self.assertIsNone(context_includes.find("include[@name='SideBladeViewCommands']"))
+		self.assertIsNotNone(context_includes.find("include[@name='DialogContextMenuModern']"))
+		self.assertIsNotNone(context_includes.find("include[@name='SideBladeMenuButton']"))
 
 	def test_power_menus_omit_reboot_and_poweroff(self):
 		static_root = ET.parse(ROOT / 'xml' / 'IncludesStaticMenus.xml').getroot()

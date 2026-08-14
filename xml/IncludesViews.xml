@@ -3,12 +3,10 @@
 <includes>
     <include name="videoViewIds">
         <views>50,523,525,527</views>
-        <menucontrol>9000</menucontrol>
     </include>
 
     <include name="genericViewIds">
         <views>50</views>
-        <menucontrol>9000</menucontrol>
     </include>
 
     <include name="allViews">

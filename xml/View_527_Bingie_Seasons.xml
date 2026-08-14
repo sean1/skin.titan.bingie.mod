@@ -287,7 +287,7 @@
 				<include>HeightWithoutThumb</include>
 				<preloaditems>1</preloaditems>
 				<orientation>vertical</orientation>
-				<onleft>9000</onleft>
+				<onleft>527</onleft>
 				<onright>5027</onright>
 				<onup>527</onup>
 				<ondown>527</ondown>

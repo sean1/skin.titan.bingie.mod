@@ -224,7 +224,7 @@
                 <posx>55</posx>
                 <width>1880</width>
                 <height>722</height>
-                <onleft>9000</onleft>
+                <onleft>50</onleft>
                 <onright condition="true">60</onright>
                 <onup>50</onup>
                 <ondown>50</ondown>

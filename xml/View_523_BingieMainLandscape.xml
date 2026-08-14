@@ -85,7 +85,7 @@
             <pagecontrol>60</pagecontrol>
             <include>ScrollTime</include>
             <onright>60</onright>
-			<onleft>9000</onleft>
+			<onleft>523</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
 			<onclick condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>

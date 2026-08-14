@@ -341,7 +341,7 @@
 						<include>HeightWithoutThumb</include>
 						<preloaditems>1</preloaditems>
                         <orientation>vertical</orientation>
-						<onleft>9000</onleft>
+						<onleft>5250</onleft>
                         <onright>525</onright>
                         <onup>noop</onup>
                         <ondown>noop</ondown>
@@ -476,7 +476,7 @@
                     <onup>525</onup>
                     <ondown>525</ondown>
                     <onleft condition="Control.IsVisible(5250)">5250</onleft>
-                    <onleft condition="!Control.IsVisible(5250)">9000</onleft>
+                    <onleft condition="!Control.IsVisible(5250)">525</onleft>
                     <onright condition="true">60</onright>
                     <onback condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">ClearProperty(ListItem.TVShowID,Home)</onback>
                     <pagecontrol>60</pagecontrol>

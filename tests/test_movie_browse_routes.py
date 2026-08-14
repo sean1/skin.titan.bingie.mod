@@ -72,6 +72,7 @@ class MovieBrowseRouteTests(unittest.TestCase):
 
 	def setUp(self):
 		self.menu = object.__new__(self.navigator.Navigator)
+		self.menu.params_get = lambda key, default=None: default
 		self.menu._add_item = Mock()
 		self.menu._end_directory = Mock()
 		self.kodi_utils.dialog.reset_mock()
@@ -103,12 +104,36 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.assertIn('with_original_language=ko', url)
 		self.assertIn('sort_by=popularity.desc', url)
 
+	def test_new_series_feed_uses_first_air_date_rolling_window(self):
+		today = date.today()
+		start_date = today - timedelta(days=90)
+		url = self.tmdb.tmdb_tv_new_series(2)['url']
+		self.assertIn('first_air_date.gte=%s' % start_date.isoformat(), url)
+		self.assertIn('first_air_date.lte=%s' % today.isoformat(), url)
+		self.assertIn('include_null_first_air_dates=false', url)
+		self.assertIn('sort_by=first_air_date.desc', url)
+		self.assertIn('page=2', url)
+
+	def test_tv_decade_and_language_feeds_use_tv_filters(self):
+		decade_url = self.tmdb.tmdb_tv_decade('2000', 1)['url']
+		self.assertIn('first_air_date.gte=2000-01-01', decade_url)
+		self.assertIn('first_air_date.lte=2009-12-31', decade_url)
+		language_url = self.tmdb.tmdb_tv_language('ja', 1)['url']
+		self.assertIn('with_original_language=ja', language_url)
+
 	def test_year_decade_parent_offers_both_browsing_modes(self):
 		self.menu.movie_years_decades()
 
 		self.assertEqual([call.args[0]['name'] for call in self.menu._add_item.call_args_list], ['By Decade', 'By Year'])
 		self.assertEqual([call.args[0]['mode'] for call in self.menu._add_item.call_args_list], ['navigator.decades', 'navigator.years'])
 		self.menu._end_directory.assert_called_once_with()
+
+	def test_tv_year_decade_parent_uses_tv_menu_type(self):
+		self.menu.tv_years_decades()
+
+		params = [call.args[0] for call in self.menu._add_item.call_args_list]
+		self.assertEqual([item['menu_type'] for item in params], ['tvshow', 'tvshow'])
+		self.assertEqual([item['mode'] for item in params], ['navigator.decades', 'navigator.years'])
 
 	def test_language_directory_uses_unique_two_letter_tmdb_codes(self):
 		meta_lists = types.ModuleType('modules.meta_lists')
@@ -121,6 +146,15 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		params = [call.args[0] for call in self.menu._add_item.call_args_list]
 		self.assertEqual({item['language'] for item in params}, {'ko', 'pt'})
 		self.assertTrue(all(item['action'] == 'tmdb_movies_language' for item in params))
+
+	def test_tv_language_directory_uses_tv_list_action(self):
+		meta_lists = types.ModuleType('modules.meta_lists')
+		meta_lists.meta_languages = {'Japanese': {'iso': 'ja'}, 'Spanish': {'iso': 'es'}}
+		with temporary_modules({'modules.meta_lists': meta_lists}):
+			self.menu.tv_languages()
+
+		params = [call.args[0] for call in self.menu._add_item.call_args_list]
+		self.assertTrue(all(item['mode'] == 'build_tvshow_list' and item['action'] == 'tmdb_tv_language' for item in params))
 
 	def test_studio_search_opens_movies_for_selected_company(self):
 		tmdb_api = types.ModuleType('indexers.tmdb_api')

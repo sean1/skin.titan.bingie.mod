@@ -141,12 +141,20 @@ class Navigator:
 			self._add_item({'mode': mode, 'menu_type': 'movie', 'name': name}, 'calender.png')
 		self._end_directory()
 
+	def tv_years_decades(self):
+		for name, mode in (('By Decade', 'navigator.decades'), ('By Year', 'navigator.years')):
+			self._add_item({'mode': mode, 'menu_type': 'tvshow', 'name': name}, 'calender.png')
+		self._end_directory()
+
 	def decades(self):
 		from datetime import date
+		menu_type = self.params_get('menu_type', 'movie')
+		mode = 'build_movie_list' if menu_type == 'movie' else 'build_tvshow_list'
+		action = 'tmdb_movies_decade' if menu_type == 'movie' else 'tmdb_tv_decade'
 		current_decade = date.today().year // 10 * 10
 		for decade in range(current_decade, 1899, -10):
 			name = '%ss' % decade
-			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_movies_decade', 'decade': str(decade), 'name': name}, 'calender.png')
+			self._add_item({'mode': mode, 'action': action, 'decade': str(decade), 'name': name}, 'calender.png')
 		self._end_directory()
 
 	def movie_studios(self):
@@ -165,13 +173,19 @@ class Navigator:
 		return ku.execute_builtin('ActivateWindow(Videos,%s,return)' % url)
 
 	def movie_languages(self):
+		return self._media_languages('build_movie_list', 'tmdb_movies_language')
+
+	def tv_languages(self):
+		return self._media_languages('build_tvshow_list', 'tmdb_tv_language')
+
+	def _media_languages(self, mode, action):
 		from modules.meta_lists import meta_languages
 		languages = sorted((name, values['iso']) for name, values in meta_languages.items() if len(values.get('iso', '')) == 2)
 		seen = set()
 		for name, language in languages:
 			if language in seen: continue
 			seen.add(language)
-			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_movies_language', 'language': language, 'name': name}, 'languages.png')
+			self._add_item({'mode': mode, 'action': action, 'language': language, 'name': name}, 'languages.png')
 		self._end_directory()
 
 	def genres(self):

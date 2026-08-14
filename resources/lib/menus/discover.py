@@ -301,7 +301,7 @@ class Discover:
 			if choice is None: return None
 			return choice, next(item[0] for item in options if item[1] == choice)
 
-		media = choose(media_options, ls(32904))
+		media = (self.mediatype, next(item[0] for item in media_options if item[1] == self.mediatype)) if self.mediatype in ('movie', 'tvshow') else choose(media_options, ls(32904))
 		if media is None: return
 		mood = choose(mood_options, ls(32905))
 		if mood is None: return

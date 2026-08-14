@@ -949,12 +949,11 @@
             <control type="list" id="4444">
                 <posx>110</posx>
 				<posy>303</posy>
-				<animation effect="slide" end="0,-47" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
-				<animation effect="slide" end="0,37" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
-				<animation effect="slide" end="0,280" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)">Conditional</animation>
+				<animation effect="slide" end="0,-32" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
+				<animation effect="slide" end="0,52" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
                 <visible allowhiddenfocus="true">[Control.HasFocus(900) | Control.HasFocus(4444)] + Integer.IsGreater(Container(4445).NumItems,0)</visible>
                 <width>450</width>
-                <height>500</height>
+				<height>527</height>
                 <itemgap>3</itemgap>
                 <focusposition>0</focusposition>
                 <movement>3</movement>

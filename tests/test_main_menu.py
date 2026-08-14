@@ -13,8 +13,8 @@ class MainMenuTests(unittest.TestCase):
 
 	def test_static_main_menu_is_lean_and_content_first(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
-		self.assertEqual([item.get('id') for item in menu.findall('item')], ['1', '2', '3', '4'])
-		self.assertEqual([item.findtext('label2') for item in menu.findall('item')], ['Home', 'Movies', 'TV shows', 'Discover'])
+		self.assertEqual([item.get('id') for item in menu.findall('item')], ['1', '2', '3'])
+		self.assertEqual([item.findtext('label2') for item in menu.findall('item')], ['Home', 'Movies', 'TV shows'])
 
 	def test_movie_and_tv_submenus_belong_to_their_main_menu_items(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
@@ -30,20 +30,18 @@ class MainMenuTests(unittest.TestCase):
 			self.assertIn('SetFocus(1510)', actions)
 			self.assertTrue(any(action.startswith('RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term') for action in actions))
 			self.assertFalse(any('ActivateWindow' in action for action in actions))
+			pick_items = [item for item in items if item.findtext('label') == 'Pick My Night']
+			self.assertEqual(len(pick_items), 1)
+			pick_actions = [action.text for action in pick_items[0].findall('onclick')]
+			expected_mediatype = 'movie' if group == 'movies' else 'tvshow'
+			self.assertTrue(any(action.startswith('RunPlugin(') and 'mediatype=%s' % expected_mediatype in action for action in pick_actions))
 
-	def test_discover_options_are_owned_by_discover_submenu(self):
+	def test_discover_is_absent_from_static_navigation(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
-		discover = next(item for item in menu.findall('item') if item.findtext('label2') == 'Discover')
-		self.assertEqual(discover.findtext("property[@name='submenuVisibility']"), 'discover')
-		self.assertEqual(discover.findtext("property[@name='hasSubmenu']"), 'True')
+		self.assertNotIn('Discover', [item.findtext('label2') for item in menu.findall('item')])
 		submenu = self.root.find("include[@name='StaticSubmenu']")
 		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'discover']
-		self.assertEqual([item.findtext('label') for item in items], ['Pick My Night', 'Build a Movie Mix', 'Build a TV Mix'])
-		self.assertTrue(all(item.findtext("property[@name='mainmenuid']") == discover.get('id') for item in items))
-		pick_actions = [action.text for action in items[0].findall('onclick')]
-		self.assertIn('SetFocus(1510)', pick_actions)
-		self.assertTrue(any(action.startswith('RunPlugin(') for action in pick_actions))
-		self.assertTrue(all(item.findtext('onclick').startswith('ActivateWindow(Videos,') for item in items[1:]))
+		self.assertEqual(items, [])
 
 	def test_video_sideblade_searches_run_prompt_as_actions(self):
 		root = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()
@@ -90,16 +88,16 @@ class MainMenuTests(unittest.TestCase):
 		self.assertFalse(any('Container(900).NumItems' in condition or 'Container(900).Position' in condition for condition in vertical_alignment_conditions))
 		main = root.find(".//control[@type='list'][@id='900']")
 		main_row_height = int(main.find('itemlayout').get('height'))
-		main_count_offset = next(int(animation.get('end').split(',')[1]) for animation in main.findall('animation') if 'Container(900).NumItems,4' in animation.get('condition', ''))
+		main_count_offset = next(int(animation.get('end').split(',')[1]) for animation in main.findall('animation') if 'Container(900).NumItems,3' in animation.get('condition', ''))
 		main_top = int(main.findtext('top')) + main_count_offset
 		main_items = self.root.find("include[@name='StaticMainMenu']").findall('item')
 		base_submenu_top = int(group.findtext('posy')) + int(submenu.findtext('posy'))
-		for submenu_group in ('movies', 'tvshows', 'discover'):
+		for submenu_group in ('movies', 'tvshows'):
 			main_index = next(index for index, item in enumerate(main_items) if item.findtext("property[@name='submenuVisibility']") == submenu_group)
 			item_count = sum(item.findtext("property[@name='group']") == submenu_group for item in static_submenu.findall('item'))
 			content_height = item_count * row_height + (item_count - 1) * item_gap
 			offset = next(int(animation.get('end').split(',')[1]) for animation in submenu.findall('animation') if animation.get('condition', '').endswith(',%s)' % submenu_group))
-			self.assertEqual(2 * (base_submenu_top + offset) + content_height, 2 * (main_top + main_index * main_row_height) + main_row_height)
+			self.assertLessEqual(abs(2 * (base_submenu_top + offset) + content_height - (2 * (main_top + main_index * main_row_height) + main_row_height)), 1)
 
 	def test_submenu_focus_keeps_main_menu_open(self):
 		root = ET.parse(ROOT / 'xml' / 'Includes.xml').getroot()

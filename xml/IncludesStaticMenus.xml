@@ -84,24 +84,6 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">True</property>
 		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
-			<label>Discover</label>
-			<label2>Discover</label2>
-			<icon>special://home/addons/skin.titan.bingie.lite/resources/skins/Default/media/discover.png</icon>
-			<thumb />
-			<property name="labelID">discover</property>
-			<property name="defaultID">discover</property>
-			<onclick>ActivateWindow(1113,return)</onclick>
-			<property name="path">ActivateWindow(1113,return)</property>
-			<property name="list">1113</property>
-			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
-			<property name="submenuVisibility">discover</property>
-			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">True</property>
-		</item>
 	</include>
 	<include name="StaticSubmenu">
 		<item id="1">
@@ -232,6 +214,25 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
+		<item id="9">
+			<property name="id">$NUMBER[9]</property>
+			<property name="mainmenuid">3</property>
+			<label>Pick My Night</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">32900</property>
+			<property name="defaultID">32900</property>
+			<onclick>SetFocus(1510)</onclick>
+			<onclick>ClearProperty(submenu,Home)</onclick>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
 		<item id="10">
 			<property name="id">$NUMBER[10]</property>
 			<property name="mainmenuid">3</property>
@@ -249,57 +250,6 @@
 			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="1">
-			<property name="id">$NUMBER[1]</property>
-			<property name="mainmenuid">4</property>
-			<label>Pick My Night</label>
-			<label2>Discover</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">32900</property>
-			<property name="defaultID">32900</property>
-			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(submenu,Home)</onclick>
-			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;name=32900&amp;exclude_external=true)</onclick>
-			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;name=32900&amp;exclude_external=true)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;name=32900&amp;exclude_external=true</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)</visible>
-			<property name="group">discover</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="2">
-			<property name="id">$NUMBER[2]</property>
-			<property name="mainmenuid">4</property>
-			<label>Build a Movie Mix</label>
-			<label2>Discover</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">32901</property>
-			<property name="defaultID">32901</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=movie&amp;name=32901&amp;exclude_external=true,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=movie&amp;name=32901&amp;exclude_external=true,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=movie&amp;name=32901&amp;exclude_external=true</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)</visible>
-			<property name="group">discover</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
-			<property name="mainmenuid">4</property>
-			<label>Build a TV Mix</label>
-			<label2>Discover</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">32902</property>
-			<property name="defaultID">32902</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=tvshow&amp;name=32902&amp;exclude_external=true,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=tvshow&amp;name=32902&amp;exclude_external=true,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.router&amp;mediatype=tvshow&amp;name=32902&amp;exclude_external=true</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),discover)</visible>
-			<property name="group">discover</property>
 			<property name="isSubmenu">True</property>
 		</item>
 		<item id="1">
@@ -426,6 +376,25 @@
 			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
 			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie,return)</property>
 			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="9">
+			<property name="id">$NUMBER[9]</property>
+			<property name="mainmenuid">2</property>
+			<label>Pick My Night</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">32900</property>
+			<property name="defaultID">32900</property>
+			<onclick>SetFocus(1510)</onclick>
+			<onclick>ClearProperty(submenu,Home)</onclick>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>

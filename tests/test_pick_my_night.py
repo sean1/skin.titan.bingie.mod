@@ -44,14 +44,14 @@ class PickMyNightTests(unittest.TestCase):
 	def setUp(self):
 		self.discover.kodi_utils.execute_builtin = Mock(side_effect=lambda command: command)
 
-	def test_movie_and_tv_results_wait_for_dialog_to_close_after_cancel(self):
+	def test_direct_movie_and_tv_results_skip_media_selection_and_wait_for_dialog_to_close(self):
 		for mediatype, mode, action in (
 			('movie', 'build_movie_list', 'tmdb_movies_discover'),
 			('tvshow', 'build_tvshow_list', 'tmdb_tv_discover')
 		):
 			with self.subTest(mediatype=mediatype):
-				menu = self.discover.Discover({})
-				menu._selection_dialog = Mock(side_effect=(mediatype, '', '', 'crowd_pleasers'))
+				menu = self.discover.Discover({'mediatype': mediatype})
+				menu._selection_dialog = Mock(side_effect=('', '', 'crowd_pleasers'))
 
 				result = menu.pick_my_night()
 
@@ -62,7 +62,16 @@ class PickMyNightTests(unittest.TestCase):
 				self.assertIn('action=%s' % action, alarm)
 				self.assertTrue(alarm.endswith(',00:00:01,silent)'))
 				self.assertEqual(result, alarm)
+				self.assertEqual(menu._selection_dialog.call_count, 3)
 				self.discover.kodi_utils.execute_builtin.reset_mock()
+
+	def test_legacy_entry_still_asks_for_media_type(self):
+		menu = self.discover.Discover({})
+		menu._selection_dialog = Mock(side_effect=('movie', '', '', 'crowd_pleasers'))
+
+		menu.pick_my_night()
+
+		self.assertEqual(menu._selection_dialog.call_count, 4)
 
 	def test_cancelled_selection_does_not_schedule_navigation(self):
 		menu = self.discover.Discover({})
@@ -77,8 +86,8 @@ class PickMyNightTests(unittest.TestCase):
 			('tvshow', '&with_keywords=315058|12377|162846|1299|11100|12339')
 		):
 			with self.subTest(mediatype=mediatype):
-				menu = self.discover.Discover({})
-				menu._selection_dialog = Mock(side_effect=(mediatype, 'horror_supernatural', '', 'crowd_pleasers'))
+				menu = self.discover.Discover({'mediatype': mediatype})
+				menu._selection_dialog = Mock(side_effect=('horror_supernatural', '', 'crowd_pleasers'))
 
 				menu.pick_my_night()
 

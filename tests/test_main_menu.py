@@ -39,17 +39,16 @@ class MainMenuTests(unittest.TestCase):
 	def test_movie_submenu_exposes_release_and_browse_categories(self):
 		submenu = self.root.find("include[@name='StaticSubmenu']")
 		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'movies']
-		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 15)])
+		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 14)])
 		self.assertEqual([item.findtext('label') for item in items], [
 			'Trending Movies Today', 'Trending Movies This Week', 'Popular Movies', 'Now Playing', 'New Digital Releases',
-			'New Physical Releases', 'Upcoming Movies', 'Top Rated Movies', 'Movie Genres', 'By Year / Decade', 'By Studio',
+			'New Physical Releases', 'Upcoming Movies', 'Top Rated Movies', 'Movie Genres', 'By Year / Decade',
 			'Original-Language Cinema', 'Pick My Night', 'Search'
 		])
 		actions = {item.findtext('label'): [action.text for action in item.findall('onclick')] for item in items}
 		self.assertTrue(any('tmdb_movies_digital_releases' in action for action in actions['New Digital Releases']))
 		self.assertTrue(any('tmdb_movies_physical_releases' in action for action in actions['New Physical Releases']))
 		self.assertTrue(any('navigator.movie_years_decades' in action for action in actions['By Year / Decade']))
-		self.assertTrue(any(action.startswith('RunPlugin(') and 'navigator.movie_studios' in action for action in actions['By Studio']))
 		self.assertTrue(any('navigator.movie_languages' in action for action in actions['Original-Language Cinema']))
 
 	def test_tv_submenu_exposes_series_and_browse_categories(self):
@@ -58,12 +57,12 @@ class MainMenuTests(unittest.TestCase):
 		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 14)])
 		self.assertEqual([item.findtext('label') for item in items], [
 			'Trending TV Shows Today', 'Trending TV Shows This Week', 'Popular TV Shows', 'New Series', 'Airing Today', 'On the Air',
-			'Top Rated TV Shows', 'TV Genres', 'By Year / Decade', 'By Network / Service', 'Original-Language TV', 'Pick My Night', 'Search'
+			'Top Rated TV Shows', 'TV Genres', 'By Year / Decade', 'By Original Network', 'Original-Language TV', 'Pick My Night', 'Search'
 		])
 		actions = {item.findtext('label'): [action.text for action in item.findall('onclick')] for item in items}
 		self.assertTrue(any('tmdb_tv_new_series' in action for action in actions['New Series']))
 		self.assertTrue(any('navigator.tv_years_decades' in action for action in actions['By Year / Decade']))
-		self.assertTrue(any('navigator.networks' in action and 'menu_type=tvshow' in action for action in actions['By Network / Service']))
+		self.assertTrue(any('navigator.tv_networks' in action for action in actions['By Original Network']))
 		self.assertTrue(any('navigator.tv_languages' in action for action in actions['Original-Language TV']))
 
 	def test_discover_is_absent_from_static_navigation(self):

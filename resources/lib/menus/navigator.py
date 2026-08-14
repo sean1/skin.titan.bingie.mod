@@ -231,6 +231,32 @@ class Navigator:
 			self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_tv_networks', 'network_id': item['id'], 'name': item['name']}, item['logo'], list_name=list_name)
 		self._end_directory()
 
+	def tv_networks(self):
+		from modules.meta_lists import networks
+		popular_ids = (213, 1024, 2739, 2552, 3186, 453, 4330, 3353, 49, 2, 16, 6, 19, 4, 174)
+		by_id = {item['id']: item for item in networks}
+		for network_id in popular_ids:
+			item = by_id.get(network_id)
+			if item: self._add_item({'mode': 'build_tvshow_list', 'action': 'tmdb_tv_networks', 'network_id': item['id'], 'name': item['name']}, item['logo'])
+		self._add_item({'mode': 'navigator.search_tv_network', 'name': 'Other Network…'}, 'search.png', isFolder=False)
+		self._end_directory()
+
+	def search_tv_network(self):
+		import json
+		from modules.meta_lists import networks
+		query = ku.dialog.input('Search Other Network') or ''
+		if not query.strip(): return
+		matches = [item for item in networks if query.casefold() in item['name'].casefold()]
+		if not matches: return ku.notification(32760)
+		if len(matches) == 1: selected = matches[0]
+		else:
+			items = [{'line1': item['name'], 'line2': item['name'], 'icon': item['logo']} for item in matches]
+			selected_id = ku.select_dialog([str(item['id']) for item in matches], items=json.dumps(items), heading='Choose a Network')
+			if selected_id is None: return
+			selected = next(item for item in matches if str(item['id']) == str(selected_id))
+		url = build_url({'mode': 'build_tvshow_list', 'action': 'tmdb_tv_networks', 'network_id': selected['id'], 'name': selected['name']})
+		return ku.execute_builtin('ActivateWindow(Videos,%s,return)' % url)
+
 	def because_you_watched(self):
 		from caches.watched_cache import get_watched_info_movie, get_watched_info_tv
 		def _convert_pov_watched_episodes_info(watched_indicators):

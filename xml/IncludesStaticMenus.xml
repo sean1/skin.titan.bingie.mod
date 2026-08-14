@@ -233,15 +233,15 @@
 		<item id="10">
 			<property name="id">$NUMBER[10]</property>
 			<property name="mainmenuid">3</property>
-			<label>By Network / Service</label>
+			<label>By Original Network</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
 			<thumb />
 			<property name="labelID">by-network-service</property>
 			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.networks&amp;menu_type=tvshow,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.networks&amp;menu_type=tvshow,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.networks&amp;menu_type=tvshow</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_networks,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_networks,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.tv_networks</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
@@ -463,25 +463,6 @@
 		<item id="11">
 			<property name="id">$NUMBER[11]</property>
 			<property name="mainmenuid">2</property>
-			<label>By Studio</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">by-studio</property>
-			<property name="defaultID">135</property>
-			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(submenu,Home)</onclick>
-			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=navigator.movie_studios)</onclick>
-			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=navigator.movie_studios)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.movie_studios</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="12">
-			<property name="id">$NUMBER[12]</property>
-			<property name="mainmenuid">2</property>
 			<label>Original-Language Cinema</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -495,8 +476,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="13">
-			<property name="id">$NUMBER[13]</property>
+		<item id="12">
+			<property name="id">$NUMBER[12]</property>
 			<property name="mainmenuid">2</property>
 			<label>Pick My Night</label>
 			<label2>Movies</label2>
@@ -514,8 +495,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="14">
-			<property name="id">$NUMBER[14]</property>
+		<item id="13">
+			<property name="id">$NUMBER[13]</property>
 			<property name="mainmenuid">2</property>
 			<label>Search</label>
 			<label2>Movies</label2>

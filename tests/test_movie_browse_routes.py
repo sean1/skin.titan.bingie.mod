@@ -78,6 +78,7 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.kodi_utils.dialog.reset_mock()
 		self.kodi_utils.select_dialog.reset_mock()
 		self.kodi_utils.execute_builtin.reset_mock()
+		self.kodi_utils.notification.reset_mock()
 
 	def test_recent_release_feeds_use_correct_release_type_and_rolling_window(self):
 		today = date.today()
@@ -155,6 +156,60 @@ class MovieBrowseRouteTests(unittest.TestCase):
 
 		params = [call.args[0] for call in self.menu._add_item.call_args_list]
 		self.assertTrue(all(item['mode'] == 'build_tvshow_list' and item['action'] == 'tmdb_tv_language' for item in params))
+
+	def test_tv_network_picker_lists_popular_networks_and_other_last(self):
+		meta_lists = types.ModuleType('modules.meta_lists')
+		meta_lists.networks = (
+			{'id': 174, 'name': 'AMC', 'logo': 'amc.png'}, {'id': 213, 'name': 'Netflix', 'logo': 'netflix.png'},
+			{'id': 1024, 'name': 'Amazon', 'logo': 'amazon.png'}, {'id': 9999, 'name': 'Obscure Network', 'logo': 'obscure.png'}
+		)
+		with temporary_modules({'modules.meta_lists': meta_lists}):
+			self.menu.tv_networks()
+
+		params = [call.args[0] for call in self.menu._add_item.call_args_list]
+		self.assertEqual([item['name'] for item in params], ['Netflix', 'Amazon', 'AMC', 'Other Network…'])
+		self.assertEqual([item['network_id'] for item in params[:-1]], [213, 1024, 174])
+		self.assertEqual(params[-1]['mode'], 'navigator.search_tv_network')
+		self.menu._end_directory.assert_called_once_with()
+
+	def test_other_network_search_opens_single_case_insensitive_match(self):
+		meta_lists = types.ModuleType('modules.meta_lists')
+		meta_lists.networks = (
+			{'id': 4, 'name': 'BBC One', 'logo': 'bbc1.png'}, {'id': 332, 'name': 'BBC Two', 'logo': 'bbc2.png'},
+			{'id': 213, 'name': 'Netflix', 'logo': 'netflix.png'}
+		)
+		self.kodi_utils.dialog.input.return_value = 'netFLIX'
+		with temporary_modules({'modules.meta_lists': meta_lists}):
+			result = self.menu.search_tv_network()
+
+		self.assertIn('action=tmdb_tv_networks', result)
+		self.assertIn('network_id=213', result)
+		self.kodi_utils.select_dialog.assert_not_called()
+
+	def test_other_network_search_lets_user_choose_between_matches(self):
+		meta_lists = types.ModuleType('modules.meta_lists')
+		meta_lists.networks = (
+			{'id': 4, 'name': 'BBC One', 'logo': 'bbc1.png'}, {'id': 332, 'name': 'BBC Two', 'logo': 'bbc2.png'}
+		)
+		self.kodi_utils.dialog.input.return_value = 'bbc'
+		self.kodi_utils.select_dialog.return_value = '332'
+		with temporary_modules({'modules.meta_lists': meta_lists}):
+			result = self.menu.search_tv_network()
+
+		self.assertIn('network_id=332', result)
+		self.assertIn('name=BBC Two', result)
+
+	def test_other_network_search_cancel_or_no_results_does_not_navigate(self):
+		meta_lists = types.ModuleType('modules.meta_lists')
+		meta_lists.networks = ({'id': 213, 'name': 'Netflix', 'logo': 'netflix.png'},)
+		with temporary_modules({'modules.meta_lists': meta_lists}):
+			self.kodi_utils.dialog.input.return_value = ''
+			self.assertIsNone(self.menu.search_tv_network())
+			self.kodi_utils.dialog.input.return_value = 'missing'
+			self.menu.search_tv_network()
+
+		self.kodi_utils.notification.assert_called_once_with(32760)
+		self.kodi_utils.execute_builtin.assert_not_called()
 
 	def test_studio_search_opens_movies_for_selected_company(self):
 		tmdb_api = types.ModuleType('indexers.tmdb_api')

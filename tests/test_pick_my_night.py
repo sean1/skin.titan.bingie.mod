@@ -80,6 +80,15 @@ class PickMyNightTests(unittest.TestCase):
 		self.assertIsNone(menu.pick_my_night())
 		self.discover.kodi_utils.execute_builtin.assert_not_called()
 
+	def test_language_choices_are_not_presented_as_moods(self):
+		menu = self.discover.Discover({'mediatype': 'movie'})
+		menu._selection_dialog = Mock(return_value=None)
+
+		menu.pick_my_night()
+
+		mood_values = menu._selection_dialog.call_args.args[1]
+		self.assertFalse({'chinese_cinema', 'vietnamese_cinema', 'korean_cinema'} & set(mood_values))
+
 	def test_horror_slasher_mood_uses_movie_genre_and_tv_keywords(self):
 		for mediatype, expected_filter in (
 			('movie', '&with_genres=27'),

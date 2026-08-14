@@ -290,8 +290,7 @@ class Discover:
 			(ls(32908), ''), (ls(32909), 'comedy_family'), (ls(32929), 'action_adventure_thriller'), (ls(32930), 'crime_mystery'),
 			(ls(32928), 'drama_romance_family'), (ls(32926), 'fantasy'), (ls(32927), 'science_fiction'), (ls(32934), 'time_travel'),
 			(ls(32938), 'apocalypse_survival'), (ls(32939), 'space_voyages'), (ls(32942), 'horror_supernatural'),
-			(ls(32931), 'documentary_history'), (ls(32932), 'animation'), (ls(32933), 'war_politics'),
-			(ls(32935), 'chinese_cinema'), (ls(32936), 'vietnamese_cinema'), (ls(32937), 'korean_cinema')
+			(ls(32931), 'documentary_history'), (ls(32932), 'animation'), (ls(32933), 'war_politics')
 		)
 		era_options = ((ls(32913), ''), (ls(32914), '2020s'), (ls(32915), '2010s'), (ls(32916), '2000s'), (ls(32917), 'classic'))
 		style_options = ((ls(32918), 'crowd_pleasers'), (ls(32919), 'hidden_gems'), (ls(32920), 'critically_loved'))
@@ -328,10 +327,7 @@ class Discover:
 			'science_fiction': ('with_genres', '878') if mediatype == 'movie' else ('with_keywords', '281358'),
 			'apocalypse_survival': ('with_keywords', '4458|10150|12332|186565|355070|298669|4565|10349'),
 			'space_voyages': ('with_keywords', '252937|3801|1612|161176|252634'),
-			'horror_supernatural': ('with_genres', '27') if mediatype == 'movie' else ('with_keywords', '315058|12377|162846|1299|11100|12339'),
-			'chinese_cinema': ('with_original_language', 'zh'),
-			'vietnamese_cinema': ('with_original_language', 'vi'),
-			'korean_cinema': ('with_original_language', 'ko')
+			'horror_supernatural': ('with_genres', '27') if mediatype == 'movie' else ('with_keywords', '315058|12377|162846|1299|11100|12339')
 		}
 		eras = {
 			'2020s': ('2020-01-01', '2029-12-31'), '2010s': ('2010-01-01', '2019-12-31'),
@@ -342,11 +338,7 @@ class Discover:
 			'hidden_gems': ('vote_average.desc', '100', '6', '40'),
 			'critically_loved': ('vote_average.desc', '500', '7', None)
 		}
-		style_vote_overrides = {
-			'chinese_cinema': {'crowd_pleasers': '100', 'hidden_gems': '25', 'critically_loved': '100'},
-			'korean_cinema': {'crowd_pleasers': '100', 'hidden_gems': '25', 'critically_loved': '100'}
-		}
-		sparse_moods = ('science_fiction', 'apocalypse_survival', 'space_voyages', 'vietnamese_cinema')
+		sparse_moods = ('science_fiction', 'apocalypse_survival', 'space_voyages')
 		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
 		if mood[0]:
 			filter_name, filter_value = special_moods[mood[0]] if mood[0] in special_moods else ('with_genres', genres[mediatype][mood[0]])
@@ -355,7 +347,6 @@ class Discover:
 			date_start, date_end = eras[era[0]]
 			query += '&%s.gte=%s&%s.lte=%s' % (date_key, date_start, date_key, date_end)
 		sort_by, vote_count, rating, popularity = styles[style[0]]
-		vote_count = style_vote_overrides.get(mood[0], {}).get(style[0], vote_count)
 		fallback_sort = 'popularity.desc' if style[0] == 'crowd_pleasers' else 'vote_count.desc'
 		if mood[0] in sparse_moods: sort_by, vote_count = fallback_sort, '1'
 

@@ -36,6 +36,22 @@ class MainMenuTests(unittest.TestCase):
 			expected_mediatype = 'movie' if group == 'movies' else 'tvshow'
 			self.assertTrue(any(action.startswith('RunPlugin(') and 'mediatype=%s' % expected_mediatype in action for action in pick_actions))
 
+	def test_movie_submenu_exposes_release_and_browse_categories(self):
+		submenu = self.root.find("include[@name='StaticSubmenu']")
+		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'movies']
+		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 15)])
+		self.assertEqual([item.findtext('label') for item in items], [
+			'Trending Movies Today', 'Trending Movies This Week', 'Popular Movies', 'Now Playing', 'New Digital Releases',
+			'New Physical Releases', 'Upcoming Movies', 'Top Rated Movies', 'Movie Genres', 'By Year / Decade', 'By Studio',
+			'Original-Language Cinema', 'Pick My Night', 'Search'
+		])
+		actions = {item.findtext('label'): [action.text for action in item.findall('onclick')] for item in items}
+		self.assertTrue(any('tmdb_movies_digital_releases' in action for action in actions['New Digital Releases']))
+		self.assertTrue(any('tmdb_movies_physical_releases' in action for action in actions['New Physical Releases']))
+		self.assertTrue(any('navigator.movie_years_decades' in action for action in actions['By Year / Decade']))
+		self.assertTrue(any(action.startswith('RunPlugin(') and 'navigator.movie_studios' in action for action in actions['By Studio']))
+		self.assertTrue(any('navigator.movie_languages' in action for action in actions['Original-Language Cinema']))
+
 	def test_discover_is_absent_from_static_navigation(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
 		self.assertNotIn('Discover', [item.findtext('label2') for item in menu.findall('item')])

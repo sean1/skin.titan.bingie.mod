@@ -136,6 +136,44 @@ class Navigator:
 			self._add_item({'mode': mode, 'action': action, 'year': str(i), 'name': str(i)}, 'calender.png', list_name=list_name)
 		self._end_directory()
 
+	def movie_years_decades(self):
+		for name, mode in (('By Decade', 'navigator.decades'), ('By Year', 'navigator.years')):
+			self._add_item({'mode': mode, 'menu_type': 'movie', 'name': name}, 'calender.png')
+		self._end_directory()
+
+	def decades(self):
+		from datetime import date
+		current_decade = date.today().year // 10 * 10
+		for decade in range(current_decade, 1899, -10):
+			name = '%ss' % decade
+			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_movies_decade', 'decade': str(decade), 'name': name}, 'calender.png')
+		self._end_directory()
+
+	def movie_studios(self):
+		import json
+		from indexers.tmdb_api import tmdb_company_id
+		company = ku.dialog.input('Search Studios')
+		if not company.strip(): return
+		results = tmdb_company_id(company).get('results', [])
+		if not results: return ku.notification(32760)
+		choices = [str(item['id']) for item in results]
+		items = [{'line1': item['name'], 'line2': item.get('origin_country') or item['name']} for item in results]
+		company_id = ku.select_dialog(choices, items=json.dumps(items), heading='Choose a Studio')
+		if company_id is None: return
+		name = next(item['name'] for item in results if str(item['id']) == str(company_id))
+		url = build_url({'mode': 'build_movie_list', 'action': 'tmdb_movies_networks', 'company': company_id, 'name': name})
+		return ku.execute_builtin('ActivateWindow(Videos,%s,return)' % url)
+
+	def movie_languages(self):
+		from modules.meta_lists import meta_languages
+		languages = sorted((name, values['iso']) for name, values in meta_languages.items() if len(values.get('iso', '')) == 2)
+		seen = set()
+		for name, language in languages:
+			if language in seen: continue
+			seen.add(language)
+			self._add_item({'mode': 'build_movie_list', 'action': 'tmdb_movies_language', 'language': language, 'name': name}, 'languages.png')
+		self._end_directory()
+
 	def genres(self):
 		import json
 		menu_type = self.params_get('menu_type')

@@ -120,6 +120,21 @@ def tmdb_movies_upcoming(page_no):
 	url = '%s/movie/upcoming?language=en-US&page=%s' % (base_url, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
+def _tmdb_movies_recent_release_type(release_type, page_no):
+	from datetime import date, timedelta
+	today = date.today()
+	start_date = today - timedelta(days=90)
+	string = 'tmdb_movies_release_type_%s_%s_%s' % (release_type, today.isoformat(), page_no)
+	url = '%s/discover/movie?language=en-US&region=US&page=%s&include_adult=false' % (base_url, page_no)
+	url += '&with_release_type=%s&release_date.gte=%s&release_date.lte=%s&sort_by=primary_release_date.desc&vote_count.gte=1' % (release_type, start_date.isoformat(), today.isoformat())
+	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)
+
+def tmdb_movies_digital_releases(page_no):
+	return _tmdb_movies_recent_release_type(4, page_no)
+
+def tmdb_movies_physical_releases(page_no):
+	return _tmdb_movies_recent_release_type(5, page_no)
+
 def tmdb_movies_genres(genre_id, page_no):
 	string = 'tmdb_movies_genres_%s_%s' % (genre_id, page_no)
 	url = '%s/discover/movie?language=en-US&region=US&page=%s&with_genres=%s&sort_by=popularity.desc' % (base_url, page_no, genre_id)
@@ -129,6 +144,18 @@ def tmdb_movies_year(year, page_no):
 	string = 'tmdb_movies_year_%s_%s' % (year, page_no)
 	url = '%s/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
 	url += '&sort_by=popularity.desc&certification_country=US&primary_release_year=%s' % year
+	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
+
+def tmdb_movies_decade(decade, page_no):
+	string = 'tmdb_movies_decade_%s_%s' % (decade, page_no)
+	url = '%s/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url += '&sort_by=popularity.desc&certification_country=US&primary_release_date.gte=%s-01-01&primary_release_date.lte=%s-12-31' % (decade, int(decade) + 9)
+	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
+
+def tmdb_movies_language(language, page_no):
+	string = 'tmdb_movies_language_%s_%s' % (language, page_no)
+	url = '%s/discover/movie?language=en-US&region=US&page=%s' % (base_url, page_no)
+	url += '&sort_by=popularity.desc&vote_count.gte=1&with_original_language=%s' % language
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
 def tmdb_movies_networks(network_id, page_no):

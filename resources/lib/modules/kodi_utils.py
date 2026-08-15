@@ -27,11 +27,12 @@ maincache_db   = profile_path + 'maincache.db'
 metacache_db   = profile_path + 'metacache.db'
 debridcache_db = profile_path + 'debridcache.db'
 external_db    = profile_path + 'providerscache.db'
+persisted_settings_db = profile_path + 'persisted_settings.db'
 scrapers_path  = addon_path + 'resources/lib/scrapers/'
 databases_path = profile_path
 packages_path  = 'special://home/addons/packages/'
 
-current_dbs     = ('debridcache.db', 'maincache.db', 'metacache.db', 'navigator.db',
+current_dbs     = ('debridcache.db', 'maincache.db', 'metacache.db', 'navigator.db', 'persisted_settings.db',
 					'providerscache.db', 'traktcache.db', 'views.db', 'watched.db', 'settings.xml', 'fenomcache.db')
 indicators_dict = {0: watched_db}
 
@@ -460,6 +461,7 @@ FIXED_SETTINGS = {
 	'provider.ad_colour': 'darkorange',
 	'provider.rd_cloud': 'false',
 	'provider.rd_colour': 'seagreen',
+	'provider.tb_colour': 'mediumturquoise',
 	'rd.enabled': 'true',
 	'rd.expires': '0',
 	'rd.hoster.enabled': 'false',
@@ -502,6 +504,11 @@ FIXED_SETTINGS = {
 	'stingers.threshold': '10',
 	'store_torrent.realdebrid': 'false',
 	'store_torrent.alldebrid': 'false',
+	'store_torrent.torbox': 'false',
+	'tb.enabled': 'true',
+	'tb.expires': '0',
+	'tb.priority': '10',
+	'tb.torrent.enabled': 'true',
 	'thumb_fanart': 'false',
 	'tmdb_read_token': (
 		'eyJhbGciOiJIUzI1NiJ9.'
@@ -527,41 +534,80 @@ PERSISTED_SETTING_IDS = frozenset((
 	'database.maintenance.due', 'database.merge_status', 'migration.removed_services.6_08_03',
 	'ad.account_id', 'ad.token',
 	'rd.client_id', 'rd.refresh', 'rd.secret', 'rd.token', 'rd.username',
+	'tb.account_id', 'tb.token',
 	'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38', 'migration.tmdb_native_lists.2_03_03'
 ) + EXTERNAL_PROVIDER_SETTING_IDS)
 
 _settings_lock = Lock()
+_persisted_settings_schema = """CREATE TABLE IF NOT EXISTS settings (id TEXT PRIMARY KEY, value TEXT NOT NULL)"""
+
+def _persisted_settings_connection():
+	make_directorys(profile_path)
+	dbcon = database_connect(persisted_settings_db)
+	dbcon.execute(_persisted_settings_schema)
+	return dbcon
+
+def _read_persisted_settings():
+	dbcon = _persisted_settings_connection()
+	try: return {str(item[0]): str(item[1]) for item in dbcon.execute("""SELECT id, value FROM settings""")}
+	finally: dbcon.close()
+
+def _write_persisted_settings(settings_dict, overwrite=True):
+	if not settings_dict: return 0
+	query = """INSERT OR REPLACE INTO settings VALUES (?, ?)""" if overwrite else """INSERT OR IGNORE INTO settings VALUES (?, ?)"""
+	dbcon = _persisted_settings_connection()
+	try:
+		before = dbcon.total_changes
+		dbcon.executemany(query, [(setting_id, str(value)) for setting_id, value in settings_dict.items()])
+		dbcon.commit()
+		return dbcon.total_changes - before
+	finally: dbcon.close()
+
+def _read_persisted_xml(path):
+	import xml.etree.ElementTree as ET
+	try:
+		with open_file(path) as xml_file: root = ET.fromstring(xml_file.read())
+		return {
+			item.get('id'): item.text if item.text is not None else item.get('value', '')
+			for item in root.iter('setting')
+			if item.get('id') in PERSISTED_SETTING_IDS
+		}
+	except: return {}
 
 def get_setting(setting_id, fallback=None):
 	if setting_id in FIXED_SETTINGS: return FIXED_SETTINGS[setting_id]
-	try: value = manager.get(setting_id, fallback)
+	try:
+		if setting_id in PERSISTED_SETTING_IDS:
+			if not path_exists(persisted_settings_db): make_settings_dict()
+			value = _read_persisted_settings().get(setting_id, '')
+		else: value = manager.get(setting_id, fallback)
 	except: value = fallback if fallback is not None else ''
+	if value == '' and fallback is not None: return fallback
 	return value
 
+def set_settings(settings_dict):
+	if not settings_dict or any(setting_id not in PERSISTED_SETTING_IDS for setting_id in settings_dict): return False
+	try:
+		_write_persisted_settings(settings_dict)
+		make_settings_dict()
+		return True
+	except Exception as e:
+		logger('set_settings error', str(e))
+		return False
+
 def set_setting(setting_id, value):
-	if setting_id not in PERSISTED_SETTING_IDS: return False
-	import xml.etree.ElementTree as ET
-	profile_xml = profile_path + 'settings.xml'
-	with _settings_lock:
-		try:
-			with open_file(profile_xml) as xml_file: root = ET.fromstring(xml_file.read())
-		except: root = ET.Element('settings', {'version': '2'})
-		item = next((i for i in root.iter('setting') if i.get('id') == setting_id), None)
-		if item is None: item = ET.SubElement(root, 'setting', {'id': setting_id})
-		item.text = str(value)
-		make_directorys(profile_path)
-		with open_file(profile_xml, 'w') as xml_file: xml_file.write(ET.tostring(root, encoding='unicode'))
-		settings_dict = {i.get('id'): i.text or '' for i in root.iter('setting') if i.get('id') in PERSISTED_SETTING_IDS}
-		set_property('pov_lite_settings', json.dumps(settings_dict))
-	return True
+	return set_settings({setting_id: value})
 
 def make_settings_dict():
-	import xml.etree.ElementTree as ET
-	settings_dict = {}
 	try:
-		with open_file(profile_path + 'settings.xml') as xml_file: root = ET.fromstring(xml_file.read())
-		settings_dict = {i.get('id'): i.text or '' for i in root.iter('setting') if i.get('id') in PERSISTED_SETTING_IDS}
-	except Exception as e: logger('make_settings_dict error', str(e))
+		settings_dict = _read_persisted_settings()
+		legacy_settings = {setting_id: value for setting_id, value in _read_persisted_xml(profile_path + 'settings.xml').items() if setting_id not in settings_dict}
+		if legacy_settings:
+			_write_persisted_settings(legacy_settings, overwrite=False)
+			settings_dict = _read_persisted_settings()
+	except Exception as e:
+		logger('make_settings_dict error', str(e))
+		settings_dict = {}
 	set_property('pov_lite_settings', json.dumps(settings_dict))
 	return settings_dict
 
@@ -591,7 +637,6 @@ def clean_settings(silent=False):
 
 def migrate_legacy_profile():
 	"""Copy reusable POV data and merge its persisted settings into this add-on once."""
-	import xml.etree.ElementTree as ET
 	legacy_profile_path = 'special://profile/addon_data/%s/' % legacy_addon_id
 	if not path_exists(legacy_profile_path): return 0, 0
 	make_directorys(profile_path)
@@ -599,28 +644,11 @@ def migrate_legacy_profile():
 	for filename in ('watched.db',):
 		source, destination = legacy_profile_path + filename, profile_path + filename
 		if path_exists(source) and not path_exists(destination) and copy_file(source, destination): copied_count += 1
-	legacy_xml, profile_xml = legacy_profile_path + 'settings.xml', profile_path + 'settings.xml'
+	legacy_xml = legacy_profile_path + 'settings.xml'
 	if not path_exists(legacy_xml): return copied_count, 0
-	try:
-		with open_file(legacy_xml) as xml_file: legacy_root = ET.fromstring(xml_file.read())
-	except: return copied_count, 0
-	with _settings_lock:
-		if path_exists(profile_xml):
-			try:
-				with open_file(profile_xml) as xml_file: root = ET.fromstring(xml_file.read())
-			except: return copied_count, 0
-		else: root = ET.Element('settings', {'version': '2'})
-		existing_ids = {item.get('id') for item in root.iter('setting')}
-		merged_count = 0
-		for legacy_item in legacy_root.iter('setting'):
-			setting_id = legacy_item.get('id')
-			if setting_id not in PERSISTED_SETTING_IDS or setting_id in existing_ids: continue
-			item = ET.SubElement(root, 'setting', {'id': setting_id})
-			item.text = legacy_item.text or ''
-			existing_ids.add(setting_id)
-			merged_count += 1
-		if merged_count:
-			with open_file(profile_xml, 'w') as xml_file: xml_file.write(ET.tostring(root, encoding='unicode'))
+	make_settings_dict()
+	try: merged_count = _write_persisted_settings(_read_persisted_xml(legacy_xml), overwrite=False)
+	except: merged_count = 0
 	if merged_count: make_settings_dict()
 	return copied_count, merged_count
 

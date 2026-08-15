@@ -80,9 +80,9 @@ def purge_removed_service_data():
 		from caches.main_cache import clear_main_cache_property
 		dbcon = database_connect(maincache_db)
 		dbcur = dbcon.cursor()
-		query = """SELECT id FROM maincache WHERE id LIKE ? OR id LIKE ? OR id LIKE ? OR id LIKE ? OR id IN (?, ?)"""
+		query = """SELECT id FROM maincache WHERE id LIKE ? OR id LIKE ? OR id LIKE ? OR id IN (?, ?)"""
 		params = (
-			'pov_lite_pm_%', 'pov_lite_tb_%', 'pov_lite_oc_%', 'pov_lite_EASYNEWS_SEARCH_%',
+			'pov_lite_pm_%', 'pov_lite_oc_%', 'pov_lite_EASYNEWS_SEARCH_%',
 			'torbox_usenet_queries', 'easynews_video_queries'
 		)
 		dbcur.execute(query, params)
@@ -93,7 +93,7 @@ def purge_removed_service_data():
 		for item in cache_keys: clear_main_cache_property(item)
 
 		dbcon = database_connect(debridcache_db)
-		dbcon.execute("""DELETE FROM debrid_data WHERE debrid IN (?, ?, ?)""", ('pm', 'tb', 'oc'))
+		dbcon.execute("""DELETE FROM debrid_data WHERE debrid IN (?, ?)""", ('pm', 'oc'))
 		dbcon.commit()
 		dbcon.close()
 		kodi_utils.set_setting(setting_id, 'true')

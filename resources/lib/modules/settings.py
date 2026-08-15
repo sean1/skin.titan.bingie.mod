@@ -267,8 +267,9 @@ def check_prescrape_sources(scraper, mediatype):
 def provider_sort_ranks():
 	rd_priority = int(get_setting('rd.priority', '10'))
 	ad_priority = int(get_setting('ad.priority', '10'))
+	tb_priority = int(get_setting('tb.priority', '10'))
 	return {
-		'realdebrid': rd_priority, 'rd_cloud': rd_priority, 'alldebrid': ad_priority
+		'realdebrid': rd_priority, 'rd_cloud': rd_priority, 'alldebrid': ad_priority, 'torbox': tb_priority
 	}
 
 def sort_to_top(provider):
@@ -279,7 +280,7 @@ def scraping_settings():
 		return get_setting('provider.%s_colour' % provider, fallback)
 	highlight_type = int(get_setting('highlight.type', '0'))
 	hoster_highlight, torrent_highlight = '', ''
-	debrid_cloud_highlight, folders_highlight, rd_highlight, ad_highlight = '', '', '', ''
+	debrid_cloud_highlight, folders_highlight, rd_highlight, ad_highlight, tb_highlight = '', '', '', '', ''
 	highlight_4K, highlight_1080P, highlight_720P, highlight_SD = '', '', '', ''
 	if highlight_type in (0, 1):
 		if highlight_type == 0:
@@ -288,6 +289,7 @@ def scraping_settings():
 		else:
 			rd_highlight = provider_color('rd', 'seagreen')
 			ad_highlight = provider_color('ad', 'darkorange')
+			tb_highlight = provider_color('tb', 'mediumturquoise')
 		debrid_cloud_highlight = provider_color('debrid_cloud', 'darkviolet')
 		folders_highlight = provider_color('folders', 'darkgoldenrod')
 	else:
@@ -296,7 +298,7 @@ def scraping_settings():
 		highlight_720P = get_setting('scraper_720p_highlight', 'gold')
 		highlight_SD = get_setting('scraper_SD_highlight', 'lightsaltegray')
 	return {
-		'realdebrid': rd_highlight, 'rd_cloud': debrid_cloud_highlight, 'alldebrid': ad_highlight,
+		'realdebrid': rd_highlight, 'rd_cloud': debrid_cloud_highlight, 'alldebrid': ad_highlight, 'torbox': tb_highlight,
 		'uncached': 'dimgray', 'highlight_type': highlight_type, 'folders': folders_highlight,
 		'hoster_highlight': hoster_highlight, 'torrent_highlight': torrent_highlight,
 		'4k': highlight_4K, '1080p': highlight_1080P, '720p': highlight_720P,
@@ -307,6 +309,7 @@ def info_icons():
 	return (
 		('realdebrid', 'realdebrid.png'), ('rd_cloud', 'realdebrid.png'),
 		('alldebrid', 'premium.png'),
+		('torbox', 'premium.png'),
 		('folders', 'folder.png'),
 		('4k', 'flag4k.png'), ('1080p', 'flag1080p.png'), ('720p', 'flag720p.png'),
 		('sd', 'flagSD.png'), ('cam', 'flagSD.png'), ('tele', 'flagSD.png'), ('scr', 'flagSD.png')

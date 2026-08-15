@@ -6,7 +6,7 @@ from modules import kodi_utils, cache
 # logger = kodi_utils.logger
 
 quote, clear_cache = requests.utils.quote, cache.clear_cache
-get_setting, set_setting, sleep = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.sleep
+get_setting, set_settings, sleep = kodi_utils.get_setting, kodi_utils.set_settings, kodi_utils.sleep
 notification, confirm_dialog = kodi_utils.notification, kodi_utils.confirm_dialog
 user_agent = 'BINGIE Lite/%s' % kodi_utils.get_addoninfo('version')
 qr_str = 'https://api.qrserver.com/v1/create-qr-code/?size=256x256&qzone=1%s'
@@ -28,7 +28,7 @@ def authorize():
 			item.setLabel2(auth_str if api().token else noauth_str)
 			item.setArt({'icon': '%s%s' % (icon_path, api.icon)})
 			yield item
-	services, icon_path = (RealDebrid, AllDebrid), kodi_utils.media_path()
+	services, icon_path = (RealDebrid, AllDebrid, TorBox), kodi_utils.media_path()
 	service = kodi_utils.dialog.select('My Services', list(_builder()), useDetails=True)
 	if service < 0: return
 	try: success = services[service]().set()
@@ -61,11 +61,7 @@ class RealDebrid:
 	def set(self):
 		if self.token:
 			if not confirm_dialog(): return
-			set_setting('rd.username', '')
-			set_setting('rd.client_id', '')
-			set_setting('rd.token', '')
-			set_setting('rd.refresh', '')
-			set_setting('rd.secret', '')
+			if not set_settings({'rd.username': '', 'rd.client_id': '', 'rd.token': '', 'rd.refresh': '', 'rd.secret': ''}): return notification(32574)
 			clear_cache('rd_cloud', silent=True)
 			return notification('Removed %s Authorization' % self.__class__.__name__)
 
@@ -99,11 +95,7 @@ class RealDebrid:
 		username = response.json()['username']
 		client_id, secret = data['client_id'], data['client_secret']
 		token, refresh = data['access_token'], data['refresh_token']
-		set_setting('rd.username', str(username))
-		set_setting('rd.client_id', client_id)
-		set_setting('rd.token', token)
-		set_setting('rd.refresh', refresh)
-		set_setting('rd.secret', secret)
+		if not set_settings({'rd.username': str(username), 'rd.client_id': client_id, 'rd.token': token, 'rd.refresh': refresh, 'rd.secret': secret}): return notification(32574)
 		notification('Set %s Authorization' % self.__class__.__name__)
 		return True
 
@@ -124,8 +116,7 @@ class AllDebrid:
 	def set(self):
 		if self.token:
 			if not confirm_dialog(): return
-			set_setting('ad.account_id', '')
-			set_setting('ad.token', '')
+			if not set_settings({'ad.account_id': '', 'ad.token': ''}): return notification(32574)
 			from debrids.all_debrid_api import AllDebridAPI
 			AllDebridAPI().clear_cache()
 			return notification('Removed %s Authorization' % self.__class__.__name__)
@@ -155,7 +146,57 @@ class AllDebrid:
 		response = requests.get(self.base_url('v4/user'), headers=headers, timeout=timeout)
 		response.raise_for_status()
 		username = response.json()['data']['user']['username']
-		set_setting('ad.account_id', str(username))
-		set_setting('ad.token', self.token)
+		if not set_settings({'ad.account_id': str(username), 'ad.token': self.token}): return notification(32574)
+		notification('Set %s Authorization' % self.__class__.__name__)
+		return True
+
+class TorBox:
+	icon = 'premium.png'
+	def __init__(self):
+		self.token = get_setting('tb.token')
+
+	def base_url(self, path):
+		return 'https://api.torbox.app/v1/api/%s' % path
+
+	def poll_auth(self, data):
+		response = requests.post(self.base_url('user/auth/device/token'), json={'device_code': data['device_code']}, timeout=timeout)
+		if not response.ok: return
+		result = response.json()
+		if result.get('success'): self.token = result.get('data', {}).get('access_token', '')
+
+	def set(self):
+		if self.token:
+			if not confirm_dialog(): return
+			if not set_settings({'tb.account_id': '', 'tb.token': ''}): return notification(32574)
+			from debrids.torbox_api import TorBoxAPI
+			TorBoxAPI().clear_cache()
+			return notification('Removed %s Authorization' % self.__class__.__name__)
+
+		response = requests.get(self.base_url('user/auth/device/start'), params={'app': 'BINGIELite'}, timeout=timeout)
+		response.raise_for_status()
+		result = response.json()['data']
+		expires_in, expires_at = 600, 600 + time.monotonic()
+		try: qr_icon = qr_str % '&bgcolor=04bf8a&data=%s' % quote(result['verification_url'])
+		except: qr_icon = ''
+		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
+		detail = code_str % result['code'], nav2_str % result['friendly_verification_url']
+		progress_dialog = _make_progress_dialog(meta=meta)
+		timer = RepeatTimer(max(int(result.get('interval') or 5), 5), self.poll_auth, args=(result,))
+		timer.start()
+		for i in range(1, expires_in + 1):
+			if self.token or progress_dialog.iscanceled(): break
+			lines = await_str % divmod(expires_at - time.monotonic(), 60), *detail
+			progress = 100 - int(100 * i / expires_in)
+			progress_dialog.update('[CR]'.join(lines), progress)
+			sleep(1000)
+		timer.cancel()
+		progress_dialog.close()
+		if progress_dialog.iscanceled(): return False
+		if not self.token: return notification(32574)
+		headers = {'Authorization': 'Bearer %s' % self.token}
+		response = requests.get(self.base_url('user/me'), headers=headers, params={'settings': 'false'}, timeout=timeout)
+		response.raise_for_status()
+		account = response.json()['data']
+		if not set_settings({'tb.account_id': str(account.get('customer') or account.get('id', '')), 'tb.token': self.token}): return notification(32574)
 		notification('Set %s Authorization' % self.__class__.__name__)
 		return True

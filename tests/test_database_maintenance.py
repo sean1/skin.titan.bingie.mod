@@ -5,7 +5,7 @@ import types
 import unittest
 from pathlib import Path
 
-from tests.module_isolation import load_module
+from tests.module_isolation import load_module, temporary_modules
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -181,6 +181,35 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 		self.assertIn(('remove_databases',), calls)
 		self.assertIn(('remove_packages',), calls)
 		self.assertEqual(calls[-1], ('notification', 32576, 1500))
+
+	def test_removed_service_migration_preserves_new_torbox_data(self):
+		with tempfile.TemporaryDirectory() as temp_dir:
+			self.cache.maincache_db = str(Path(temp_dir) / 'maincache.db')
+			self.cache.debridcache_db = str(Path(temp_dir) / 'debridcache.db')
+			self.cache.database_connect = sqlite3.connect
+			with sqlite3.connect(self.cache.maincache_db) as dbcon:
+				dbcon.execute('CREATE TABLE maincache (id TEXT UNIQUE, expires INTEGER, data TEXT)')
+				dbcon.executemany('INSERT INTO maincache VALUES (?, 0, "")', (
+					('pov_lite_tb_movie',), ('pov_lite_pm_movie',), ('torbox_usenet_queries',), ('keep',)
+				))
+			with sqlite3.connect(self.cache.debridcache_db) as dbcon:
+				dbcon.execute('CREATE TABLE debrid_data (hash TEXT, debrid TEXT, cached TEXT, expires INTEGER)')
+				dbcon.executemany('INSERT INTO debrid_data VALUES (?, ?, "True", 0)', (('tb-hash', 'tb'), ('pm-hash', 'pm'), ('keep-hash', 'rd')))
+			settings = {}
+			self.cache.kodi_utils.get_setting = lambda key: settings.get(key, '')
+			self.cache.kodi_utils.set_setting = lambda key, value: settings.__setitem__(key, value) or True
+			self.cache.kodi_utils.logger = lambda *args: None
+			main_cache = types.ModuleType('caches.main_cache')
+			main_cache.clear_main_cache_property = lambda key: None
+
+			with temporary_modules({'caches.main_cache': main_cache}):
+				self.assertTrue(self.cache.purge_removed_service_data())
+
+			with sqlite3.connect(self.cache.maincache_db) as dbcon:
+				self.assertEqual({row[0] for row in dbcon.execute('SELECT id FROM maincache')}, {'pov_lite_tb_movie', 'keep'})
+			with sqlite3.connect(self.cache.debridcache_db) as dbcon:
+				self.assertEqual({row[0] for row in dbcon.execute('SELECT hash FROM debrid_data')}, {'tb-hash', 'keep-hash'})
+			self.assertEqual(settings['migration.removed_services.6_08_03'], 'true')
 
 
 if __name__ == '__main__':

@@ -324,7 +324,7 @@ class ResultsContextMenu(BaseDialog):
 		append = self.item_list.append
 		provider_source = self.item.get('source')
 		cache_provider = self.item.get('cache_provider', 'None')
-		if any(provider in cache_provider for provider in ('realdebrid', 'alldebrid')):
+		if any(provider in cache_provider for provider in ('realdebrid', 'alldebrid', 'torbox')):
 			append(self.make_contextmenu_item(check_str, run_plugin_str, {'mode': 'unchecked_magnet_status'}))
 		if self.filter_applied:
 			append(self.make_contextmenu_item(clr_filter_str, run_plugin_str, {'mode': 'clear_results_filter'}))

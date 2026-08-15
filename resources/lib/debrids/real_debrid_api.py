@@ -3,7 +3,7 @@ from caches.main_cache import cache_object, clear_main_cache_property
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
-ls, get_setting, set_setting = kodi_utils.local_string, kodi_utils.get_setting, kodi_utils.set_setting
+ls, get_setting, set_settings = kodi_utils.local_string, kodi_utils.get_setting, kodi_utils.set_settings
 auth_url = 'https://app.real-debrid.com/oauth/v2/'
 base_url = 'https://app.real-debrid.com/rest/1.0/'
 timeout = 10.0
@@ -48,8 +48,7 @@ class RealDebridAPI:
 			response = response.json()
 			self.token, refresh = response['access_token'], response['refresh_token']
 			session.headers.update(self.headers())
-			set_setting('rd.token', self.token)
-			set_setting('rd.refresh', refresh)
+			if not set_settings({'rd.token': self.token, 'rd.refresh': refresh}): raise Exception('credential persistence failed')
 		except Exception as e: kodi_utils.logger('refresh_token error', str(e))
 		else: return True
 		return False

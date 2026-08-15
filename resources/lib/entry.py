@@ -933,6 +933,7 @@ def premAccntNotification():
 	for user, expires, module, cls in (
 		('rd.username', 'rd.expires', 'real_debrid_api', 'RealDebridAPI'),
 		('ad.account_id', 'ad.expires', 'all_debrid_api', 'AllDebridAPI'),
+		('tb.account_id', 'tb.expires', 'torbox_api', 'TorBoxAPI'),
 	):
 		try:
 			if not get_setting(user): continue

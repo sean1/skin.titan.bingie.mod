@@ -1,6 +1,6 @@
 import json
 from threading import Thread
-from debrids import all_debrid_api, real_debrid_api
+from debrids import all_debrid_api, real_debrid_api, torbox_api
 from caches.debrid_cache import DebridCache
 from indexers import metadata
 from modules import kodi_utils, settings
@@ -16,6 +16,7 @@ plswait_str, checking_debrid_str, remaining_debrid_str = ls(32577), ls(32578), l
 debrid_list = (
 	('realdebrid', 'rd', real_debrid_api.RealDebridAPI),
 	('alldebrid', 'ad', all_debrid_api.AllDebridAPI),
+	('torbox', 'tb', torbox_api.TorBoxAPI),
 )
 
 def import_debrid(debrid_provider):
@@ -93,14 +94,14 @@ class Source:
 			file_url = api.unrestrict_link(file_key)
 			if not api.defaults_to_cloud:
 				if store_to_cloud: Thread(target=api.create_transfer, args=(self.url,)).start()
-			if api.defaults_to_cloud:
-				if not store_to_cloud: self._delete(api, torrent_id)
+			if api.defaults_to_cloud and not store_to_cloud and torrent_id: self._delete(api, torrent_id)
 			return file_url
 		except Exception as e:
 			kodi_utils.logger('resolve_external_sources exception', f"{e}\n{self.dumps()}")
 			if api and files and torrent_id: self._delete(api, torrent_id)
 
 	def _delete(self, api, torrent_id):
+		if not torrent_id: return
 		Thread(target=api.delete_torrent, args=(torrent_id,)).start()
 
 	def resolve_internal_sources(self, direct_debrid_link=False):
@@ -168,7 +169,7 @@ class DebridCheck:
 		self.imdb, self.season, self.episode = meta.get('imdb_id'), meta.get('season'), meta.get('episode')
 
 	def result(self):
-		if self.debrid == 'ad': return {'cached': self.cached_list, 'checked': self.checked_list}
+		if self.debrid in ('ad', 'tb'): return {'cached': self.cached_list, 'checked': self.checked_list}
 		return self.cached_list
 
 	def cache_write(self, hashes):

@@ -129,14 +129,15 @@ class ExternalManagerTests(unittest.TestCase):
 		meta = {'background': True, 'search_info': {'scrape_timeout': 1}}
 		return SOURCES.ExternalManager(meta, providers, debrid_names, [], [], Progress(), eligibility_filter=eligibility_filter, force_full_search=force_full_search)
 
-	def test_dual_debrid_results_keep_provider_specific_cache_labels(self):
-		FakeDebridCheck.cached_by_provider = {'realdebrid': {'torrentio-0'}, 'alldebrid': {'torrentio-1'}}
-		FakeDebridCheck.exact_providers = {'alldebrid'}
-		results = self.manager(provider_names=['torrentio'], debrid_names=['realdebrid', 'alldebrid']).results({})
+	def test_multi_debrid_results_keep_provider_specific_cache_labels(self):
+		FakeDebridCheck.cached_by_provider = {'realdebrid': {'torrentio-0'}, 'alldebrid': {'torrentio-1'}, 'torbox': {'torrentio-0'}}
+		FakeDebridCheck.exact_providers = {'alldebrid', 'torbox'}
+		results = self.manager(provider_names=['torrentio'], debrid_names=['realdebrid', 'alldebrid', 'torbox']).results({})
 		labels = {(item['hash'], item['debrid'], item['cache_provider']) for item in results}
 		self.assertEqual(labels, {
 			('torrentio-0', 'realdebrid', 'realdebrid'), ('torrentio-1', 'realdebrid', 'Unchecked realdebrid'),
-			('torrentio-0', 'alldebrid', 'Uncached alldebrid'), ('torrentio-1', 'alldebrid', 'alldebrid')
+			('torrentio-0', 'alldebrid', 'Uncached alldebrid'), ('torrentio-1', 'alldebrid', 'alldebrid'),
+			('torrentio-0', 'torbox', 'torbox'), ('torrentio-1', 'torbox', 'Uncached torbox')
 		})
 
 	def test_cached_core_target_skips_fallback(self):

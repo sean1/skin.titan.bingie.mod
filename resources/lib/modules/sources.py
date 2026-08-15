@@ -686,7 +686,7 @@ class ExternalManager:
 		if not torrent_sources: return [], set()
 		try: check_sources = self.eligibility_filter(list(torrent_sources)) if self.eligibility_filter else torrent_sources
 		except: check_sources = torrent_sources
-		check_hashes = list({i['hash'] for i in check_sources})
+		check_hashes = list(dict.fromkeys(i['hash'] for i in check_sources))
 		if not check_hashes:
 			return [
 				{**i, 'cache_provider': '%s %s' % ('Unchecked', name), 'debrid': name}
@@ -704,11 +704,18 @@ class ExternalManager:
 			if not fut.done():
 				fut.cancel()
 				continue
-			try: hashes = set(fut.result())
+			try: cache_result = fut.result()
 			except: continue
+			if isinstance(cache_result, dict):
+				hashes = set(cache_result.get('cached', ()))
+				checked_hashes = set(cache_result.get('checked', ()))
+			else:
+				hashes = set(cache_result)
+				checked_hashes = set()
 			cached_hashes.update(hashes)
-			uncached = '%s %s' % ('Unchecked', fut.name)
-			results.extend({**i, 'cache_provider': fut.name if i['hash'] in hashes else uncached, 'debrid': fut.name} for i in torrent_sources)
+			results.extend({
+				**i, 'cache_provider': fut.name if i['hash'] in hashes else '%s %s' % ('Uncached' if i['hash'] in checked_hashes else 'Unchecked', fut.name), 'debrid': fut.name
+			} for i in torrent_sources)
 		return results, cached_hashes
 
 	def eligible_cached_count(self, sources, cached_hashes):

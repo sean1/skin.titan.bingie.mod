@@ -1,6 +1,6 @@
 import json
 from threading import Thread
-from debrids import real_debrid_api
+from debrids import all_debrid_api, real_debrid_api
 from caches.debrid_cache import DebridCache
 from indexers import metadata
 from modules import kodi_utils, settings
@@ -15,6 +15,7 @@ plswait_str, checking_debrid_str, remaining_debrid_str = ls(32577), ls(32578), l
 
 debrid_list = (
 	('realdebrid', 'rd', real_debrid_api.RealDebridAPI),
+	('alldebrid', 'ad', all_debrid_api.AllDebridAPI),
 )
 
 def import_debrid(debrid_provider):
@@ -162,9 +163,13 @@ class DebridCheck:
 		with DebridCache() as cache: cls.cached_hashes = cache.get_many(hash_list) or []
 
 	def __init__(self, meta, name):
-		self.cached_list = []
+		self.cached_list, self.checked_list = [], set()
 		self.name, self.debrid, self.function = self._debrid_dict[name]
 		self.imdb, self.season, self.episode = meta.get('imdb_id'), meta.get('season'), meta.get('episode')
+
+	def result(self):
+		if self.debrid == 'ad': return {'cached': self.cached_list, 'checked': self.checked_list}
+		return self.cached_list
 
 	def cache_write(self, hashes):
 		with DebridCache() as cache: cache.set_many(hashes, self.debrid)
@@ -172,23 +177,27 @@ class DebridCheck:
 	def cache_check(self):
 		try:
 			self.cached_list.extend(i[0] for i in self.cached_hashes if i[1] == self.debrid and i[2] == 'True')
+			self.checked_list.update(i[0] for i in self.cached_hashes if i[1] == self.debrid)
 			unchecked_filter = {h[0] for h in self.cached_hashes if h[1] == self.debrid}
 			unchecked_hashes = [i for i in self.hash_list if i not in unchecked_filter]
-			if not unchecked_hashes: return self.cached_list
-			checked_hashes = self.external_check_cache(unchecked_hashes)
-			if not checked_hashes: return self.cached_list
-			checked_hashes = set(checked_hashes)
+			if not unchecked_hashes: return self.result()
+			if self.debrid == 'rd':
+				checked_hashes = self.external_check_cache(unchecked_hashes)
+				checked_results = {item: item in checked_hashes for item in unchecked_hashes}
+			else: checked_results = self.function().check_cache(unchecked_hashes)
+			if not checked_results: return self.result()
+			self.checked_list.update(checked_results)
 			hashes_to_cache = []
 			process_append = hashes_to_cache.append
 			cached_append = self.cached_list.append
-			for h in unchecked_hashes:
-				if h in checked_hashes:
+			for h, is_cached in checked_results.items():
+				if is_cached:
 					cached_append(h)
 					process_append((h, 'True'))
 				else: process_append((h, 'False'))
 			if hashes_to_cache: Thread(target=self.cache_write, args=(hashes_to_cache,)).start()
 		except: pass
-		return self.cached_list
+		return self.result()
 
 	def external_check_cache(self, unchecked_hashes):
 		checked_hashes = []

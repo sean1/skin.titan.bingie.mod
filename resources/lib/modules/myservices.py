@@ -28,7 +28,7 @@ def authorize():
 			item.setLabel2(auth_str if api().token else noauth_str)
 			item.setArt({'icon': '%s%s' % (icon_path, api.icon)})
 			yield item
-	services, icon_path = (RealDebrid,), kodi_utils.media_path()
+	services, icon_path = (RealDebrid, AllDebrid), kodi_utils.media_path()
 	service = kodi_utils.dialog.select('My Services', list(_builder()), useDetails=True)
 	if service < 0: return
 	try: success = services[service]().set()
@@ -104,5 +104,58 @@ class RealDebrid:
 		set_setting('rd.token', token)
 		set_setting('rd.refresh', refresh)
 		set_setting('rd.secret', secret)
+		notification('Set %s Authorization' % self.__class__.__name__)
+		return True
+
+class AllDebrid:
+	icon = 'premium.png'
+	def __init__(self):
+		self.token = get_setting('ad.token')
+
+	def base_url(self, path):
+		return 'https://api.alldebrid.com/%s' % path
+
+	def poll_auth(self, data):
+		response = requests.post(self.base_url('v4/pin/check'), data={'pin': data['pin'], 'check': data['check']}, timeout=timeout)
+		if not response.ok: return
+		result = response.json().get('data', {})
+		if result.get('activated'): self.token = result.get('apikey', '')
+
+	def set(self):
+		if self.token:
+			if not confirm_dialog(): return
+			set_setting('ad.account_id', '')
+			set_setting('ad.token', '')
+			from debrids.all_debrid_api import AllDebridAPI
+			AllDebridAPI().clear_cache()
+			return notification('Removed %s Authorization' % self.__class__.__name__)
+
+		response = requests.get(self.base_url('v4.1/pin/get'), timeout=timeout)
+		response.raise_for_status()
+		result = response.json()['data']
+		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
+		try: qr_icon = qr_str % '&data=%s' % quote(result['user_url'])
+		except: qr_icon = ''
+		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
+		detail = code_str % result['pin'], nav2_str % result['base_url']
+		progress_dialog = _make_progress_dialog(meta=meta)
+		timer = RepeatTimer(5, self.poll_auth, args=(result,))
+		timer.start()
+		for i in range(1, expires_in + 1):
+			if self.token or progress_dialog.iscanceled(): break
+			lines = await_str % divmod(expires_at - time.monotonic(), 60), *detail
+			progress = 100 - int(100 * i / expires_in)
+			progress_dialog.update('[CR]'.join(lines), progress)
+			sleep(1000)
+		timer.cancel()
+		progress_dialog.close()
+		if progress_dialog.iscanceled(): return False
+		if not self.token: return notification(32574)
+		headers = {'Authorization': 'Bearer %s' % self.token}
+		response = requests.get(self.base_url('v4/user'), headers=headers, timeout=timeout)
+		response.raise_for_status()
+		username = response.json()['data']['user']['username']
+		set_setting('ad.account_id', str(username))
+		set_setting('ad.token', self.token)
 		notification('Set %s Authorization' % self.__class__.__name__)
 		return True

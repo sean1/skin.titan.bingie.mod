@@ -78,6 +78,8 @@ class FakeExternalSource:
 class FakeDebridCheck:
 	hash_list = []
 	cached = set()
+	cached_by_provider = {}
+	exact_providers = set()
 	checked_batches = []
 
 	@classmethod
@@ -85,10 +87,13 @@ class FakeDebridCheck:
 		cls.hash_list = hash_list
 		cls.checked_batches.append(set(hash_list))
 
-	def __init__(self, meta, name): pass
+	def __init__(self, meta, name): self.name = name
 
 	def cache_check(self):
-		return [item for item in self.hash_list if item in self.cached]
+		cached = self.cached_by_provider.get(self.name, self.cached)
+		cached = [item for item in self.hash_list if item in cached]
+		if self.name in self.exact_providers: return {'cached': cached, 'checked': set(self.hash_list)}
+		return cached
 
 
 class RecordingExecutor:
@@ -109,17 +114,30 @@ class ExternalManagerTests(unittest.TestCase):
 	def setUp(self):
 		FakeExternalSource.calls = []
 		FakeDebridCheck.cached = set()
+		FakeDebridCheck.cached_by_provider = {}
+		FakeDebridCheck.exact_providers = set()
 		FakeDebridCheck.checked_batches = []
 		RecordingExecutor.worker_counts = []
 		SOURCES.ExternalSource = FakeExternalSource
 		SOURCES.DebridCheck = FakeDebridCheck
 		SOURCES.TPE = RecordingExecutor
 
-	def manager(self, force_full_search=False, eligibility_filter=lambda results: results, provider_names=None):
+	def manager(self, force_full_search=False, eligibility_filter=lambda results: results, provider_names=None, debrid_names=None):
 		provider_names = provider_names or (*sorted(CORE_EXTERNAL_PROVIDERS), 'bitsearch', 'dmm')
+		debrid_names = debrid_names or ['realdebrid']
 		providers = [(name, object()) for name in provider_names]
 		meta = {'background': True, 'search_info': {'scrape_timeout': 1}}
-		return SOURCES.ExternalManager(meta, providers, ['realdebrid'], [], [], Progress(), eligibility_filter=eligibility_filter, force_full_search=force_full_search)
+		return SOURCES.ExternalManager(meta, providers, debrid_names, [], [], Progress(), eligibility_filter=eligibility_filter, force_full_search=force_full_search)
+
+	def test_dual_debrid_results_keep_provider_specific_cache_labels(self):
+		FakeDebridCheck.cached_by_provider = {'realdebrid': {'torrentio-0'}, 'alldebrid': {'torrentio-1'}}
+		FakeDebridCheck.exact_providers = {'alldebrid'}
+		results = self.manager(provider_names=['torrentio'], debrid_names=['realdebrid', 'alldebrid']).results({})
+		labels = {(item['hash'], item['debrid'], item['cache_provider']) for item in results}
+		self.assertEqual(labels, {
+			('torrentio-0', 'realdebrid', 'realdebrid'), ('torrentio-1', 'realdebrid', 'Unchecked realdebrid'),
+			('torrentio-0', 'alldebrid', 'Uncached alldebrid'), ('torrentio-1', 'alldebrid', 'alldebrid')
+		})
 
 	def test_cached_core_target_skips_fallback(self):
 		FakeDebridCheck.cached = {'%s-%d' % (provider, index) for provider in CORE_EXTERNAL_PROVIDERS for index in range(2)}

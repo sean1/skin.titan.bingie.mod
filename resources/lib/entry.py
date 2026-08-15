@@ -932,6 +932,7 @@ def premAccntNotification():
 	from importlib import import_module
 	for user, expires, module, cls in (
 		('rd.username', 'rd.expires', 'real_debrid_api', 'RealDebridAPI'),
+		('ad.account_id', 'ad.expires', 'all_debrid_api', 'AllDebridAPI'),
 	):
 		try:
 			if not get_setting(user): continue

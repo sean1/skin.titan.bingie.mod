@@ -111,6 +111,16 @@ class SettingsCleanupTests(unittest.TestCase):
 		self.assertIn('w', self.open_modes)
 		self.kodi_utils.make_settings_dict.assert_called_once_with()
 
+	def test_all_debrid_credentials_are_persisted(self):
+		self.assertIn('ad.account_id', self.kodi_utils.PERSISTED_SETTING_IDS)
+		self.assertIn('ad.token', self.kodi_utils.PERSISTED_SETTING_IDS)
+
+		self.assertTrue(self.kodi_utils.set_setting('ad.token', 'test-token'))
+
+		contents = self.settings_file.read_text(encoding='utf-8')
+		self.assertIn('id="ad.token"', contents)
+		self.assertIn('test-token', contents)
+
 
 if __name__ == '__main__':
 	unittest.main()

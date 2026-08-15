@@ -642,7 +642,7 @@ msgid "Content loading"
 msgstr ""
 
 msgctxt "#320213"
-msgid "Real-Debrid"
+msgid "Debrid Services"
 msgstr ""
 
 msgctxt "#320214"

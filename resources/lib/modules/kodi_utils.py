@@ -398,6 +398,10 @@ FIXED_SETTINGS = {
 	'auto_resume_episode': '0',
 	'auto_resume_movie': '0',
 	'auto_start_pov': 'false',
+	'ad.enabled': 'true',
+	'ad.expires': '0',
+	'ad.priority': '10',
+	'ad.torrent.enabled': 'true',
 	'autoplay_next_check_threshold': '3',
 	'autoplay_next_episode': 'true',
 	'autoplay_next_show_window': 'true',
@@ -453,6 +457,7 @@ FIXED_SETTINGS = {
 	'paginate.lists': 'true',
 	'pov.max_threads': '100',
 	'provider.debrid_cloud_colour': 'darkviolet',
+	'provider.ad_colour': 'darkorange',
 	'provider.rd_cloud': 'false',
 	'provider.rd_colour': 'seagreen',
 	'rd.enabled': 'true',
@@ -496,6 +501,7 @@ FIXED_SETTINGS = {
 	'stingers.enable': 'true',
 	'stingers.threshold': '10',
 	'store_torrent.realdebrid': 'false',
+	'store_torrent.alldebrid': 'false',
 	'thumb_fanart': 'false',
 	'tmdb_read_token': (
 		'eyJhbGciOiJIUzI1NiJ9.'
@@ -519,6 +525,7 @@ EXTERNAL_PROVIDER_SETTING_IDS = tuple('provider.external.%s.enabled' % provider 
 
 PERSISTED_SETTING_IDS = frozenset((
 	'database.maintenance.due', 'database.merge_status', 'migration.removed_services.6_08_03',
+	'ad.account_id', 'ad.token',
 	'rd.client_id', 'rd.refresh', 'rd.secret', 'rd.token', 'rd.username',
 	'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38', 'migration.tmdb_native_lists.2_03_03'
 ) + EXTERNAL_PROVIDER_SETTING_IDS)

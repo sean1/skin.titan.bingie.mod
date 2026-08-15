@@ -1,6 +1,8 @@
 import types
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from urllib.request import urlopen
 
 from tests.module_isolation import load_module, temporary_modules
 
@@ -36,6 +38,10 @@ def load_metadata():
 def load_trailers():
 	kodi_utils = types.ModuleType('modules.kodi_utils')
 	kodi_utils.profile_path = '/tmp/'
+	kodi_utils.translate_path = lambda path: path
+	kodi_utils.set_property = lambda *args: None
+	kodi_utils.clear_property = lambda *args: None
+	kodi_utils.delete_file = lambda *args: None
 	modules = types.ModuleType('modules')
 	modules.__path__ = []
 	modules.kodi_utils = kodi_utils
@@ -102,6 +108,22 @@ video/720.m3u8
 
 		limited = self.trailers._limited_hls_manifest(manifest, 'https://video.test/master.m3u8')
 		self.assertIn('https://video.test/audio.m3u8', limited)
+
+	def test_manifest_server_uses_one_plain_python_request_thread(self):
+		with TemporaryDirectory() as directory:
+			manifest_file = Path(directory) / 'preview.m3u8'
+			manifest_file.write_bytes(b'#EXTM3U\n')
+			old_manifest_file = self.trailers.TRAILER_MANIFEST_FILE
+			self.trailers.TRAILER_MANIFEST_FILE = str(manifest_file)
+			server_thread = self.trailers.start_manifest_server()
+			try:
+				server, _ = server_thread
+				with urlopen('http://127.0.0.1:%d/trailer_preview.m3u8' % server.server_port, timeout=2) as response:
+					self.assertEqual(response.read(), b'#EXTM3U\n')
+				self.assertEqual(type(server).__name__, 'HTTPServer')
+			finally:
+				self.trailers.stop_manifest_server(server_thread)
+				self.trailers.TRAILER_MANIFEST_FILE = old_manifest_file
 
 
 if __name__ == '__main__':

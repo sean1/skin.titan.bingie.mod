@@ -167,6 +167,7 @@ class TrailerPreview:
 		self.suppressed_identity = ''
 		self.manual_identity = ''
 		self.pending_stop_trailer = ''
+		self.pending_stop_player = None
 		self.pending_stop_deadline = 0.0
 		self.pending_stop_requested = False
 		self.fullscreen_exit_at = 0.0
@@ -708,11 +709,13 @@ class TrailerPreview:
 	def _begin_preview_stop(self, now):
 		if not self.active: return
 		trailer = self.trailer
+		player = self.preview_player
 		self._finish_preview(preserve_window=True)
 		if not trailer:
 			self._clear_pending_stop()
 			return
 		self.pending_stop_trailer = trailer
+		self.pending_stop_player = player
 		self.pending_stop_deadline = now + TRAILER_PREVIEW_STOP_TIMEOUT
 		self.pending_stop_requested = False
 
@@ -737,6 +740,7 @@ class TrailerPreview:
 
 	def _clear_pending_stop(self):
 		self.pending_stop_trailer = ''
+		self.pending_stop_player = None
 		self.pending_stop_deadline = 0.0
 		self.pending_stop_requested = False
 		clear_property(TRAILER_PREVIEW_PROPERTY)

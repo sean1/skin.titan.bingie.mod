@@ -661,6 +661,24 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview.preview_player.onAVStarted()
 		self.assertEqual(self.preview.av_started_generation, self.preview.preview_generation)
 
+	def test_player_wrapper_is_retained_until_starting_playback_has_stopped(self):
+		self.entry.monotonic = Mock(return_value=20.0)
+		self.preview._launch_preview('preview-url', None)
+		player = self.preview.preview_player
+		self.visibility['Player.HasMedia'] = True
+		self.preview._owns_preview = Mock(return_value=True)
+
+		self.preview._begin_preview_stop(21.0)
+		self.preview._stop_pending_preview(21.0)
+
+		self.assertIsNone(self.preview.preview_player)
+		self.assertIs(self.preview.pending_stop_player, player)
+		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
+		self.visibility['Player.HasMedia'] = False
+		self.preview._stop_pending_preview(21.1)
+		self.assertIsNone(self.preview.pending_stop_player)
+		self.assertFalse(self.preview.pending_stop_trailer)
+
 	def test_item_menu_and_empty_row_navigation_request_stop_in_same_tick(self):
 		for label, candidate, navigating in (
 			('item', self._candidate('movie|2'), False),

@@ -287,10 +287,11 @@ class Discover:
 	def pick_my_night(self):
 		media_options = ((ls(32028), 'movie'), (ls(32029), 'tvshow'))
 		mood_options = (
-			(ls(32908), ''), (ls(32909), 'comedy_family'), (ls(32929), 'action_adventure_thriller'), (ls(32930), 'crime_mystery'),
-			(ls(32928), 'drama_romance_family'), (ls(32926), 'fantasy'), (ls(32927), 'science_fiction'), (ls(32934), 'time_travel'),
-			(ls(32938), 'apocalypse_survival'), (ls(32939), 'space_voyages'), (ls(32942), 'horror_supernatural'),
-			(ls(32931), 'documentary_history'), (ls(32932), 'animation'), (ls(32933), 'war_politics')
+			(ls(32908), ''), (ls(32934), 'time_bending'), (ls(32938), 'apocalypse'), (ls(32941), 'survival'),
+			(ls(32939), 'space_frontiers'), (ls(32943), 'haunted'), (ls(32944), 'creature_features'),
+			(ls(32945), 'killers_slashers'), (ls(32946), 'schemes_secrets'), (ls(32947), 'dark_futures'),
+			(ls(32948), 'journeys_growing_up'), (ls(32949), 'mysteries'), (ls(32950), 'true_stories'),
+			(ls(32951), 'soldiers_special_forces')
 		)
 		era_options = ((ls(32913), ''), (ls(32914), '2020s'), (ls(32915), '2010s'), (ls(32916), '2000s'), (ls(32917), 'classic'))
 		style_options = ((ls(32918), 'crowd_pleasers'), (ls(32919), 'hidden_gems'), (ls(32920), 'critically_loved'))
@@ -312,22 +313,20 @@ class Discover:
 		mediatype = media[0]
 		url_mediatype = 'movie' if mediatype == 'movie' else 'tv'
 		date_key = 'primary_release_date' if mediatype == 'movie' else 'first_air_date'
-		genres = {
-			'movie': {
-				'comedy_family': '35|10751', 'action_adventure_thriller': '28|12|53', 'crime_mystery': '80|9648',
-				'drama_romance_family': '18|10749|10751', 'fantasy': '14', 'documentary_history': '99|36', 'animation': '16', 'war_politics': '10752'
-			},
-			'tvshow': {
-				'comedy_family': '35|10751', 'action_adventure_thriller': '10759', 'crime_mystery': '80|9648',
-				'drama_romance_family': '18|10751', 'fantasy': '10765', 'documentary_history': '99', 'animation': '16', 'war_politics': '10768'
-			}
-		}
 		special_moods = {
-			'time_travel': ('with_keywords', '4379'),
-			'science_fiction': ('with_genres', '878') if mediatype == 'movie' else ('with_keywords', '281358'),
-			'apocalypse_survival': ('with_keywords', '4458|10150|12332|186565|355070|298669|4565|10349'),
-			'space_voyages': ('with_keywords', '252937|3801|1612|161176|252634'),
-			'horror_supernatural': ('with_genres', '27') if mediatype == 'movie' else ('with_keywords', '315058|12377|162846|1299|11100|12339')
+			'time_bending': ('with_keywords', '4379|10854'),
+			'apocalypse': ('with_keywords', '4458|10150|12332|186565|355070|298669'),
+			'survival': ('with_keywords', '10349'),
+			'space_frontiers': ('with_keywords', '191132|3801|252937|1612'),
+			'haunted': ('with_keywords', '162846|3358'),
+			'creature_features': ('with_keywords', '1299|11100|14909'),
+			'killers_slashers': ('with_keywords', '12339|10714'),
+			'schemes_secrets': ('with_keywords', '10051|5265|10410'),
+			'dark_futures': ('with_keywords', '4565|12190'),
+			'journeys_growing_up': ('with_keywords', '10683|7312'),
+			'mysteries': ('with_keywords', '12570|10410'),
+			'true_stories': ('with_keywords', '9672'),
+			'soldiers_special_forces': ('with_keywords', '13065|162365|6092|15218')
 		}
 		eras = {
 			'2020s': ('2020-01-01', '2029-12-31'), '2010s': ('2010-01-01', '2019-12-31'),
@@ -338,10 +337,10 @@ class Discover:
 			'hidden_gems': ('vote_average.desc', '100', '6', '40'),
 			'critically_loved': ('vote_average.desc', '500', '7', None)
 		}
-		sparse_moods = ('science_fiction', 'apocalypse_survival', 'space_voyages')
+		sparse_moods = ('time_bending', 'apocalypse', 'space_frontiers', 'haunted', 'creature_features', 'killers_slashers', 'schemes_secrets', 'dark_futures', 'mysteries')
 		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
 		if mood[0]:
-			filter_name, filter_value = special_moods[mood[0]] if mood[0] in special_moods else ('with_genres', genres[mediatype][mood[0]])
+			filter_name, filter_value = special_moods[mood[0]]
 			query += '&%s=%s' % (filter_name, filter_value)
 		if era[0]:
 			date_start, date_end = eras[era[0]]

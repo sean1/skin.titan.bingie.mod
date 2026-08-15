@@ -1,5 +1,5 @@
 import re
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from time import monotonic_ns
 from urllib.parse import urljoin, urlparse
@@ -166,8 +166,8 @@ def _absolute_hls_uri(line, master_url):
 
 
 def start_manifest_server():
-	server = ThreadingHTTPServer(('127.0.0.1', 0), _ManifestHandler)
-	server.daemon_threads = True
+	server = HTTPServer(('127.0.0.1', 0), _ManifestHandler)
+	server.manifest_file = kodi_utils.translate_path(TRAILER_MANIFEST_FILE)
 	thread = Thread(target=server.serve_forever, name='BINGIE trailer manifest', daemon=True)
 	thread.start()
 	kodi_utils.set_property(TRAILER_MANIFEST_URL_PROPERTY, 'http://127.0.0.1:%d/trailer_preview.m3u8' % server.server_port)
@@ -187,11 +187,10 @@ def stop_manifest_server(server_thread):
 class _ManifestHandler(BaseHTTPRequestHandler):
 	def do_GET(self):
 		if urlparse(self.path).path != '/trailer_preview.m3u8': return self.send_error(404)
-		manifest_file = kodi_utils.open_file(TRAILER_MANIFEST_FILE)
-		try: manifest = manifest_file.read()
-		finally: manifest_file.close()
+		try:
+			with open(self.server.manifest_file, 'rb') as manifest_file: manifest = manifest_file.read()
+		except OSError: return self.send_error(503)
 		if not manifest: return self.send_error(503)
-		if isinstance(manifest, str): manifest = manifest.encode('utf-8')
 		self.send_response(200)
 		self.send_header('Content-Type', 'application/vnd.apple.mpegurl')
 		self.send_header('Content-Length', str(len(manifest)))

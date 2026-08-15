@@ -80,29 +80,48 @@ class PickMyNightTests(unittest.TestCase):
 		self.assertIsNone(menu.pick_my_night())
 		self.discover.kodi_utils.execute_builtin.assert_not_called()
 
-	def test_language_choices_are_not_presented_as_moods(self):
-		menu = self.discover.Discover({'mediatype': 'movie'})
-		menu._selection_dialog = Mock(return_value=None)
-
-		menu.pick_my_night()
-
-		mood_values = menu._selection_dialog.call_args.args[1]
-		self.assertFalse({'chinese_cinema', 'vietnamese_cinema', 'korean_cinema'} & set(mood_values))
-
-	def test_horror_slasher_mood_uses_movie_genre_and_tv_keywords(self):
-		for mediatype, expected_filter in (
-			('movie', '&with_genres=27'),
-			('tvshow', '&with_keywords=315058|12377|162846|1299|11100|12339')
-		):
+	def test_movies_and_tv_offer_only_keyword_driven_moods(self):
+		expected = [
+			'', 'time_bending', 'apocalypse', 'survival', 'space_frontiers', 'haunted', 'creature_features', 'killers_slashers',
+			'schemes_secrets', 'dark_futures', 'journeys_growing_up', 'mysteries', 'true_stories', 'soldiers_special_forces'
+		]
+		for mediatype in ('movie', 'tvshow'):
 			with self.subTest(mediatype=mediatype):
 				menu = self.discover.Discover({'mediatype': mediatype})
-				menu._selection_dialog = Mock(side_effect=('horror_supernatural', '', 'crowd_pleasers'))
+				menu._selection_dialog = Mock(return_value=None)
 
 				menu.pick_my_night()
 
-				alarm = unquote(self.discover.kodi_utils.execute_builtin.call_args_list[1].args[0])
-				self.assertIn(expected_filter, alarm)
-				self.discover.kodi_utils.execute_builtin.reset_mock()
+				self.assertEqual(menu._selection_dialog.call_args.args[1], expected)
+
+	def test_every_specific_mood_uses_the_same_tmdb_keywords_for_movies_and_tv(self):
+		moods = {
+			'time_bending': '4379|10854',
+			'apocalypse': '4458|10150|12332|186565|355070|298669',
+			'survival': '10349',
+			'space_frontiers': '191132|3801|252937|1612',
+			'haunted': '162846|3358',
+			'creature_features': '1299|11100|14909',
+			'killers_slashers': '12339|10714',
+			'schemes_secrets': '10051|5265|10410',
+			'dark_futures': '4565|12190',
+			'journeys_growing_up': '10683|7312',
+			'mysteries': '12570|10410',
+			'true_stories': '9672',
+			'soldiers_special_forces': '13065|162365|6092|15218'
+		}
+		for mediatype in ('movie', 'tvshow'):
+			for mood, keywords in moods.items():
+				with self.subTest(mediatype=mediatype, mood=mood):
+					menu = self.discover.Discover({'mediatype': mediatype})
+					menu._selection_dialog = Mock(side_effect=(mood, '', 'crowd_pleasers'))
+
+					menu.pick_my_night()
+
+					alarm = unquote(self.discover.kodi_utils.execute_builtin.call_args_list[1].args[0])
+					self.assertIn('&with_keywords=%s' % keywords, alarm)
+					self.assertNotIn('&with_genres=', alarm)
+					self.discover.kodi_utils.execute_builtin.reset_mock()
 
 
 if __name__ == '__main__':

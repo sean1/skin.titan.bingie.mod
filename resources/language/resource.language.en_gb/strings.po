@@ -1287,7 +1287,7 @@ msgid "War / War & Politics"
 msgstr ""
 
 msgctxt "#32934"
-msgid "Time Travel"
+msgid "Time Bending"
 msgstr ""
 
 msgctxt "#32935"
@@ -1303,19 +1303,55 @@ msgid "Korean Language"
 msgstr ""
 
 msgctxt "#32938"
-msgid "Apocalypse / Dystopia / Survival"
+msgid "Apocalypse"
 msgstr ""
 
 msgctxt "#32939"
-msgid "Space Travel / Exploration"
+msgid "Space Frontiers"
 msgstr ""
 
 msgctxt "#32940"
 msgid "The Big Score"
 msgstr ""
 
-msgctxt "#32942"
-msgid "Horror / Zombie / Ghost / Monster / Slasher"
+msgctxt "#32941"
+msgid "Survival"
+msgstr ""
+
+msgctxt "#32943"
+msgid "Haunted"
+msgstr ""
+
+msgctxt "#32944"
+msgid "Creature Features"
+msgstr ""
+
+msgctxt "#32945"
+msgid "Killers & Slashers"
+msgstr ""
+
+msgctxt "#32946"
+msgid "Schemes & Secrets"
+msgstr ""
+
+msgctxt "#32947"
+msgid "Dark Futures"
+msgstr ""
+
+msgctxt "#32948"
+msgid "Journeys & Growing Up"
+msgstr ""
+
+msgctxt "#32949"
+msgid "Mysteries"
+msgstr ""
+
+msgctxt "#32950"
+msgid "True Stories"
+msgstr ""
+
+msgctxt "#32951"
+msgid "Soldiers & Special Forces"
 msgstr ""
 
 msgctxt "#32964"

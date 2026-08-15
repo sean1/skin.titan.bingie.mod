@@ -1,3 +1,8 @@
+BINGIE Lite 2.3.31
+
+- Replace genre-based Pick My Night choices with grouped TMDb keyword themes for movies and TV shows, including Soldiers & Special Forces.
+- Prevent trailer-preview crashes during rapid navigation by retaining player ownership through teardown and simplifying manifest serving.
+
 BINGIE Lite 2.3.30
 
 - Automatically prepare and play the next aired TV episode, with Play, Cancel, and Close actions available from a credits-aware Up Next prompt.

@@ -28,16 +28,6 @@
 			<property name="widgetType.3">tvshows</property>
 			<property name="widgetPath.3">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10</property>
 			<property name="widgetName.3">Trending TV Shows Today</property>
-			<property name="widget.4">pov-popular-movies</property>
-			<property name="widgetTarget.4">videos</property>
-			<property name="widgetType.4">movies</property>
-			<property name="widgetPath.4">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</property>
-			<property name="widgetName.4">Popular Movies</property>
-			<property name="widget.5">pov-popular-tv</property>
-			<property name="widgetTarget.5">videos</property>
-			<property name="widgetType.5">tvshows</property>
-			<property name="widgetPath.5">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</property>
-			<property name="widgetName.5">Popular TV Shows</property>
 			<onclick>ActivateWindow(home,return)</onclick>
 			<property name="path">ActivateWindow(home,return)</property>
 			<property name="list">home</property>
@@ -121,22 +111,6 @@
 		<item id="3">
 			<property name="id">$NUMBER[3]</property>
 			<property name="mainmenuid">3</property>
-			<label>On the Air</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">on-the-air-tv-shows</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">3</property>
 			<label>Top Rated TV Shows</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -150,8 +124,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">3</property>
 			<label>TV Genres</label>
 			<label2>TV Shows</label2>
@@ -166,8 +140,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
 			<property name="mainmenuid">3</property>
 			<label>By Year / Decade</label>
 			<label2>TV Shows</label2>
@@ -182,8 +156,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
 			<property name="mainmenuid">3</property>
 			<label>By Original Network</label>
 			<label2>TV Shows</label2>
@@ -198,8 +172,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="8">
-			<property name="id">$NUMBER[8]</property>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
 			<property name="mainmenuid">3</property>
 			<label>Original-Language TV</label>
 			<label2>TV Shows</label2>
@@ -214,8 +188,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="9">
-			<property name="id">$NUMBER[9]</property>
+		<item id="8">
+			<property name="id">$NUMBER[8]</property>
 			<property name="mainmenuid">3</property>
 			<label>Pick My Night</label>
 			<label2>TV Shows</label2>
@@ -232,8 +206,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="10">
-			<property name="id">$NUMBER[10]</property>
+		<item id="9">
+			<property name="id">$NUMBER[9]</property>
 			<property name="mainmenuid">3</property>
 			<label>Search</label>
 			<label2>TV Shows</label2>
@@ -473,19 +447,13 @@
 	</include>
 	<!-- An empty dynamic content path defers its provider job; container visibility alone does not. -->
 	<variable name="BingieHomeContinueMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),3)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeContinueTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),4)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
 		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10</value>
-	</variable>
-	<variable name="BingieHomePopularMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10</value>
-	</variable>
-	<variable name="BingieHomePopularTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10</value>
 	</variable>
 	<include name="StaticHomeWidgetRows">
 		<include content="widget_header_multi">
@@ -523,48 +491,6 @@
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
 			<param name="widgetPath" value="$VAR[BingieHomeTrendingTVPath]" />
-			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="playlist" />
-			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="11" />
-			<param name="widgetInfoPanel" value="top" />
-			<param name="visibility" value="true" />
-		</include>
-		<include content="widget_header_multi">
-			<param name="widgetid" value="2530" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="Popular Movies" />
-		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
-			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2530" />
-			<param name="widgetName" value="Popular Movies" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetTags" value="WidgetTagOverlayAuto" />
-			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="$VAR[BingieHomePopularMoviesPath]" />
-			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="playlist" />
-			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="11" />
-			<param name="widgetInfoPanel" value="top" />
-			<param name="visibility" value="true" />
-		</include>
-		<include content="widget_header_multi">
-			<param name="widgetid" value="2540" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetName" value="Popular TV Shows" />
-		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
-			<param name="contentStyle" value="normal" />
-			<param name="widgetid" value="2540" />
-			<param name="widgetName" value="Popular TV Shows" />
-			<param name="submenuid" value="num-10000" />
-			<param name="widgetTags" value="WidgetTagOverlayAuto" />
-			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="$VAR[BingieHomePopularTVPath]" />
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />

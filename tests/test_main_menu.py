@@ -16,6 +16,17 @@ class MainMenuTests(unittest.TestCase):
 		self.assertEqual([item.get('id') for item in menu.findall('item')], ['1', '2', '3'])
 		self.assertEqual([item.findtext('label2') for item in menu.findall('item')], ['Home', 'Movies', 'TV shows'])
 
+	def test_home_widgets_exclude_popular_rows(self):
+		menu = self.root.find("include[@name='StaticMainMenu']")
+		home = next(item for item in menu.findall('item') if item.findtext('label2') == 'Home')
+		self.assertEqual([prop.text for prop in home.findall('property') if prop.get('name', '').startswith('widgetName')], [
+			'Continue Watching Movies', 'Continue Watching TV', 'Trending Movies Today', 'Trending TV Shows Today'
+		])
+		rows = self.root.find("include[@name='StaticHomeWidgetRows']")
+		self.assertEqual([include.find("param[@name='widgetName']").get('value') for include in rows.findall("include[@content='widget_header_multi']")], [
+			'Trending Movies Today', 'Trending TV Shows Today', 'Continue Watching Movies', 'Continue Watching TV'
+		])
+
 	def test_movie_and_tv_submenus_belong_to_their_main_menu_items(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
 		menu_ids = {item.findtext('label2'): item.get('id') for item in menu.findall('item')}
@@ -50,9 +61,9 @@ class MainMenuTests(unittest.TestCase):
 	def test_tv_submenu_exposes_series_and_browse_categories(self):
 		submenu = self.root.find("include[@name='StaticSubmenu']")
 		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'tvshows']
-		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 11)])
+		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 10)])
 		self.assertEqual([item.findtext('label') for item in items], [
-			'Trending TV Shows This Week', 'New Series', 'On the Air', 'Top Rated TV Shows', 'TV Genres', 'By Year / Decade',
+			'Trending TV Shows This Week', 'New Series', 'Top Rated TV Shows', 'TV Genres', 'By Year / Decade',
 			'By Original Network', 'Original-Language TV', 'Pick My Night', 'Search'
 		])
 		actions = {item.findtext('label'): [action.text for action in item.findall('onclick')] for item in items}

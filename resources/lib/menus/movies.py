@@ -50,7 +50,6 @@ class Movies:
 		self.include_year_in_title = settings.include_year_in_title('movie')
 		self.open_extras = settings.extras_open_action('movie')
 		self.cm_sort = settings.context_menu_sort()
-		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		self.art_provider = (*settings.get_art_provider(), poster_empty, fanart_empty)
 		self._full_context_ready = True
 
@@ -66,7 +65,6 @@ class Movies:
 			meta_get = meta.get
 			if not meta or meta_get('blank_entry', False): return
 			playcount, overlay = get_watched_status_movie(self.watched_info, string(meta['tmdb_id']))
-			if self.widget_hide_watched and playcount: return
 			meta.update({'playcount': playcount, 'overlay': overlay})
 			resumetime, progress = get_resumetime(self.bookmarks, string(meta['tmdb_id']))
 			cm = []

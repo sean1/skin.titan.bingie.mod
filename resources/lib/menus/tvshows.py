@@ -54,7 +54,6 @@ class TVShows:
 		if self.open_extras or self.smart_play == 2 or (self.smart_play == 1 and self.is_widget):
 			self.is_folder = False
 		else: self.is_folder = True
-		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		self.art_provider = (*settings.get_art_provider(), poster_empty, fanart_empty)
 		self._full_context_ready = True
 
@@ -72,7 +71,6 @@ class TVShows:
 			playcount, overlay, total_watched, total_unwatched = get_watched_status_tvshow(
 				self.watched_info, string(meta['tmdb_id']), meta_get('total_aired_eps')
 			)
-			if self.widget_hide_watched and playcount: return
 			meta.update({'playcount': playcount, 'overlay': overlay})
 			total_seasons, total_aired_eps = meta_get('total_seasons'), meta_get('total_aired_eps')
 			watchedprogress = total_watched / total_aired_eps * 100 if total_watched else 0

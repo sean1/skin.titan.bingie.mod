@@ -95,6 +95,50 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 		self.assertEqual(list(map(id, result)), [id(kept_first), id(kept_last)])
 		self.assertEqual(calls, {id(item): 1 for item in items})
 
+	def test_removed_list_cleanup_drops_watched_pages_from_every_saved_menu_type(self):
+		with tempfile.TemporaryDirectory() as temp_dir:
+			self.cache.maincache_db = str(Path(temp_dir) / 'maincache.db')
+			self.cache.database_connect = sqlite3.connect
+			with sqlite3.connect(self.cache.maincache_db) as dbcon:
+				dbcon.execute('CREATE TABLE maincache (id TEXT UNIQUE, expires INTEGER, data TEXT)')
+
+			class NavigatorCache:
+				def __init__(self):
+					self.dbcon = sqlite3.connect(':memory:')
+					self.dbcur = self.dbcon.cursor()
+					self.dbcur.execute('CREATE TABLE navigator (list_name TEXT, list_type TEXT, list_contents TEXT, UNIQUE (list_name, list_type))')
+					rows = (
+						('MovieList', 'default', [{'action': 'watched_movies'}, {'action': 'in_progress_movies'}]),
+						('TVShowList', 'edited', [{'action': 'watched_tvshows'}, {'action': 'tmdb_tv_popular'}]),
+						('Keep Watching', 'shortcut_folder', [{'action': 'watched_movies'}, {'action': 'navigator.because_you_watched'}])
+					)
+					self.dbcur.executemany('INSERT INTO navigator VALUES (?, ?, ?)', ((name, list_type, json.dumps(items)) for name, list_type, items in rows))
+
+				jsloads = staticmethod(json.loads)
+				jsdumps = staticmethod(json.dumps)
+
+				def set_list(self, list_name, list_type, items):
+					self.dbcur.execute('INSERT OR REPLACE INTO navigator VALUES (?, ?, ?)', (list_name, list_type, self.jsdumps(items)))
+
+			navigator_cache = NavigatorCache()
+			self.addCleanup(navigator_cache.dbcon.close)
+			self.cache.kodi_utils.logger = lambda *args: None
+			main_cache = types.ModuleType('caches.main_cache')
+			main_cache.clear_main_cache_property = lambda key: None
+			navigator_cache_module = types.ModuleType('caches.navigator_cache')
+			navigator_cache_module.navigator_cache = navigator_cache
+
+			with temporary_modules({'caches.main_cache': main_cache, 'caches.navigator_cache': navigator_cache_module}):
+				self.assertTrue(self.cache.purge_removed_list_data())
+
+			contents = {
+				(name, list_type): json.loads(items)
+				for name, list_type, items in navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator')
+			}
+			self.assertEqual(contents[('MovieList', 'default')], [{'action': 'in_progress_movies'}])
+			self.assertEqual(contents[('TVShowList', 'edited')], [{'action': 'tmdb_tv_popular'}])
+			self.assertEqual(contents[('Keep Watching', 'shortcut_folder')], [{'action': 'navigator.because_you_watched'}])
+
 	def test_metacache_external_id_index_migration_preserves_lookup_order_and_is_idempotent(self):
 		with tempfile.TemporaryDirectory() as temp_dir:
 			self._configure_database_check(temp_dir)

@@ -28,7 +28,6 @@ class BaseSeason:
 		self.use_season_title = settings.use_season_title()
 		self.is_widget = kodi_utils.external_browse()
 		self.image_resolution = self.meta_user_info['image_resolution']
-		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup = get_art_provider()
 
 	def run(self):
@@ -83,7 +82,6 @@ class Seasons(BaseSeason):
 				playcount, overlay, watched, unwatched = get_watched_status_season(
 					self.watched_info, string(show.tmdb_id), season_number, episode_count
 				)
-				if self.widget_hide_watched and watched: continue
 				item.update({'name': display, 'playcount': playcount, 'overlay': overlay})
 				url_params = build_url({
 					'mode': 'build_episode_list', 'tmdb_id': show.tmdb_id, 'season': season_number
@@ -163,7 +161,6 @@ class Episodes(BaseSeason):
 					unaired = True
 				else: display, unaired = ep_name, False
 				playcount, overlay = get_watched_status_episode(self.watched_info, string(show.tmdb_id), season, episode)
-				if self.widget_hide_watched and playcount and not unaired: continue
 				resumetime, progress = get_resumetime(bookmarks, show.tmdb_id, season, episode)
 				item.update({
 					'title': display, 'premiered': premiered, 'playcount': playcount, 'overlay': overlay,

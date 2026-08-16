@@ -42,7 +42,6 @@ class Episodes:
 		self.thumb_fanart = thumb_fanart_info()
 		self.display_title, self.date_format = single_ep_display_title(), single_ep_format()
 		self.is_widget = kodi_utils.external_browse()
-		self.widget_hide_watched = self.is_widget and self.meta_user_info['widget_hide_watched']
 		self.art_provider = (*settings.get_art_provider(), poster_empty, fanart_empty)
 		self.container_update = ('Container.Update(%s)', 'ActivateWindow(Videos,%s,return)')[self.is_widget]
 		self.resinsert = '1970-01-01 00:00:00'
@@ -84,7 +83,6 @@ class Episodes:
 			else: unaired = False
 			if self.list_type.startswith('next_episode'): playcount, overlay = 0, 4
 			else: playcount, overlay = get_watched_status_episode(self.watched_info, string(tmdb_id), season, episode)
-			if self.widget_hide_watched and playcount and not unaired: return
 			resumetime, progress = get_resumetime(self.bookmarks, tmdb_id, season, episode)
 			display = self._format_title(title, season, episode, ep_name, episode_date, unaired, ep_data_get('unwatched', False))
 			item.update({

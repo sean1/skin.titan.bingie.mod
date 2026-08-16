@@ -143,10 +143,11 @@ def purge_removed_list_data():
 			'navigator.downloads', 'navigator.folder_navigator', '"mode": "downloader"', '"mode": "browser_image"',
 			'navigator.favorites', 'favorites_choice', 'favorites_movies', 'favorites_tvshows', 'favorites.png'
 		)
+		hidden_actions = {'watched_movies', 'watched_tvshows'}
 		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
 		for list_name, list_type, list_contents in rows:
 			items = navigator_cache.jsloads(list_contents)
-			filtered = _filter_items_without_markers(items, markers, navigator_cache.jsdumps)
+			filtered = [item for item in _filter_items_without_markers(items, markers, navigator_cache.jsdumps) if item.get('action') not in hidden_actions]
 			changed = len(filtered) != len(items)
 			if list_name == 'RootList' and list_type == 'default' and not any(item.get('action') == 'dropped_tvshows' for item in filtered):
 				from modules.menu_lists import root_list

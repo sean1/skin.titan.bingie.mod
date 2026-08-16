@@ -331,12 +331,12 @@ def get_watched_status_episode(watched_info, tmdb_id, season='', episode=''):
 
 def clear_local_bookmarks():
 	try:
-		GET_LBM = 'SELECT idFile FROM files WHERE strFilename LIKE ? OR strFilename LIKE ? OR strFilename LIKE ? OR strFilename LIKE ?'
+		GET_LBM = 'SELECT idFile FROM files WHERE strFilename LIKE ? OR strFilename LIKE ?'
 		DELETE_LBM = 'DELETE FROM %s WHERE idFile = ?'
 		dbcon = _database_connect(kodi_utils.get_video_database_path())
 		dbcur = set_PRAGMAS(dbcon)
-		plugin_ids = (kodi_utils.current_addon_id, kodi_utils.legacy_addon_id)
-		filename_patterns = tuple(pattern for addon_id in plugin_ids for pattern in ('%s%%' % addon_id, 'plugin://%s/%%' % addon_id))
+		addon_id = kodi_utils.current_addon_id
+		filename_patterns = ('%s%%' % addon_id, 'plugin://%s/%%' % addon_id)
 		file_ids = dbcur.execute(GET_LBM, filename_patterns).fetchall()
 		for i in ('bookmark', 'streamdetails', 'files'): dbcur.executemany(DELETE_LBM % i, file_ids)
 	except: pass

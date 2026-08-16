@@ -11,39 +11,21 @@ metacache_db = kodi_utils.metacache_db
 debridcache_db = kodi_utils.debridcache_db
 external_db = kodi_utils.external_db
 databases_path = kodi_utils.databases_path
-packages_path = kodi_utils.packages_path
 database_connect = kodi_utils.database_connect
-
-def _filter_items_without_markers(items, markers, serialize):
-	filtered = []
-	for item in items:
-		serialized = serialize(item).lower()
-		if all(marker not in serialized for marker in markers): filtered.append(item)
-	return filtered
-
-def _trunc(file):
-	try:
-		with open(kodi_utils.translate_path(file), 'w') as f: pass
-	except: return 0
-	return 1
 
 def check_databases():
 	if not kodi_utils.path_exists(databases_path): kodi_utils.make_directory(databases_path)
-	migration_count = 0
-	if kodi_utils.get_setting('database.merge_status') != 'true': migration_count += _trunc(maincache_db)
 	dbcon = database_connect(maincache_db) # Main Cache
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS maincache (id TEXT UNIQUE, expires INTEGER, data TEXT)""")
 	dbcon.close()
 	dbcon = database_connect(navigator_db) # Navigator
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS navigator (list_name TEXT, list_type TEXT, list_contents TEXT, UNIQUE (list_name, list_type))""")
 	dbcon.close()
-	if kodi_utils.get_setting('database.merge_status') != 'true': migration_count += _trunc(metacache_db)
 	dbcon = database_connect(metacache_db) # Meta Cache
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS metadata (db_type TEXT not null, tmdb_id TEXT not null, imdb_id TEXT, tvdb_id TEXT, expires INTEGER, meta TEXT, UNIQUE (db_type, tmdb_id))""")
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS season_metadata (tmdb_id TEXT not null UNIQUE, expires INTEGER, meta TEXT)""")
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS function_cache (string_id TEXT not null, expires INTEGER, data TEXT)""")
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS metadata_claims (db_type TEXT not null, id_type TEXT not null, media_id TEXT not null, owner TEXT not null, claimed_at INTEGER not null, UNIQUE (db_type, id_type, media_id))""")
-	dbcon.execute("""DROP INDEX IF EXISTS pov_select_id_media""")
 	dbcon.execute("""CREATE INDEX IF NOT EXISTS pov_select_imdb_media ON metadata (db_type, imdb_id, tmdb_id)""")
 	dbcon.execute("""CREATE INDEX IF NOT EXISTS pov_select_tvdb_media ON metadata (db_type, tvdb_id, tmdb_id)""")
 	dbcon.close()
@@ -53,7 +35,6 @@ def check_databases():
 	dbcon = database_connect(debridcache_db) # Debrid Cache
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS debrid_data (hash TEXT not null, debrid TEXT not null, cached TEXT, expires INTEGER, UNIQUE (hash, debrid))""")
 	dbcon.close()
-	if kodi_utils.get_setting('database.merge_status') != 'true': migration_count += _trunc(external_db)
 	dbcon = database_connect(external_db) # External Providers Cache
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS results_data (provider TEXT, db_type TEXT, tmdb_id TEXT, title TEXT, year INTEGER, season TEXT, episode TEXT, expires INTEGER, results TEXT, UNIQUE (provider, db_type, tmdb_id, title, year, season, episode))""")
 	dbcon.close()
@@ -69,85 +50,14 @@ def check_databases():
 	dbcon = database_connect(trakt_db) # Trakt
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS trakt_data (id TEXT UNIQUE, data TEXT)""")
 	dbcon.close()
-	if kodi_utils.get_setting('database.merge_status') != 'true' and migration_count == 3:
-		kodi_utils.set_setting('database.merge_status', 'true')
-	remove_old_databases()
-
-def purge_removed_service_data():
-	setting_id = 'migration.removed_services.6_08_03'
-	if kodi_utils.get_setting(setting_id) == 'true': return True
+def normalize_menu_data():
 	try:
-		from caches.main_cache import clear_main_cache_property
-		dbcon = database_connect(maincache_db)
-		dbcur = dbcon.cursor()
-		query = """SELECT id FROM maincache WHERE id LIKE ? OR id LIKE ? OR id LIKE ? OR id IN (?, ?)"""
-		params = (
-			'pov_lite_pm_%', 'pov_lite_oc_%', 'pov_lite_EASYNEWS_SEARCH_%',
-			'torbox_usenet_queries', 'easynews_video_queries'
-		)
-		dbcur.execute(query, params)
-		cache_keys = [str(i[0]) for i in dbcur.fetchall()]
-		if cache_keys: dbcur.executemany("""DELETE FROM maincache WHERE id = ?""", [(i,) for i in cache_keys])
-		dbcon.commit()
-		dbcon.close()
-		for item in cache_keys: clear_main_cache_property(item)
-
-		dbcon = database_connect(debridcache_db)
-		dbcon.execute("""DELETE FROM debrid_data WHERE debrid IN (?, ?)""", ('pm', 'oc'))
-		dbcon.commit()
-		dbcon.close()
-		kodi_utils.set_setting(setting_id, 'true')
-		return True
-	except Exception as e:
-		kodi_utils.logger('purge_removed_service_data error', str(e))
-		return False
-
-def purge_history_data():
-	setting_id = 'migration.removed_history.6_08_38'
-	if kodi_utils.get_setting(setting_id) == 'true': return True
-	try:
-		from caches.main_cache import clear_main_cache_property
-		search_keys = ('movie_queries', 'tvshow_queries', 'people_queries', 'tmdb_collections_queries')
-		dbcon = database_connect(maincache_db)
-		dbcur = dbcon.cursor()
-		query = """SELECT id FROM maincache WHERE id LIKE ? OR id LIKE ? OR id IN (?, ?, ?, ?)"""
-		params = ('pov_lite_discover_movie_%', 'pov_lite_discover_tvshow_%') + search_keys
-		dbcur.execute(query, params)
-		cache_keys = set(search_keys)
-		cache_keys.update(str(i[0]) for i in dbcur.fetchall())
-		dbcur.executemany("""DELETE FROM maincache WHERE id = ?""", [(i,) for i in cache_keys])
-		dbcon.commit()
-		dbcon.close()
-		for item in cache_keys: clear_main_cache_property(item)
-		kodi_utils.set_setting(setting_id, 'true')
-		return True
-	except Exception as e:
-		kodi_utils.logger('purge_history_data error', str(e))
-		return False
-
-def purge_removed_list_data():
-	try:
-		from caches.main_cache import clear_main_cache_property
-		dbcon = database_connect(maincache_db)
-		dbcur = dbcon.cursor()
-		dbcur.execute("""SELECT id FROM maincache WHERE id LIKE ?""", ('tmdblist_%',))
-		cache_keys = [str(i[0]) for i in dbcur.fetchall()]
-		if cache_keys: dbcur.executemany("""DELETE FROM maincache WHERE id = ?""", [(i,) for i in cache_keys])
-		dbcon.commit()
-		dbcon.close()
-		for item in cache_keys: clear_main_cache_property(item)
-
 		from caches.navigator_cache import navigator_cache
-		markers = (
-			'mdblist', 'mdbl_', 'tmdblist', 'tmdb_manager', 'build_tmdb_list', 'tmdb_watchlist', 'tmdb_favorites', 'tmdb_recommendations',
-			'navigator.downloads', 'navigator.folder_navigator', '"mode": "downloader"', '"mode": "browser_image"',
-			'navigator.favorites', 'favorites_choice', 'favorites_movies', 'favorites_tvshows', 'favorites.png'
-		)
 		hidden_actions = {'watched_movies', 'watched_tvshows'}
 		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
 		for list_name, list_type, list_contents in rows:
 			items = navigator_cache.jsloads(list_contents)
-			filtered = [item for item in _filter_items_without_markers(items, markers, navigator_cache.jsdumps) if item.get('action') not in hidden_actions]
+			filtered = [item for item in items if item.get('action') not in hidden_actions]
 			changed = len(filtered) != len(items)
 			if list_name == 'RootList' and list_type == 'default' and not any(item.get('action') == 'dropped_tvshows' for item in filtered):
 				from modules.menu_lists import root_list
@@ -157,93 +67,8 @@ def purge_removed_list_data():
 			if changed: navigator_cache.set_list(list_name, list_type, filtered)
 		return True
 	except Exception as e:
-		kodi_utils.logger('purge_removed_list_data error', str(e))
+		kodi_utils.logger('normalize_menu_data error', str(e))
 		return False
-
-def purge_removed_personal_trakt_data():
-	setting_id = 'migration.removed_personal_trakt.6_08_09'
-	if kodi_utils.get_setting(setting_id) == 'true': return True
-	try:
-		dbcon = database_connect(trakt_db)
-		dbcon.execute("""DELETE FROM trakt_data""")
-		dbcon.execute("""DROP TABLE IF EXISTS watched_status""")
-		dbcon.execute("""DROP TABLE IF EXISTS progress""")
-		dbcon.commit()
-		dbcon.close()
-
-		from caches.navigator_cache import navigator_cache
-		markers = (
-			'trakt_manager', 'trakt_account_info', 'get_trakt_lists', 'trakt_collection', 'trakt_watchlist',
-			'trakt_favorites', 'trakt_recommendations', 'trakt_droplist', 'build_my_calendar_trakt',
-			'build_my_anime_calendar', 'navigator.trakt_lists', 'navigator.trakt_watchlists',
-			'navigator.trakt_collections', 'navigator.trakt_favorites', 'navigator.trakt_recommendations',
-			'"list_type": "my_lists"', '"list_type": "liked_lists"'
-		)
-		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
-		for list_name, list_type, list_contents in rows:
-			items = navigator_cache.jsloads(list_contents)
-			filtered = _filter_items_without_markers(items, markers, navigator_cache.jsdumps)
-			changed = len(filtered) != len(items)
-			if list_type == 'default':
-				for item in filtered:
-					if item.get('mode') == 'navigator.my_content' and item.get('name') != 'Trakt Lists':
-						item['name'] = 'Trakt Lists'
-						changed = True
-			if changed: navigator_cache.set_list(list_name, list_type, filtered)
-		kodi_utils.clear_property('script.trakt.ids')
-		kodi_utils.clear_property('pov_lite_traktmonitor_first_run')
-		kodi_utils.set_setting(setting_id, 'true')
-		return True
-	except Exception as e:
-		kodi_utils.logger('purge_removed_personal_trakt_data error', str(e))
-		return False
-
-def migrate_tmdb_native_lists():
-	setting_id = 'migration.tmdb_native_lists.2_03_03'
-	if kodi_utils.get_setting(setting_id) == 'true': return True
-	try:
-		from caches.navigator_cache import navigator_cache
-		from modules.menu_lists import main_menus
-		deprecated_actions = {
-			'AnimeList', 'tmdb_oscar_winners', 'tmdb_movies_blockbusters', 'tmdb_movies_latest_releases', 'tmdb_movies_premieres',
-			'tmdb_tv_premieres', 'tmdb_tv_upcoming', 'trakt_movies_trending', 'trakt_movies_trending_recent', 'trakt_movies_most_watched',
-			'trakt_tv_trending', 'trakt_tv_trending_recent', 'trakt_tv_most_watched', 'trakt_moviesanime_trending', 'trakt_moviesanime_most_watched',
-			'trakt_tvanime_trending', 'trakt_tvanime_most_watched'
-		}
-		deprecated_modes = {'navigator.my_content', 'build_anime_calendar', 'navigator.anime_genres', 'navigator.anime_years'}
-		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
-		for list_name, list_type, list_contents in rows:
-			if list_name == 'AnimeList': continue
-			items = navigator_cache.jsloads(list_contents) or []
-			if list_type == 'default' and list_name in main_menus:
-				filtered = main_menus[list_name]
-			else:
-				filtered = [
-					item for item in items
-					if item.get('action') not in deprecated_actions
-					and not str(item.get('action', '')).startswith(('tmdb_moviesanime_', 'tmdb_tvanime_'))
-					and item.get('mode') not in deprecated_modes
-				]
-			if filtered != items: navigator_cache.set_list(list_name, list_type, filtered)
-		navigator_cache.dbcur.execute('DELETE FROM navigator WHERE list_name = ?', ('AnimeList',))
-		for list_type in ('default', 'edited'): navigator_cache.delete_memory_cache('AnimeList', list_type)
-		kodi_utils.set_setting(setting_id, 'true')
-		return True
-	except Exception as e:
-		kodi_utils.logger('migrate_tmdb_native_lists error', str(e))
-		return False
-
-def remove_old_databases():
-	# The embedded POV databases share the skin's profile directory. Unknown files
-	# in that directory belong to the skin unless an explicit legacy target says otherwise.
-	return
-
-def remove_old_packages():
-	files = kodi_utils.list_dirs(packages_path)[1]
-	for item in files:
-		if '.pov' in item and item.endswith('zip'):
-			try: kodi_utils.delete_file(packages_path + item)
-			except: pass
 
 def clean_databases(current_time=None, database_check=True, silent=False):
 	if database_check: check_databases()
@@ -259,8 +84,6 @@ def clean_databases(current_time=None, database_check=True, silent=False):
 	dbcon.execute("""VACUUM""")
 	dbcon.close()
 	limit_metacache_database()
-	remove_old_databases()
-	remove_old_packages()
 	if not silent: kodi_utils.notification(32576, 1500)
 
 def purge_database(db, tables, expiry):

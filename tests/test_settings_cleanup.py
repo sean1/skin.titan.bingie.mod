@@ -163,7 +163,7 @@ class SettingsCleanupTests(unittest.TestCase):
 		self.assertEqual(self.database_settings(), credentials)
 		self.assertIn('>new<', self.settings_file.read_text(encoding='utf-8'))
 
-	def test_empty_database_value_blocks_stale_xml_credential(self):
+	def test_stale_xml_credential_is_ignored_when_database_value_is_empty(self):
 		self.assertTrue(self.kodi_utils.set_setting('ad.token', ''))
 		self.settings_file.write_text('<settings><setting id="ad.token">stale-token</setting></settings>', encoding='utf-8')
 
@@ -172,14 +172,19 @@ class SettingsCleanupTests(unittest.TestCase):
 		self.assertEqual(self.kodi_utils.get_setting('ad.token'), '')
 		self.assertEqual(self.database_settings()['ad.token'], '')
 
-	def test_legacy_credentials_migrate_once(self):
-		self.settings_file.write_text('<settings><setting id="ad.token">legacy-token</setting></settings>', encoding='utf-8')
-
-		self.kodi_utils.make_settings_dict()
+	def test_settings_xml_does_not_import_persisted_credentials(self):
 		self.settings_file.write_text('<settings><setting id="ad.token">stale-token</setting></settings>', encoding='utf-8')
+
 		self.kodi_utils.make_settings_dict()
 
-		self.assertEqual(self.database_settings()['ad.token'], 'legacy-token')
+		self.assertNotIn('ad.token', self.database_settings())
+		self.assertNotIn('ad.token', json.loads(self.kodi_utils.window.getProperty('pov_lite_settings')))
+
+	def test_retired_migration_settings_are_not_persisted(self):
+		retired_ids = {'database.merge_status', 'migration.removed_services.6_08_03', 'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38', 'migration.tmdb_native_lists.2_03_03'}
+
+		self.assertTrue(retired_ids.isdisjoint(self.kodi_utils.PERSISTED_SETTING_IDS))
+		self.assertIn('database.maintenance.due', self.kodi_utils.PERSISTED_SETTING_IDS)
 
 	def test_concurrent_debrid_authorizations_preserve_both_bundles(self):
 		first = self.configure_module(load_kodi_utils('test_settings_cleanup_first', self.kodi_utils.window))

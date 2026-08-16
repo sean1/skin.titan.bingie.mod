@@ -798,7 +798,6 @@ class TrailerPreview:
 
 class POVMonitor(kodi_utils.xbmc_monitor):
 	def __enter__(self):
-		kodi_utils.migrate_legacy_profile()
 		initializeDatabases()
 		checkSettingsFile()
 		try: viewsSetWindowProperties()
@@ -882,12 +881,8 @@ def checkSettingsFile():
 	if not path_exists(profile_xml):
 		kodi_utils.make_directorys(profile_dir)
 	kodi_utils.clean_settings(silent=True)
-	from modules.cache import migrate_tmdb_native_lists, purge_history_data, purge_removed_list_data, purge_removed_personal_trakt_data, purge_removed_service_data
-	purge_removed_service_data()
-	purge_removed_list_data()
-	purge_removed_personal_trakt_data()
-	purge_history_data()
-	migrate_tmdb_native_lists()
+	from modules.cache import normalize_menu_data
+	normalize_menu_data()
 	clear_property('pov_lite_settings')
 	make_settings_dict()
 	set_property('pov_lite_kodi_menu_cache', get_setting('kodi_menu_cache'))

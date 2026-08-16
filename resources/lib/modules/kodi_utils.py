@@ -10,7 +10,7 @@ addon_object, window, execJSONRPC = Addon(), xbmcgui.Window(10000), xbmc.execute
 player, xbmc_player, monitor, xbmc_monitor = xbmc.Player(), xbmc.Player, xbmc.Monitor(), xbmc.Monitor
 dialog, progressDialog, progressDialogBG = xbmcgui.Dialog(), xbmcgui.DialogProgress(), xbmcgui.DialogProgressBG()
 get_addoninfo, get_infolabel, get_visibility = addon_object.getAddonInfo, xbmc.getInfoLabel, xbmc.getCondVisibility
-current_addon_id, legacy_addon_id = get_addoninfo('id'), 'plugin.video.pov.lite'
+current_addon_id = get_addoninfo('id')
 addon_path, profile_path = (get_addoninfo(i).rstrip('/\\') + '/' for i in ('path', 'profile'))
 window_xml_info_action, window_xml_dialog = xbmcgui.ACTION_SHOW_INFO, xbmcgui.WindowXMLDialog
 window_xml_closing_actions = (xbmcgui.ACTION_PARENT_DIR, xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP, xbmcgui.ACTION_NAV_BACK)
@@ -30,10 +30,6 @@ external_db    = profile_path + 'providerscache.db'
 persisted_settings_db = profile_path + 'persisted_settings.db'
 scrapers_path  = addon_path + 'resources/lib/scrapers/'
 databases_path = profile_path
-packages_path  = 'special://home/addons/packages/'
-
-current_dbs     = ('debridcache.db', 'maincache.db', 'metacache.db', 'navigator.db', 'persisted_settings.db',
-					'providerscache.db', 'traktcache.db', 'views.db', 'watched.db', 'settings.xml', 'fenomcache.db')
 indicators_dict = {0: watched_db}
 
 def logger(heading, function):
@@ -123,9 +119,6 @@ def make_directorys(path):
 def open_file(file, mode='r'):
 	return xbmcvfs.File(file, mode)
 
-def copy_file(source, destination):
-	return xbmcvfs.copy(source, destination)
-
 def delete_file(_file):
 	xbmcvfs.delete(_file)
 
@@ -182,7 +175,7 @@ def container_content():
 
 def external_browse():
 	container = '%s %s' % (get_infolabel('Container.PluginName'), get_infolabel('Container.FolderPath'))
-	return current_addon_id not in container and legacy_addon_id not in container
+	return current_addon_id not in container
 
 def widget_refresh():
 	return execute_builtin('UpdateLibrary(video,special://skin/foo)')
@@ -316,8 +309,7 @@ def clear_view(view_type):
 		dbcur.execute("""VACUUM""")
 		dbcon = database_connect('special://profile/Database/ViewModes6.db')
 		dbcur = dbcon.cursor()
-		for addon_id in (current_addon_id, legacy_addon_id):
-			dbcur.execute("""DELETE FROM view WHERE path LIKE ?""", ('plugin://%s/%%' % addon_id,))
+		dbcur.execute("""DELETE FROM view WHERE path LIKE ?""", ('plugin://%s/%%' % current_addon_id,))
 		dbcon.commit()
 		dbcon.close()
 	except: return notification(32574, 1500)
@@ -531,11 +523,10 @@ FIXED_SETTINGS = {
 EXTERNAL_PROVIDER_SETTING_IDS = tuple('provider.external.%s.enabled' % provider for provider in EXTERNAL_PROVIDERS)
 
 PERSISTED_SETTING_IDS = frozenset((
-	'database.maintenance.due', 'database.merge_status', 'migration.removed_services.6_08_03',
+	'database.maintenance.due',
 	'ad.account_id', 'ad.token',
 	'rd.client_id', 'rd.refresh', 'rd.secret', 'rd.token', 'rd.username',
-	'tb.account_id', 'tb.token',
-	'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38', 'migration.tmdb_native_lists.2_03_03'
+	'tb.account_id', 'tb.token'
 ) + EXTERNAL_PROVIDER_SETTING_IDS)
 
 _settings_lock = Lock()
@@ -562,17 +553,6 @@ def _write_persisted_settings(settings_dict, overwrite=True):
 		dbcon.commit()
 		return dbcon.total_changes - before
 	finally: dbcon.close()
-
-def _read_persisted_xml(path):
-	import xml.etree.ElementTree as ET
-	try:
-		with open_file(path) as xml_file: root = ET.fromstring(xml_file.read())
-		return {
-			item.get('id'): item.text if item.text is not None else item.get('value', '')
-			for item in root.iter('setting')
-			if item.get('id') in PERSISTED_SETTING_IDS
-		}
-	except: return {}
 
 def get_setting(setting_id, fallback=None):
 	if setting_id in FIXED_SETTINGS: return FIXED_SETTINGS[setting_id]
@@ -601,10 +581,6 @@ def set_setting(setting_id, value):
 def make_settings_dict():
 	try:
 		settings_dict = _read_persisted_settings()
-		legacy_settings = {setting_id: value for setting_id, value in _read_persisted_xml(profile_path + 'settings.xml').items() if setting_id not in settings_dict}
-		if legacy_settings:
-			_write_persisted_settings(legacy_settings, overwrite=False)
-			settings_dict = _read_persisted_settings()
 	except Exception as e:
 		logger('make_settings_dict error', str(e))
 		settings_dict = {}
@@ -634,23 +610,6 @@ def clean_settings(silent=False):
 		if not silent: notification(text, 1500)
 	except:
 		if not silent: notification(32574, 1500)
-
-def migrate_legacy_profile():
-	"""Copy reusable POV data and merge its persisted settings into this add-on once."""
-	legacy_profile_path = 'special://profile/addon_data/%s/' % legacy_addon_id
-	if not path_exists(legacy_profile_path): return 0, 0
-	make_directorys(profile_path)
-	copied_count = 0
-	for filename in ('watched.db',):
-		source, destination = legacy_profile_path + filename, profile_path + filename
-		if path_exists(source) and not path_exists(destination) and copy_file(source, destination): copied_count += 1
-	legacy_xml = legacy_profile_path + 'settings.xml'
-	if not path_exists(legacy_xml): return copied_count, 0
-	make_settings_dict()
-	try: merged_count = _write_persisted_settings(_read_persisted_xml(legacy_xml), overwrite=False)
-	except: merged_count = 0
-	if merged_count: make_settings_dict()
-	return copied_count, merged_count
 
 def upload_logfile():
 	# Thanks 123Venom

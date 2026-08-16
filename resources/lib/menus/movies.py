@@ -162,8 +162,7 @@ class Menu(Movies):
 	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items')}
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_movies_decade': 'decade', 'tmdb_movies_language': 'language'}
 	tmdb_main = (
-		'tmdb_movies_trending_day', 'tmdb_movies_trending', 'tmdb_movies_popular', 'tmdb_movies_now_playing', 'tmdb_movies_digital_releases',
-		'tmdb_movies_physical_releases', 'tmdb_movies_upcoming', 'tmdb_movies_top_rated'
+		'tmdb_movies_trending_day', 'tmdb_movies_trending', 'tmdb_movies_popular', 'tmdb_movies_now_playing', 'tmdb_movies_upcoming', 'tmdb_movies_top_rated'
 	)
 	similar = ('tmdb_movies_similar', 'tmdb_movies_recommendations', 'tmdb_movies_more_like_this', 'tmdb_movies_in_collection')
 	personalized = ('tmdb_movies_because_you_watched',)

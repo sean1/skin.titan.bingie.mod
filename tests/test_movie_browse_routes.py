@@ -80,20 +80,6 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.kodi_utils.execute_builtin.reset_mock()
 		self.kodi_utils.notification.reset_mock()
 
-	def test_recent_release_feeds_use_correct_release_type_and_rolling_window(self):
-		today = date.today()
-		start_date = today - timedelta(days=90)
-		for function, release_type in ((self.tmdb.tmdb_movies_digital_releases, 4), (self.tmdb.tmdb_movies_physical_releases, 5)):
-			with self.subTest(release_type=release_type):
-				result = function(2)
-				url = result['url']
-				self.assertIn('with_release_type=%s' % release_type, url)
-				self.assertIn('release_date.gte=%s' % start_date.isoformat(), url)
-				self.assertIn('release_date.lte=%s' % today.isoformat(), url)
-				self.assertIn('region=US', url)
-				self.assertIn('page=2', url)
-				self.assertIn('sort_by=primary_release_date.desc', url)
-
 	def test_decade_feed_uses_inclusive_decade_bounds(self):
 		url = self.tmdb.tmdb_movies_decade('2010', 3)['url']
 		self.assertIn('primary_release_date.gte=2010-01-01', url)

@@ -73,6 +73,16 @@ class PickMyNightTests(unittest.TestCase):
 
 		self.assertEqual(menu._selection_dialog.call_count, 4)
 
+	def test_results_are_not_limited_to_ten_pages(self):
+		menu = self.discover.Discover({'mediatype': 'movie'})
+		menu._selection_dialog = Mock(side_effect=('', '', 'crowd_pleasers'))
+
+		menu.pick_my_night()
+
+		alarm = unquote(self.discover.kodi_utils.execute_builtin.call_args_list[1].args[0])
+		self.assertIn('&target_results=200', alarm)
+		self.assertNotIn('&max_pages=', alarm)
+
 	def test_cancelled_selection_does_not_schedule_navigation(self):
 		menu = self.discover.Discover({})
 		menu._selection_dialog = Mock(return_value=None)

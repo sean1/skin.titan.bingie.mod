@@ -61,10 +61,7 @@
 
     <include name="CustomBingieWinProps">
         <onload>ClearProperty(ShowViewSubMenu,Home)</onload>
-		<onload>ClearProperty(submenu,Home)</onload>
-        <onload>SetProperty(bingieviews,1,Home)</onload>
         <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
-		<onunload>ClearProperty(submenu,Home)</onunload>
     </include>
 
     <!-- DETAILS ROW INCLUDES -->
@@ -958,14 +955,11 @@
                 <focusposition>0</focusposition>
                 <movement>3</movement>
                 <onleft>900</onleft>
-                <onleft>ClearProperty(submenu,Home)</onleft>
-                <onright>ClearProperty(submenu,Home)</onright>
                 <onright>77777</onright>
                 <onright>ClearProperty(ShowViewSubMenu,Home)</onright>
                 <onup>4444</onup>
                 <ondown>4444</ondown>
                 <onback>900</onback>
-                <onback>ClearProperty(submenu,Home)</onback>
                 <itemlayout width="360" height="50">
                     <include content="Bingie_Submenu_Label"></include>
                 </itemlayout>

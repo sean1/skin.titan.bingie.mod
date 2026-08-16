@@ -272,7 +272,6 @@
 			<property name="labelID">32900</property>
 			<property name="defaultID">32900</property>
 			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(submenu,Home)</onclick>
 			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
 			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true)</onclick>
 			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true)</property>
@@ -291,7 +290,6 @@
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
 			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(submenu,Home)</onclick>
 			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
 			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show)</onclick>
 			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show)</property>
@@ -486,7 +484,6 @@
 			<property name="labelID">32900</property>
 			<property name="defaultID">32900</property>
 			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(submenu,Home)</onclick>
 			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
 			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true)</onclick>
 			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true)</property>
@@ -505,7 +502,6 @@
 			<property name="labelID">137</property>
 			<property name="defaultID">137</property>
 			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(submenu,Home)</onclick>
 			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
 			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie)</onclick>
 			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie)</property>

@@ -14,9 +14,6 @@ def auto_resume(mediatype):
 	if auto_resume == '2' and auto_play(mediatype): return True
 	else: return False
 
-def auto_start_pov():
-	return get_setting('auto_start_pov') == 'true'
-
 def auto_play(mediatype):
 	return get_setting('auto_play_%s' % mediatype) == 'true'
 

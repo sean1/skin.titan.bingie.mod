@@ -1,4 +1,3 @@
-import json
 import sqlite3
 import tempfile
 import threading
@@ -49,6 +48,7 @@ def load_kodi_utils(module_name='test_settings_cleanup_kodi_utils', window=None)
 	xbmcgui.ACTION_MOUSE_RIGHT_CLICK = xbmcgui.ACTION_MOUSE_LONG_CLICK = xbmcgui.ACTION_MOVE_LEFT = xbmcgui.ACTION_MOVE_RIGHT = 0
 	xbmcgui.ACTION_MOVE_UP = xbmcgui.ACTION_MOVE_DOWN = 0
 	xbmcplugin = types.ModuleType('xbmcplugin')
+	xbmcplugin.endOfDirectory = Mock()
 	xbmcvfs = types.ModuleType('xbmcvfs')
 	xbmcvfs.translatePath = lambda path: path
 	xbmcvfs.exists = lambda path: Path(path).exists()
@@ -65,70 +65,38 @@ def load_kodi_utils(module_name='test_settings_cleanup_kodi_utils', window=None)
 	return load_module(module_name, path, stubs)
 
 
-class SettingsCleanupTests(unittest.TestCase):
+class SettingsPersistenceTests(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.kodi_utils = load_kodi_utils()
-		cls.original_make_settings_dict = staticmethod(cls.kodi_utils.make_settings_dict)
 
 	def configure_module(self, module):
 		module.profile_path = '%s/' % self.profile
 		module.persisted_settings_db = str(self.persisted_settings_db)
-		module.path_exists = lambda path: Path(path).exists()
 		module.make_directorys = lambda path: Path(path).mkdir(parents=True, exist_ok=True)
-		module.open_file = self.open_file
 		module.FIXED_SETTINGS = {'fixed.setting': 'default'}
-		module.notification = Mock()
 		return module
 
 	def setUp(self):
 		self.temp_dir = tempfile.TemporaryDirectory()
 		self.addCleanup(self.temp_dir.cleanup)
 		self.profile = Path(self.temp_dir.name)
-		self.settings_file = self.profile / 'settings.xml'
 		self.persisted_settings_db = self.profile / 'persisted_settings.db'
-		self.open_modes = []
-		def open_file(path, mode='r'):
-			self.open_modes.append(mode)
-			return open(path, mode, encoding='utf-8')
-		self.open_file = open_file
 		self.configure_module(self.kodi_utils)
-		self.kodi_utils.window.properties.clear()
-		self.kodi_utils.make_settings_dict = Mock(wraps=self.original_make_settings_dict)
+		self.kodi_utils.xbmcplugin.endOfDirectory.reset_mock()
 
 	def database_settings(self):
 		with sqlite3.connect(self.persisted_settings_db) as dbcon:
 			return dict(dbcon.execute('SELECT id, value FROM settings'))
 
-	def test_unchanged_file_is_not_rewritten(self):
-		contents = '<settings><setting id="persisted.setting">value</setting></settings>'
-		self.settings_file.write_text(contents, encoding='utf-8')
+	def test_fixed_and_fallback_settings_are_read_without_window_cache(self):
+		self.assertEqual(self.kodi_utils.get_setting('fixed.setting'), 'default')
+		self.assertEqual(self.kodi_utils.get_setting('unknown.setting', 'fallback'), 'fallback')
 
-		self.kodi_utils.clean_settings(silent=True)
+	def test_end_directory_caches_to_disk_by_default(self):
+		self.kodi_utils.end_directory(7)
 
-		self.assertEqual(self.settings_file.read_text(encoding='utf-8'), contents)
-		self.assertNotIn('w', self.open_modes)
-		self.kodi_utils.make_settings_dict.assert_called_once_with()
-
-	def test_missing_file_is_created_and_refreshed(self):
-		self.kodi_utils.clean_settings(silent=True)
-
-		self.assertEqual(self.settings_file.read_text(encoding='utf-8'), '<settings version="2" />')
-		self.assertIn('w', self.open_modes)
-		self.kodi_utils.make_settings_dict.assert_called_once_with()
-
-	def test_fixed_setting_is_removed_and_file_is_rewritten(self):
-		self.settings_file.write_text(
-			'<settings><setting id="fixed.setting">custom</setting><setting id="persisted.setting">value</setting></settings>', encoding='utf-8'
-		)
-
-		self.kodi_utils.clean_settings(silent=True)
-
-		contents = self.settings_file.read_text(encoding='utf-8')
-		self.assertNotIn('fixed.setting', contents)
-		self.assertIn('persisted.setting', contents)
-		self.assertIn('w', self.open_modes)
-		self.kodi_utils.make_settings_dict.assert_called_once_with()
+		self.kodi_utils.xbmcplugin.endOfDirectory.assert_called_once_with(7, cacheToDisc=True)
 
 	def test_all_debrid_credentials_are_persisted(self):
 		self.assertIn('ad.account_id', self.kodi_utils.PERSISTED_SETTING_IDS)
@@ -137,7 +105,6 @@ class SettingsCleanupTests(unittest.TestCase):
 		self.assertTrue(self.kodi_utils.set_setting('ad.token', 'test-token'))
 
 		self.assertEqual(self.database_settings()['ad.token'], 'test-token')
-		self.assertFalse(self.settings_file.exists())
 
 	def test_torbox_credentials_are_persisted(self):
 		self.assertIn('tb.account_id', self.kodi_utils.PERSISTED_SETTING_IDS)
@@ -146,39 +113,21 @@ class SettingsCleanupTests(unittest.TestCase):
 		self.assertTrue(self.kodi_utils.set_setting('tb.token', 'test-token'))
 
 		self.assertEqual(self.database_settings()['tb.token'], 'test-token')
-		self.assertFalse(self.settings_file.exists())
 
-	def test_debrid_credentials_survive_late_skin_save_and_restart(self):
-		stale_skin_settings = '<settings><setting id="skin.setting" type="string">old</setting></settings>'
-		self.settings_file.write_text(stale_skin_settings, encoding='utf-8')
+	def test_debrid_credentials_survive_restart(self):
 		credentials = {'ad.account_id': 'ad-user', 'ad.token': 'ad-token', 'tb.account_id': 'tb-user', 'tb.token': 'tb-token'}
 
 		self.assertTrue(self.kodi_utils.set_settings(credentials))
-		self.settings_file.write_text(stale_skin_settings.replace('old', 'new'), encoding='utf-8')
-		self.kodi_utils.clear_property('pov_lite_settings')
-		self.kodi_utils.make_settings_dict()
 		fresh = self.configure_module(load_kodi_utils('test_settings_cleanup_restart', self.kodi_utils.window))
 
 		self.assertEqual({setting_id: fresh.get_setting(setting_id) for setting_id in credentials}, credentials)
 		self.assertEqual(self.database_settings(), credentials)
-		self.assertIn('>new<', self.settings_file.read_text(encoding='utf-8'))
 
-	def test_stale_xml_credential_is_ignored_when_database_value_is_empty(self):
+	def test_empty_database_value_round_trips(self):
 		self.assertTrue(self.kodi_utils.set_setting('ad.token', ''))
-		self.settings_file.write_text('<settings><setting id="ad.token">stale-token</setting></settings>', encoding='utf-8')
-
-		self.kodi_utils.make_settings_dict()
 
 		self.assertEqual(self.kodi_utils.get_setting('ad.token'), '')
 		self.assertEqual(self.database_settings()['ad.token'], '')
-
-	def test_settings_xml_does_not_import_persisted_credentials(self):
-		self.settings_file.write_text('<settings><setting id="ad.token">stale-token</setting></settings>', encoding='utf-8')
-
-		self.kodi_utils.make_settings_dict()
-
-		self.assertNotIn('ad.token', self.database_settings())
-		self.assertNotIn('ad.token', json.loads(self.kodi_utils.window.getProperty('pov_lite_settings')))
 
 	def test_retired_migration_settings_are_not_persisted(self):
 		retired_ids = {'database.merge_status', 'migration.removed_services.6_08_03', 'migration.removed_personal_trakt.6_08_09', 'migration.removed_history.6_08_38', 'migration.tmdb_native_lists.2_03_03'}
@@ -207,7 +156,6 @@ class SettingsCleanupTests(unittest.TestCase):
 		self.assertEqual(results, [True, True])
 		self.assertEqual(self.database_settings(), expected)
 		self.assertEqual({setting_id: fresh.get_setting(setting_id) for setting_id in expected}, expected)
-		self.assertEqual(json.loads(self.kodi_utils.window.getProperty('pov_lite_settings')), expected)
 
 
 if __name__ == '__main__':

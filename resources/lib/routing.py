@@ -25,8 +25,6 @@ POV_ROUTES = {
 	'build_person_credits': lambda p: _import('menus.people', 'build_person_credits')(p),
 	'build_media_cast': lambda p: _import('menus.people', 'build_media_cast')(p),
 
-	'clean_settings': lambda p: _import('modules.kodi_utils', 'clean_settings')(),
-	'clean_settings_window_properties': lambda p: _import('modules.kodi_utils', 'clean_settings_window_properties')(),
 	'clear_all_cache': lambda p: _import('modules.cache', 'clear_all_cache')(),
 	'clear_cache': lambda p: _import('modules.cache', 'clear_cache')(p.get('cache')),
 	'clean_databases': lambda p: _import('modules.cache', 'clean_databases')(),

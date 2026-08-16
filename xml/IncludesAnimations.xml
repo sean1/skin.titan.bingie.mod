@@ -110,9 +110,9 @@
         <animation effect="slide" time="0" delay="0" start="0" end="70" condition="true">Conditional</animation>
     </include>
 
-    <!-- hide on info-dialog transition / startup-mask -->
+    <!-- hide on info-dialog transition -->
     <include name="HideWindowOnStartupAndDialogInfoLoad">
-        <animation time="0" effect="fade" start="100" end="0" condition="System.HasAlarm(loadinfo) | System.HasAlarm(startup)">Conditional</animation>
+        <animation time="0" effect="fade" start="100" end="0" condition="System.HasAlarm(loadinfo)">Conditional</animation>
     </include>
 
     <include name="No_Circular_Slide_Animation">

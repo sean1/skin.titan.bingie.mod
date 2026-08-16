@@ -152,7 +152,6 @@ class MainMenuTests(unittest.TestCase):
 		for event in ('onload', 'onunload'):
 			actions = {action.text for action in window_props.findall(event)}
 			self.assertIn('ClearProperty(ShowViewSubMenu,Home)', actions)
-			self.assertIn('ClearProperty(submenu,Home)', actions)
 
 if __name__ == '__main__':
 	unittest.main()

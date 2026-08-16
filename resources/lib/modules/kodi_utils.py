@@ -1,6 +1,5 @@
 import json
 import sqlite3 as database
-from threading import Lock
 from urllib.parse import urlencode, urlparse, parse_qsl
 import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 from xbmcaddon import Addon
@@ -85,7 +84,7 @@ def set_sort_method(handle, method):
 	xbmcplugin.addSortMethod(handle, sort_method)
 
 def end_directory(handle, cacheToDisc=None):
-	if cacheToDisc is None: cacheToDisc = get_property('pov_lite_kodi_menu_cache') == 'true'
+	if cacheToDisc is None: cacheToDisc = True
 	xbmcplugin.endOfDirectory(handle, cacheToDisc=cacheToDisc)
 
 def set_resolvedurl(handle, item):
@@ -350,10 +349,6 @@ def focus_index(index, sleep_time=100):
 	try: current_window.getControl(focus_id).selectItem(index)
 	except: pass
 
-def clean_settings_window_properties():
-	clear_property('pov_lite_settings')
-	notification(32576, 1500)
-
 def fetch_kodi_imagecache(image):
 	result = None
 	try:
@@ -364,35 +359,13 @@ def fetch_kodi_imagecache(image):
 	except: pass
 	return result
 
-class SettingsManager:
-	def __init__(self):
-		self._cache = {}
-		self._last_raw_string = None
-
-	def _sync(self):
-		current_raw = get_property('pov_lite_settings')
-		if current_raw == self._last_raw_string: return
-		try: self._cache = json.loads(current_raw)
-		except Exception: self._cache = make_settings_dict()
-		self._last_raw_string = current_raw
-
-	def get(self, key, fallback=None):
-		self._sync()
-		value = self._cache.get(key, '')
-		if value == '' and fallback is not None: return fallback
-		return value
-
-manager = SettingsManager()
-
 FIXED_SETTINGS = {
 	'amble.indicators': '',
 	'auto_play_episode': 'false',
 	'auto_play_movie': 'false',
 	'auto_resume_episode': '0',
 	'auto_resume_movie': '0',
-	'auto_start_pov': 'false',
 	'ad.enabled': 'true',
-	'ad.expires': '0',
 	'ad.priority': '10',
 	'ad.torrent.enabled': 'true',
 	'autoplay_next_check_threshold': '3',
@@ -434,7 +407,6 @@ FIXED_SETTINGS = {
 	'include_prerelease_results': 'false',
 	'include_year_in_title': '0',
 	'int_dialog_highlight': 'magenta',
-	'kodi_menu_cache': 'true',
 	'load_action': '1',
 	'meta_language': 'en',
 	'meta_language_display': 'English',
@@ -455,7 +427,6 @@ FIXED_SETTINGS = {
 	'provider.rd_colour': 'seagreen',
 	'provider.tb_colour': 'mediumturquoise',
 	'rd.enabled': 'true',
-	'rd.expires': '0',
 	'rd.hoster.enabled': 'false',
 	'rd.priority': '10',
 	'rd.torrent.enabled': 'true',
@@ -498,7 +469,6 @@ FIXED_SETTINGS = {
 	'store_torrent.alldebrid': 'false',
 	'store_torrent.torbox': 'false',
 	'tb.enabled': 'true',
-	'tb.expires': '0',
 	'tb.priority': '10',
 	'tb.torrent.enabled': 'true',
 	'thumb_fanart': 'false',
@@ -529,7 +499,6 @@ PERSISTED_SETTING_IDS = frozenset((
 	'tb.account_id', 'tb.token'
 ) + EXTERNAL_PROVIDER_SETTING_IDS)
 
-_settings_lock = Lock()
 _persisted_settings_schema = """CREATE TABLE IF NOT EXISTS settings (id TEXT PRIMARY KEY, value TEXT NOT NULL)"""
 
 def _persisted_settings_connection():
@@ -557,10 +526,7 @@ def _write_persisted_settings(settings_dict, overwrite=True):
 def get_setting(setting_id, fallback=None):
 	if setting_id in FIXED_SETTINGS: return FIXED_SETTINGS[setting_id]
 	try:
-		if setting_id in PERSISTED_SETTING_IDS:
-			if not path_exists(persisted_settings_db): make_settings_dict()
-			value = _read_persisted_settings().get(setting_id, '')
-		else: value = manager.get(setting_id, fallback)
+		value = _read_persisted_settings().get(setting_id, '') if setting_id in PERSISTED_SETTING_IDS else ''
 	except: value = fallback if fallback is not None else ''
 	if value == '' and fallback is not None: return fallback
 	return value
@@ -569,7 +535,6 @@ def set_settings(settings_dict):
 	if not settings_dict or any(setting_id not in PERSISTED_SETTING_IDS for setting_id in settings_dict): return False
 	try:
 		_write_persisted_settings(settings_dict)
-		make_settings_dict()
 		return True
 	except Exception as e:
 		logger('set_settings error', str(e))
@@ -577,39 +542,6 @@ def set_settings(settings_dict):
 
 def set_setting(setting_id, value):
 	return set_settings({setting_id: value})
-
-def make_settings_dict():
-	try:
-		settings_dict = _read_persisted_settings()
-	except Exception as e:
-		logger('make_settings_dict error', str(e))
-		settings_dict = {}
-	set_property('pov_lite_settings', json.dumps(settings_dict))
-	return settings_dict
-
-def clean_settings(silent=False):
-	import xml.etree.ElementTree as ET
-	profile_xml = profile_path + 'settings.xml'
-	try:
-		removed_settings = []
-		with _settings_lock:
-			file_exists = path_exists(profile_xml)
-			if file_exists:
-				with open_file(profile_xml) as xml_file: root = ET.fromstring(xml_file.read())
-			else: root = ET.Element('settings', {'version': '2'})
-			for parent in root.iter():
-				for item in list(parent):
-					if item.tag != 'setting' or item.get('id') not in FIXED_SETTINGS: continue
-					removed_settings.append(item)
-					parent.remove(item)
-			if not file_exists or removed_settings:
-				make_directorys(profile_path)
-				with open_file(profile_xml, 'w') as xml_file: xml_file.write(ET.tostring(root, encoding='unicode'))
-		make_settings_dict()
-		text = local_string(32813) % len(removed_settings) if removed_settings else 32576
-		if not silent: notification(text, 1500)
-	except:
-		if not silent: notification(32574, 1500)
 
 def upload_logfile():
 	# Thanks 123Venom

@@ -300,9 +300,8 @@
             <include content="WidgetBaseBingieIncludes">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>
-            <include>WidgetsBaseAnimation</include>
+			<include>WidgetsBaseAnimation</include>
 			<onfocus>ClearProperty(Animation,home)</onfocus>
-            <onfocus>SetProperty(ShowWidget,1,home)</onfocus>
             <include content="$PARAM[widgetStyle]">
                 <param name="widgetid" value="$PARAM[widgetid]" />
                 <param name="widgetTags" value="$PARAM[widgetTags]" />

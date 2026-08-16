@@ -3,13 +3,13 @@ from datetime import datetime
 from time import monotonic
 from collections import OrderedDict
 from queue import Empty, SimpleQueue
-from modules import kodi_utils, settings
+from modules import kodi_utils
 from modules.prefetch import NextPagePrefetch
 
-logger, path_exists, translate_path = kodi_utils.logger, kodi_utils.path_exists, kodi_utils.translate_path
+logger = kodi_utils.logger
 monitor = kodi_utils.monitor
 get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils.set_property, kodi_utils.clear_property
-get_setting, set_setting, make_settings_dict = kodi_utils.get_setting, kodi_utils.set_setting, kodi_utils.make_settings_dict
+get_setting, set_setting = kodi_utils.get_setting, kodi_utils.set_setting
 
 TRAILER_PREVIEW_PROPERTY = 'BingieTrailerPreview'
 TRAILER_PREVIEW_READY_PROPERTY = 'BingieTrailerPreviewReady'
@@ -799,10 +799,10 @@ class TrailerPreview:
 class POVMonitor(kodi_utils.xbmc_monitor):
 	def __enter__(self):
 		initializeDatabases()
-		checkSettingsFile()
+		normalizeMenuData()
 		try: viewsSetWindowProperties()
 		except: pass
-		self.threads = (Thread(target=premAccntNotification), Thread(target=self._deferred_database_maintenance))
+		self.threads = (Thread(target=self._deferred_database_maintenance),)
 		self.focused_fanart = FocusedFanart()
 		self.trailer_preview = TrailerPreview()
 		self.next_page_prefetch = NextPagePrefetch()
@@ -819,8 +819,6 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			try: metadataCachePrefetch()
 			except: pass
 			for i in getattr(self, 'threads', ()): i.start()
-			try: autoRun()
-			except: pass
 			try: clearSubs()
 			except: pass
 			poll_interval = TRAILER_PREVIEW_IDLE_POLL
@@ -852,12 +850,6 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 	def ver(*args):
 		return f"{kodi_utils.get_addoninfo('id')}-{kodi_utils.get_addoninfo('version')}"
 
-	def onSettingsChanged(self):
-		clear_property('pov_lite_settings')
-		kodi_utils.sleep(50)
-		make_settings_dict()
-		set_property('pov_lite_kodi_menu_cache', get_setting('kodi_menu_cache'))
-
 	def onScreensaverActivated(self):
 		set_property('pov_lite_pause_services', 'true')
 
@@ -874,19 +866,11 @@ def initializeDatabases():
 	check_databases()
 	return logger('BINGIE Lite', 'InitializeDatabases Service Finished')
 
-def checkSettingsFile():
-	logger('BINGIE Lite', 'CheckSettingsFile Service Starting')
-	profile_dir = kodi_utils.get_addoninfo('profile')
-	profile_xml = profile_dir + 'settings.xml'
-	if not path_exists(profile_xml):
-		kodi_utils.make_directorys(profile_dir)
-	kodi_utils.clean_settings(silent=True)
+def normalizeMenuData():
+	logger('BINGIE Lite', 'NormalizeMenuData Service Starting')
 	from modules.cache import normalize_menu_data
 	normalize_menu_data()
-	clear_property('pov_lite_settings')
-	make_settings_dict()
-	set_property('pov_lite_kodi_menu_cache', get_setting('kodi_menu_cache'))
-	return logger('BINGIE Lite', 'CheckSettingsFile Service Finished')
+	return logger('BINGIE Lite', 'NormalizeMenuData Service Finished')
 
 def metadataCachePrefetch():
 	from caches.meta_cache import MetaCache
@@ -898,7 +882,6 @@ def databaseMaintenance():
 	due_clean = int(get_setting('database.maintenance.due', '0'))
 	if current_time < due_clean: return
 	logger('BINGIE Lite', 'Database Maintenance Service Starting')
-	kodi_utils.clean_settings(silent=True)
 	from modules.cache import clean_databases
 	clean_databases(current_time, database_check=False, silent=True)
 	set_setting('database.maintenance.due', str(next_clean))
@@ -909,11 +892,6 @@ def viewsSetWindowProperties():
 	kodi_utils.set_view_properties()
 	return logger('BINGIE Lite', 'ViewsSetWindowProperties Service Finished')
 
-def autoRun():
-	logger('BINGIE Lite', 'AutoRun Service Starting')
-	if settings.auto_start_pov(): kodi_utils.execute_builtin('ActivateWindow(Videos,%s,return)' % kodi_utils.build_url({'mode': 'navigator.main'}))
-	return logger('BINGIE Lite', 'AutoRun Service Finished')
-
 def clearSubs():
 	logger('BINGIE Lite', 'Clear Subtitles Service Starting')
 	subtitle_path = 'special://temp/'
@@ -921,21 +899,3 @@ def clearSubs():
 		if i.startswith('POVLiteSubs_'):
 			kodi_utils.delete_file(subtitle_path + i)
 	return logger('BINGIE Lite', 'Clear Subtitles Service Finished')
-
-def premAccntNotification():
-	logger('BINGIE Lite', 'Debrid Account Expiry Notification Service Starting')
-	from importlib import import_module
-	for user, expires, module, cls in (
-		('rd.username', 'rd.expires', 'real_debrid_api', 'RealDebridAPI'),
-		('ad.account_id', 'ad.expires', 'all_debrid_api', 'AllDebridAPI'),
-		('tb.account_id', 'tb.expires', 'torbox_api', 'TorBoxAPI'),
-	):
-		try:
-			if not get_setting(user): continue
-			if (limit := int(get_setting(expires, '7'))) < 1: continue
-			module = import_module('debrids.%s' % module)
-			days_remaining = getattr(module, cls)().days_remaining()
-			if days_remaining is None or days_remaining > limit: continue
-			kodi_utils.notification('%s expires in %s days' % (cls, days_remaining))
-		except: pass
-	return logger('BINGIE Lite', 'Debrid Account Expiry Notification Service Finished')

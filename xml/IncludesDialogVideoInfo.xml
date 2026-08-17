@@ -532,8 +532,9 @@
 								<label>Episodes</label>
 								<radioposy>22</radioposy>
                                 <radioposx>16</radioposx>
-                                <radiowidth>24</radiowidth>
-                                <radioheight>24</radioheight>
+								<radiowidth>24</radiowidth>
+								<radioheight>24</radioheight>
+								<onclick>SetProperty(BaseWindow,1,Home)</onclick>
 								<onclick>Dialog.Close(movieinformation)</onclick>
 								<onclick>AlarmClock(BrowseEpisodes,ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_season_list&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)],return),00:00,silent)</onclick>
 							</control>

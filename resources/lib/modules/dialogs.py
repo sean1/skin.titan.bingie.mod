@@ -27,6 +27,9 @@ POV_ACTOR_HYDRATION_PROPERTY = 'PovActorHydrationRequest'
 TRAILER_PREVIEW_PROPERTY = 'BingieTrailerPreview'
 TRAILER_PREVIEW_CANCEL_PROPERTY = 'BingieTrailerPreviewCancel'
 TRAILER_PREVIEW_REQUEST_PROPERTY = 'BingieTrailerPreviewRequest'
+POV_INFO_FOCUS_CONTROLS = (80, 51, 53, 550, 563, 560)
+POV_ACTOR_FOCUS_CONTROLS = (610, 620, 630, 699)
+POV_CONTAINER_CONTROLS = (550, 563, 560, 610, 620, 630)
 
 def _reset_info_page_focus(media_type):
 	execute_builtin('SetFocus(%s)' % (80 if media_type == 'movie' else 51))
@@ -40,14 +43,46 @@ def _page_history():
 def reset_pov_page_history():
 	clear_property(POV_PAGE_HISTORY_PROPERTY)
 
+def _push_page_history(state):
+	history = _page_history()
+	history.append(state)
+	set_property(POV_PAGE_HISTORY_PROPERTY, json.dumps(history[-20:], separators=(',', ':')))
+
+def _page_focus_state(page_type):
+	controls = POV_INFO_FOCUS_CONTROLS if page_type == 'info' else POV_ACTOR_FOCUS_CONTROLS if page_type == 'actor' else ()
+	try:
+		window = kodi_utils.current_window_id()
+		control = window.getFocusId()
+		if control not in controls: return {}
+		state = {'control': control}
+		if control in POV_CONTAINER_CONTROLS: state['position'] = max(0, int(window.getControl(control).getSelectedPosition()))
+		return state
+	except: return {}
+
+def _restore_page_focus(focus, controls, window_id, fallback=None):
+	try: control = int(focus.get('control'))
+	except: control = fallback
+	if control not in controls: control = fallback
+	if control is None: return
+	if control in POV_CONTAINER_CONTROLS:
+		try: position = max(0, int(focus.get('position', 0)))
+		except: position = 0
+		condition = 'Window.IsActive(%s) + Integer.IsGreater(Container(%s).NumItems,%s)' % (window_id, control, position)
+		deadline = monotonic() + 2.0
+		while not kodi_utils.get_visibility(condition) and monotonic() < deadline: sleep(25)
+		if kodi_utils.get_visibility(condition): execute_builtin('Control.SetFocus(%s,%s,absolute)' % (control, position))
+		return
+	execute_builtin('SetFocus(%s)' % control)
+
 def push_pov_page_state(page_type):
 	properties = POV_INFO_PROPERTIES if page_type == 'info' else POV_ACTOR_PROPERTIES if page_type == 'actor' else ()
 	if not properties: return
 	values = {prop: get_property(prop) for prop in properties}
 	if not any(values.values()): return
-	history = _page_history()
-	history.append({'page': page_type, 'values': values})
-	set_property(POV_PAGE_HISTORY_PROPERTY, json.dumps(history[-20:], separators=(',', ':')))
+	_push_page_history({'page': page_type, 'values': values, 'focus': _page_focus_state(page_type)})
+
+def push_native_info_state():
+	_push_page_history({'page': 'native_info'})
 
 def pov_page_back(params=None):
 	_stop_owned_trailer_preview()
@@ -58,6 +93,7 @@ def pov_page_back(params=None):
 	if history:
 		state = history.pop()
 		page_type = state.get('page')
+		focus = state.get('focus') or {}
 		properties = POV_INFO_PROPERTIES if page_type == 'info' else POV_ACTOR_PROPERTIES if page_type == 'actor' else ()
 		values = state.get('values') or {}
 		if page_type == 'info': clear_property('PovInfoTmdb')
@@ -72,10 +108,15 @@ def pov_page_back(params=None):
 		else: clear_property(POV_PAGE_HISTORY_PROPERTY)
 		if page_type == 'info':
 			execute_builtin('ReplaceWindow(%s)' % POV_INFO_WINDOW_ID)
-			_reset_info_page_focus(get_property('PovInfoType'))
+			_restore_page_focus(focus, POV_INFO_FOCUS_CONTROLS, POV_INFO_WINDOW_ID, 80 if get_property('PovInfoType') == 'movie' else 51)
 			return
 		if page_type == 'actor':
 			execute_builtin('ReplaceWindow(1122)')
+			_restore_page_focus(focus, POV_ACTOR_FOCUS_CONTROLS, 1122)
+			return
+		if page_type == 'native_info':
+			execute_builtin('PreviousMenu')
+			execute_builtin('AlarmClock(PovNativeInfoBack,Action(Info),00:00,silent)')
 			return
 	execute_builtin('PreviousMenu')
 
@@ -214,13 +255,16 @@ def show_media_info(params):
 	try:
 		active_info = kodi_utils.get_visibility('Window.IsActive(%s)' % POV_INFO_WINDOW_ID)
 		active_actor = kodi_utils.get_visibility('Window.IsActive(1122)')
+		active_native_info = kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)')
 		if active_actor:
 			clear_property(POV_ACTOR_HYDRATION_PROPERTY)
 			push_pov_page_state('actor')
 		elif active_info: push_pov_page_state('info')
-		elif not active_info: reset_pov_page_history()
+		else:
+			reset_pov_page_history()
+			if active_native_info: push_native_info_state()
 		_stop_owned_trailer_preview()
-		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)'):
+		if active_native_info:
 			execute_builtin('Dialog.Close(movieinformation)')
 			close_deadline = monotonic() + 2.0
 			while kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)') and monotonic() < close_deadline: sleep(50)

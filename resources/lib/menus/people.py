@@ -210,16 +210,19 @@ def show_person_info(params):
 	try:
 		person_id = _resolve_person_id(params)
 		if not person_id: return kodi_utils.notification(32760)
-		from modules.dialogs import push_pov_page_state, reset_pov_page_history
+		from modules.dialogs import push_native_info_state, push_pov_page_state, reset_pov_page_history
 		active_info = kodi_utils.get_visibility('Window.IsActive(1123)')
 		active_actor = kodi_utils.get_visibility('Window.IsActive(1122)')
+		active_native_info = kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)') and not active_info
 		if active_info: push_pov_page_state('info')
 		elif active_actor: push_pov_page_state('actor')
-		else: reset_pov_page_history()
+		else:
+			reset_pov_page_history()
+			if active_native_info: push_native_info_state()
 		if kodi_utils.get_property('BingieTrailerPreview') == 'true':
 			kodi_utils.execute_builtin('PlayerControl(Stop)')
 			kodi_utils.clear_property('BingieTrailerPreview')
-		if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)') and not kodi_utils.get_visibility('Window.IsActive(1123)'):
+		if active_native_info:
 			kodi_utils.execute_builtin('Dialog.Close(movieinformation)')
 			close_deadline = monotonic() + 2.0
 			while kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)') and monotonic() < close_deadline: kodi_utils.sleep(50)

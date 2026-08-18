@@ -43,6 +43,18 @@ class WatchedUiPolicyTests(unittest.TestCase):
 		self.assertTrue(all('BingieProgressRefreshMovie' in path for path in movie_paths))
 		self.assertTrue(all('BingieProgressRefreshEpisode' in path for path in episode_paths))
 
+	def test_every_builtin_media_widget_has_a_targeted_watched_refresh_key(self):
+		static_source = (ROOT / 'xml' / 'IncludesStaticMenus.xml').read_text(encoding='utf-8')
+		static_widget_source = static_source[:static_source.index('</item>')] + static_source[static_source.index('<variable name="BingieHomeContinueMoviesPath">'):]
+		hub_source = (ROOT / 'xml' / 'IncludesHubs.xml').read_text(encoding='utf-8')
+		paths = re.findall(r'plugin://skin\.titan\.bingie\.lite/\?[^"<]*', static_widget_source + hub_source)
+		movie_paths = [path for path in paths if 'mode=build_movie_list' in path]
+		tv_paths = [path for path in paths if 'mode=build_tvshow_list' in path or 'mode=build_in_progress_episode' in path]
+		self.assertTrue(movie_paths)
+		self.assertTrue(tv_paths)
+		self.assertTrue(all('BingieWatchedRefreshMovie' in path for path in movie_paths))
+		self.assertTrue(all('BingieWatchedRefreshTV' in path for path in tv_paths))
+
 
 if __name__ == '__main__':
 	unittest.main()

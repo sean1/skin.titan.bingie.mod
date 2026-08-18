@@ -93,6 +93,22 @@ class ProgressCacheTests(unittest.TestCase):
 		self.progress.kodi_utils.widget_refresh.assert_not_called()
 		self.progress.kodi_utils.container_refresh.assert_not_called()
 
+	def test_set_bookmark_closes_before_targeted_progress_refresh(self):
+		progress = load_progress_cache(external=True)
+		dbcon = Mock()
+		events = []
+		dbcon.close.side_effect = lambda: events.append('close')
+		progress.kodi_utils.set_property.side_effect = lambda *args: events.append('refresh')
+		progress.kodi_utils.database_connect.return_value = dbcon
+
+		self.assertTrue(progress.set_bookmark('episode', '101', 100, 200, 'Show', 2, 3, 'progress'))
+
+		progress.kodi_utils.database_connect.assert_called_once_with('watched.db', timeout=1, isolation_level=None)
+		self.assertEqual(dbcon.execute.call_args.args[0], progress.SET_BM)
+		self.assertEqual(events, ['close', 'refresh'])
+		self.assertEqual(progress.kodi_utils.set_property.call_args.args[0], 'BingieProgressRefreshEpisode')
+		progress.kodi_utils.widget_refresh.assert_not_called()
+
 
 if __name__ == '__main__':
 	unittest.main()

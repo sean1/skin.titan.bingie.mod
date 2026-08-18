@@ -118,6 +118,17 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 
 		self.assertEqual(sources.nextep_params, [{'episode': 2}])
 
+	def test_resume_save_has_no_forced_cleanup_sleep(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player_module.ws.set_bookmark = mock.Mock()
+		player_module.kodi_utils.sleep = mock.Mock()
+
+		player.exec_task('media_bookmark', 'movie', '101', 100, 200, 'Movie', '', '', 'progress')
+
+		player_module.ws.set_bookmark.assert_called_once_with('movie', '101', 100, 200, 'Movie', '', '', 'progress')
+		player_module.kodi_utils.sleep.assert_not_called()
+
 	def test_credit_marker_controls_popup_timing(self):
 		player_module = load_player()
 		player_module.settings.autoplay_next_settings = lambda: {

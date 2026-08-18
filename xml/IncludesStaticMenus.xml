@@ -11,22 +11,22 @@
 			<property name="widget">pov-in-progress-movies</property>
 			<property name="widgetTarget">videos</property>
 			<property name="widgetType">movies</property>
-			<property name="widgetPath">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]</property>
+			<property name="widgetPath">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</property>
 			<property name="widgetName">Continue Watching Movies</property>
 			<property name="widget.1">pov-in-progress-tv</property>
 			<property name="widgetTarget.1">videos</property>
 			<property name="widgetType.1">episodes</property>
-			<property name="widgetPath.1">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]</property>
+			<property name="widgetPath.1">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</property>
 			<property name="widgetName.1">Continue Watching TV</property>
 			<property name="widget.2">pov-trending-movies</property>
 			<property name="widgetTarget.2">videos</property>
 			<property name="widgetType.2">movies</property>
-			<property name="widgetPath.2">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;limit=10</property>
+			<property name="widgetPath.2">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</property>
 			<property name="widgetName.2">Trending Movies Today</property>
 			<property name="widget.3">pov-trending-tv</property>
 			<property name="widgetTarget.3">videos</property>
 			<property name="widgetType.3">tvshows</property>
-			<property name="widgetPath.3">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10</property>
+			<property name="widgetPath.3">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</property>
 			<property name="widgetName.3">Trending TV Shows Today</property>
 			<onclick>ActivateWindow(home,return)</onclick>
 			<property name="path">ActivateWindow(home,return)</property>
@@ -447,13 +447,13 @@
 	</include>
 	<!-- An empty dynamic content path defers its provider job; container visibility alone does not. -->
 	<variable name="BingieHomeContinueMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
 	</variable>
 	<variable name="BingieHomeContinueTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
 	</variable>
 	<include name="StaticHomeWidgetRows">
 		<include content="widget_header_multi">
@@ -469,7 +469,7 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetTags" value="WidgetTagOverlayAuto" />
 			<param name="widgetTarget" value="videos" />
-			<param name="widgetPath" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;limit=10" />
+			<param name="widgetPath" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]" />
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />

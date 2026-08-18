@@ -1,3 +1,6 @@
+import sqlite3
+import tempfile
+import threading
 import types
 import unittest
 from datetime import datetime
@@ -10,12 +13,23 @@ from tests.module_isolation import load_module
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def load_watched_cache():
+class ThreadTaskPool:
+	def __init__(self, maxsize=None):
+		self.maxsize = maxsize
+
+	def tasks(self, target, items, thread):
+		threads = [thread(target=target, args=item) for item in items]
+		for worker in threads: worker.start()
+		return threads
+
+
+def load_watched_cache(external=False):
 	kodi_utils = types.ModuleType('modules.kodi_utils')
 	kodi_utils.watched_db = 'watched.db'
 	kodi_utils.local_string = Mock(return_value='Please wait')
 	kodi_utils.progressDialogBG = Mock()
-	kodi_utils.external_browse = Mock(return_value=False)
+	kodi_utils.external_browse = Mock(return_value=external)
+	kodi_utils.set_property = Mock()
 	kodi_utils.widget_refresh = Mock()
 	kodi_utils.container_refresh = Mock()
 	kodi_utils.notification = Mock()
@@ -35,7 +49,7 @@ def load_watched_cache():
 	utils.get_datetime = Mock(return_value=datetime(2024, 1, 2))
 	utils.paginate_list = Mock()
 	utils.sort_for_article = Mock()
-	utils.TaskPool = Mock
+	utils.TaskPool = ThreadTaskPool
 	modules = types.ModuleType('modules')
 	modules.__path__ = []
 	modules.kodi_utils = kodi_utils
@@ -64,7 +78,19 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 		result = self.watched._tvshow_episodes_meta(meta, {'language': 'en'})
 
 		self.assertEqual(result, ['s1e1', 's2e1'])
-		self.assertEqual([call.args[0] for call in self.watched.metadata.season_episodes_meta.call_args_list], [1, 2])
+		self.assertCountEqual([call.args[0] for call in self.watched.metadata.season_episodes_meta.call_args_list], [1, 2])
+
+	def test_tvshow_loader_fetches_regular_seasons_concurrently_and_preserves_order(self):
+		watched = load_watched_cache()
+		barrier = threading.Barrier(2)
+		def load_season(season, meta, user_info):
+			barrier.wait(1)
+			return ['s%de1' % season]
+		watched.metadata.season_episodes_meta.side_effect = load_season
+
+		result = watched._tvshow_episodes_meta({'season_data': [{'season_number': 0}, {'season_number': 1}, {'season_number': 2}]}, {})
+
+		self.assertEqual(result, ['s1e1', 's2e1'])
 
 	def test_batch_marks_only_aired_episodes_and_closes_progress(self):
 		params = {'action': 'mark_as_watched', 'tmdb_id': 101}
@@ -113,6 +139,86 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 
 	def test_zero_aired_episodes_never_reports_complete(self):
 		self.assertEqual(self.watched.get_watched_status_tvshow({101: []}, 101, 0), (0, 4, 0, 0))
+
+	def test_single_watched_change_and_progress_delete_share_one_transaction(self):
+		with tempfile.NamedTemporaryFile() as database_file:
+			self._create_watched_schema(database_file.name)
+			connection = sqlite3.connect(database_file.name)
+			connection.execute("INSERT INTO progress VALUES ('movie', '101', '', '', '50', '100', 'now', 0, 'Movie')")
+			connection.commit()
+			connection.close()
+			watched = load_watched_cache(external=True)
+			watched.kodi_utils.database_connect.side_effect = lambda path, **kwargs: sqlite3.connect(database_file.name, **kwargs)
+
+			watched.mark_as_watched_unwatched_movie({'action': 'mark_as_watched', 'tmdb_id': '101', 'title': 'Movie'})
+
+			connection = sqlite3.connect(database_file.name)
+			self.assertEqual(connection.execute("SELECT COUNT(*) FROM watched_status WHERE media_id = '101'").fetchone()[0], 1)
+			self.assertEqual(connection.execute("SELECT COUNT(*) FROM progress WHERE media_id = '101'").fetchone()[0], 0)
+			connection.close()
+			watched.kodi_utils.set_property.assert_called_once()
+			self.assertEqual(watched.kodi_utils.set_property.call_args.args[0], 'BingieWatchedRefreshMovie')
+			watched.kodi_utils.widget_refresh.assert_not_called()
+
+	def test_single_watched_change_rolls_back_when_progress_delete_fails(self):
+		with tempfile.NamedTemporaryFile() as database_file:
+			self._create_watched_schema(database_file.name)
+			connection = sqlite3.connect(database_file.name)
+			connection.execute("CREATE TRIGGER fail_progress_delete BEFORE DELETE ON progress BEGIN SELECT RAISE(ABORT, 'fail'); END")
+			connection.execute("INSERT INTO progress VALUES ('movie', '101', '', '', '50', '100', 'now', 0, 'Movie')")
+			connection.commit()
+			connection.close()
+			watched = load_watched_cache(external=True)
+			watched.kodi_utils.database_connect.side_effect = lambda path, **kwargs: sqlite3.connect(database_file.name, **kwargs)
+
+			watched.mark_as_watched_unwatched_movie({'action': 'mark_as_watched', 'tmdb_id': '101', 'title': 'Movie'})
+
+			connection = sqlite3.connect(database_file.name)
+			self.assertEqual(connection.execute("SELECT COUNT(*) FROM watched_status WHERE media_id = '101'").fetchone()[0], 0)
+			self.assertEqual(connection.execute("SELECT COUNT(*) FROM progress WHERE media_id = '101'").fetchone()[0], 1)
+			connection.close()
+			watched.kodi_utils.notification.assert_called_once_with(32574)
+			watched.kodi_utils.set_property.assert_not_called()
+
+	def test_batch_watched_changes_commit_status_and_progress_atomically(self):
+		with tempfile.NamedTemporaryFile() as database_file:
+			self._create_watched_schema(database_file.name)
+			connection = sqlite3.connect(database_file.name)
+			connection.executemany("INSERT INTO progress VALUES ('episode', '101', ?, ?, '50', '100', 'now', 0, 'Show')", [(1, 1), (1, 2)])
+			connection.commit()
+			connection.close()
+			watched = load_watched_cache()
+			watched.kodi_utils.database_connect.side_effect = lambda path, **kwargs: sqlite3.connect(database_file.name, **kwargs)
+			rows = [('episode', '101', 1, 1, 'now', 'Show'), ('episode', '101', 1, 2, 'now', 'Show')]
+
+			self.assertTrue(watched.batch_mark_as_watched_unwatched('local', rows, 'mark_as_watched'))
+
+			connection = sqlite3.connect(database_file.name)
+			self.assertEqual(connection.execute('SELECT COUNT(*) FROM watched_status').fetchone()[0], 2)
+			self.assertEqual(connection.execute('SELECT COUNT(*) FROM progress').fetchone()[0], 0)
+			connection.close()
+
+	def test_batch_progress_updates_are_throttled(self):
+		params = {'action': 'mark_as_watched', 'tmdb_id': 101}
+		episodes = [{'season': 1, 'episode': number, 'premiered': '2024-01-01'} for number in range(1, 101)]
+		self.watched.adjust_premiered_date.return_value = datetime(2024, 1, 1), '2024-01-01'
+		self.watched.get_last_played_value = Mock(return_value='now')
+		self.watched.batch_mark_as_watched_unwatched = Mock(return_value=False)
+
+		self.watched._mark_episode_batch(params, Mock(return_value=episodes), '')
+
+		percentages = [call.args[0] for call in self.watched.kodi_utils.progressDialogBG.update.call_args_list]
+		self.assertLessEqual(len(percentages), 21)
+		self.assertEqual(percentages[-1], 100)
+		self.assertEqual(percentages, sorted(percentages))
+
+	@staticmethod
+	def _create_watched_schema(path):
+		connection = sqlite3.connect(path)
+		connection.execute('CREATE TABLE watched_status (db_type TEXT, media_id TEXT, season INTEGER, episode INTEGER, last_played TEXT, title TEXT, UNIQUE (db_type, media_id, season, episode))')
+		connection.execute('CREATE TABLE progress (db_type TEXT, media_id TEXT, season INTEGER, episode INTEGER, resume_point TEXT, curr_time TEXT, last_played TEXT, resume_id INTEGER, title TEXT, UNIQUE (db_type, media_id, season, episode))')
+		connection.commit()
+		connection.close()
 
 
 if __name__ == '__main__':

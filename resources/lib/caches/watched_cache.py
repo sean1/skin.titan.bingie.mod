@@ -2,6 +2,7 @@ from threading import Thread
 from operator import itemgetter
 from types import MappingProxyType
 from datetime import datetime
+from time import monotonic_ns
 from caches.dropped_cache import get_hidden_items
 from indexers import metadata
 from modules import kodi_utils, settings
@@ -12,7 +13,6 @@ timeout = 20
 GET_MOVIE_SHOW = 'SELECT %s FROM watched_status WHERE db_type = ? ORDER BY last_played DESC'
 GET_BM = 'SELECT * FROM progress WHERE db_type = ? ORDER BY last_played DESC'
 SET_MOVIE_SHOW = 'INSERT OR IGNORE INTO watched_status VALUES (?, ?, ?, ?, ?, ?)'
-SET_BM = 'INSERT OR REPLACE INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 DELETE_MOVIE_SHOW = 'DELETE FROM watched_status WHERE db_type = ? AND media_id = ? AND season = ? AND episode = ?'
 DELETE_BM = 'DELETE FROM progress WHERE db_type = ? AND media_id = ? AND season = ? AND episode = ?'
 WATCHED_DB = kodi_utils.watched_db
@@ -61,18 +61,8 @@ def get_bookmarks(watched_indicators, mediatype):
 	except: pass
 
 def set_bookmark(mediatype, tmdb_id, curr_time, total_time, title, season='', episode='', refresh='true'):
-	try:
-		adjusted_current_time = float(curr_time) - 5
-		resume_point = round(adjusted_current_time/float(total_time)*100, 1)
-		watched_indicators = settings.watched_indicators()
-		data_base = get_database(watched_indicators)
-		last_played = get_last_played_value(data_base)
-#		erase_bookmark(mediatype, tmdb_id, season, episode)
-		dbcon = _database_connect(data_base)
-		dbcur = set_PRAGMAS(dbcon)
-		dbcur.execute(SET_BM, (mediatype, tmdb_id, season, episode, str(resume_point), str(curr_time), last_played, 0, title))
-		if refresh == 'true': kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
-	except: pass
+	from caches.progress_cache import set_bookmark as set_progress
+	return set_progress(mediatype, tmdb_id, curr_time, total_time, title, season, episode, refresh)
 
 def erase_bookmark(mediatype, tmdb_id, season='', episode='', refresh='false'):
 	from caches.progress_cache import erase_bookmark as erase
@@ -92,8 +82,8 @@ def mark_as_watched_unwatched_movie(params):
 	tmdb_id, title = params.get('tmdb_id'), params.get('title')
 	refresh = params.get('refresh', 'true') == 'true'
 	watched_indicators = settings.watched_indicators()
-	mark_as_watched_unwatched(watched_indicators, mediatype, tmdb_id, action, title=title)
-	if refresh: kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
+	changed = mark_as_watched_unwatched(watched_indicators, mediatype, tmdb_id, action, title=title)
+	if refresh and changed: refresh_watched(mediatype)
 
 def mark_as_watched_unwatched_episode(params):
 	season, episode = int(params.get('season')), int(params.get('episode'))
@@ -102,15 +92,23 @@ def mark_as_watched_unwatched_episode(params):
 	tmdb_id, title = params.get('tmdb_id'), params.get('title')
 	refresh = params.get('refresh', 'true') == 'true'
 	watched_indicators = settings.watched_indicators()
-	mark_as_watched_unwatched(watched_indicators, mediatype, tmdb_id, action, season, episode, title)
-	if refresh: kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
+	changed = mark_as_watched_unwatched(watched_indicators, mediatype, tmdb_id, action, season, episode, title)
+	if refresh and changed: refresh_watched(mediatype)
+
+def refresh_watched(mediatype):
+	if not kodi_utils.external_browse(): return kodi_utils.container_refresh()
+	property_name = 'BingieWatchedRefreshMovie' if mediatype == 'movie' else 'BingieWatchedRefreshTV'
+	return kodi_utils.set_property(property_name, str(monotonic_ns()))
 
 def _tvshow_episodes_meta(meta, meta_user_info):
-	ep_data = []
-	for item in meta['season_data']:
-		season = item['season_number']
-		if season > 0: ep_data += metadata.season_episodes_meta(season, meta, meta_user_info)
-	return ep_data
+	seasons = [item['season_number'] for item in meta['season_data'] if item['season_number'] > 0]
+	results, errors = [None] * len(seasons), []
+	def _load(index, season):
+		try: results[index] = metadata.season_episodes_meta(season, meta, meta_user_info)
+		except Exception as error: errors.append(error)
+	for thread in TaskPool(LIST_WORKERS).tasks(_load, list(enumerate(seasons)), Thread): thread.join()
+	if errors: raise errors[0]
+	return [episode for season_data in results for episode in season_data]
 
 def _mark_episode_batch(params, episode_loader, title):
 	action = params.get('action')
@@ -128,17 +126,21 @@ def _mark_episode_batch(params, episode_loader, title):
 		meta = metadata.tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 		ep_data = episode_loader(meta, meta_user_info)
 		total = len(ep_data)
+		last_progress = None
 		for count, item in enumerate(ep_data, 1):
 			season_number = item['season']
 			ep_number = item['episode']
 			display = 'S%.2dE%.2d' % (int(season_number), int(ep_number))
-			kodi_utils.progressDialogBG.update(int(float(count)/float(total)*100), wait_str, display)
+			progress = 100 if count == total else max(1, int(float(count)/float(total)*100) // 5 * 5)
+			if progress != last_progress:
+				kodi_utils.progressDialogBG.update(progress, wait_str, display)
+				last_progress = progress
 			episode_date, premiered = adjust_premiered_date(item['premiered'], adjust_hours)
 			if not episode_date or current_date < episode_date: continue
 			insert_append(make_batch_insert(action, 'episode', tmdb_id, season_number, ep_number, last_played, title))
-		batch_mark_as_watched_unwatched(watched_indicators, insert_list, action)
+		changed = batch_mark_as_watched_unwatched(watched_indicators, insert_list, action)
 	finally: kodi_utils.progressDialogBG.close()
-	kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
+	if changed: refresh_watched('episode')
 
 def mark_as_watched_unwatched_tvshow(params):
 	return _mark_episode_batch(params, _tvshow_episodes_meta, params.get('title', ''))
@@ -149,26 +151,54 @@ def mark_as_watched_unwatched_season(params):
 	return _mark_episode_batch(params, lambda meta, meta_user_info: metadata.season_episodes_meta(season, meta, meta_user_info), params.get('title'))
 
 def mark_as_watched_unwatched(watched_indicators, mediatype='', tmdb_id='', action='', season='', episode='', title=''):
+	if action not in ('mark_as_watched', 'mark_as_unwatched'): return False
+	dbcon = None
 	try:
 		data_base = get_database(watched_indicators)
 		last_played = get_last_played_value(data_base)
-		dbcon = _database_connect(data_base)
-		dbcur = set_PRAGMAS(dbcon)
+		dbcon = kodi_utils.database_connect(data_base, timeout=1, isolation_level=None)
+		dbcur = dbcon.cursor()
+		dbcur.execute('BEGIN IMMEDIATE')
+		before = dbcon.total_changes
 		if action == 'mark_as_watched':
 			dbcur.execute(SET_MOVIE_SHOW, (mediatype, tmdb_id, season, episode, last_played, title))
-		elif action == 'mark_as_unwatched':
-			dbcur.execute(DELETE_MOVIE_SHOW, (mediatype, tmdb_id, season, episode))
-		erase_bookmark(mediatype, tmdb_id, season, episode)
-	except: kodi_utils.notification(32574)
+		else: dbcur.execute(DELETE_MOVIE_SHOW, (mediatype, tmdb_id, season, episode))
+		dbcur.execute(DELETE_BM, (mediatype, tmdb_id, season, episode))
+		changed = dbcon.total_changes > before
+		dbcon.commit()
+		return changed
+	except:
+		if dbcon:
+			try: dbcon.rollback()
+			except: pass
+		kodi_utils.notification(32574)
+		return False
+	finally:
+		if dbcon: dbcon.close()
 
 def batch_mark_as_watched_unwatched(watched_indicators, insert_list, action):
+	if not insert_list or action not in ('mark_as_watched', 'mark_as_unwatched'): return False
+	dbcon = None
 	try:
-		dbcon = _database_connect(get_database(watched_indicators))
-		dbcur = set_PRAGMAS(dbcon)
+		dbcon = kodi_utils.database_connect(get_database(watched_indicators), timeout=1, isolation_level=None)
+		dbcur = dbcon.cursor()
+		dbcur.execute('BEGIN IMMEDIATE')
+		before = dbcon.total_changes
 		if action == 'mark_as_watched': dbcur.executemany(SET_MOVIE_SHOW, insert_list)
-		elif action == 'mark_as_unwatched': dbcur.executemany(DELETE_MOVIE_SHOW, insert_list)
-		batch_erase_bookmark(watched_indicators, insert_list, action)
-	except: kodi_utils.notification(32574)
+		else: dbcur.executemany(DELETE_MOVIE_SHOW, insert_list)
+		progress_rows = [row[:4] for row in insert_list]
+		dbcur.executemany(DELETE_BM, progress_rows)
+		changed = dbcon.total_changes > before
+		dbcon.commit()
+		return changed
+	except:
+		if dbcon:
+			try: dbcon.rollback()
+			except: pass
+		kodi_utils.notification(32574)
+		return False
+	finally:
+		if dbcon: dbcon.close()
 
 def make_batch_insert(action, mediatype, tmdb_id, season, episode, last_played, title):
 	if action == 'mark_as_watched': return (mediatype, tmdb_id, season, episode, last_played, title)

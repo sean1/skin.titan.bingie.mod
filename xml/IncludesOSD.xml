@@ -311,7 +311,7 @@
 				<font/>
 				<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]subtitles.png</texturefocus>
 				<texturenofocus colordiffuse="d9afafaf">$PARAM[iconspath]subtitles.png</texturenofocus>
-				<onclick>ActivateWindow(osdsubtitlesettings)</onclick>
+				<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=subtitle_settings)</onclick>
 				<visible>Player.HasVideo</visible>
 			</control>
 		</control>
@@ -663,7 +663,7 @@
 					<font/>
 					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]subtitles_fo.png</texturefocus>
 					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]subtitles.png</texturenofocus>
-					<onclick>ActivateWindow(osdsubtitlesettings)</onclick>
+					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=subtitle_settings)</onclick>
 					<include>Top_OSD_Button_Zoom_Anim</include>
 				</control>
                 <control type="button" id="101">

@@ -31,6 +31,44 @@ POV_INFO_FOCUS_CONTROLS = (80, 51, 53, 550, 563, 560)
 POV_ACTOR_FOCUS_CONTROLS = (610, 620, 630, 699)
 POV_CONTAINER_CONTROLS = (550, 563, 560, 610, 620, 630)
 
+def _subtitle_rpc(method, params=None):
+	request = {'jsonrpc': '2.0', 'id': 1, 'method': method}
+	if params: request['params'] = params
+	return json.loads(kodi_utils.execJSONRPC(json.dumps(request))).get('result')
+
+def _subtitle_stream_label(stream, count):
+	if not stream: return kodi_utils.xbmc.getLocalizedString(231)
+	label = stream.get('name') or stream.get('language') or kodi_utils.xbmc.getLocalizedString(13205)
+	index = stream.get('index')
+	if isinstance(index, int) and count: label += ' (%s/%s)' % (index + 1, count)
+	return label
+
+def subtitle_settings_menu():
+	players = _subtitle_rpc('Player.GetActivePlayers') or []
+	player = next((item for item in players if item.get('type') == 'video'), None)
+	if not player: return
+	player_id = player['playerid']
+	state = _subtitle_rpc('Player.GetProperties', {'playerid': player_id, 'properties': ['subtitleenabled', 'subtitles', 'currentsubtitle']}) or {}
+	streams = state.get('subtitles') or []
+	current = state.get('currentsubtitle') or {}
+	localized = kodi_utils.xbmc.getLocalizedString
+	offset = kodi_utils.get_infolabel('Player.SubtitleDelay') or '0.000s'
+	options = [
+		'%s: %s' % (localized(13397), localized(16041) if state.get('subtitleenabled') else localized(351)),
+		'%s: %s' % (localized(22006), offset),
+		'%s: %s' % (localized(462), _subtitle_stream_label(current, len(streams))),
+		localized(24134),
+	]
+	choice = kodi_utils.dialog.select(localized(24133), options)
+	if choice == 0:
+		_subtitle_rpc('Player.SetSubtitle', {'playerid': player_id, 'subtitle': 'off' if state.get('subtitleenabled') else 'on'})
+	elif choice == 1: execute_builtin('Action(SubtitleDelay)')
+	elif choice == 2 and streams:
+		labels = [_subtitle_stream_label(stream, len(streams)) for stream in streams]
+		selected = kodi_utils.dialog.select(localized(462), labels, preselect=current.get('index', -1))
+		if selected not in (-1, None): _subtitle_rpc('Player.SetSubtitle', {'playerid': player_id, 'subtitle': streams[selected]['index'], 'enable': True})
+	elif choice == 3: execute_builtin('ActivateWindow(subtitlesearch)')
+
 def _reset_info_page_focus(media_type):
 	execute_builtin('SetFocus(%s)' % (80 if media_type == 'movie' else 51))
 

@@ -48,6 +48,17 @@ class RoutingTests(unittest.TestCase):
 
 		run.assert_called_once_with(sys_obj)
 
+	def test_subtitle_settings_route_opens_focused_menu(self):
+		routing = load_routing({'mode': 'subtitle_settings'})
+		menu = Mock(return_value='menu')
+		dialogs = types.ModuleType('modules.dialogs')
+		dialogs.subtitle_settings_menu = menu
+		with temporary_modules({'modules.dialogs': dialogs}):
+			sys_obj = types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '1', '?mode=subtitle_settings'])
+			self.assertEqual(routing.routing(sys_obj), 'menu')
+
+		menu.assert_called_once_with()
+
 	def test_launcher_passes_current_sys_module_to_router(self):
 		seen = []
 		routing = types.ModuleType('routing')

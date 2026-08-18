@@ -9,6 +9,7 @@ POV_ROUTES = {
 	'options_menu_choice': lambda p: _import('modules.dialogs', 'options_menu')(p),
 	'extras_menu_choice': lambda p: _import('modules.dialogs', 'extras_menu')(p),
 	'show_media_info': lambda p: _import('modules.dialogs', 'show_media_info')(p),
+	'subtitle_settings': lambda p: _import('modules.dialogs', 'subtitle_settings_menu')(),
 	'hydrate_media_info': lambda p: _import('modules.dialogs', 'hydrate_media_info')(p),
 	'play_from_info': lambda p: _import('modules.dialogs', 'play_from_info')(p),
 	'pov_page_back': lambda p: _import('modules.dialogs', 'pov_page_back')(p),

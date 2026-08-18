@@ -516,6 +516,12 @@ def candidate_score(candidate, media):
 	return round(score, 6)
 
 
+def candidate_is_synced(candidate, media):
+	if candidate.get('hash_match') is True: return True
+	if (candidate.get('match_score') or 0.0) >= 0.8: return True
+	return release_match_score(media.get('release_name'), candidate.get('release_names')) >= 0.8
+
+
 def rank_candidates(candidates, media):
 	valid = []
 	for candidate in candidates:
@@ -524,13 +530,17 @@ def rank_candidates(candidates, media):
 			if (candidate.get('season'), candidate.get('episode')) != (_as_int(media['season']), _as_int(media['episode'])): continue
 		item = candidate.copy()
 		item['score'] = candidate_score(item, media)
+		item['sync'] = candidate_is_synced(item, media)
 		valid.append(item)
 	return sorted(valid, key=lambda item: (LANGUAGES.index(item['lang']), -item['score'], item['provider'], item['id']))
 
 
 def public_candidate(candidate):
 	release = next(iter(candidate.get('release_names') or ()), '') or candidate.get('release', '')
-	return {key: candidate.get(key) for key in ('provider', 'id', 'lang', 'score')} | {'release': release[:180]}
+	result = {key: candidate.get(key) for key in ('provider', 'id', 'lang', 'score')} | {'release': release[:180]}
+	if candidate.get('rating') is not None: result['rating'] = candidate['rating']
+	if candidate.get('sync') is True: result['sync'] = True
+	return result
 
 
 class ProviderManager:

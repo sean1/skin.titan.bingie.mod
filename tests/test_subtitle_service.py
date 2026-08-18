@@ -96,7 +96,7 @@ class SubtitleServiceTests(unittest.TestCase):
 
 	def test_manual_search_uses_opaque_provider_ids_without_urls(self):
 		listitem = Mock()
-		self.service._client.return_value = (self.client, {'subtitles': [{'provider': 'subdl', 'id': 'file:parent:child', 'lang': 'eng', 'release': 'Release.Name'}]})
+		self.service._client.return_value = (self.client, {'subtitles': [{'provider': 'subdl', 'id': 'file:parent:child', 'lang': 'eng', 'release': 'Release.Name', 'rating': 8.5, 'sync': True}]})
 		self.service.kodi_utils.make_listitem.return_value = listitem
 		self.service.kodi_utils.build_url.side_effect = lambda params: params
 
@@ -108,7 +108,23 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.assertNotIn('url', params)
 		self.assertNotIn('://', repr(params))
 		listitem.setLabel.assert_called_once_with('English')
+		listitem.setArt.assert_called_once_with({'thumb': 'eng', 'icon': '4'})
+		listitem.setProperty.assert_called_once_with('sync', 'true')
 		listitem.setLabel2.assert_called_once_with('SubDL #1 · Release.Name')
+
+	def test_manual_search_omits_unknown_rating_and_unsynced_property(self):
+		listitem = Mock()
+		self.service._client.return_value = (self.client, {'subtitles': [{'provider': 'opensubtitles', 'id': '123', 'lang': 'vie', 'release': 'Release.Name'}]})
+		self.service.kodi_utils.make_listitem.return_value = listitem
+
+		self.service._search(7)
+
+		listitem.setArt.assert_called_once_with({'thumb': 'vie'})
+		listitem.setProperty.assert_not_called()
+
+	def test_rating_icon_clamps_and_rounds_to_available_textures(self):
+		self.assertEqual([self.service._rating_icon(value) for value in (-1, 0, 1, 8.5, 9, 10, 11)], ['0', '0', '1', '4', '5', '5', '5'])
+		self.assertEqual(self.service._rating_icon(None), '')
 
 	def test_manual_search_uses_clean_fallback_when_release_name_is_missing(self):
 		listitem = Mock()

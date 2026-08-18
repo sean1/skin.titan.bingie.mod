@@ -112,11 +112,13 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual([item['id'] for item in ranked], ['right'])
 
 	def test_public_candidate_contains_no_locator_or_url(self):
-		candidate = self.providers._candidate('subdl', 'parent:file', 'eng', ('Release',), locator='/private/path')
+		candidate = self.providers._candidate('subdl', 'parent:file', 'eng', ('Release',), rating=8.5, locator='/private/path')
+		candidate['sync'] = True
 
 		public = self.providers.public_candidate(candidate)
 
-		self.assertEqual(set(public), {'provider', 'id', 'lang', 'score', 'release'})
+		self.assertEqual(set(public), {'provider', 'id', 'lang', 'score', 'release', 'rating', 'sync'})
+		self.assertEqual((public['rating'], public['sync']), (8.5, True))
 		self.assertNotIn('://', json.dumps(public))
 
 	def test_public_candidate_projection_preserves_an_existing_safe_release_label(self):
@@ -143,6 +145,19 @@ class SubtitleProviderTests(unittest.TestCase):
 		results = manager.search()
 
 		self.assertEqual({item['provider'] for item in results}, set(config))
+
+	def test_sync_requires_hash_or_confident_release_match(self):
+		media = {'release_name': 'Show.S01E02.1080p.WEB-DL-GROUP', 'season': 1, 'episode': 2}
+		candidates = [
+			self.providers._candidate('opensubtitles', 'hash', 'eng', ('Different.Release',), season=1, episode=2, hash_match=True),
+			self.providers._candidate('subdl', 'strong', 'eng', ('Another.Release',), season=1, episode=2, match_score=0.8),
+			self.providers._candidate('subsource', 'release', 'eng', ('Show.S01E02.1080p.WEB-DL-GROUP',), season=1, episode=2),
+			self.providers._candidate('subsource', 'weak', 'eng', ('Show.S01E02.HDTV-OTHER',), season=1, episode=2)
+		]
+
+		ranked = self.providers.rank_candidates(candidates, media)
+
+		self.assertEqual({item['id']: item['sync'] for item in ranked}, {'hash': True, 'strong': True, 'release': True, 'weak': False})
 
 	def test_one_provider_failure_preserves_other_results(self):
 		class Good:

@@ -16,6 +16,11 @@ def _result_label(subtitle, result_number):
 	release = str(subtitle.get('release') or '').strip()[:120] or 'Release name unavailable'
 	return '%s #%s · %s' % (provider, result_number, release)
 
+def _rating_icon(rating):
+	try: rating = min(max(float(rating), 0.0), 10.0)
+	except (TypeError, ValueError): return ''
+	return str(int(rating / 2.0 + 0.5))
+
 def _context():
 	try: return json.loads(kodi_utils.get_property(subtitle_context_property))
 	except: return {}
@@ -65,6 +70,11 @@ def _search(handle):
 		for result_number, subtitle in enumerate((item for item in subtitles if item.get('lang') == language and item.get('provider') and item.get('id')), 1):
 			listitem = kodi_utils.make_listitem()
 			listitem.setLabel(language_names[language])
+			art = {'thumb': language}
+			rating_icon = _rating_icon(subtitle.get('rating'))
+			if rating_icon: art['icon'] = rating_icon
+			listitem.setArt(art)
+			if subtitle.get('sync') is True: listitem.setProperty('sync', 'true')
 			provider = subtitle['provider']
 			listitem.setLabel2(_result_label(subtitle, result_number))
 			url = kodi_utils.build_url({'action': 'download', 'provider': provider, 'candidate': subtitle['id'], 'language': language, 'result': result_number})

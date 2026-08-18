@@ -141,11 +141,29 @@ class Subtitles(kodi_utils.xbmc_player):
 	def _ensure_current_playback(self):
 		if self._cancelled(): raise SubtitleCancelled
 
+	@staticmethod
+	def _subtitle_stream_language(stream):
+		stream = str(stream or '').strip().lower().replace('_', '-')
+		language = stream.split('-', 1)[0].strip()
+		if language in ('en', 'eng', 'english'): return 'eng'
+		if language in ('vi', 'vie', 'vietnamese'): return 'vie'
+		if stream.startswith('english'): return 'eng'
+		if stream.startswith('vietnamese'): return 'vie'
+		return ''
+
 	def _video_file_subs(self):
 		self._ensure_current_playback()
-		try: available_sub_language = self.getSubtitles()
-		except: available_sub_language = ''
-		if available_sub_language not in self.languages: return False
+		try: available_subtitles = self.getAvailableSubtitleStreams()
+		except: available_subtitles = None
+		if available_subtitles is not None:
+			selected = next((index for language in self.languages for index, stream in enumerate(available_subtitles) if self._subtitle_stream_language(stream) == language), None)
+			if selected is None: return False
+			self._ensure_current_playback()
+			self.setSubtitleStream(selected)
+		else:
+			try: available_sub_language = self._subtitle_stream_language(self.getSubtitles())
+			except: available_sub_language = ''
+			if available_sub_language not in self.languages: return False
 		self._ensure_current_playback()
 		self.showSubtitles(True)
 		kodi_utils.notification(32852, icon=self.poster)

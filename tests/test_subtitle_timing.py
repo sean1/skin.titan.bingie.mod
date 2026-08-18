@@ -101,6 +101,52 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.assertEqual(events, ['open', ('write', 'subtitle text'), 'close', ('attach', final_path)])
 		self.subtitles.kodi_utils.sleep.assert_not_called()
 
+	def test_embedded_english_wins_when_vietnamese_appears_first(self):
+		self.client.getAvailableSubtitleStreams = Mock(return_value=['vie', 'spa', 'English (Forced)'])
+		self.client.setSubtitleStream = Mock()
+		self.client.showSubtitles = Mock()
+
+		result = self.client._video_file_subs()
+
+		self.assertTrue(result)
+		self.client.setSubtitleStream.assert_called_once_with(2)
+		self.client.showSubtitles.assert_called_once_with(True)
+		self.subtitles.kodi_utils.notification.assert_called_once_with(32852, icon='')
+
+	def test_embedded_vietnamese_is_selected_when_english_is_unavailable(self):
+		self.client.getAvailableSubtitleStreams = Mock(return_value=['spa', 'Vietnamese'])
+		self.client.setSubtitleStream = Mock()
+		self.client.showSubtitles = Mock()
+
+		result = self.client._video_file_subs()
+
+		self.assertTrue(result)
+		self.client.setSubtitleStream.assert_called_once_with(1)
+		self.client.showSubtitles.assert_called_once_with(True)
+
+	def test_embedded_unpreferred_languages_continue_to_download_fallback(self):
+		self.client.getAvailableSubtitleStreams = Mock(return_value=['spa', 'fre'])
+		self.client.setSubtitleStream = Mock()
+		self.client.showSubtitles = Mock()
+
+		result = self.client._video_file_subs()
+
+		self.assertFalse(result)
+		self.client.setSubtitleStream.assert_not_called()
+		self.client.showSubtitles.assert_not_called()
+		self.subtitles.kodi_utils.notification.assert_not_called()
+
+	def test_legacy_player_api_uses_current_preferred_subtitle(self):
+		self.client.getAvailableSubtitleStreams = Mock(side_effect=AttributeError)
+		self.client.getSubtitles = Mock(return_value='en')
+		self.client.showSubtitles = Mock()
+
+		result = self.client._video_file_subs()
+
+		self.assertTrue(result)
+		self.client.showSubtitles.assert_called_once_with(True)
+		self.subtitles.kodi_utils.notification.assert_called_once_with(32852, icon='')
+
 	def test_binary_response_payload_is_written_before_attach(self):
 		class BinaryResponse:
 			content = b'subtitle bytes'

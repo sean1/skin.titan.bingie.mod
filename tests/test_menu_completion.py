@@ -70,6 +70,8 @@ def load_menu_module(mediatype):
 	meta_lists.tvshow_genres = {'Drama': ('1',)}
 	media = types.ModuleType('menus.media')
 	media.build_tmdb_detail_shelf_item = Mock()
+	media.card_flag = lambda data: ''
+	media.card_language = lambda data: ''
 	media.complete_media_directory = Mock(side_effect=lambda handle, *args: kodi_utils.end_directory(handle, None))
 	menus = types.ModuleType('menus')
 	menus.__path__ = []

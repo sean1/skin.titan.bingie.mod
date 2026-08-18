@@ -33,6 +33,8 @@
         <include condition="!$EXP[IsBingieViewsActive] + !Control.IsVisible(523)">ThumbsTagOverlayBingie</include>
         <include condition="!$EXP[IsBingieViewsActive]">New_Episodes_Tag_Overlay</include>
 		<include>LandscapeCardTopGradient</include>
+		<include>LandscapeCardCountryFlag</include>
+		<include>LandscapeCardLanguageBadge</include>
 		<include>LandscapeCardYearLabel</include>
 		<control type="group">
 			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Rating)</visible>
@@ -50,7 +52,38 @@
 				<label>$INFO[ListItem.Rating]</label>
 			</control>
 		</control>
-    </include>
+	</include>
+
+	<include name="LandscapeCardCountryFlag">
+		<control type="image">
+			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Property(card_flag))</visible>
+			<left>16</left>
+			<top>14</top>
+			<width>34</width>
+			<height>26</height>
+			<texture background="true">$INFO[ListItem.Property(card_flag)]</texture>
+			<aspectratio>keep</aspectratio>
+		</control>
+	</include>
+
+	<include name="LandscapeCardLanguageBadge">
+		<control type="group">
+			<visible>$EXP[IsMovieOrTvShowListItem] + String.IsEmpty(ListItem.Property(card_flag)) + !String.IsEmpty(ListItem.Property(card_language))</visible>
+			<left>16</left>
+			<top>14</top>
+			<width>34</width>
+			<height>26</height>
+			<control type="label">
+				<width>100%</width>
+				<height>100%</height>
+				<align>center</align>
+				<aligny>center</aligny>
+				<font>flags_classic</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$INFO[ListItem.Property(card_language)]</label>
+			</control>
+		</control>
+	</include>
 
 	<include name="LandscapeCardTopGradient">
 		<control type="image">
@@ -67,8 +100,24 @@
 
 	<include name="LandscapeCardYearLabel">
 		<control type="group">
-			<visible>$EXP[IsMovieOrTvShowListItem] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))]</visible>
+			<visible>$EXP[IsMovieOrTvShowListItem] + String.IsEmpty(ListItem.Property(card_flag)) + String.IsEmpty(ListItem.Property(card_language)) + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))]</visible>
 			<left>16</left>
+			<top>8</top>
+			<width>150</width>
+			<height>38</height>
+			<control type="label">
+				<width>100%</width>
+				<height>100%</height>
+				<align>left</align>
+				<aligny>center</aligny>
+				<font>Reg20</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$VAR[CardYearRange]</label>
+			</control>
+		</control>
+		<control type="group">
+			<visible>$EXP[IsMovieOrTvShowListItem] + [!String.IsEmpty(ListItem.Property(card_flag)) | !String.IsEmpty(ListItem.Property(card_language))] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))]</visible>
+			<left>58</left>
 			<top>8</top>
 			<width>150</width>
 			<height>38</height>

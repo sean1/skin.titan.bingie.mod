@@ -103,6 +103,37 @@ class SharedXmlIncludeTests(unittest.TestCase):
 		self.assertIn('IncludesSettingsMainWindow.xml', files)
 		self.assertIn('IncludesUpNextSimple.xml', files)
 
+	def test_movie_show_cards_render_country_flags_or_language_badges(self):
+		landscape = parse('IncludesViewsLayoutLandscape.xml')
+		flag_include = named_element(landscape, 'include', 'LandscapeCardCountryFlag')
+		flag = flag_include.find("control[@type='image']")
+		self.assertEqual(flag.findtext('visible'), '$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Property(card_flag))')
+		self.assertEqual(flag.findtext('texture'), '$INFO[ListItem.Property(card_flag)]')
+		self.assertEqual(flag.findtext('left'), '16')
+		language = named_element(landscape, 'include', 'LandscapeCardLanguageBadge').find("control[@type='group']")
+		self.assertEqual(language.findtext('visible'), '$EXP[IsMovieOrTvShowListItem] + String.IsEmpty(ListItem.Property(card_flag)) + !String.IsEmpty(ListItem.Property(card_language))')
+		self.assertIsNone(language.find("control[@type='image']"))
+		self.assertEqual(language.find(".//control[@type='label']").findtext('label'), '$INFO[ListItem.Property(card_language)]')
+		year_groups = named_element(landscape, 'include', 'LandscapeCardYearLabel').findall("control[@type='group']")
+		self.assertEqual([group.findtext('left') for group in year_groups], ['16', '58'])
+		self.assertIn('String.IsEmpty(ListItem.Property(card_flag))', year_groups[0].findtext('visible'))
+		self.assertIn('String.IsEmpty(ListItem.Property(card_language))', year_groups[0].findtext('visible'))
+		self.assertIn('!String.IsEmpty(ListItem.Property(card_language))', year_groups[1].findtext('visible'))
+		dialog = parse('IncludesDialogVideoInfo.xml')
+		self.assertEqual([(include.text or '').strip() for include in dialog.findall(".//include")].count('LandscapeCardYearLabel'), 1)
+		self.assertEqual([(include.text or '').strip() for include in dialog.findall(".//include")].count('LandscapeCardCountryFlag'), 1)
+		self.assertEqual([(include.text or '').strip() for include in dialog.findall(".//include")].count('LandscapeCardLanguageBadge'), 1)
+		forwarded = [property_node.text for property_node in dialog.findall(".//property[@name='card_flag']")]
+		self.assertEqual(forwarded, [
+			'$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(card_flag)]',
+			'$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(card_flag)]'
+		])
+		forwarded_languages = [property_node.text for property_node in dialog.findall(".//property[@name='card_language']")]
+		self.assertEqual(forwarded_languages, [
+			'$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(card_language)]',
+			'$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(card_language)]'
+		])
+
 
 if __name__ == '__main__':
 	unittest.main()

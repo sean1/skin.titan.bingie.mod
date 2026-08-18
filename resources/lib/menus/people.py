@@ -6,6 +6,7 @@ from urllib.parse import unquote
 from caches.window_property_cache import WindowPropertyCache
 from indexers.tmdb_api import tmdb_people_info, tmdb_people_actor_info, tmdb_image_base, resized_tmdb_image
 from menus.images import Images
+from menus.media import card_flag, card_language
 from modules import kodi_utils, settings
 from modules.utils import calculate_age, valid_tmdb_id
 # from modules.kodi_utils import logger
@@ -28,7 +29,7 @@ actor_credit_cache = WindowPropertyCache('pov_lite_actor_credits_v1_registry', 1
 actor_credit_cache_prefix = '%s_%s'
 actor_credit_fill_prefix = 'PovActorCreditsFill.%s'
 credit_snapshot_keys = (
-	'media_type', 'id', 'title', 'name', 'original_title', 'original_name', 'release_date', 'first_air_date', 'backdrop_path', 'poster_path', 'vote_average', 'overview'
+	'media_type', 'id', 'title', 'name', 'original_title', 'original_name', 'release_date', 'first_air_date', 'backdrop_path', 'poster_path', 'vote_average', 'overview', 'origin_country', 'original_language'
 )
 
 def popular_people():
@@ -336,10 +337,16 @@ def _credit_listitem(item, resolution, actor_id):
 	listitem = make_listitem()
 	listitem.setLabel(title)
 	listitem.setArt({'thumb': landscape, 'landscape': landscape, 'fanart': backdrop, 'poster': poster, 'icon': poster})
-	listitem.setProperties({
+	properties = {
 		'PovCreditType': media_type, 'PovActorSourceId': str(actor_id), 'landscape': landscape,
 		'rating': '%.1f' % rating if rating else '', 'year_range': year
-	})
+	}
+	flag = card_flag(item)
+	if flag: properties['card_flag'] = flag
+	elif media_type == 'movie':
+		language = card_language(item)
+		if language: properties['card_language'] = language
+	listitem.setProperties(properties)
 	if KODI_VERSION < 20:
 		listitem.setUniqueIDs({'tmdb': str(tmdb_id)})
 		listitem.setInfo('video', {'title': title, 'year': year, 'premiered': date or '', 'rating': item.get('vote_average') or 0, 'plot': item.get('overview') or '', 'mediatype': media_type})

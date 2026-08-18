@@ -41,7 +41,7 @@ class MenuMediaTests(unittest.TestCase):
 	def test_movie_summary_preserves_legacy_info_and_art(self):
 		item = {
 			'id': 101, 'title': 'Movie', 'release_date': '2024-06-07', 'vote_average': 7.5, 'genre_ids': [1, 99],
-			'poster_path': '/poster.jpg', 'backdrop_path': '/backdrop.jpg', 'overview': 'Plot'
+			'poster_path': '/poster.jpg', 'backdrop_path': '/backdrop.jpg', 'overview': 'Plot', 'original_language': 'en'
 		}
 
 		result = self.media.build_tmdb_detail_shelf_item(3, item, '55', 'movie', {1: 'Drama'}, 'poster-empty', 'fanart-empty', 19)
@@ -50,7 +50,7 @@ class MenuMediaTests(unittest.TestCase):
 		self.listitem.setLabel.assert_called_once_with('Movie')
 		self.listitem.setProperties.assert_called_once_with({
 			'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|movie|101', 'pov_lite_sort_order': '3',
-			'tmdb_id': '101', 'PovInfoSourceTmdb': '55', 'rating_percent': '7.5'
+			'tmdb_id': '101', 'PovInfoSourceTmdb': '55', 'card_language': 'EN', 'rating_percent': '7.5'
 		})
 		self.listitem.setArt.assert_called_once_with({
 			'poster': 'https://image/w342/poster.jpg', 'icon': 'https://image/w342/poster.jpg', 'fanart': 'https://image/w1280/backdrop.jpg',
@@ -62,7 +62,10 @@ class MenuMediaTests(unittest.TestCase):
 		})
 
 	def test_tvshow_summary_preserves_modern_video_tag_and_fallback_art(self):
-		item = {'id': 202, 'original_name': 'Show', 'first_air_date': '', 'vote_average': 0, 'genre_ids': [], 'poster_path': None, 'backdrop_path': None, 'overview': ''}
+		item = {
+			'id': 202, 'original_name': 'Show', 'first_air_date': '', 'vote_average': 0, 'genre_ids': [], 'poster_path': None, 'backdrop_path': None,
+			'overview': '', 'origin_country': ['CA', 'US']
+		}
 
 		result = self.media.build_tmdb_detail_shelf_item(4, item, None, 'tvshow', {}, 'poster-empty', 'fanart-empty', 21)
 
@@ -70,6 +73,10 @@ class MenuMediaTests(unittest.TestCase):
 		self.listitem.setArt.assert_called_once_with({
 			'poster': 'poster-empty', 'icon': 'poster-empty', 'fanart': 'fanart-empty', 'thumb': 'fanart-empty', 'landscape': 'fanart-empty',
 			'tvshow.poster': 'poster-empty', 'tvshow.landscape': 'fanart-empty'
+		})
+		self.listitem.setProperties.assert_called_once_with({
+			'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|tvshow|202', 'pov_lite_sort_order': '4', 'tmdb_id': '202',
+			'PovInfoSourceTmdb': '', 'card_flag': 'flags/country/ca.png', 'rating_percent': '0'
 		})
 		self.video.setTitle.assert_called_once_with('Show')
 		self.video.setTvShowTitle.assert_called_once_with('Show')
@@ -79,6 +86,35 @@ class MenuMediaTests(unittest.TestCase):
 		self.assertEqual(self.video.method_calls, [
 			call.setTitle('Show'), call.setTvShowTitle('Show'), call.setUniqueIDs({'tmdb': '202'}), call.setMediaType('tvshow'), call.setPlot('')
 		])
+
+	def test_country_code_uses_only_explicit_query_country_fields(self):
+		cases = (
+			({'country_codes': ['GB', 'US']}, 'gb'),
+			({'origin_country': ['JP']}, 'jp'),
+			({'production_countries': [{'iso_3166_1': 'DE'}]}, 'de'),
+			({'origin_country': ['', 'CA']}, 'ca'),
+			({'original_language': 'fr'}, ''),
+			({}, '')
+		)
+		for data, expected in cases:
+			with self.subTest(data=data): self.assertEqual(self.media.first_country_code(data), expected)
+
+	def test_card_country_flag_and_language_badge_are_distinct(self):
+		cases = (
+			({'country_codes': ['GB'], 'original_language': 'en'}, 'flags/country/gb.png', ''),
+			({'original_language': ' JA '}, '', 'JA'),
+			({'original_language': 'bn'}, '', 'BN'),
+			({'original_language': 'xx'}, '', ''),
+			({'original_language': 'e1'}, '', ''),
+			({'original_language': 'pt-BR'}, '', ''),
+			({'original_language': 'x'}, '', ''),
+			({'original_language': '123'}, '', ''),
+			({}, '', '')
+		)
+		for data, expected_flag, expected_language in cases:
+			with self.subTest(data=data):
+				self.assertEqual(self.media.card_flag(data), expected_flag)
+				self.assertEqual(self.media.card_language(data), expected_language)
 
 	def test_invalid_summary_item_is_ignored_before_listitem_creation(self):
 		for item in ({'id': 1}, {'title': 'Movie'}):

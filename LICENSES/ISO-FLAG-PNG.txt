@@ -1,0 +1,8 @@
+The country flag PNG images in media/flags/country are from Linux Mint's
+iso-flag-png package (https://github.com/linuxmint/flags).
+
+The package declares its *.png files as Public Domain:
+
+    Files: *.png
+    Copyright: 2016 Linux Mint <root@linuxmint.com>
+    License: Public Domain

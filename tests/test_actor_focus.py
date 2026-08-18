@@ -36,13 +36,16 @@ def load_people():
 	indexers = types.ModuleType('indexers')
 	images = types.ModuleType('menus.images')
 	images.Images = object
+	media = types.ModuleType('menus.media')
+	media.card_flag = lambda item: 'flag.png' if item.get('origin_country') else ''
+	media.card_language = lambda item: str(item.get('original_language') or '').upper()
 	menus = types.ModuleType('menus')
 	utils = types.ModuleType('modules.utils')
 	utils.calculate_age = lambda *args: 0
 	utils.valid_tmdb_id = lambda value: bool(value)
 	stubs = {
 		'caches': caches, 'caches.window_property_cache': window_property_cache, 'indexers': indexers, 'indexers.tmdb_api': tmdb_api,
-		'menus': menus, 'menus.images': images, 'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.utils': utils
+		'menus': menus, 'menus.images': images, 'menus.media': media, 'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.utils': utils
 	}
 	path = ROOT / 'resources' / 'lib' / 'menus' / 'people.py'
 	return load_module('test_actor_focus_people', path, stubs)
@@ -82,6 +85,12 @@ class ActorFocusTests(unittest.TestCase):
 		self.assertEqual(events, [
 			('items', 7, ['movie-item']), ('content', 7, 'videos'), ('end', 7, False), ('builtin', 'SetFocus(610)')
 		])
+
+	def test_credit_snapshot_preserves_country_from_existing_response(self):
+		self.assertEqual(
+			self.people._credit_snapshot({'id': 1, 'media_type': 'tv', 'origin_country': ['CA'], 'original_language': 'en'}),
+			{'id': 1, 'media_type': 'tv', 'origin_country': ['CA'], 'original_language': 'en'}
+		)
 
 	def test_focus_actor_page_immediately_focuses_cached_shelf(self):
 		conditions = []

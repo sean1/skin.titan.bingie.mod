@@ -3,6 +3,30 @@ from modules import kodi_utils
 from modules.utils import media_percentage_properties
 
 
+def first_country_code(data):
+	for key in ('country_codes', 'origin_country', 'production_countries'):
+		values = data.get(key) or ()
+		if isinstance(values, (str, dict)): values = (values,)
+		for value in values:
+			if isinstance(value, dict): value = value.get('iso_3166_1')
+			code = str(value or '').strip().lower()
+			if len(code) == 2 and code.isalpha(): return code
+	return ''
+
+
+def card_flag(data):
+	country_code = first_country_code(data)
+	if country_code: return 'flags/country/%s.png' % country_code
+	return ''
+
+
+def card_language(data):
+	if first_country_code(data): return ''
+	language_code = str(data.get('original_language') or '').strip().lower()
+	if language_code != 'xx' and len(language_code) == 2 and language_code.isascii() and language_code.isalpha(): return language_code.upper()
+	return ''
+
+
 def _schedule_next_page_prefetch(url, origin_params):
 	from modules.prefetch import schedule_next_page_prefetch
 	return schedule_next_page_prefetch(url, origin_params)
@@ -45,6 +69,11 @@ def build_tmdb_detail_shelf_item(position, item, source_tmdb_id, mediatype, genr
 		'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|%s|%s' % (mediatype, tmdb_id),
 		'pov_lite_sort_order': str(position), 'tmdb_id': str(tmdb_id), 'PovInfoSourceTmdb': str(source_tmdb_id or '')
 	}
+	flag = card_flag(item)
+	if flag: props['card_flag'] = flag
+	elif not is_tvshow:
+		language = card_language(item)
+		if language: props['card_language'] = language
 	props.update(media_percentage_properties(rating))
 	art = {'poster': poster, 'icon': poster, 'fanart': fanart, 'thumb': landscape, 'landscape': landscape}
 	if is_tvshow: art.update({'tvshow.poster': poster, 'tvshow.landscape': landscape})

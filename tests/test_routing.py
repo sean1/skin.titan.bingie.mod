@@ -59,6 +59,19 @@ class RoutingTests(unittest.TestCase):
 
 		menu.assert_called_once_with()
 
+	def test_clear_progress_uses_lightweight_progress_handler(self):
+		params = {'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode', 'tmdb_id': '42', 'season': '2', 'episode': '3', 'refresh': 'progress'}
+		routing = load_routing(params)
+		erase_bookmark = Mock(return_value='cleared')
+		progress_cache = types.ModuleType('caches.progress_cache')
+		progress_cache.erase_bookmark = erase_bookmark
+
+		with temporary_modules({'caches.progress_cache': progress_cache}):
+			sys_obj = types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '1', '?mode=watched_unwatched_erase_bookmark'])
+			self.assertEqual(routing.routing(sys_obj), 'cleared')
+
+		erase_bookmark.assert_called_once_with('episode', '42', '2', '3', 'progress')
+
 	def test_launcher_passes_current_sys_module_to_router(self):
 		seen = []
 		routing = types.ModuleType('routing')

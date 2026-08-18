@@ -11,12 +11,12 @@
 			<property name="widget">pov-in-progress-movies</property>
 			<property name="widgetTarget">videos</property>
 			<property name="widgetType">movies</property>
-			<property name="widgetPath">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</property>
+			<property name="widgetPath">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]</property>
 			<property name="widgetName">Continue Watching Movies</property>
 			<property name="widget.1">pov-in-progress-tv</property>
 			<property name="widgetTarget.1">videos</property>
 			<property name="widgetType.1">episodes</property>
-			<property name="widgetPath.1">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21</property>
+			<property name="widgetPath.1">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]</property>
 			<property name="widgetName.1">Continue Watching TV</property>
 			<property name="widget.2">pov-trending-movies</property>
 			<property name="widgetTarget.2">videos</property>
@@ -447,10 +447,10 @@
 	</include>
 	<!-- An empty dynamic content path defers its provider job; container visibility alone does not. -->
 	<variable name="BingieHomeContinueMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]</value>
 	</variable>
 	<variable name="BingieHomeContinueTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=21&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
 		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10</value>

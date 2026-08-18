@@ -121,7 +121,7 @@ class Episodes:
 				if progress != '0' or resumetime != '0': cm_append((
 					self.cm_sort['mark'], clearprog_str, run_plugin % build_url({
 						'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode',
-						'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'refresh': 'true'
+						'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'refresh': 'progress'
 				})))
 				if playcount: cm_append((
 					self.cm_sort['mark'], unwatched_str % self.watched_title, run_plugin % build_url({

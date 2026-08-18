@@ -75,17 +75,8 @@ def set_bookmark(mediatype, tmdb_id, curr_time, total_time, title, season='', ep
 	except: pass
 
 def erase_bookmark(mediatype, tmdb_id, season='', episode='', refresh='false'):
-	try:
-		watched_indicators = settings.watched_indicators()
-		bookmarks = get_bookmarks(watched_indicators, mediatype)
-		if mediatype == 'episode': season, episode = int(season), int(episode)
-		try: detect_bookmark(bookmarks, tmdb_id, season, episode)
-		except: return
-		dbcon = _database_connect(get_database(watched_indicators))
-		dbcur = set_PRAGMAS(dbcon)
-		dbcur.execute(DELETE_BM, (mediatype, tmdb_id, season, episode))
-		if refresh == 'true': kodi_utils.widget_refresh() if kodi_utils.external_browse() else kodi_utils.container_refresh()
-	except: pass
+	from caches.progress_cache import erase_bookmark as erase
+	return erase(mediatype, tmdb_id, season, episode, refresh)
 
 def batch_erase_bookmark(watched_indicators, insert_list, action):
 	try:

@@ -201,7 +201,7 @@
             <param name="pollEmpty" value="false" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=30" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=30&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
@@ -255,7 +255,7 @@
             <param name="pollEmpty" value="false" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=30" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=30&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />

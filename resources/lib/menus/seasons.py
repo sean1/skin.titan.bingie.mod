@@ -184,7 +184,7 @@ class Episodes(BaseSeason):
 				if not unaired:
 					if progress != '0' or resumetime != '0': cm_append((clearprog_str, run_plugin % build_url({
 						'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode',
-						'tmdb_id': show.tmdb_id, 'season': season, 'episode': episode, 'refresh': 'true'
+						'tmdb_id': show.tmdb_id, 'season': season, 'episode': episode, 'refresh': 'progress'
 					})))
 					if playcount: cm_append((unwatched_str % self.watched_title, run_plugin % build_url({
 						'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_unwatched', 'year': show.year,

@@ -256,7 +256,13 @@ class Sources:
 				else: progressDialogBG.close()
 				return self._no_results()
 			if not self.progress_dialog.full_screen: progressDialogBG.close()
-			return POVPlayer().run(link, self.meta, progress_media)
+			playback_meta = self.meta.copy()
+			playback_meta.update({
+				'release_name': item.get('name') or item.get('display_name') or '',
+				'release_quality': item.get('quality') or '',
+				'release_info': item.get('extraInfo') or ''
+			})
+			return POVPlayer().run(link, playback_meta, progress_media)
 		except: pass
 
 class ConfigLoader:

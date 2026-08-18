@@ -9,18 +9,24 @@ from indexers.subtitles import SubtitleCancelled, Subtitles, subtitle_context_pr
 from modules import kodi_utils
 
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
+provider_names = {'opensubtitles': 'OpenSubtitles', 'subdl': 'SubDL', 'subsource': 'SubSource'}
+
+def _result_label(subtitle, result_number):
+	provider = provider_names.get(subtitle.get('provider'), str(subtitle.get('provider') or 'Subtitle provider'))
+	release = str(subtitle.get('release') or '').strip()[:120] or 'Release name unavailable'
+	return '%s #%s · %s' % (provider, result_number, release)
 
 def _context():
 	try: return json.loads(kodi_utils.get_property(subtitle_context_property))
 	except: return {}
 
 def _video_metadata():
-	metadata = {'imdb_id': '', 'season': None, 'episode': None, 'is_episode': False}
+	metadata = {'imdb_id': '', 'season': None, 'episode': None, 'is_episode': False, 'year': ''}
 	try:
 		video_info = kodi_utils.player.getVideoInfoTag()
 		metadata.update({
 			'imdb_id': video_info.getUniqueID('imdb'), 'season': video_info.getSeason(), 'episode': video_info.getEpisode(),
-			'is_episode': bool(video_info.getTVShowTitle())
+			'is_episode': bool(video_info.getTVShowTitle()), 'year': video_info.getYear()
 		})
 	except: pass
 	metadata['imdb_id'] = metadata['imdb_id'] or kodi_utils.get_infolabel('VideoPlayer.UniqueID(imdb)') or kodi_utils.get_infolabel('VideoPlayer.IMDBNumber')
@@ -40,25 +46,28 @@ def _client():
 	season = context.get('season')
 	episode = context.get('episode')
 	if season in (None, '') and metadata['is_episode']: season, episode = metadata['season'], metadata['episode']
-	client = Subtitles().configure(imdb_id, season, episode, context.get('poster', ''), playing_file)
+	client = Subtitles().configure(
+		imdb_id, season, episode, context.get('poster', ''), playing_file, context.get('release_name', ''),
+		context.get('quality', ''), context.get('extra_info', ''), context.get('year') or metadata.get('year', '')
+	)
 	return client, context
 
 def _search(handle):
 	configured = _client()
-	if not configured: return kodi_utils.notification('Play a BINGIE Lite video before searching SubMaker subtitles.')
+	if not configured: return kodi_utils.notification('Play a BINGIE Lite video before searching subtitles.')
 	client, context = configured
 	kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=search outcome=started')
 	subtitles = context.get('subtitles') or client.subtitles_search()
-	if isinstance(subtitles, str): return kodi_utils.notification(32856)
 	client._ensure_current_playback()
 	kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=search outcome=complete count=%s' % len(subtitles))
 	client._set_context(subtitles)
 	for language in subtitle_languages:
-		for result_number, subtitle in enumerate((item for item in subtitles if item.get('lang') == language and item.get('url')), 1):
+		for result_number, subtitle in enumerate((item for item in subtitles if item.get('lang') == language and item.get('provider') and item.get('id')), 1):
 			listitem = kodi_utils.make_listitem()
 			listitem.setLabel(language_names[language])
-			listitem.setLabel2('%s subtitle %s' % (language_names[language], result_number))
-			url = kodi_utils.build_url({'action': 'download', 'url': subtitle['url'], 'language': language, 'result': result_number})
+			provider = subtitle['provider']
+			listitem.setLabel2(_result_label(subtitle, result_number))
+			url = kodi_utils.build_url({'action': 'download', 'provider': provider, 'candidate': subtitle['id'], 'language': language, 'result': result_number})
 			kodi_utils.add_item(handle, url, listitem, False)
 
 def _download(handle, params):
@@ -67,12 +76,16 @@ def _download(handle, params):
 		kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=download outcome=cancelled category=playback_stopped')
 		return
 	client = configured[0]
-	response = client.subtitles_download(params['url'])
-	if isinstance(response, str): return
+	provider, candidate_id = params.get('provider', ''), params.get('candidate', '')
+	if provider not in ('opensubtitles', 'subdl', 'subsource') or not candidate_id: return
+	payload = client.download_by_id(provider, candidate_id)
+	if not payload: return
 	if client._cancelled(): return
 	language, result_number = params.get('language', 'eng'), params.get('result', '1')
-	final_path = '%s%s_%s_%s.srt' % (client.subtitle_path, client.sub_filename, language, result_number)
-	if not client.save_subtitle(response, final_path): return
+	extension = client._safe_extension(payload.get('extension'))
+	if language not in subtitle_languages or not result_number.isdigit() or not extension: return
+	final_path = '%s%s_%s_%s_%s.%s' % (client.subtitle_path, client.sub_filename, language, provider, result_number, extension)
+	if not client.save_subtitle(payload, final_path): return
 	if client._cancelled(): return
 	listitem = kodi_utils.make_listitem()
 	listitem.setLabel(final_path)

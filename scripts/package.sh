@@ -2,10 +2,14 @@
 
 set -eu
 
+umask 077
+
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 addon_file="$project_dir/addon.xml"
 output_dir=${1:-"$project_dir/dist"}
+subtitle_credentials_rel="resources/private/subtitle_providers.json"
+subtitle_credentials="$project_dir/$subtitle_credentials_rel"
 
 addon_id=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*id="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
 addon_version=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*version="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
@@ -50,10 +54,30 @@ tar -C "$project_dir" \
 	--exclude='./extras/skinthemes' \
 	--exclude='./extras/viewthumbs' \
 	--exclude='./extras/widgetplaylists' \
+	--exclude="./$subtitle_credentials_rel" \
 	--exclude='*/__pycache__' \
 	--exclude='*.pyc' \
 	--exclude='*.pyo' \
 	-cf - . | tar -C "$temporary_dir/$addon_id" -xf -
+
+if [ -e "$subtitle_credentials" ] || [ -L "$subtitle_credentials" ]; then
+	if [ -L "$subtitle_credentials" ] || [ ! -f "$subtitle_credentials" ]; then
+		printf '%s\n' "Subtitle credential file must be a regular file, not a symlink" >&2
+		exit 1
+	fi
+	if [ "$(stat -c '%a' "$subtitle_credentials")" != "600" ]; then
+		printf '%s\n' "Subtitle credential file permissions must be 0600" >&2
+		exit 1
+	fi
+	credential_size=$(wc -c < "$subtitle_credentials")
+	if [ "$credential_size" -lt 2 ] || [ "$credential_size" -gt 16384 ]; then
+		printf '%s\n' "Subtitle credential file has an invalid size" >&2
+		exit 1
+	fi
+	python3 -m json.tool "$subtitle_credentials" >/dev/null
+	mkdir -p "$temporary_dir/$addon_id/resources/private"
+	install -m 600 "$subtitle_credentials" "$temporary_dir/$addon_id/$subtitle_credentials_rel"
+fi
 
 (
 	cd "$temporary_dir"

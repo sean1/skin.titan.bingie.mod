@@ -379,7 +379,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 				season = self.season if self.mediatype == 'episode' else None
 				episode = self.episode if self.mediatype == 'episode' else None
 				from indexers.subtitles import Subtitles
-				Thread(target=Subtitles().run, args=(self.title, self.imdb_id, season, episode, poster)).start()
+				Thread(target=Subtitles().run, args=(
+					self.title, self.imdb_id, season, episode, poster, self.meta.get('release_name', ''),
+					self.meta.get('release_quality', ''), self.meta.get('release_info', ''), self.year
+				)).start()
 			elif task_name == 'stingers':
 				self.stingers_checked = True
 				poster = self.meta.get('poster') or poster_empty

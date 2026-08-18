@@ -112,6 +112,29 @@ class SubtitleServiceTests(unittest.TestCase):
 		listitem.setProperty.assert_called_once_with('sync', 'true')
 		listitem.setLabel2.assert_called_once_with('SubDL #1 · Release.Name')
 
+	def test_fresh_manual_search_uses_raw_candidate_release_names(self):
+		listitem = Mock()
+		candidate = {'provider': 'subdl', 'id': 'file:parent:child', 'lang': 'eng', 'release_names': ['', 'Release.Name']}
+		self.service._client.return_value = (self.client, {})
+		self.client.subtitles_search.return_value = [candidate]
+		self.service.kodi_utils.make_listitem.return_value = listitem
+
+		self.service._search(7)
+
+		self.client._set_context.assert_called_once_with([candidate])
+		listitem.setLabel2.assert_called_once_with('SubDL #1 · Release.Name')
+
+	def test_release_label_prefers_valid_projected_and_raw_values(self):
+		cases = (
+			({'release': ' Public.Release ', 'release_names': ['Raw.Release']}, 'Public.Release'),
+			({'release': ' ', 'release_names': [' ', None, {}, 'Raw.Release', 'Later.Release']}, 'Raw.Release'),
+			({'release_names': 'Whole.Release.Name'}, 'Whole.Release.Name'),
+			({'release': {}, 'release_names': None}, 'Release name unavailable'),
+			({'release_names': ['x' * 121]}, 'x' * 120)
+		)
+
+		for subtitle, expected in cases: self.assertEqual(self.service._release_label(subtitle), expected)
+
 	def test_manual_search_omits_unknown_rating_and_unsynced_property(self):
 		listitem = Mock()
 		self.service._client.return_value = (self.client, {'subtitles': [{'provider': 'opensubtitles', 'id': '123', 'lang': 'vie', 'release': 'Release.Name'}]})

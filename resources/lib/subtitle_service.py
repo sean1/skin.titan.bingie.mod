@@ -11,10 +11,20 @@ from modules import kodi_utils
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
 provider_names = {'opensubtitles': 'OpenSubtitles', 'subdl': 'SubDL', 'subsource': 'SubSource'}
 
+def _release_label(subtitle):
+	values = [subtitle.get('release')]
+	release_names = subtitle.get('release_names')
+	if isinstance(release_names, (list, tuple)): values.extend(release_names)
+	else: values.append(release_names)
+	for value in values:
+		if not isinstance(value, str): continue
+		value = value.strip()
+		if value: return value[:120]
+	return 'Release name unavailable'
+
 def _result_label(subtitle, result_number):
 	provider = provider_names.get(subtitle.get('provider'), str(subtitle.get('provider') or 'Subtitle provider'))
-	release = str(subtitle.get('release') or '').strip()[:120] or 'Release name unavailable'
-	return '%s #%s · %s' % (provider, result_number, release)
+	return '%s #%s · %s' % (provider, result_number, _release_label(subtitle))
 
 def _rating_icon(rating):
 	try: rating = min(max(float(rating), 0.0), 10.0)

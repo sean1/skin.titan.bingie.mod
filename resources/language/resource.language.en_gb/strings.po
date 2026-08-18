@@ -1287,7 +1287,7 @@ msgid "War / War & Politics"
 msgstr ""
 
 msgctxt "#32934"
-msgid "Time Bending"
+msgid "Time Travel | Time Loop"
 msgstr ""
 
 msgctxt "#32935"
@@ -1303,55 +1303,91 @@ msgid "Korean Language"
 msgstr ""
 
 msgctxt "#32938"
-msgid "Apocalypse"
+msgid "Post-Apocalyptic Future | End of the World | Apocalypse | Climate Apocalypse | Robot Apocalypse"
 msgstr ""
 
 msgctxt "#32939"
-msgid "Space Frontiers"
+msgid "Space Exploration | Space Travel | Spaceship | Spacecraft"
 msgstr ""
 
 msgctxt "#32940"
-msgid "The Big Score"
+msgid "Heist | Bank Robbery"
 msgstr ""
 
 msgctxt "#32941"
 msgid "Survival"
 msgstr ""
 
+msgctxt "#32942"
+msgid "Spy | Espionage | Secret Agent"
+msgstr ""
+
 msgctxt "#32943"
-msgid "Haunted"
+msgid "Ghost | Haunted House"
 msgstr ""
 
 msgctxt "#32944"
-msgid "Creature Features"
+msgid "Monster | Giant Monster | Alien Invasion"
 msgstr ""
 
 msgctxt "#32945"
-msgid "Killers & Slashers"
+msgid "Slasher | Serial Killer"
 msgstr ""
 
 msgctxt "#32946"
-msgid "Schemes & Secrets"
+msgid "Conspiracy"
 msgstr ""
 
 msgctxt "#32947"
-msgid "Dark Futures"
+msgid "Dystopia | Cyberpunk"
 msgstr ""
 
 msgctxt "#32948"
-msgid "Journeys & Growing Up"
+msgid "Zombie | Zombie Apocalypse"
 msgstr ""
 
 msgctxt "#32949"
-msgid "Mysteries"
+msgid "Whodunit"
 msgstr ""
 
 msgctxt "#32950"
-msgid "True Stories"
+msgid "Organized Crime | Mafia | Gangster"
 msgstr ""
 
 msgctxt "#32951"
-msgid "Soldiers & Special Forces"
+msgid "Soldier | Military | Army | Special Forces"
+msgstr ""
+
+msgctxt "#32952"
+msgid "Vampire | Werewolf"
+msgstr ""
+
+msgctxt "#32953"
+msgid "Dark Comedy | Satire | Parody"
+msgstr ""
+
+msgctxt "#32954"
+msgid "Psychological Thriller | Mind Game | Mind Games"
+msgstr ""
+
+msgctxt "#32955"
+msgid "Workplace Comedy | Workplace Romance | Office Romance"
+msgstr ""
+
+msgctxt "#32956"
+msgid "Pirate | Pirate Ship"
+msgstr ""
+
+msgctxt "#32957"
+msgid "Treasure Hunt | Quest"
+msgstr ""
+
+msgctxt "#32958"
+msgid "Ancient Rome | Ancient Egypt"
+msgstr ""
+
+msgctxt "#32959"
+msgid "Artificial Intelligence | Virtual Reality"
 msgstr ""
 
 msgctxt "#32964"

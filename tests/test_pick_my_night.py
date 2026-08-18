@@ -92,8 +92,10 @@ class PickMyNightTests(unittest.TestCase):
 
 	def test_movies_and_tv_offer_only_keyword_driven_moods(self):
 		expected = [
-			'', 'time_bending', 'apocalypse', 'survival', 'space_frontiers', 'haunted', 'creature_features', 'killers_slashers',
-			'schemes_secrets', 'dark_futures', 'journeys_growing_up', 'mysteries', 'true_stories', 'soldiers_special_forces'
+			'', 'time_bending', 'apocalypse', 'survival', 'zombie', 'space_frontiers', 'artificial_intelligence_virtual_reality',
+			'ancient_rome_egypt', 'pirate', 'treasure_hunt_quest', 'haunted', 'creature_features', 'vampire_werewolf',
+			'killers_slashers', 'psychological_thriller', 'heist_bank_robbery', 'spy_espionage', 'organized_crime',
+			'conspiracy', 'dark_futures', 'mysteries', 'soldiers_special_forces', 'dark_comedy', 'workplace_comedy_romance'
 		]
 		for mediatype in ('movie', 'tvshow'):
 			with self.subTest(mediatype=mediatype):
@@ -107,18 +109,28 @@ class PickMyNightTests(unittest.TestCase):
 	def test_every_specific_mood_uses_the_same_tmdb_keywords_for_movies_and_tv(self):
 		moods = {
 			'time_bending': '4379|10854',
-			'apocalypse': '4458|10150|12332|186565|355070|298669',
+			'apocalypse': '4458|10150|12332|355070|298669',
 			'survival': '10349',
+			'zombie': '12377|186565',
 			'space_frontiers': '191132|3801|252937|1612',
+			'artificial_intelligence_virtual_reality': '310|4563',
+			'ancient_rome_egypt': '5049|157894',
+			'pirate': '12988|185200',
+			'treasure_hunt_quest': '6956|207372',
 			'haunted': '162846|3358',
 			'creature_features': '1299|11100|14909',
+			'vampire_werewolf': '3133|12564',
 			'killers_slashers': '12339|10714',
-			'schemes_secrets': '10051|5265|10410',
+			'psychological_thriller': '12565|184312|226106',
+			'heist_bank_robbery': '10051|15363',
+			'spy_espionage': '470|5265|4289',
+			'organized_crime': '10291|10391|3149',
+			'conspiracy': '10410',
 			'dark_futures': '4565|12190',
-			'journeys_growing_up': '10683|7312',
-			'mysteries': '12570|10410',
-			'true_stories': '9672',
-			'soldiers_special_forces': '13065|162365|6092|15218'
+			'mysteries': '12570',
+			'soldiers_special_forces': '13065|162365|6092|15218',
+			'dark_comedy': '10123|8201|9755',
+			'workplace_comedy_romance': '210605|212796|182325'
 		}
 		for mediatype in ('movie', 'tvshow'):
 			for mood, keywords in moods.items():
@@ -132,6 +144,27 @@ class PickMyNightTests(unittest.TestCase):
 					self.assertIn('&with_keywords=%s' % keywords, alarm)
 					self.assertNotIn('&with_genres=', alarm)
 					self.discover.kodi_utils.execute_builtin.reset_mock()
+
+	def test_sparse_moods_use_relaxed_result_thresholds(self):
+		for mood in ('zombie', 'ancient_rome_egypt', 'pirate', 'treasure_hunt_quest', 'workplace_comedy_romance'):
+			with self.subTest(mood=mood):
+				menu = self.discover.Discover({'mediatype': 'tvshow'})
+				menu._selection_dialog = Mock(side_effect=(mood, '', 'critically_loved'))
+
+				menu.pick_my_night()
+
+				alarm = unquote(self.discover.kodi_utils.execute_builtin.call_args_list[1].args[0])
+				self.assertIn('&sort_by=vote_count.desc&vote_count.gte=1&vote_average.gte=7', alarm)
+				self.discover.kodi_utils.execute_builtin.reset_mock()
+
+	def test_artificial_intelligence_mood_keeps_selected_style_thresholds(self):
+		menu = self.discover.Discover({'mediatype': 'tvshow'})
+		menu._selection_dialog = Mock(side_effect=('artificial_intelligence_virtual_reality', '', 'critically_loved'))
+
+		menu.pick_my_night()
+
+		alarm = unquote(self.discover.kodi_utils.execute_builtin.call_args_list[1].args[0])
+		self.assertIn('&sort_by=vote_average.desc&vote_count.gte=500&vote_average.gte=7', alarm)
 
 
 if __name__ == '__main__':

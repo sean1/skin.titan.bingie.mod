@@ -288,10 +288,13 @@ class Discover:
 		media_options = ((ls(32028), 'movie'), (ls(32029), 'tvshow'))
 		mood_options = (
 			(ls(32908), ''), (ls(32934), 'time_bending'), (ls(32938), 'apocalypse'), (ls(32941), 'survival'),
-			(ls(32939), 'space_frontiers'), (ls(32943), 'haunted'), (ls(32944), 'creature_features'),
-			(ls(32945), 'killers_slashers'), (ls(32946), 'schemes_secrets'), (ls(32947), 'dark_futures'),
-			(ls(32948), 'journeys_growing_up'), (ls(32949), 'mysteries'), (ls(32950), 'true_stories'),
-			(ls(32951), 'soldiers_special_forces')
+			(ls(32948), 'zombie'), (ls(32939), 'space_frontiers'), (ls(32959), 'artificial_intelligence_virtual_reality'),
+			(ls(32958), 'ancient_rome_egypt'), (ls(32956), 'pirate'), (ls(32957), 'treasure_hunt_quest'),
+			(ls(32943), 'haunted'), (ls(32944), 'creature_features'),
+			(ls(32952), 'vampire_werewolf'), (ls(32945), 'killers_slashers'), (ls(32954), 'psychological_thriller'),
+			(ls(32940), 'heist_bank_robbery'), (ls(32942), 'spy_espionage'), (ls(32950), 'organized_crime'), (ls(32946), 'conspiracy'),
+			(ls(32947), 'dark_futures'), (ls(32949), 'mysteries'), (ls(32951), 'soldiers_special_forces'),
+			(ls(32953), 'dark_comedy'), (ls(32955), 'workplace_comedy_romance')
 		)
 		era_options = ((ls(32913), ''), (ls(32914), '2020s'), (ls(32915), '2010s'), (ls(32916), '2000s'), (ls(32917), 'classic'))
 		style_options = ((ls(32918), 'crowd_pleasers'), (ls(32919), 'hidden_gems'), (ls(32920), 'critically_loved'))
@@ -315,18 +318,28 @@ class Discover:
 		date_key = 'primary_release_date' if mediatype == 'movie' else 'first_air_date'
 		special_moods = {
 			'time_bending': ('with_keywords', '4379|10854'),
-			'apocalypse': ('with_keywords', '4458|10150|12332|186565|355070|298669'),
+			'apocalypse': ('with_keywords', '4458|10150|12332|355070|298669'),
 			'survival': ('with_keywords', '10349'),
+			'zombie': ('with_keywords', '12377|186565'),
 			'space_frontiers': ('with_keywords', '191132|3801|252937|1612'),
+			'artificial_intelligence_virtual_reality': ('with_keywords', '310|4563'),
+			'ancient_rome_egypt': ('with_keywords', '5049|157894'),
+			'pirate': ('with_keywords', '12988|185200'),
+			'treasure_hunt_quest': ('with_keywords', '6956|207372'),
 			'haunted': ('with_keywords', '162846|3358'),
 			'creature_features': ('with_keywords', '1299|11100|14909'),
+			'vampire_werewolf': ('with_keywords', '3133|12564'),
 			'killers_slashers': ('with_keywords', '12339|10714'),
-			'schemes_secrets': ('with_keywords', '10051|5265|10410'),
+			'psychological_thriller': ('with_keywords', '12565|184312|226106'),
+			'heist_bank_robbery': ('with_keywords', '10051|15363'),
+			'spy_espionage': ('with_keywords', '470|5265|4289'),
+			'organized_crime': ('with_keywords', '10291|10391|3149'),
+			'conspiracy': ('with_keywords', '10410'),
 			'dark_futures': ('with_keywords', '4565|12190'),
-			'journeys_growing_up': ('with_keywords', '10683|7312'),
-			'mysteries': ('with_keywords', '12570|10410'),
-			'true_stories': ('with_keywords', '9672'),
-			'soldiers_special_forces': ('with_keywords', '13065|162365|6092|15218')
+			'mysteries': ('with_keywords', '12570'),
+			'soldiers_special_forces': ('with_keywords', '13065|162365|6092|15218'),
+			'dark_comedy': ('with_keywords', '10123|8201|9755'),
+			'workplace_comedy_romance': ('with_keywords', '210605|212796|182325')
 		}
 		eras = {
 			'2020s': ('2020-01-01', '2029-12-31'), '2010s': ('2010-01-01', '2019-12-31'),
@@ -337,7 +350,10 @@ class Discover:
 			'hidden_gems': ('vote_average.desc', '100', '6', '40'),
 			'critically_loved': ('vote_average.desc', '500', '7', None)
 		}
-		sparse_moods = ('time_bending', 'apocalypse', 'space_frontiers', 'haunted', 'creature_features', 'killers_slashers', 'schemes_secrets', 'dark_futures', 'mysteries')
+		sparse_moods = (
+			'time_bending', 'apocalypse', 'zombie', 'space_frontiers', 'ancient_rome_egypt', 'pirate', 'treasure_hunt_quest',
+			'haunted', 'creature_features', 'killers_slashers', 'heist_bank_robbery', 'conspiracy', 'dark_futures', 'mysteries', 'workplace_comedy_romance'
+		)
 		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
 		if mood[0]:
 			filter_name, filter_value = special_moods[mood[0]]

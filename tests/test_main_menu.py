@@ -27,6 +27,11 @@ class MainMenuTests(unittest.TestCase):
 			'Trending Movies Today', 'Trending TV Shows Today', 'Continue Watching Movies', 'Continue Watching TV'
 		])
 
+	def test_home_widget_rows_show_five_items_each(self):
+		rows = self.root.find("include[@name='StaticHomeWidgetRows']")
+		widgets = rows.findall("include[@content='widget_base']")
+		self.assertEqual([widget.find("param[@name='widgetLimit']").get('value') for widget in widgets], ['5'] * 4)
+
 	def test_movie_and_tv_submenus_belong_to_their_main_menu_items(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
 		menu_ids = {item.findtext('label2'): item.get('id') for item in menu.findall('item')}

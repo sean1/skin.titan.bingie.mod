@@ -204,8 +204,9 @@ class Menu(Movies):
 	def run(self):
 		__handle__ = int(kodi_utils.argv1())
 		prefetch = self.params.get('prefetch') == 'true'
-		limited_tmdb = False
 		params_get = self.params.get
+		hub_next = params_get('hub_next') == 'true'
+		limited_listing = False
 		worker, view_type, content_type = self.build_movies_results, 'view.movies', 'movies'
 		mode, category = params_get('mode'), ''
 		try:
@@ -213,6 +214,7 @@ class Menu(Movies):
 			try: item_limit = int(params_get('limit', '0'))
 			except (TypeError, ValueError): item_limit = 0
 			limited_tmdb = item_limit > 0 and self.action in Menu.tmdb_main
+			limited_listing = limited_tmdb or (hub_next and item_limit > 0 and self.action == 'in_progress_movies')
 			try: page_no = int(params_get('new_page', '1'))
 			except ValueError: page_no = params_get('new_page')
 			if self.action in Menu.personal_dict: var_module, import_function = Menu.personal_dict[self.action]
@@ -221,17 +223,19 @@ class Menu(Movies):
 			except: pass
 			if self.action in Menu.tmdb_main:
 				data = function(page_no)
-				results = data['results'][:item_limit] if limited_tmdb else data['results']
+				all_results = data['results']
+				results = all_results[:item_limit] if limited_tmdb else all_results
 				self.list = results
 				total_pages = data['total_pages']
-				if total_pages > page_no: self.new_page = {'new_page': string(data['page'] + 1)}
+				if total_pages > page_no or (limited_tmdb and len(all_results) > item_limit): self.new_page = {'new_page': string(data['page'] + 1)}
 			elif self.action in Menu.personal_dict:
 				watched_info = self.bookmarks if self.action == 'in_progress_movies' else self.watched_info
 				data, total_pages = function(watched_info, 'movie', page_no)
+				has_limited_results = self.action == 'in_progress_movies' and item_limit > 0 and len(data) > item_limit
 				if self.action == 'in_progress_movies' and item_limit > 0: data = data[:item_limit]
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
-				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
+				if total_pages > page_no or (hub_next and has_limited_results): self.new_page = {'new_page': string(page_no + 1)}
 			elif self.action in Menu.similar:
 				tmdb_id = params_get('tmdb_id')
 				if not valid_tmdb_id(tmdb_id): data = {'results': [], 'page': 1, 'total_pages': 1}
@@ -306,6 +310,6 @@ class Menu(Movies):
 		except: pass
 		if prefetch: return
 		complete_media_directory(
-			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_tmdb,
+			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_listing,
 			self.params, nextpage_str, item_next
 		)

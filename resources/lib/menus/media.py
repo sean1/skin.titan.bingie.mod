@@ -41,10 +41,10 @@ def _schedule_next_page_prefetch(url, origin_params):
 	return schedule_next_page_prefetch(url, origin_params)
 
 
-def complete_media_directory(handle, mode, action, exit_list_params, category, content_type, view_type, is_widget, new_page, limited_tmdb, origin_params, nextpage_label, nextpage_icon):
+def complete_media_directory(handle, mode, action, exit_list_params, category, content_type, view_type, is_widget, new_page, limited_listing, origin_params, nextpage_label, nextpage_icon):
 	try:
-		if new_page and not is_widget:
-			if limited_tmdb:
+		if new_page and (not is_widget or origin_params.get('hub_next') == 'true'):
+			if limited_listing:
 				page_params = {'mode': mode, 'action': action, 'exit_list_params': exit_list_params, 'name': category}
 			else:
 				new_page.update({'mode': mode, 'action': action, 'exit_list_params': exit_list_params, 'name': category})
@@ -55,7 +55,7 @@ def complete_media_directory(handle, mode, action, exit_list_params, category, c
 	kodi_utils.set_sort_method(handle, content_type)
 	kodi_utils.set_content(handle, content_type)
 	kodi_utils.end_directory(handle, False if is_widget else None)
-	if new_page and not is_widget and not limited_tmdb: _schedule_next_page_prefetch(kodi_utils.build_url({**new_page, 'prefetch': 'true'}), origin_params)
+	if new_page and not is_widget and not limited_listing: _schedule_next_page_prefetch(kodi_utils.build_url({**new_page, 'prefetch': 'true'}), origin_params)
 	kodi_utils.set_view_mode(view_type, content_type, is_widget)
 
 

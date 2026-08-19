@@ -41,6 +41,7 @@ def load_menu_module(mediatype):
 	kodi_utils.get_addoninfo = lambda key: ''
 	kodi_utils.media_path = lambda name: name
 	kodi_utils.external_browse = lambda: False
+	kodi_utils.add_items = Mock()
 	kodi_utils.end_directory = Mock()
 	settings = types.ModuleType('modules.settings')
 	modules = types.ModuleType('modules')
@@ -85,6 +86,56 @@ def load_menu_module(mediatype):
 	return module, media.complete_media_directory, kodi_utils
 
 
+def load_episode_module():
+	kodi_utils = types.ModuleType('modules.kodi_utils')
+	kodi_utils.argv1 = lambda: '7'
+	kodi_utils.get_kodi_version = lambda: 21
+	kodi_utils.make_cast_list = lambda value: value
+	kodi_utils.local_string = str
+	kodi_utils.build_url = lambda params: params
+	kodi_utils.get_addoninfo = lambda key: ''
+	kodi_utils.media_path = lambda name: name
+	kodi_utils.add_items = Mock()
+	kodi_utils.add_dir = Mock()
+	kodi_utils.set_category = Mock()
+	kodi_utils.set_sort_method = Mock()
+	kodi_utils.set_content = Mock()
+	kodi_utils.end_directory = Mock()
+	kodi_utils.set_view_mode = Mock()
+	kodi_utils.focus_index = Mock()
+	settings = types.ModuleType('modules.settings')
+	for name in (
+		'calendar_sort_order', 'calendar_focus_today', 'nextep_content_settings', 'nextep_display_settings', 'thumb_fanart', 'default_all_episodes',
+		'single_ep_display_title', 'single_ep_format'
+	): setattr(settings, name, Mock())
+	modules = types.ModuleType('modules')
+	modules.__path__ = []
+	modules.kodi_utils = kodi_utils
+	modules.settings = settings
+	metadata = types.ModuleType('indexers.metadata')
+	for name in ('tvshow_meta', 'season_episodes_meta', 'art_infodict', 'episode_infodict', 'info_tagger', 'main_actors', 'resized_cast'):
+		setattr(metadata, name, Mock())
+	trakt = types.ModuleType('indexers.trakt_api')
+	trakt.trakt_anime_calendar = Mock()
+	indexers = types.ModuleType('indexers')
+	indexers.__path__ = []
+	cache = types.ModuleType('caches.watched_cache')
+	for name in ('get_resumetime', 'set_resumetime', 'get_watched_status_episode', 'get_watched_info_tv', 'get_bookmarks', 'get_next_episodes', 'get_in_progress_items'):
+		setattr(cache, name, Mock())
+	caches = types.ModuleType('caches')
+	caches.__path__ = []
+	utils = types.ModuleType('modules.utils')
+	utils.LIST_WORKERS = 5
+	for name in ('get_next_episode_pointer', 'adjust_premiered_date', 'make_day', 'get_datetime', 'title_key', 'date_difference', 'media_percentage_properties', 'TaskPool'):
+		setattr(utils, name, Mock())
+	stubs = {
+		'caches': caches, 'caches.watched_cache': cache, 'indexers': indexers, 'indexers.metadata': metadata, 'indexers.trakt_api': trakt,
+		'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.utils': utils
+	}
+	module = load_module('test_menu_completion_episodes', ROOT / 'resources' / 'lib' / 'menus' / 'episodes.py', stubs)
+	return module, kodi_utils
+
+
 class MenuCompletionTests(unittest.TestCase):
 	def setUp(self):
 		self.media = load_media_module()
@@ -93,7 +144,7 @@ class MenuCompletionTests(unittest.TestCase):
 	def complete(self, **overrides):
 		values = {
 			'handle': 7, 'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'exit_list_params': 'plugin://origin', 'category': 'Popular',
-			'content_type': 'movies', 'view_type': 'view.movies', 'is_widget': False, 'new_page': {'new_page': '2'}, 'limited_tmdb': False,
+			'content_type': 'movies', 'view_type': 'view.movies', 'is_widget': False, 'new_page': {'new_page': '2'}, 'limited_listing': False,
 			'origin_params': {'mode': 'build_movie_list', 'action': 'tmdb_movies_popular'}, 'nextpage_label': 'Next', 'nextpage_icon': 'next.png'
 		}
 		values.update(overrides)
@@ -117,11 +168,23 @@ class MenuCompletionTests(unittest.TestCase):
 		)
 
 	def test_limited_page_uses_browse_link_without_background_prefetch(self):
-		self.complete(limited_tmdb=True)
+		self.complete(limited_listing=True)
 
 		self.media.kodi_utils.add_dir.assert_called_once_with(7, {
 			'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'exit_list_params': 'plugin://origin', 'name': 'Popular'
 		}, 'Next', 'next.png')
+		self.media._schedule_next_page_prefetch.assert_not_called()
+
+	def test_limited_hub_widget_uses_full_listing_browse_link(self):
+		self.complete(
+			is_widget=True, limited_listing=True,
+			origin_params={'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'limit': '5', 'hub_next': 'true'}
+		)
+
+		self.media.kodi_utils.add_dir.assert_called_once_with(7, {
+			'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'exit_list_params': 'plugin://origin', 'name': 'Popular'
+		}, 'Next', 'next.png')
+		self.media.kodi_utils.end_directory.assert_called_once_with(7, False)
 		self.media._schedule_next_page_prefetch.assert_not_called()
 
 	def test_widget_finishes_without_navigation_or_prefetch(self):
@@ -164,6 +227,76 @@ class MenuCompletionTests(unittest.TestCase):
 					module.nextpage_str, module.item_next
 				)
 				kodi_utils.end_directory.assert_called_once_with(7, None)
+
+	def test_movie_and_tv_hub_catalogs_keep_five_media_items_before_next(self):
+		cases = (
+			('movie', 'build_movie_list', 'tmdb_movies_popular', 'title', 'build_movies_results'),
+			('tvshow', 'build_tvshow_list', 'tmdb_tv_popular', 'name', 'worker')
+		)
+		for mediatype, mode, action, title_key, worker_name in cases:
+			for result_count, expected_new_page in ((5, {}), (6, {'new_page': '2'})):
+				with self.subTest(mediatype=mediatype, result_count=result_count):
+					module, complete, _ = load_menu_module(mediatype)
+					results = [{'id': item_id, title_key: 'Item %s' % item_id} for item_id in range(result_count)]
+					module.manual_function_import = Mock(return_value=lambda page: {'results': results, 'page': page, 'total_pages': 1})
+					menu = module.Menu.__new__(module.Menu)
+					menu.params = {'mode': mode, 'action': action, 'name': 'Popular', 'limit': '5', 'hub_next': 'true'}
+					menu.action, menu.exit_list_params, menu.is_widget = action, 'plugin://origin', True
+					menu.new_page, menu.total_pages = {}, None
+					setattr(menu, worker_name, Mock(return_value=[]))
+
+					menu.run()
+
+					self.assertEqual(menu.list, results[:5])
+					self.assertEqual(menu.new_page, expected_new_page)
+					self.assertTrue(complete.call_args.args[9])
+
+	def test_movie_continue_watching_hub_keeps_five_media_items_before_next(self):
+		for result_count, expected_new_page in ((5, {}), (6, {'new_page': '2'})):
+			with self.subTest(result_count=result_count):
+				module, complete, _ = load_menu_module('movie')
+				results = [{'media_id': item_id} for item_id in range(result_count)]
+				module.manual_function_import = Mock(return_value=lambda watched_info, mediatype, page: (results, 1))
+				menu = module.Menu.__new__(module.Menu)
+				menu.params = {'mode': 'build_movie_list', 'action': 'in_progress_movies', 'name': 'Continue Watching', 'limit': '5', 'hub_next': 'true'}
+				menu.action, menu.exit_list_params, menu.is_widget = 'in_progress_movies', 'plugin://origin', True
+				menu.new_page, menu.total_pages, menu.bookmarks, menu.watched_info = {}, None, {}, {}
+				menu.build_movies_results = Mock(return_value=[])
+
+				menu.run()
+
+				self.assertEqual(menu.list, list(range(5)))
+				self.assertEqual(menu.new_page, expected_new_page)
+				self.assertTrue(complete.call_args.args[9])
+
+	def test_episode_continue_watching_hub_adds_full_listing_next(self):
+		module, kodi_utils = load_episode_module()
+		results = [{'media_id': item_id} for item_id in range(6)]
+		module.get_in_progress_items.return_value = results
+		menu = module.Menu.__new__(module.Menu)
+		menu.params = {'mode': 'build_in_progress_episode', 'name': 'Continue Watching', 'limit': '5', 'hub_next': 'true'}
+		menu.bookmarks, menu.has_more, menu.is_widget = {}, False, True
+		menu.worker = Mock(return_value=['item'] * 5)
+
+		menu.run()
+
+		self.assertEqual(menu.list, results[:5])
+		kodi_utils.add_items.assert_called_once_with(7, ['item'] * 5)
+		kodi_utils.add_dir.assert_called_once_with(7, {'mode': 'build_in_progress_episode', 'name': 'Continue Watching'}, module.nextpage_str, module.item_next)
+
+	def test_episode_continue_watching_hub_omits_next_when_five_items_fit(self):
+		module, kodi_utils = load_episode_module()
+		results = [{'media_id': item_id} for item_id in range(5)]
+		module.get_in_progress_items.return_value = results
+		menu = module.Menu.__new__(module.Menu)
+		menu.params = {'mode': 'build_in_progress_episode', 'name': 'Continue Watching', 'limit': '5', 'hub_next': 'true'}
+		menu.bookmarks, menu.has_more, menu.is_widget = {}, False, True
+		menu.worker = Mock(return_value=['item'] * 5)
+
+		menu.run()
+
+		self.assertEqual(menu.list, results)
+		kodi_utils.add_dir.assert_not_called()
 
 	def test_full_movie_content_applies_movie_language_badge_policy(self):
 		module, _, kodi_utils = load_menu_module('movie')

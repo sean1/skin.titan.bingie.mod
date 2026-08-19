@@ -17,8 +17,10 @@ date_difference_function, make_day_function, title_key_function = date_differenc
 run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Refresh(%s)', 'Container.Update(%s)'
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
+item_next = kodi_utils.media_path('item_next.png')
 watched_str, unwatched_str, extras_str, options_str = ls(32642), ls(32643), ls(32645), ls(32646)
 clearprog_str, browse_str, browse_seas_str, today_str = ls(32651), ls(32652), ls(32544), ls(32849).upper()
+nextpage_str = ls(32799)
 unaired_label, date_label = 'cyan', 'magenta'
 
 class Episodes:
@@ -26,6 +28,7 @@ class Episodes:
 		self.params = params
 		self.list_type = self.params.get('id_type', '')
 		self.list = self.params.get('list', [])
+		self.has_more = False
 		self.items = []
 		self.append = self.items.append
 		self.current_date = get_datetime()
@@ -205,6 +208,10 @@ class Menu(Episodes):
 		}.items() if key in mode), None)
 		if callable(func): func(params_get)
 		if self.list: kodi_utils.add_items(__handle__, self.worker())
+		if self.has_more and params_get('hub_next') == 'true':
+			page_params = {'mode': mode}
+			if category: page_params['name'] = category
+			kodi_utils.add_dir(__handle__, page_params, nextpage_str, item_next)
 		if self.list_type == 'trakt_calendar' and calendar_focus_today():
 			labels = enumerate((i[1].getLabel() for i in self.items), 1)
 			index = next((i for i, x in labels if today_str in x), None)
@@ -221,7 +228,9 @@ class Menu(Episodes):
 		self.list = get_in_progress_items(self.bookmarks, 'episode')
 		try: item_limit = int(params_get('limit', '0'))
 		except (TypeError, ValueError): item_limit = 0
-		if item_limit > 0: self.list = self.list[:item_limit]
+		if item_limit > 0:
+			self.has_more = len(self.list) > item_limit
+			self.list = self.list[:item_limit]
 
 	def _setup_next_episode(self, params_get):
 		self.list_type = 'next_episode_pov'

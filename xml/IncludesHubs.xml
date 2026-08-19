@@ -158,34 +158,31 @@
 
     <!-- Empty staged paths defer their provider jobs; the hub fixedlists poll until each stage becomes active. -->
     <variable name="BingieMoviesHubTrendingWeekPath">
-        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
+        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending&amp;name=Trending+Movies+This+Week&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
     </variable>
     <variable name="BingieMoviesHubPopularPath">
-        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
+        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;name=Popular+Movies&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
     </variable>
     <variable name="BingieMoviesHubNowPlayingPath">
-        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_now_playing&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
-    </variable>
-    <variable name="BingieMoviesHubUpcomingPath">
-        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_upcoming&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
+        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_now_playing&amp;name=Now+Playing&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
     </variable>
     <variable name="BingieMoviesHubTopRatedPath">
-        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
+        <value condition="Integer.IsGreater(Window(1111).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated&amp;name=Top+Rated+Movies&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
     </variable>
     <variable name="BingieTVHubTrendingWeekPath">
-        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
+        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending&amp;name=Trending+TV+Shows+This+Week&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
     </variable>
     <variable name="BingieTVHubPopularPath">
-        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
+        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;name=Popular+TV+Shows&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
     </variable>
     <variable name="BingieTVHubAiringTodayPath">
-        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_airing_today&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
+        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_airing_today&amp;name=Airing+Today&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
     </variable>
     <variable name="BingieTVHubOnTheAirPath">
-        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
+        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_on_the_air&amp;name=On+the+Air&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
     </variable>
     <variable name="BingieTVHubTopRatedPath">
-        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
+        <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated&amp;name=Top+Rated+TV+Shows&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
     </variable>
     <variable name="BingieDiscoverBecauseMoviesPath">
         <value>plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_because_you_watched&amp;name=Because+You+Watched&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
@@ -201,14 +198,14 @@
             <param name="pollEmpty" value="false" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;limit=30&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;name=Continue+Watching&amp;limit=5&amp;hub_next=true&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="pollEmpty" value="false" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Trending Movies Today" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending_day&amp;name=Trending+Movies+Today&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />
@@ -232,13 +229,6 @@
             <param name="path" value="$VAR[BingieMoviesHubNowPlayingPath]" />
         </include>
         <include content="bingie_pov_hub_item">
-            <param name="widgetid" value="1560" />
-            <param name="pollEmpty" value="true" />
-            <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Upcoming Movies" />
-            <param name="path" value="$VAR[BingieMoviesHubUpcomingPath]" />
-        </include>
-        <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1570" />
             <param name="pollEmpty" value="true" />
             <param name="widgetStyle" value="widget_layout_default" />
@@ -255,14 +245,14 @@
             <param name="pollEmpty" value="false" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Continue Watching" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;limit=30&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;name=Continue+Watching&amp;limit=5&amp;hub_next=true&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1520" />
             <param name="pollEmpty" value="false" />
             <param name="widgetStyle" value="widget_layout_default" />
             <param name="label" value="Trending TV Shows Today" />
-            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;name=Trending+TV+Shows+Today&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]" />
         </include>
         <include content="bingie_pov_hub_item">
             <param name="widgetid" value="1530" />

@@ -191,15 +191,15 @@ class Menu(TVShows):
 	def run(self):
 		__handle__ = int(kodi_utils.argv1())
 		prefetch = self.params.get('prefetch') == 'true'
-		limited_tmdb = False
 		params_get = self.params.get
+		limited_listing = False
 		view_type, content_type = 'view.tvshows', 'tvshows'
 		mode, category = params_get('mode'), ''
 		try:
 			category = ls(params_get('name'))
 			try: item_limit = int(params_get('limit', '0'))
 			except (TypeError, ValueError): item_limit = 0
-			limited_tmdb = item_limit > 0 and self.action in Menu.tmdb_main
+			limited_listing = item_limit > 0 and self.action in Menu.tmdb_main
 			try: page_no = int(params_get('new_page', '1'))
 			except ValueError: page_no = params_get('new_page')
 			if self.action in Menu.personal_dict: var_module, import_function = Menu.personal_dict[self.action]
@@ -208,10 +208,11 @@ class Menu(TVShows):
 			except: pass
 			if self.action in Menu.tmdb_main:
 				data = function(page_no)
-				results = data['results'][:item_limit] if limited_tmdb else data['results']
+				all_results = data['results']
+				results = all_results[:item_limit] if limited_listing else all_results
 				self.list = results
 				total_pages = data['total_pages']
-				if total_pages > page_no: self.new_page = {'new_page': string(data['page'] + 1)}
+				if total_pages > page_no or (limited_listing and len(all_results) > item_limit): self.new_page = {'new_page': string(data['page'] + 1)}
 			elif self.action in Menu.personal_dict:
 				data, total_pages = function(self.watched_info, 'tvshow', page_no)
 				self.list = [i['media_id'] for i in data]
@@ -278,6 +279,6 @@ class Menu(TVShows):
 		except: pass
 		if prefetch: return
 		complete_media_directory(
-			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_tmdb,
+			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_listing,
 			self.params, nextpage_str, item_next
 		)

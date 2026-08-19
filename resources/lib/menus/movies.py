@@ -3,7 +3,7 @@ from indexers.metadata import movie_meta, art_infodict, movie_show_infodict, tmd
 from caches.watched_cache import get_watched_info_movie, get_watched_status_movie, get_bookmarks, get_resumetime, set_resumetime
 from modules import kodi_utils, settings
 from modules.meta_lists import movie_genres
-from menus.media import build_tmdb_detail_shelf_item, card_flag, card_language, complete_media_directory
+from menus.media import build_tmdb_detail_shelf_item, card_badge_properties, complete_media_directory
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate, chunks
 from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
 # logger = kodi_utils.logger
@@ -119,11 +119,7 @@ class Movies:
 				'PovInfoCollectionId': string((meta_get('extra_info') or {}).get('collection_id') or ''),
 				'PovInfoSourceTmdb': string(self.params.get('tmdb_id') or '')
 			}
-			flag = card_flag(meta)
-			if flag: props['card_flag'] = flag
-			else:
-				language = card_language(meta)
-				if language: props['card_language'] = language
+			props.update(card_badge_properties(meta, 'movie'))
 			props.update(media_percentage_properties(meta_get('rating'), progress))
 			listitem = kodi_utils.make_listitem()
 			listitem.addContextMenuItems(cm)

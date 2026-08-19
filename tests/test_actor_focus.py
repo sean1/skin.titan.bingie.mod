@@ -37,6 +37,7 @@ def load_people():
 	images = types.ModuleType('menus.images')
 	images.Images = object
 	media = types.ModuleType('menus.media')
+	media.card_badge_properties = lambda item, mediatype: {}
 	media.card_flag = lambda item: 'flag.png' if item.get('origin_country') else ''
 	media.card_language = lambda item: str(item.get('original_language') or '').upper()
 	menus = types.ModuleType('menus')

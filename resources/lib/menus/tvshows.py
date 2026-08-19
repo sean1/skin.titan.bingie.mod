@@ -3,7 +3,7 @@ from indexers.metadata import tvshow_meta, art_infodict, movie_show_infodict, ma
 from caches.watched_cache import get_watched_info_tv, get_watched_status_tvshow
 from modules import kodi_utils, settings
 from modules.meta_lists import tvshow_genres
-from menus.media import build_tmdb_detail_shelf_item, card_flag, complete_media_directory
+from menus.media import build_tmdb_detail_shelf_item, card_badge_properties, complete_media_directory
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate
 from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
 # logger = kodi_utils.logger
@@ -125,8 +125,7 @@ class TVShows:
 				'year_range': meta_get('year_range', ''), 'main_actors': main_actors(meta_get('cast', [])),
 				'PovInfoSourceTmdb': string(self.params.get('tmdb_id') or '')
 			}
-			flag = card_flag(meta)
-			if flag: props['card_flag'] = flag
+			props.update(card_badge_properties(meta, 'tvshow'))
 			props.update(media_percentage_properties(meta_get('rating')))
 			listitem = kodi_utils.make_listitem()
 			listitem.addContextMenuItems(cm)

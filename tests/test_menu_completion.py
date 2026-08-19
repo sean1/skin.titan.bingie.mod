@@ -70,6 +70,7 @@ def load_menu_module(mediatype):
 	meta_lists.tvshow_genres = {'Drama': ('1',)}
 	media = types.ModuleType('menus.media')
 	media.build_tmdb_detail_shelf_item = Mock()
+	media.card_badge_properties = lambda data, mediatype: {}
 	media.card_flag = lambda data: ''
 	media.card_language = lambda data: ''
 	media.complete_media_directory = Mock(side_effect=lambda handle, *args: kodi_utils.end_directory(handle, None))
@@ -163,6 +164,40 @@ class MenuCompletionTests(unittest.TestCase):
 					module.nextpage_str, module.item_next
 				)
 				kodi_utils.end_directory.assert_called_once_with(7, None)
+
+	def test_full_movie_content_applies_movie_language_badge_policy(self):
+		module, _, kodi_utils = load_menu_module('movie')
+		meta = {
+			'tmdb_id': 101, 'imdb_id': 'tt0101', 'rootname': 'Movie (2024)', 'title': 'Movie', 'year': 2024, 'extra_info': {}, 'cast': [],
+			'country_codes': ['US'], 'original_language': 'ja', 'country': ['United States'], 'director': '', 'duration': 7200, 'genre': '', 'mpaa': '',
+			'plot': '', 'premiered': '2024-01-01', 'rating': 7.5, 'studio': '', 'tagline': '', 'trailer': '', 'votes': 100, 'writer': ''
+		}
+		module.movie_meta.return_value = meta
+		module.get_watched_status_movie.return_value = (0, 0)
+		module.get_resumetime.return_value = ('0', '0')
+		module.set_resumetime.return_value = (0, 0)
+		module.watched_str = '%s'
+		module.card_badge_properties = Mock(return_value={'card_language': 'JA'})
+		listitem, videoinfo = Mock(), Mock()
+		videoinfo.getDuration.return_value = 7200
+		listitem.getVideoInfoTag.return_value = videoinfo
+		kodi_utils.make_listitem = Mock(return_value=listitem)
+		menu = module.Movies.__new__(module.Movies)
+		menu.id_type, menu.meta_user_info, menu.current_date = 'tmdb_id', {'language': 'en'}, None
+		menu.watched_info, menu.bookmarks, menu.include_year_in_title, menu.watched_title = {}, {}, False, 'watched'
+		menu.open_extras, menu.is_widget, menu.exit_list_params = False, True, 'plugin://origin'
+		menu.cm_sort = {'options': 1, 'extras': 2, 'mark': 3, 'exit': 4}
+		menu.params, menu.action, menu.art_provider = {}, 'in_progress_movies', ()
+		menu.items, menu.append = [], None
+		menu.append = menu.items.append
+
+		menu.build_movie_content(0, 101)
+
+		module.card_badge_properties.assert_called_once_with(meta, 'movie')
+		self.assertEqual(len(menu.items), 1)
+		properties = listitem.setProperties.call_args.args[0]
+		self.assertEqual(properties['card_language'], 'JA')
+		self.assertNotIn('card_flag', properties)
 
 
 if __name__ == '__main__':

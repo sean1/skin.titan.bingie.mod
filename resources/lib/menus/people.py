@@ -6,7 +6,7 @@ from urllib.parse import unquote
 from caches.window_property_cache import WindowPropertyCache
 from indexers.tmdb_api import tmdb_people_info, tmdb_people_actor_info, tmdb_image_base, resized_tmdb_image
 from menus.images import Images
-from menus.media import card_flag, card_language
+from menus.media import card_badge_properties
 from modules import kodi_utils, settings
 from modules.utils import calculate_age, valid_tmdb_id
 # from modules.kodi_utils import logger
@@ -341,11 +341,7 @@ def _credit_listitem(item, resolution, actor_id):
 		'PovCreditType': media_type, 'PovActorSourceId': str(actor_id), 'landscape': landscape,
 		'rating': '%.1f' % rating if rating else '', 'year_range': year
 	}
-	flag = card_flag(item)
-	if flag: properties['card_flag'] = flag
-	elif media_type == 'movie':
-		language = card_language(item)
-		if language: properties['card_language'] = language
+	properties.update(card_badge_properties(item, media_type))
 	listitem.setProperties(properties)
 	if KODI_VERSION < 20:
 		listitem.setUniqueIDs({'tmdb': str(tmdb_id)})

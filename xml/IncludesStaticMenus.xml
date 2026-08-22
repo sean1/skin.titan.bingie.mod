@@ -79,6 +79,22 @@
 		<item id="1">
 			<property name="id">$NUMBER[1]</property>
 			<property name="mainmenuid">3</property>
+			<label>Browse &amp; Refine</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">browse-refine-tv-shows</property>
+			<property name="defaultID">369</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
+			<property name="group">tvshows</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">3</property>
 			<label>Trending TV Shows This Week</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -92,8 +108,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="2">
-			<property name="id">$NUMBER[2]</property>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
 			<property name="mainmenuid">3</property>
 			<label>New Series</label>
 			<label2>TV Shows</label2>
@@ -108,8 +124,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">3</property>
 			<label>Top Rated TV Shows</label>
 			<label2>TV Shows</label2>
@@ -124,40 +140,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">3</property>
-			<label>TV Genres</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">tv-genres</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=tvshow,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=tvshow</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
 		<item id="5">
 			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">3</property>
-			<label>By Year / Decade</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">by-year-decade</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_years_decades,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_years_decades,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.tv_years_decades</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
 			<property name="mainmenuid">3</property>
 			<label>By Original Network</label>
 			<label2>TV Shows</label2>
@@ -172,24 +156,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
-			<property name="mainmenuid">3</property>
-			<label>Original-Language TV</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">original-language-tv</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_languages,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_languages,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.tv_languages</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="8">
-			<property name="id">$NUMBER[8]</property>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
 			<property name="mainmenuid">3</property>
 			<label>Pick My Night</label>
 			<label2>TV Shows</label2>
@@ -206,8 +174,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="9">
-			<property name="id">$NUMBER[9]</property>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
 			<property name="mainmenuid">3</property>
 			<label>Search</label>
 			<label2>TV Shows</label2>
@@ -227,6 +195,22 @@
 		<item id="1">
 			<property name="id">$NUMBER[1]</property>
 			<property name="mainmenuid">2</property>
+			<label>Browse &amp; Refine</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">browse-refine-movies</property>
+			<property name="defaultID">135</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
+			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">2</property>
 			<label>Trending Movies This Week</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -240,8 +224,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="2">
-			<property name="id">$NUMBER[2]</property>
+		<item id="3">
+			<property name="id">$NUMBER[3]</property>
 			<property name="mainmenuid">2</property>
 			<label>Top Rated Movies</label>
 			<label2>Movies</label2>
@@ -256,56 +240,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
-			<property name="mainmenuid">2</property>
-			<label>Movie Genres</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">movie-genres</property>
-			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.genres&amp;menu_type=movie</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">2</property>
-			<label>By Year / Decade</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">by-year-decade</property>
-			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.movie_years_decades,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.movie_years_decades,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.movie_years_decades</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">2</property>
-			<label>Original-Language Cinema</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">original-language-cinema</property>
-			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.movie_languages,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.movie_languages,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.movie_languages</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
 			<property name="mainmenuid">2</property>
 			<label>Pick My Night</label>
 			<label2>Movies</label2>
@@ -322,8 +258,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
 			<property name="mainmenuid">2</property>
 			<label>Search</label>
 			<label2>Movies</label2>

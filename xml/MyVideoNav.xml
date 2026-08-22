@@ -70,6 +70,11 @@
                 <onback>523</onback>
                 <onup>9000</onup>
                 <ondown>9000</ondown>
+                <control type="button" id="9112">
+                    <include>SideBladeMenuButton</include>
+                    <label>Preset: $INFO[Window(Home).Property(Refine.Preset)]</label>
+                    <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.preset)</onclick>
+                </control>
                 <control type="button" id="9101">
                     <include>SideBladeMenuButton</include>
                     <label>Sort by: $INFO[Window(Home).Property(Refine.Sort)]</label>

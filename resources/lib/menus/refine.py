@@ -16,7 +16,12 @@ SORT_OPTIONS = {
 	'movie': (('Popularity', 'popularity'), ('Release date', 'primary_release_date'), ('Revenue', 'revenue'), ('Title', 'original_title'), ('Rating', 'vote_average')),
 	'tvshow': (('Popularity', 'popularity'), ('First air date', 'first_air_date'), ('Title', 'original_name'), ('Rating', 'vote_average'))
 }
-DISPLAY_PROPERTIES = ('Sort', 'Order', 'Genres', 'Year', 'Rating', 'Votes', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
+DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Year', 'Rating', 'Votes', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
+PRESET_FIELDS = ('sort', 'order', 'rating', 'votes')
+PRESET_RECIPES = {
+	'None': ('popularity', 'desc', '', ''),
+	'Top Rated': ('vote_average', 'desc', '7.0', '500')
+}
 
 
 class Refine:
@@ -27,6 +32,12 @@ class Refine:
 
 	def initialize(self):
 		self.draft = self._load_state(APPLIED_STATE_PROPERTY)
+		return self._save()
+
+	def preset(self):
+		choice = self._select('Preset', tuple((name, name) for name in PRESET_RECIPES))
+		if choice is None: return
+		self.draft.update(zip(PRESET_FIELDS, PRESET_RECIPES[choice[1]]))
 		return self._save()
 
 	def sort(self):
@@ -174,12 +185,13 @@ class Refine:
 		return result
 
 	def _save(self):
+		self._sync_owned_labels()
 		kodi_utils.set_property(STATE_PROPERTY % self.mediatype, json.dumps(self.draft, sort_keys=True))
 		return self._publish()
 
 	def _publish(self):
 		values = {
-			'Sort': self.draft['sort_label'], 'Order': self.draft['order_label'], 'Genres': self.draft['genres_label'] or 'Any',
+			'Preset': self._preset_label(), 'Sort': self.draft['sort_label'], 'Order': self.draft['order_label'], 'Genres': self.draft['genres_label'] or 'Any',
 			'Year': self._year_label(), 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any',
 			'Language': self.draft['language_label'] or 'Any', 'MPAA': self.draft['mpaa'] if self.mediatype == 'movie' and self.draft['mpaa'] else 'Any',
 			'Network': self.draft['network_label'] if self.mediatype == 'tvshow' and self.draft['network_label'] else 'Any',
@@ -187,6 +199,14 @@ class Refine:
 		}
 		for key in DISPLAY_PROPERTIES: kodi_utils.set_property(PROPERTY_PREFIX + key, values[key])
 		return values
+
+	def _preset_label(self):
+		values = tuple(self.draft[key] for key in PRESET_FIELDS)
+		return next((name for name, recipe in PRESET_RECIPES.items() if values == recipe), 'Custom')
+
+	def _sync_owned_labels(self):
+		self.draft['sort_label'] = next((label for label, value in SORT_OPTIONS[self.mediatype] if value == self.draft['sort']), self.draft['sort_label'])
+		self.draft['order_label'] = {'asc': 'Ascending', 'desc': 'Descending'}.get(self.draft['order'], self.draft['order_label'])
 
 	def _year_label(self):
 		start, end = self.draft['year_start'], self.draft['year_end']

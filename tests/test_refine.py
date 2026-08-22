@@ -52,6 +52,42 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(values['Eligible'], 'true')
 		self.assertEqual(values['Count'], '0')
 		self.assertEqual(values['Genres'], 'Any')
+		self.assertEqual(values['Preset'], 'None')
+
+	def test_top_rated_preset_updates_owned_fields_and_preserves_other_filters(self):
+		menu = self.refine.Refine({'mediatype': 'tvshow'})
+		menu.draft.update({'genres': '18', 'genres_label': 'Drama', 'year_start': '2020', 'language': 'fr', 'language_label': 'French', 'network': '213', 'network_label': 'Netflix'})
+		menu._select = Mock(return_value=('Top Rated', 'Top Rated'))
+
+		values = menu.preset()
+
+		self.assertEqual((menu.draft['sort'], menu.draft['sort_label'], menu.draft['order'], menu.draft['order_label'], menu.draft['rating'], menu.draft['votes']), ('vote_average', 'Rating', 'desc', 'Descending', '7.0', '500'))
+		self.assertEqual((menu.draft['genres'], menu.draft['year_start'], menu.draft['language'], menu.draft['network']), ('18', '2020', 'fr', '213'))
+		self.assertEqual(values['Preset'], 'Top Rated')
+		self.assertEqual(values['Count'], '7')
+
+	def test_none_preset_resets_only_owned_fields(self):
+		menu = self.refine.Refine({'mediatype': 'movie'})
+		menu.draft.update({'sort': 'vote_average', 'order': 'asc', 'rating': '8.0', 'votes': '1000', 'genres': '28', 'genres_label': 'Action', 'mpaa': 'PG-13'})
+		menu._select = Mock(return_value=('None', 'None'))
+
+		values = menu.preset()
+
+		self.assertEqual((menu.draft['sort'], menu.draft['sort_label'], menu.draft['order'], menu.draft['order_label'], menu.draft['rating'], menu.draft['votes']), ('popularity', 'Popularity', 'desc', 'Descending', '', ''))
+		self.assertEqual((menu.draft['genres'], menu.draft['mpaa']), ('28', 'PG-13'))
+		self.assertEqual(values['Preset'], 'None')
+		self.assertEqual(values['Count'], '2')
+
+	def test_manual_preset_owned_changes_publish_custom_and_exact_recipe_recovers_label(self):
+		menu = self.refine.Refine({'mediatype': 'movie'})
+		menu.draft.update({'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '500'})
+		self.assertEqual(menu._save()['Preset'], 'Top Rated')
+
+		menu._select = Mock(return_value=('1000', '1000'))
+		self.assertEqual(menu.votes()['Preset'], 'Custom')
+
+		menu._select = Mock(return_value=('500', '500'))
+		self.assertEqual(menu.votes()['Preset'], 'Top Rated')
 
 	def test_choices_are_staged_and_clear_restores_defaults(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})

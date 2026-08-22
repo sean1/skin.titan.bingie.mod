@@ -127,22 +127,6 @@
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">3</property>
-			<label>Top Rated TV Shows</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">top-rated-tv-shows</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">3</property>
 			<label>Pick My Night</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -158,8 +142,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
 			<property name="mainmenuid">3</property>
 			<label>Search</label>
 			<label2>TV Shows</label2>
@@ -211,22 +195,6 @@
 		<item id="3">
 			<property name="id">$NUMBER[3]</property>
 			<property name="mainmenuid">2</property>
-			<label>Top Rated Movies</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">top-rated-movies</property>
-			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_top_rated</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
-			<property name="mainmenuid">2</property>
 			<label>Pick My Night</label>
 			<label2>Movies</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -242,8 +210,8 @@
 			<property name="group">movies</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">2</property>
 			<label>Search</label>
 			<label2>Movies</label2>

@@ -11,7 +11,7 @@ from modules import kodi_utils
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
 provider_names = {'opensubtitles': 'OpenSubtitles', 'subdl': 'SubDL', 'subsource': 'SubSource'}
 config_issue_names = {
-	'missing': 'provider settings are missing', 'insecure_file': 'provider settings have unsafe permissions', 'unreadable': 'provider settings cannot be read',
+	'missing': 'provider settings are missing', 'unreadable': 'provider settings cannot be read',
 	'invalid_json': 'provider settings contain invalid JSON', 'invalid_schema': 'provider settings are invalid'
 }
 

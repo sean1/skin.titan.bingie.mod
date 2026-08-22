@@ -1,7 +1,6 @@
 import io
 import json
 import math
-import os
 import re
 import stat
 import zipfile
@@ -68,10 +67,6 @@ def _load_provider_config(path=None):
 		if not kodi_utils.path_exists(path):
 			_log('config', 'disabled', category='missing')
 			return {}, 'missing'
-		if os.name == 'posix':
-			if os.path.islink(path) or not os.path.isfile(path) or stat.S_IMODE(os.stat(path).st_mode) != 0o600:
-				_log('config', 'disabled', category='insecure_file')
-				return {}, 'insecure_file'
 		payload = json.loads(_read_config(path))
 	except (OSError, UnicodeError):
 		_log('config', 'disabled', category='unreadable')

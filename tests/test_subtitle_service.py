@@ -127,11 +127,11 @@ class SubtitleServiceTests(unittest.TestCase):
 
 	def test_manual_search_reports_safe_config_issue(self):
 		self.client.subtitles_search.return_value = []
-		self.client.subtitle_diagnostics.return_value = {'config': 'insecure_file', 'providers': (), 'path': '/private/path', 'detail': 'secret'}
+		self.client.subtitle_diagnostics.return_value = {'config': 'unreadable', 'providers': (), 'path': '/private/path', 'detail': 'secret'}
 
 		self.service._search(7)
 
-		self.service.kodi_utils.ok_dialog.assert_called_once_with('Subtitle search', 'Subtitle search unavailable: provider settings have unsafe permissions.')
+		self.service.kodi_utils.ok_dialog.assert_called_once_with('Subtitle search', 'Subtitle search unavailable: provider settings cannot be read.')
 		self.assertNotIn('private', self.service.kodi_utils.ok_dialog.call_args.args[1])
 		self.assertNotIn('secret', self.service.kodi_utils.ok_dialog.call_args.args[1])
 		self.service.kodi_utils.notification.assert_not_called()

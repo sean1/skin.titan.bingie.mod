@@ -67,7 +67,7 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual(set(config), {'opensubtitles', 'subdl', 'subsource'})
 		self.assertNotIn(secret, repr(self.providers.kodi_utils.logger.call_args_list))
 
-	def test_insecure_private_config_is_rejected_without_logging_secrets(self):
+	def test_regular_config_loads_with_non_private_permissions_without_logging_secrets(self):
 		secret = 'sentinel-private-value'
 		with TemporaryDirectory() as directory:
 			path = Path(directory) / 'providers.json'
@@ -75,8 +75,26 @@ class SubtitleProviderTests(unittest.TestCase):
 			path.chmod(0o644)
 			config = self.providers.load_provider_config(str(path))
 
-		self.assertEqual(config, {})
+		self.assertEqual(config, {'subdl': {'api_key': secret}})
 		self.assertNotIn(secret, repr(self.providers.kodi_utils.logger.call_args_list))
+
+	def test_symlinked_config_loads_when_target_is_readable_and_valid(self):
+		with TemporaryDirectory() as directory:
+			target = Path(directory) / 'target.json'
+			target.write_text(json.dumps({'subdl': {'api_key': 'key'}}))
+			target.chmod(0o600)
+			path = Path(directory) / 'providers.json'
+			path.symlink_to(target)
+			config = self.providers.load_provider_config(str(path))
+
+		self.assertEqual(config, {'subdl': {'api_key': 'key'}})
+
+	def test_unreadable_config_path_is_rejected(self):
+		with TemporaryDirectory() as directory:
+			config, category = self.providers._load_provider_config(directory)
+
+		self.assertEqual(config, {})
+		self.assertEqual(category, 'unreadable')
 
 	def test_manager_reports_safe_config_category(self):
 		with patch.object(self.providers, '_load_provider_config', return_value=({}, 'unreadable')):

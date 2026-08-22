@@ -252,15 +252,6 @@ def tmdb_tv_top_rated(page_no):
 	url = '%s/tv/top_rated?language=en-US&page=%s' % (base_url, page_no)
 	return cache_object(get_tmdb, string, url, expiration=EXPIRES_2_DAYS)
 
-def tmdb_tv_new_series(page_no):
-	from datetime import date, timedelta
-	today = date.today()
-	start_date = today - timedelta(days=90)
-	string = 'tmdb_tv_new_series_%s_%s' % (today.isoformat(), page_no)
-	url = '%s/discover/tv?language=en-US&page=%s&include_adult=false' % (base_url, page_no)
-	url += '&first_air_date.gte=%s&first_air_date.lte=%s&include_null_first_air_dates=false&sort_by=first_air_date.desc&vote_count.gte=1' % (start_date.isoformat(), today.isoformat())
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)
-
 def tmdb_tv_genres(genre_id, page_no):
 	string = 'tmdb_tv_genres_%s_%s' % (genre_id, page_no)
 	url = '%s/discover/tv?page=%s' % (base_url, page_no)

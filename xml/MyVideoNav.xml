@@ -105,6 +105,11 @@
                     <label>Released only: $INFO[Window(Home).Property(Refine.Released)]</label>
                     <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.released)</onclick>
                 </control>
+                <control type="button" id="9116">
+                    <include>SideBladeMenuButton</include>
+                    <label>Released within: $INFO[Window(Home).Property(Refine.ReleaseWindow)]</label>
+                    <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.release_window)</onclick>
+                </control>
                 <control type="button" id="9105">
                     <include>SideBladeMenuButton</include>
                     <label>Minimum rating: $INFO[Window(Home).Property(Refine.Rating)]</label>

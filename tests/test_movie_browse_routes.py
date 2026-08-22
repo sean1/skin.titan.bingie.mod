@@ -1,6 +1,5 @@
 import types
 import unittest
-from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -90,16 +89,6 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		url = self.tmdb.tmdb_movies_language('ko', 1)['url']
 		self.assertIn('with_original_language=ko', url)
 		self.assertIn('sort_by=popularity.desc', url)
-
-	def test_new_series_feed_uses_first_air_date_rolling_window(self):
-		today = date.today()
-		start_date = today - timedelta(days=90)
-		url = self.tmdb.tmdb_tv_new_series(2)['url']
-		self.assertIn('first_air_date.gte=%s' % start_date.isoformat(), url)
-		self.assertIn('first_air_date.lte=%s' % today.isoformat(), url)
-		self.assertIn('include_null_first_air_dates=false', url)
-		self.assertIn('sort_by=first_air_date.desc', url)
-		self.assertIn('page=2', url)
 
 	def test_tv_decade_and_language_feeds_use_tv_filters(self):
 		decade_url = self.tmdb.tmdb_tv_decade('2000', 1)['url']

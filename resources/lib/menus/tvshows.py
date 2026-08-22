@@ -168,7 +168,7 @@ class TVShows:
 class Menu(TVShows):
 	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'dropped_tvshows': ('caches.dropped_cache', 'get_dropped')}
 	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tv_decade': 'decade', 'tmdb_tv_language': 'language'}
-	tmdb_main = ('tmdb_tv_trending_day', 'tmdb_tv_trending', 'tmdb_tv_popular', 'tmdb_tv_new_series', 'tmdb_tv_airing_today', 'tmdb_tv_on_the_air', 'tmdb_tv_top_rated')
+	tmdb_main = ('tmdb_tv_trending_day', 'tmdb_tv_trending', 'tmdb_tv_popular', 'tmdb_tv_airing_today', 'tmdb_tv_on_the_air', 'tmdb_tv_top_rated')
 	similar = ('tmdb_tv_similar', 'tmdb_tv_recommendations', 'tmdb_tv_more_like_this')
 	personalized = ('tmdb_tv_because_you_watched',)
 

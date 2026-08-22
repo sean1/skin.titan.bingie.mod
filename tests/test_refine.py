@@ -1,6 +1,7 @@
 import json
 import types
 import unittest
+from datetime import date
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse, urlencode
 from unittest.mock import Mock, patch
@@ -270,9 +271,10 @@ class RefineTests(unittest.TestCase):
 
 	def test_all_presets_apply_their_recipes_and_keep_unrelated_filters(self):
 		cases = {
-			'Crowd Favorites': ('popularity', '7.0', '1000', '', ''),
-			'New & Noteworthy': ('primary_release_date', '6.5', '50', '', 'true'),
-			'Hidden Gems': ('vote_average', '7.0', '50', '500', '')
+			'Crowd Favorites': ('popularity', '7.0', '1000', '', '', ''),
+			'New & Noteworthy': ('primary_release_date', '6.5', '50', '', 'true', ''),
+			'New Releases': ('primary_release_date', '', '1', '', '', '90'),
+			'Hidden Gems': ('vote_average', '7.0', '50', '500', '', '')
 		}
 		for name, expected in cases.items():
 			with self.subTest(name=name):
@@ -280,8 +282,8 @@ class RefineTests(unittest.TestCase):
 				menu.draft.update({'language': 'fr', 'language_label': 'French', 'year_start': '2020', 'genres': '28', 'genres_label': 'Action', 'mpaa': 'R'})
 				menu._select = Mock(return_value=(name, name))
 				values = menu.preset()
-				self.assertEqual((menu.draft['sort'], menu.draft['rating'], menu.draft['votes'], menu.draft['max_votes'], menu.draft['released_only']), expected)
-				self.assertEqual((menu.draft['language'], menu.draft['year_start'], menu.draft['genres'], menu.draft['mpaa']), ('fr', '2020', '28', 'R'))
+				self.assertEqual((menu.draft['sort'], menu.draft['rating'], menu.draft['votes'], menu.draft['max_votes'], menu.draft['released_only'], menu.draft['release_window']), expected)
+				self.assertEqual((menu.draft['language'], menu.draft['year_start'], menu.draft['genres'], menu.draft['mpaa']), ('fr', '' if name == 'New Releases' else '2020', '28', 'R'))
 				self.assertEqual(values['Preset'], name)
 
 	def test_family_night_sets_media_specific_dependencies_and_switching_clears_them(self):
@@ -321,6 +323,55 @@ class RefineTests(unittest.TestCase):
 				command = unquote(menu.apply())
 				self.assertIn('vote_count.lte=500', command)
 				self.assertIn('%s.lte=2026-08-22' % date_key, command)
+
+	def test_new_releases_uses_rolling_90_day_window_for_movies_and_tv(self):
+		class FixedDate(date):
+			@classmethod
+			def today(cls): return cls(2026, 8, 22)
+
+		for mediatype, date_key, sort in (('movie', 'primary_release_date', 'primary_release_date'), ('tvshow', 'first_air_date', 'first_air_date')):
+			with self.subTest(mediatype=mediatype), patch.object(self.refine, 'date', FixedDate):
+				menu = self.refine.Refine({'mediatype': mediatype})
+				menu.draft.update({'genres': '28', 'genres_label': 'Action', 'language': 'fr', 'language_label': 'French'})
+				menu._select = Mock(return_value=('New Releases', 'New Releases'))
+				values = menu.preset()
+				command = unquote(menu.apply())
+				self.assertEqual((menu.draft['sort'], menu.draft['votes'], menu.draft['release_window']), (sort, '1', '90'))
+				self.assertEqual((menu.draft['genres'], menu.draft['language']), ('28', 'fr'))
+				self.assertEqual(values['Preset'], 'New Releases')
+				self.assertIn('%s.gte=2026-05-24' % date_key, command)
+				self.assertIn('%s.lte=2026-08-22' % date_key, command)
+				self.assertIn('vote_count.gte=1', command)
+				self.assertIn('sort_by=%s.desc' % sort, command)
+
+	def test_release_window_is_selectable_counted_and_changes_preset_label(self):
+		menu = self.refine.Refine({'mediatype': 'tvshow'})
+		menu.draft.update({'year_start': '2020', 'year_end': '2025'})
+		menu._select = Mock(return_value=('New Releases', 'New Releases'))
+		self.assertEqual(menu.preset()['Preset'], 'New Releases')
+		self.assertEqual((menu.draft['year_start'], menu.draft['year_end']), ('', ''))
+		self.assertEqual(menu._publish()['ReleaseWindow'], 'Last 90 days')
+
+		menu._select = Mock(return_value=('Last 30 days', '30'))
+		values = menu.release_window()
+		self.assertEqual((values['ReleaseWindow'], values['Preset']), ('Last 30 days', 'Custom'))
+		self.assertEqual(values['Count'], '3')
+		menu._select = Mock(return_value=('Last 90 days', '90'))
+		self.assertEqual(menu.release_window()['Preset'], 'New Releases')
+
+		menu.clear()
+		self.assertEqual((menu.draft['release_window'], self.refine._properties['Refine.ReleaseWindow']), ('', 'Any'))
+
+	def test_absolute_year_and_release_window_are_mutually_exclusive(self):
+		menu = self.refine.Refine({'mediatype': 'movie'})
+		menu.draft.update({'year_start': '2020', 'year_end': '2025'})
+		menu._select = Mock(return_value=('Last 90 days', '90'))
+		menu.release_window()
+		self.assertEqual((menu.draft['year_start'], menu.draft['year_end'], menu.draft['release_window']), ('', '', '90'))
+
+		self.refine.kodi_utils.dialog.numeric.side_effect = ('2024', '2026')
+		menu.year()
+		self.assertEqual((menu.draft['year_start'], menu.draft['year_end'], menu.draft['release_window']), ('2024', '2026', ''))
 
 	def test_family_movie_query_uses_multiple_certifications(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})

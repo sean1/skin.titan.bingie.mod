@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 
 from indexers import tmdb_api
 from modules import kodi_utils, meta_lists
@@ -10,14 +10,14 @@ STATE_PROPERTY = 'Bingie.Refine.Draft.%s'
 APPLIED_STATE_PROPERTY = 'Bingie.Refine.Applied.%s'
 DEFAULT_DRAFT = {
 	'preset_origin': 'None', 'sort': 'popularity', 'sort_label': 'Popularity', 'order': 'desc', 'order_label': 'Descending',
-	'genres': '', 'genres_label': '', 'year_start': '', 'year_end': '', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'language': '', 'language_label': '', 'mpaa': '',
+	'genres': '', 'genres_label': '', 'year_start': '', 'year_end': '', 'release_window': '', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'language': '', 'language_label': '', 'mpaa': '',
 	'network': '', 'network_label': '', 'theme': '', 'theme_label': ''
 }
 SORT_OPTIONS = {
 	'movie': (('Popularity', 'popularity'), ('Release date', 'primary_release_date'), ('Revenue', 'revenue'), ('Title', 'original_title'), ('Rating', 'vote_average')),
 	'tvshow': (('Popularity', 'popularity'), ('First air date', 'first_air_date'), ('Title', 'original_name'), ('Rating', 'vote_average'))
 }
-DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Theme', 'Year', 'Rating', 'Votes', 'MaxVotes', 'Released', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
+DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Theme', 'Year', 'ReleaseWindow', 'Rating', 'Votes', 'MaxVotes', 'Released', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
 THEME_OPTIONS = (
 	('Any', ''), ('Time Travel | Time Loop', '4379|10854'), ('Post-Apocalyptic Future | End of the World | Apocalypse | Climate Apocalypse | Robot Apocalypse', '4458|10150|12332|355070|298669'),
 	('Survival', '10349'), ('Zombie | Zombie Apocalypse', '12377|186565'), ('Space Exploration | Space Travel | Spaceship | Spacecraft', '191132|3801|252937|1612'),
@@ -28,14 +28,15 @@ THEME_OPTIONS = (
 	('Conspiracy', '10410'), ('Dystopia | Cyberpunk', '4565|12190'), ('Whodunit', '12570'), ('Soldier | Military | Army | Special Forces', '13065|162365|6092|15218'),
 	('Dark Comedy | Satire | Parody', '10123|8201|9755'), ('Workplace Comedy | Workplace Romance | Office Romance', '210605|212796|182325')
 )
-PRESET_FIELDS = ('sort', 'order', 'rating', 'votes', 'max_votes', 'released_only')
+PRESET_FIELDS = ('sort', 'order', 'rating', 'votes', 'max_votes', 'released_only', 'release_window')
 PRESET_RECIPES = {
-	'None': {'sort': 'popularity', 'order': 'desc', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'genres': '', 'mpaa': ''},
-	'Top Rated': {'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '500', 'max_votes': '', 'released_only': '', 'genres': '', 'mpaa': ''},
-	'Crowd Favorites': {'sort': 'popularity', 'order': 'desc', 'rating': '7.0', 'votes': '1000', 'max_votes': '', 'released_only': '', 'genres': '', 'mpaa': ''},
-	'New & Noteworthy': {'sort': 'release_date', 'order': 'desc', 'rating': '6.5', 'votes': '50', 'max_votes': '', 'released_only': 'true', 'genres': '', 'mpaa': ''},
-	'Hidden Gems': {'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '50', 'max_votes': '500', 'released_only': '', 'genres': '', 'mpaa': ''},
-	'Family Night': {'sort': 'popularity', 'order': 'desc', 'rating': '6.5', 'votes': '100', 'max_votes': '', 'released_only': '', 'genres': '10751', 'mpaa': 'G|PG'}
+	'None': {'sort': 'popularity', 'order': 'desc', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'release_window': '', 'genres': '', 'mpaa': ''},
+	'Top Rated': {'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '500', 'max_votes': '', 'released_only': '', 'release_window': '', 'genres': '', 'mpaa': ''},
+	'Crowd Favorites': {'sort': 'popularity', 'order': 'desc', 'rating': '7.0', 'votes': '1000', 'max_votes': '', 'released_only': '', 'release_window': '', 'genres': '', 'mpaa': ''},
+	'New & Noteworthy': {'sort': 'release_date', 'order': 'desc', 'rating': '6.5', 'votes': '50', 'max_votes': '', 'released_only': 'true', 'release_window': '', 'genres': '', 'mpaa': ''},
+	'New Releases': {'sort': 'release_date', 'order': 'desc', 'rating': '', 'votes': '1', 'max_votes': '', 'released_only': '', 'release_window': '90', 'genres': '', 'mpaa': ''},
+	'Hidden Gems': {'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '50', 'max_votes': '500', 'released_only': '', 'release_window': '', 'genres': '', 'mpaa': ''},
+	'Family Night': {'sort': 'popularity', 'order': 'desc', 'rating': '6.5', 'votes': '100', 'max_votes': '', 'released_only': '', 'release_window': '', 'genres': '10751', 'mpaa': 'G|PG'}
 }
 
 
@@ -60,6 +61,8 @@ class Refine:
 			recipe['mpaa'] = ''
 		elif recipe['sort'] == 'release_date': recipe['sort'] = 'primary_release_date'
 		self.draft.update({key: recipe[key] for key in PRESET_FIELDS})
+		if recipe['release_window']:
+			self.draft['year_start'], self.draft['year_end'] = '', ''
 		if name in ('None', 'Family Night') or previous == 'Family Night':
 			self.draft['genres'], self.draft['genres_label'] = recipe['genres'], 'Family' if recipe['genres'] else ''
 			self.draft['mpaa'] = recipe['mpaa']
@@ -113,6 +116,14 @@ class Refine:
 		if end and (not end.isdigit() or len(end) != 4): return kodi_utils.notification('Enter a four-digit year')
 		if start and end and int(start) > int(end): return kodi_utils.notification('From year must not be later than to year')
 		self.draft['year_start'], self.draft['year_end'] = start, end
+		if start or end: self.draft['release_window'] = ''
+		return self._save()
+
+	def release_window(self):
+		choice = self._select('Release window', (('Any', ''), ('Last 30 days', '30'), ('Last 90 days', '90'), ('Last 180 days', '180')))
+		if choice is None: return
+		self.draft['release_window'] = choice[1]
+		if choice[1]: self.draft['year_start'], self.draft['year_end'] = '', ''
 		return self._save()
 
 	def rating(self):
@@ -186,10 +197,13 @@ class Refine:
 		date_key = 'primary_release_date' if self.mediatype == 'movie' else 'first_air_date'
 		if self.draft['year_start']: query += '&%s.gte=%s-01-01' % (date_key, self.draft['year_start'])
 		if self.draft['year_end']: query += '&%s.lte=%s-12-31' % (date_key, self.draft['year_end'])
+		if self.draft['release_window']:
+			today = date.today()
+			query += '&%s.gte=%s&%s.lte=%s' % (date_key, (today - timedelta(days=int(self.draft['release_window']))).isoformat(), date_key, today.isoformat())
 		if self.draft['rating']: query += '&vote_average.gte=%s' % self.draft['rating']
 		if self.draft['votes']: query += '&vote_count.gte=%s' % self.draft['votes']
 		if self.draft['max_votes']: query += '&vote_count.lte=%s' % self.draft['max_votes']
-		if self.draft['released_only']: query += '&%s.lte=%s' % (date_key, date.today().isoformat())
+		if self.draft['released_only'] and not self.draft['release_window']: query += '&%s.lte=%s' % (date_key, date.today().isoformat())
 		if self.draft['language']: query += '&with_original_language=%s' % self.draft['language']
 		if self.mediatype == 'movie' and self.draft['mpaa']: query += '&certification_country=US&certification=%s' % self.draft['mpaa']
 		if self.mediatype == 'tvshow' and self.draft['network']: query += '&with_networks=%s' % self.draft['network']
@@ -206,6 +220,7 @@ class Refine:
 		value = str(value).strip()
 		if value and (not value.isdigit() or len(value) != 4): return kodi_utils.notification('Enter a four-digit year')
 		self.draft[key] = value
+		if value: self.draft['release_window'] = ''
 		return self._save()
 
 	def _select(self, heading, options):
@@ -242,7 +257,7 @@ class Refine:
 	def _publish(self):
 		values = {
 			'Preset': self._preset_label(), 'Sort': self.draft['sort_label'], 'Order': self.draft['order_label'], 'Genres': self.draft['genres_label'] or 'Any', 'Theme': self.draft['theme_label'] or 'Any',
-			'Year': self._year_label(), 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any', 'MaxVotes': self.draft['max_votes'] or 'Any', 'Released': 'Yes' if self.draft['released_only'] else 'No',
+			'Year': self._year_label(), 'ReleaseWindow': 'Last %s days' % self.draft['release_window'] if self.draft['release_window'] else 'Any', 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any', 'MaxVotes': self.draft['max_votes'] or 'Any', 'Released': 'Yes' if self.draft['released_only'] else 'No',
 			'Language': self.draft['language_label'] or 'Any', 'MPAA': self.draft['mpaa'].replace('|', ', ') if self.mediatype == 'movie' and self.draft['mpaa'] else 'Any',
 			'Network': self.draft['network_label'] if self.mediatype == 'tvshow' and self.draft['network_label'] else 'Any',
 			'Count': str(self._active_count()), 'Eligible': 'true', 'Type': self.mediatype
@@ -275,7 +290,7 @@ class Refine:
 		return 'Any'
 
 	def _active_count(self):
-		count = sum(bool(self.draft[key]) for key in ('genres', 'theme', 'rating', 'votes', 'max_votes', 'released_only', 'language'))
+		count = sum(bool(self.draft[key]) for key in ('genres', 'theme', 'release_window', 'rating', 'votes', 'max_votes', 'released_only', 'language'))
 		if self.mediatype == 'movie' and self.draft['mpaa']: count += 1
 		if self.mediatype == 'tvshow' and self.draft['network']: count += 1
 		if self.draft['year_start'] or self.draft['year_end']: count += 1

@@ -66,7 +66,8 @@
                 <itemgap>3</itemgap>
                 <orientation>vertical</orientation>
                 <onleft>523</onleft>
-                <onright>523</onright>
+                <onright condition="String.IsEqual(Window(Home).Property(Refine.Changed),true)">RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.apply)</onright>
+                <onright condition="!String.IsEqual(Window(Home).Property(Refine.Changed),true)">523</onright>
                 <onback>523</onback>
                 <onup>9000</onup>
                 <ondown>9000</ondown>

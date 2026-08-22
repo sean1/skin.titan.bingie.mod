@@ -124,6 +124,13 @@ class MainMenuTests(unittest.TestCase):
 		self.assertEqual(mpaa_button.findtext('visible'), 'Container.Content(movies)')
 		self.assertEqual(buttons[-2].findtext('label'), 'SHOW RESULTS')
 		self.assertEqual(buttons[-1].findtext('label'), 'CLEAR ALL')
+		self.assertEqual(refine_menu.findtext('onleft'), '523')
+		self.assertEqual(refine_menu.findtext('onback'), '523')
+		right_actions = refine_menu.findall('onright')
+		self.assertEqual([(action.get('condition'), action.text) for action in right_actions], [
+			('String.IsEqual(Window(Home).Property(Refine.Changed),true)', 'RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.apply)'),
+			('!String.IsEqual(Window(Home).Property(Refine.Changed),true)', '523'),
+		])
 
 		view_root = ET.parse(ROOT / 'xml' / 'View_523_BingieMainLandscape.xml').getroot()
 		all_left_actions = view_root.findall('.//onleft')

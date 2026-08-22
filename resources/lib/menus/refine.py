@@ -17,7 +17,7 @@ SORT_OPTIONS = {
 	'movie': (('Popularity', 'popularity'), ('Release date', 'primary_release_date'), ('Revenue', 'revenue'), ('Title', 'original_title'), ('Rating', 'vote_average')),
 	'tvshow': (('Popularity', 'popularity'), ('First air date', 'first_air_date'), ('Title', 'original_name'), ('Rating', 'vote_average'))
 }
-DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Theme', 'Year', 'ReleaseWindow', 'Rating', 'Votes', 'MaxVotes', 'Released', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
+DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Theme', 'Year', 'ReleaseWindow', 'Rating', 'Votes', 'MaxVotes', 'Released', 'Language', 'MPAA', 'Network', 'Count', 'Changed', 'Eligible', 'Type')
 THEME_OPTIONS = (
 	('Any', ''), ('Time Travel | Time Loop', '4379|10854'), ('Post-Apocalyptic Future | End of the World | Apocalypse | Climate Apocalypse | Robot Apocalypse', '4458|10150|12332|355070|298669'),
 	('Survival', '10349'), ('Zombie | Zombie Apocalypse', '12377|186565'), ('Space Exploration | Space Travel | Spaceship | Spacecraft', '191132|3801|252937|1612'),
@@ -189,6 +189,7 @@ class Refine:
 	def apply(self):
 		self._save()
 		kodi_utils.set_property(APPLIED_STATE_PROPERTY % self.mediatype, json.dumps(self.draft, sort_keys=True))
+		self._publish()
 		url_mediatype = 'movie' if self.mediatype == 'movie' else 'tv'
 		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
 		query += '&sort_by=%s.%s' % (self.draft['sort'], self.draft['order'])
@@ -260,7 +261,7 @@ class Refine:
 			'Year': self._year_label(), 'ReleaseWindow': 'Last %s days' % self.draft['release_window'] if self.draft['release_window'] else 'Any', 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any', 'MaxVotes': self.draft['max_votes'] or 'Any', 'Released': 'Yes' if self.draft['released_only'] else 'No',
 			'Language': self.draft['language_label'] or 'Any', 'MPAA': self.draft['mpaa'].replace('|', ', ') if self.mediatype == 'movie' and self.draft['mpaa'] else 'Any',
 			'Network': self.draft['network_label'] if self.mediatype == 'tvshow' and self.draft['network_label'] else 'Any',
-			'Count': str(self._active_count()), 'Eligible': 'true', 'Type': self.mediatype
+			'Count': str(self._active_count()), 'Changed': 'true' if self._is_changed() else 'false', 'Eligible': 'true', 'Type': self.mediatype
 		}
 		for key in DISPLAY_PROPERTIES: kodi_utils.set_property(PROPERTY_PREFIX + key, values[key])
 		return values
@@ -296,3 +297,6 @@ class Refine:
 		if self.draft['year_start'] or self.draft['year_end']: count += 1
 		if self.draft['sort'] != DEFAULT_DRAFT['sort'] or self.draft['order'] != DEFAULT_DRAFT['order']: count += 1
 		return count
+
+	def _is_changed(self):
+		return self.draft != self._load_state(APPLIED_STATE_PROPERTY)

@@ -54,6 +54,33 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(values['Count'], '0')
 		self.assertEqual(values['Genres'], 'Any')
 		self.assertEqual(values['Preset'], 'None')
+		self.assertEqual(values['Changed'], 'false')
+
+	def test_changed_tracks_staged_edits_clear_and_apply(self):
+		menu = self.refine.Refine({'mediatype': 'movie'})
+		menu.initialize()
+		menu._select = Mock(return_value=('7.0', '7.0'))
+
+		self.assertEqual(menu.rating()['Changed'], 'true')
+		self.assertEqual(self.refine._properties['Refine.Changed'], 'true')
+		menu.clear()
+		self.assertEqual(self.refine._properties['Refine.Changed'], 'false')
+
+		menu._select = Mock(return_value=('7.0', '7.0'))
+		menu.rating()
+		menu.apply()
+		self.assertEqual(self.refine._properties['Refine.Changed'], 'false')
+
+	def test_changed_compares_against_applied_state_for_each_media_type(self):
+		movie = self.refine.Refine({'mediatype': 'movie'})
+		movie.draft['rating'] = '8.0'
+		movie.apply()
+
+		tv = self.refine.Refine({'mediatype': 'tvshow'})
+		tv.initialize()
+		tv.draft['rating'] = '8.0'
+		self.assertEqual(tv._save()['Changed'], 'true')
+		self.assertEqual(movie._publish()['Changed'], 'false')
 
 	def test_top_rated_preset_updates_owned_fields_and_preserves_other_filters(self):
 		menu = self.refine.Refine({'mediatype': 'tvshow'})

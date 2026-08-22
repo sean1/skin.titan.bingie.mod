@@ -66,6 +66,10 @@ class Subtitles(kodi_utils.xbmc_player):
 			_failure('search', 'unexpected', type(error).__name__)
 			return []
 
+	def subtitle_diagnostics(self):
+		manager = self.provider_manager
+		return manager.diagnostics() if manager and hasattr(manager, 'diagnostics') else {}
+
 	def download_candidate(self, candidate):
 		try: return self._manager().download(candidate)
 		except Exception as error:

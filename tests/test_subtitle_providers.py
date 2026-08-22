@@ -78,6 +78,12 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual(config, {})
 		self.assertNotIn(secret, repr(self.providers.kodi_utils.logger.call_args_list))
 
+	def test_manager_reports_safe_config_category(self):
+		with patch.object(self.providers, '_load_provider_config', return_value=({}, 'unreadable')):
+			manager = self.providers.ProviderManager({})
+
+		self.assertEqual(manager.diagnostics(), {'config': 'unreadable', 'providers': ()})
+
 	def test_rank_preserves_absolute_english_priority(self):
 		media = {'release_name': 'Movie.2024.1080p.WEB-DL-GROUP', 'season': None, 'episode': None}
 		candidates = [
@@ -174,6 +180,7 @@ class SubtitleProviderTests(unittest.TestCase):
 
 		self.assertEqual([item['id'] for item in results], ['good'])
 		self.assertNotIn('secret request details', repr(self.providers.kodi_utils.logger.call_args_list))
+		self.assertEqual(manager.diagnostics(), {'config': '', 'providers': ('subsource',)})
 
 	def test_opensubtitles_normalizes_search_results_and_uses_episode_scope(self):
 		media = {'imdb_id': 'tt123', 'season': 1, 'episode': 2, 'release_name': 'Show.S01E02.WEB-DL'}

@@ -10,6 +10,17 @@ from modules import kodi_utils
 
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
 provider_names = {'opensubtitles': 'OpenSubtitles', 'subdl': 'SubDL', 'subsource': 'SubSource'}
+config_issue_names = {
+	'missing': 'provider settings are missing', 'insecure_file': 'provider settings have unsafe permissions', 'unreadable': 'provider settings cannot be read',
+	'invalid_json': 'provider settings contain invalid JSON', 'invalid_schema': 'provider settings are invalid'
+}
+
+def _diagnostic_message(diagnostics):
+	if not isinstance(diagnostics, dict): return ''
+	category = diagnostics.get('config')
+	if category in config_issue_names: return 'Subtitle search unavailable: %s.' % config_issue_names[category]
+	providers = [provider_names[name] for name in diagnostics.get('providers', ()) if name in provider_names]
+	return 'Subtitle provider failed: %s.' % ', '.join(providers) if providers else ''
 
 def _release_label(subtitle):
 	values = [subtitle.get('release')]
@@ -74,6 +85,11 @@ def _search(handle):
 	kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=search outcome=started')
 	subtitles = context.get('subtitles') or client.subtitles_search()
 	client._ensure_current_playback()
+	diagnostics = client.subtitle_diagnostics() if hasattr(client, 'subtitle_diagnostics') else {}
+	message = _diagnostic_message(diagnostics)
+	if message:
+		if diagnostics.get('config') in config_issue_names: kodi_utils.ok_dialog('Subtitle search', message)
+		else: kodi_utils.notification(message)
 	kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=search outcome=complete count=%s' % len(subtitles))
 	client._set_context(subtitles)
 	for language in subtitle_languages:

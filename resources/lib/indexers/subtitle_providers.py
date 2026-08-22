@@ -62,26 +62,26 @@ def _read_config(path):
 	with kodi_utils.open_file(path) as config_file: return config_file.readBytes().decode('utf-8-sig')
 
 
-def load_provider_config(path=None):
+def _load_provider_config(path=None):
 	path = path or '%s%s' % (kodi_utils.addon_path, CONFIG_PATH)
 	try:
 		if not kodi_utils.path_exists(path):
 			_log('config', 'disabled', category='missing')
-			return {}
+			return {}, 'missing'
 		if os.name == 'posix':
 			if os.path.islink(path) or not os.path.isfile(path) or stat.S_IMODE(os.stat(path).st_mode) != 0o600:
 				_log('config', 'disabled', category='insecure_file')
-				return {}
+				return {}, 'insecure_file'
 		payload = json.loads(_read_config(path))
 	except (OSError, UnicodeError):
 		_log('config', 'disabled', category='unreadable')
-		return {}
+		return {}, 'unreadable'
 	except (TypeError, ValueError):
 		_log('config', 'disabled', category='invalid_json')
-		return {}
+		return {}, 'invalid_json'
 	if not isinstance(payload, dict):
 		_log('config', 'disabled', category='invalid_schema')
-		return {}
+		return {}, 'invalid_schema'
 	config = {}
 	for provider in ('opensubtitles', 'subdl', 'subsource'):
 		entry = payload.get(provider)
@@ -97,7 +97,14 @@ def load_provider_config(path=None):
 			if all(isinstance(value, str) and value.strip() and not value.startswith('YOUR_') for value in (username, password)):
 				clean.update({'username': username.strip(), 'password': password})
 		config[provider] = clean
-	return config
+	if not config:
+		_log('config', 'disabled', category='invalid_schema')
+		return {}, 'invalid_schema'
+	return config, ''
+
+
+def load_provider_config(path=None):
+	return _load_provider_config(path)[0]
 
 
 def _cancelled(cancelled):
@@ -161,12 +168,13 @@ class Provider:
 	name = ''
 
 	def __init__(self, config, media, cancelled=None):
-		self.config, self.media, self.cancelled = config, media, cancelled
+		self.config, self.media, self.cancelled, self.failed = config, media, cancelled, False
 
 	def request_json(self, method, url, operation, **kwargs):
 		try: return _json_response(_request(method, url, self.name, self.cancelled, **kwargs), self.name, operation)
 		except ProviderCancelled: raise
 		except ProviderError as error:
+			self.failed = True
 			_log(operation, 'failed', self.name, str(error))
 			raise
 
@@ -546,7 +554,8 @@ def public_candidate(candidate):
 class ProviderManager:
 	def __init__(self, media, cancelled=None, config=None, provider_classes=None):
 		self.media, self.cancelled = media, cancelled
-		config = load_provider_config() if config is None else config
+		if config is None: config, self.config_error = _load_provider_config()
+		else: self.config_error = ''
 		classes = PROVIDER_CLASSES if provider_classes is None else provider_classes
 		self.providers = {name: classes[name](provider_config, media, cancelled) for name, provider_config in config.items() if name in classes}
 		self.failed_providers = []
@@ -559,7 +568,9 @@ class ProviderManager:
 			futures = {executor.submit(provider.search): name for name, provider in self.providers.items()}
 			for future in as_completed(futures):
 				name = futures[future]
-				try: results.extend(future.result() or ())
+				try:
+					results.extend(future.result() or ())
+					if getattr(self.providers[name], 'failed', False): self.failed_providers.append(name)
 				except ProviderCancelled: raise
 				except Exception as error:
 					self.failed_providers.append(name)
@@ -567,6 +578,9 @@ class ProviderManager:
 		finally: executor.shutdown(wait=False, cancel_futures=True)
 		_cancelled(self.cancelled)
 		return rank_candidates(results, self.media)
+
+	def diagnostics(self):
+		return {'config': self.config_error, 'providers': tuple(sorted(set(self.failed_providers)))}
 
 	def download(self, candidate):
 		provider = self.providers.get(candidate.get('provider'))

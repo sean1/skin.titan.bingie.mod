@@ -17,6 +17,7 @@ def load_subtitle_service():
 	kodi_utils.get_property = Mock(return_value='')
 	kodi_utils.get_infolabel = Mock(return_value='')
 	kodi_utils.notification = Mock()
+	kodi_utils.ok_dialog = Mock()
 	kodi_utils.logger = Mock()
 	kodi_utils.make_listitem = Mock()
 	kodi_utils.build_url = Mock()
@@ -123,6 +124,27 @@ class SubtitleServiceTests(unittest.TestCase):
 
 		self.client._set_context.assert_called_once_with([candidate])
 		listitem.setLabel2.assert_called_once_with('SubDL #1 · Release.Name')
+
+	def test_manual_search_reports_safe_config_issue(self):
+		self.client.subtitles_search.return_value = []
+		self.client.subtitle_diagnostics.return_value = {'config': 'insecure_file', 'providers': (), 'path': '/private/path', 'detail': 'secret'}
+
+		self.service._search(7)
+
+		self.service.kodi_utils.ok_dialog.assert_called_once_with('Subtitle search', 'Subtitle search unavailable: provider settings have unsafe permissions.')
+		self.assertNotIn('private', self.service.kodi_utils.ok_dialog.call_args.args[1])
+		self.assertNotIn('secret', self.service.kodi_utils.ok_dialog.call_args.args[1])
+		self.service.kodi_utils.notification.assert_not_called()
+
+	def test_manual_search_reports_failed_provider_names_and_keeps_results(self):
+		candidate = {'provider': 'subdl', 'id': 'good', 'lang': 'eng'}
+		self.client.subtitles_search.return_value = [candidate]
+		self.client.subtitle_diagnostics.return_value = {'config': '', 'providers': ('subsource', 'unknown')}
+
+		self.service._search(7)
+
+		self.service.kodi_utils.notification.assert_called_once_with('Subtitle provider failed: SubSource.')
+		self.service.kodi_utils.add_item.assert_called_once()
 
 	def test_release_label_prefers_valid_projected_and_raw_values(self):
 		cases = (

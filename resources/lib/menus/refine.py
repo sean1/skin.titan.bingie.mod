@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from indexers import tmdb_api
 from modules import kodi_utils, meta_lists
@@ -8,19 +9,23 @@ PROPERTY_PREFIX = 'Refine.'
 STATE_PROPERTY = 'Bingie.Refine.Draft.%s'
 APPLIED_STATE_PROPERTY = 'Bingie.Refine.Applied.%s'
 DEFAULT_DRAFT = {
-	'sort': 'popularity', 'sort_label': 'Popularity', 'order': 'desc', 'order_label': 'Descending',
-	'genres': '', 'genres_label': '', 'year_start': '', 'year_end': '', 'rating': '', 'votes': '', 'language': '', 'language_label': '', 'mpaa': '',
+	'preset_origin': 'None', 'sort': 'popularity', 'sort_label': 'Popularity', 'order': 'desc', 'order_label': 'Descending',
+	'genres': '', 'genres_label': '', 'year_start': '', 'year_end': '', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'language': '', 'language_label': '', 'mpaa': '',
 	'network': '', 'network_label': ''
 }
 SORT_OPTIONS = {
 	'movie': (('Popularity', 'popularity'), ('Release date', 'primary_release_date'), ('Revenue', 'revenue'), ('Title', 'original_title'), ('Rating', 'vote_average')),
 	'tvshow': (('Popularity', 'popularity'), ('First air date', 'first_air_date'), ('Title', 'original_name'), ('Rating', 'vote_average'))
 }
-DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Year', 'Rating', 'Votes', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
-PRESET_FIELDS = ('sort', 'order', 'rating', 'votes')
+DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Year', 'Rating', 'Votes', 'MaxVotes', 'Released', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
+PRESET_FIELDS = ('sort', 'order', 'rating', 'votes', 'max_votes', 'released_only')
 PRESET_RECIPES = {
-	'None': ('popularity', 'desc', '', ''),
-	'Top Rated': ('vote_average', 'desc', '7.0', '500')
+	'None': {'sort': 'popularity', 'order': 'desc', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'genres': '', 'mpaa': ''},
+	'Top Rated': {'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '500', 'max_votes': '', 'released_only': '', 'genres': '', 'mpaa': ''},
+	'Crowd Favorites': {'sort': 'popularity', 'order': 'desc', 'rating': '7.0', 'votes': '1000', 'max_votes': '', 'released_only': '', 'genres': '', 'mpaa': ''},
+	'New & Noteworthy': {'sort': 'release_date', 'order': 'desc', 'rating': '6.5', 'votes': '50', 'max_votes': '', 'released_only': 'true', 'genres': '', 'mpaa': ''},
+	'Hidden Gems': {'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '50', 'max_votes': '500', 'released_only': '', 'genres': '', 'mpaa': ''},
+	'Family Night': {'sort': 'popularity', 'order': 'desc', 'rating': '6.5', 'votes': '100', 'max_votes': '', 'released_only': '', 'genres': '10751', 'mpaa': 'G|PG'}
 }
 
 
@@ -37,7 +42,18 @@ class Refine:
 	def preset(self):
 		choice = self._select('Preset', tuple((name, name) for name in PRESET_RECIPES))
 		if choice is None: return
-		self.draft.update(zip(PRESET_FIELDS, PRESET_RECIPES[choice[1]]))
+		name = choice[1]
+		previous = self.draft['preset_origin']
+		recipe = dict(PRESET_RECIPES[choice[1]])
+		if self.mediatype == 'tvshow':
+			if recipe['sort'] == 'release_date': recipe['sort'] = 'first_air_date'
+			recipe['mpaa'] = ''
+		elif recipe['sort'] == 'release_date': recipe['sort'] = 'primary_release_date'
+		self.draft.update({key: recipe[key] for key in PRESET_FIELDS})
+		if name in ('None', 'Family Night') or previous == 'Family Night':
+			self.draft['genres'], self.draft['genres_label'] = recipe['genres'], 'Family' if recipe['genres'] else ''
+			self.draft['mpaa'] = recipe['mpaa']
+		self.draft['preset_origin'] = name
 		return self._save()
 
 	def sort(self):
@@ -58,7 +74,7 @@ class Refine:
 		options = [(key, str(value[0])) for key, value in sorted(genres.items())]
 		selected_ids = self.draft['genres'].split(',') if self.draft['genres'] else []
 		preselect = [index for index, item in enumerate(options) if item[1] in selected_ids]
-		choice = self._multiselect('Genres', options, preselect)
+		choice = self._multiselect('Genres', options, preselect, allow_empty=True)
 		if choice is None: return
 		self.draft['genres_label'] = ', '.join(item[0] for item in choice)
 		self.draft['genres'] = ','.join(item[1] for item in choice)
@@ -97,6 +113,19 @@ class Refine:
 		self.draft['votes'] = choice[1]
 		return self._save()
 
+	def max_votes(self):
+		values = ('', '50', '100', '250', '500', '1000')
+		choice = self._select('Maximum votes', [('Any' if not value else value, value) for value in values])
+		if choice is None: return
+		self.draft['max_votes'] = choice[1]
+		return self._save()
+
+	def released(self):
+		choice = self._select('Released titles only', (('No', ''), ('Yes', 'true')))
+		if choice is None: return
+		self.draft['released_only'] = choice[1]
+		return self._save()
+
 	def language(self):
 		options = [('Any', '')] + sorted(((name, value['iso']) for name, value in meta_lists.meta_languages.items()), key=lambda item: item[0])
 		choice = self._select('Original language', options)
@@ -108,10 +137,12 @@ class Refine:
 		if self.mediatype != 'movie':
 			self.draft['mpaa'] = ''
 			return self._save()
-		options = [('Any', '')] + [(value, value) for value in meta_lists.movie_certifications]
-		choice = self._select('MPAA rating', options)
+		options = [(value, value) for value in meta_lists.movie_certifications]
+		selected = self.draft['mpaa'].split('|') if self.draft['mpaa'] else []
+		preselect = [index for index, item in enumerate(options) if item[1] in selected]
+		choice = self._multiselect('MPAA ratings', options, preselect, allow_empty=True)
 		if choice is None: return
-		self.draft['mpaa'] = choice[1]
+		self.draft['mpaa'] = '|'.join(item[1] for item in choice)
 		return self._save()
 
 	def network(self):
@@ -140,6 +171,8 @@ class Refine:
 		if self.draft['year_end']: query += '&%s.lte=%s-12-31' % (date_key, self.draft['year_end'])
 		if self.draft['rating']: query += '&vote_average.gte=%s' % self.draft['rating']
 		if self.draft['votes']: query += '&vote_count.gte=%s' % self.draft['votes']
+		if self.draft['max_votes']: query += '&vote_count.lte=%s' % self.draft['max_votes']
+		if self.draft['released_only']: query += '&%s.lte=%s' % (date_key, date.today().isoformat())
 		if self.draft['language']: query += '&with_original_language=%s' % self.draft['language']
 		if self.mediatype == 'movie' and self.draft['mpaa']: query += '&certification_country=US&certification=%s' % self.draft['mpaa']
 		if self.mediatype == 'tvshow' and self.draft['network']: query += '&with_networks=%s' % self.draft['network']
@@ -164,9 +197,9 @@ class Refine:
 		if value is None: return None
 		return next(item for item in options if item[1] == value)
 
-	def _multiselect(self, heading, options, preselect):
+	def _multiselect(self, heading, options, preselect, allow_empty=False):
 		items = [{'line1': item[0], 'icon': kodi_utils.media_path('discover.png')} for item in options]
-		values = kodi_utils.select_dialog(options, items=json.dumps(items), heading=heading, multi_line='false', multi_choice='true', preselect=preselect)
+		values = kodi_utils.select_dialog(options, items=json.dumps(items), heading=heading, multi_line='false', multi_choice='true', preselect=preselect, allow_empty='true' if allow_empty else 'false')
 		return values
 
 	def _mediatype(self, value):
@@ -192,8 +225,8 @@ class Refine:
 	def _publish(self):
 		values = {
 			'Preset': self._preset_label(), 'Sort': self.draft['sort_label'], 'Order': self.draft['order_label'], 'Genres': self.draft['genres_label'] or 'Any',
-			'Year': self._year_label(), 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any',
-			'Language': self.draft['language_label'] or 'Any', 'MPAA': self.draft['mpaa'] if self.mediatype == 'movie' and self.draft['mpaa'] else 'Any',
+			'Year': self._year_label(), 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any', 'MaxVotes': self.draft['max_votes'] or 'Any', 'Released': 'Yes' if self.draft['released_only'] else 'No',
+			'Language': self.draft['language_label'] or 'Any', 'MPAA': self.draft['mpaa'].replace('|', ', ') if self.mediatype == 'movie' and self.draft['mpaa'] else 'Any',
 			'Network': self.draft['network_label'] if self.mediatype == 'tvshow' and self.draft['network_label'] else 'Any',
 			'Count': str(self._active_count()), 'Eligible': 'true', 'Type': self.mediatype
 		}
@@ -201,8 +234,17 @@ class Refine:
 		return values
 
 	def _preset_label(self):
-		values = tuple(self.draft[key] for key in PRESET_FIELDS)
-		return next((name for name, recipe in PRESET_RECIPES.items() if values == recipe), 'Custom')
+		values = {key: self.draft[key] for key in PRESET_FIELDS}
+		for name, source_recipe in PRESET_RECIPES.items():
+			recipe = dict(source_recipe)
+			if self.mediatype == 'tvshow':
+				if recipe['sort'] == 'release_date': recipe['sort'] = 'first_air_date'
+				recipe['mpaa'] = ''
+			elif recipe['sort'] == 'release_date': recipe['sort'] = 'primary_release_date'
+			if values != {key: recipe[key] for key in PRESET_FIELDS}: continue
+			if name == 'Family Night' and (self.draft['genres'] != recipe['genres'] or self.draft['mpaa'] != recipe['mpaa']): continue
+			return name
+		return 'Custom'
 
 	def _sync_owned_labels(self):
 		self.draft['sort_label'] = next((label for label, value in SORT_OPTIONS[self.mediatype] if value == self.draft['sort']), self.draft['sort_label'])
@@ -216,7 +258,7 @@ class Refine:
 		return 'Any'
 
 	def _active_count(self):
-		count = sum(bool(self.draft[key]) for key in ('genres', 'rating', 'votes', 'language'))
+		count = sum(bool(self.draft[key]) for key in ('genres', 'rating', 'votes', 'max_votes', 'released_only', 'language'))
 		if self.mediatype == 'movie' and self.draft['mpaa']: count += 1
 		if self.mediatype == 'tvshow' and self.draft['network']: count += 1
 		if self.draft['year_start'] or self.draft['year_end']: count += 1

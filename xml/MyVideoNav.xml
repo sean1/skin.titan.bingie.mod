@@ -95,6 +95,11 @@
                     <label>Year: $INFO[Window(Home).Property(Refine.Year)]</label>
                     <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.year)</onclick>
                 </control>
+                <control type="button" id="9113">
+                    <include>SideBladeMenuButton</include>
+                    <label>Released only: $INFO[Window(Home).Property(Refine.Released)]</label>
+                    <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.released)</onclick>
+                </control>
                 <control type="button" id="9105">
                     <include>SideBladeMenuButton</include>
                     <label>Minimum rating: $INFO[Window(Home).Property(Refine.Rating)]</label>
@@ -104,6 +109,11 @@
                     <include>SideBladeMenuButton</include>
                     <label>Minimum votes: $INFO[Window(Home).Property(Refine.Votes)]</label>
                     <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.votes)</onclick>
+                </control>
+                <control type="button" id="9114">
+                    <include>SideBladeMenuButton</include>
+                    <label>Maximum votes: $INFO[Window(Home).Property(Refine.MaxVotes)]</label>
+                    <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.max_votes)</onclick>
                 </control>
                 <control type="button" id="9107">
                     <include>SideBladeMenuButton</include>

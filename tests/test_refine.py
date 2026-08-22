@@ -3,7 +3,7 @@ import types
 import unittest
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse, urlencode
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from tests.module_isolation import load_module
 
@@ -74,9 +74,9 @@ class RefineTests(unittest.TestCase):
 		values = menu.preset()
 
 		self.assertEqual((menu.draft['sort'], menu.draft['sort_label'], menu.draft['order'], menu.draft['order_label'], menu.draft['rating'], menu.draft['votes']), ('popularity', 'Popularity', 'desc', 'Descending', '', ''))
-		self.assertEqual((menu.draft['genres'], menu.draft['mpaa']), ('28', 'PG-13'))
+		self.assertEqual((menu.draft['genres'], menu.draft['mpaa']), ('', ''))
 		self.assertEqual(values['Preset'], 'None')
-		self.assertEqual(values['Count'], '2')
+		self.assertEqual(values['Count'], '0')
 
 	def test_manual_preset_owned_changes_publish_custom_and_exact_recipe_recovers_label(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -118,18 +118,19 @@ class RefineTests(unittest.TestCase):
 
 	def test_movie_mpaa_choice_is_staged_published_and_counted(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu._select = Mock(return_value=('PG-13', 'PG-13'))
+		menu._multiselect = Mock(return_value=[('G', 'G'), ('PG', 'PG')])
 
 		menu.mpaa()
 
-		self.assertEqual(json.loads(self.refine._properties['Bingie.Refine.Draft.movie'])['mpaa'], 'PG-13')
-		self.assertEqual(self.refine._properties['Refine.MPAA'], 'PG-13')
+		self.assertEqual(json.loads(self.refine._properties['Bingie.Refine.Draft.movie'])['mpaa'], 'G|PG')
+		self.assertEqual(self.refine._properties['Refine.MPAA'], 'G, PG')
 		self.assertEqual(self.refine._properties['Refine.Count'], '1')
 
-		menu._select = Mock(return_value=('Any', ''))
+		menu._multiselect = Mock(return_value=[])
 		menu.mpaa()
 		self.assertEqual(self.refine._properties['Refine.MPAA'], 'Any')
 		self.assertEqual(self.refine._properties['Refine.Count'], '0')
+		self.assertTrue(menu._multiselect.call_args.kwargs['allow_empty'])
 
 	def test_genre_dialog_displays_names_and_stores_tmdb_ids(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -143,6 +144,7 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual([item['line1'] for item in items], ['Action', 'Comedy'])
 		self.assertEqual(menu.draft['genres'], '28,35')
 		self.assertEqual(self.refine._properties['Refine.Genres'], 'Action, Comedy')
+		self.assertEqual(self.refine.kodi_utils.select_dialog.call_args.kwargs['allow_empty'], 'true')
 
 	def test_show_results_encodes_all_filters_and_starts_a_fresh_movie_listing(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -231,6 +233,68 @@ class RefineTests(unittest.TestCase):
 
 		self.assertEqual(self.refine.Refine({'mediatype': 'movie'}).draft['rating'], '8.0')
 		self.assertEqual(self.refine.Refine({'mediatype': 'tvshow'}).draft['rating'], '')
+
+	def test_all_presets_apply_their_recipes_and_keep_unrelated_filters(self):
+		cases = {
+			'Crowd Favorites': ('popularity', '7.0', '1000', '', ''),
+			'New & Noteworthy': ('primary_release_date', '6.5', '50', '', 'true'),
+			'Hidden Gems': ('vote_average', '7.0', '50', '500', '')
+		}
+		for name, expected in cases.items():
+			with self.subTest(name=name):
+				menu = self.refine.Refine({'mediatype': 'movie'})
+				menu.draft.update({'language': 'fr', 'language_label': 'French', 'year_start': '2020', 'genres': '28', 'genres_label': 'Action', 'mpaa': 'R'})
+				menu._select = Mock(return_value=(name, name))
+				values = menu.preset()
+				self.assertEqual((menu.draft['sort'], menu.draft['rating'], menu.draft['votes'], menu.draft['max_votes'], menu.draft['released_only']), expected)
+				self.assertEqual((menu.draft['language'], menu.draft['year_start'], menu.draft['genres'], menu.draft['mpaa']), ('fr', '2020', '28', 'R'))
+				self.assertEqual(values['Preset'], name)
+
+	def test_family_night_sets_media_specific_dependencies_and_switching_clears_them(self):
+		movie = self.refine.Refine({'mediatype': 'movie'})
+		movie._select = Mock(return_value=('Family Night', 'Family Night'))
+		self.assertEqual(movie.preset()['Preset'], 'Family Night')
+		self.assertEqual((movie.draft['genres'], movie.draft['genres_label'], movie.draft['mpaa']), ('10751', 'Family', 'G|PG'))
+		movie._select = Mock(return_value=('Top Rated', 'Top Rated'))
+		movie.preset()
+		self.assertEqual((movie.draft['genres'], movie.draft['mpaa']), ('', ''))
+
+		tv = self.refine.Refine({'mediatype': 'tvshow'})
+		tv._select = Mock(return_value=('Family Night', 'Family Night'))
+		self.assertEqual(tv.preset()['Preset'], 'Family Night')
+		self.assertEqual((tv.draft['genres'], tv.draft['mpaa']), ('10751', ''))
+
+	def test_manual_dependent_changes_make_family_custom(self):
+		menu = self.refine.Refine({'mediatype': 'movie'})
+		menu._select = Mock(return_value=('Family Night', 'Family Night'))
+		menu.preset()
+		menu._multiselect = Mock(return_value=[('PG', 'PG')])
+		self.assertEqual(menu.mpaa()['Preset'], 'Custom')
+		menu._select = Mock(return_value=('Top Rated', 'Top Rated'))
+		menu.preset()
+		self.assertEqual((menu.draft['genres'], menu.draft['mpaa']), ('', ''))
+
+	def test_maximum_votes_and_release_cutoff_are_encoded_for_each_media_type(self):
+		class FixedDate:
+			@classmethod
+			def today(cls): return cls()
+			def isoformat(self): return '2026-08-22'
+
+		for mediatype, date_key in (('movie', 'primary_release_date'), ('tvshow', 'first_air_date')):
+			with self.subTest(mediatype=mediatype), patch.object(self.refine, 'date', FixedDate):
+				menu = self.refine.Refine({'mediatype': mediatype})
+				menu.draft.update({'max_votes': '500', 'released_only': 'true'})
+				command = unquote(menu.apply())
+				self.assertIn('vote_count.lte=500', command)
+				self.assertIn('%s.lte=2026-08-22' % date_key, command)
+
+	def test_family_movie_query_uses_multiple_certifications(self):
+		menu = self.refine.Refine({'mediatype': 'movie'})
+		menu._select = Mock(return_value=('Family Night', 'Family Night'))
+		menu.preset()
+		command = unquote(menu.apply())
+		self.assertIn('with_genres=10751', command)
+		self.assertIn('certification=G|PG', command)
 
 
 if __name__ == '__main__':

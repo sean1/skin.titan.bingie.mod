@@ -98,19 +98,26 @@ class MainMenuTests(unittest.TestCase):
 		self.assertIn('Container.Content(movies) | Container.Content(tvshows)', refine_menu.getparent().findtext('visible') if hasattr(refine_menu, 'getparent') else ''.join(listing_root.itertext()))
 		buttons = refine_menu.findall("control[@type='button']")
 		self.assertEqual([button.findtext('label').split(':', 1)[0] for button in buttons], [
-			'Preset', 'Sort by', 'Order', 'Genres', 'Year', 'Minimum rating', 'Minimum votes', 'Language', 'Original network', 'MPAA rating', 'SHOW RESULTS', 'CLEAR ALL'
+			'Preset', 'Sort by', 'Order', 'Genres', 'Year', 'Released only', 'Minimum rating', 'Minimum votes', 'Maximum votes', 'Language', 'Original network', 'MPAA rating',
+			'SHOW RESULTS', 'CLEAR ALL'
 		])
 		self.assertEqual([button.findtext('onclick') for button in buttons], [
 			'RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.%s)' % mode
-			for mode in ('preset', 'sort', 'order', 'genres', 'year', 'rating', 'votes', 'language', 'network', 'mpaa', 'apply', 'clear')
+			for mode in ('preset', 'sort', 'order', 'genres', 'year', 'released', 'rating', 'votes', 'max_votes', 'language', 'network', 'mpaa', 'apply', 'clear')
 		])
 		self.assertEqual(buttons[0].get('id'), '9112')
-		for button in buttons[:10]:
+		for button in buttons[:12]:
 			self.assertIn('Window(Home).Property(Refine.', button.findtext('label'))
-		network_button = buttons[8]
+		released_button = buttons[5]
+		self.assertEqual(released_button.get('id'), '9113')
+		self.assertIsNone(released_button.find('visible'))
+		max_votes_button = buttons[8]
+		self.assertEqual(max_votes_button.get('id'), '9114')
+		self.assertIsNone(max_votes_button.find('visible'))
+		network_button = buttons[10]
 		self.assertEqual(network_button.get('id'), '9111')
 		self.assertEqual(network_button.findtext('visible'), 'Container.Content(tvshows)')
-		mpaa_button = buttons[9]
+		mpaa_button = buttons[11]
 		self.assertEqual(mpaa_button.get('id'), '9110')
 		self.assertEqual(mpaa_button.findtext('visible'), 'Container.Content(movies)')
 		self.assertEqual(buttons[-2].findtext('label'), 'SHOW RESULTS')

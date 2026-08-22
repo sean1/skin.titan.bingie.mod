@@ -1175,7 +1175,7 @@ msgid "What do you want to watch?"
 msgstr ""
 
 msgctxt "#32905"
-msgid "Choose a mood or theme"
+msgid "Choose a theme"
 msgstr ""
 
 msgctxt "#32906"
@@ -1187,7 +1187,7 @@ msgid "Choose a discovery style"
 msgstr ""
 
 msgctxt "#32908"
-msgid "Any Mood"
+msgid "Any Theme"
 msgstr ""
 
 msgctxt "#32909"

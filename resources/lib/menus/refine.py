@@ -11,13 +11,23 @@ APPLIED_STATE_PROPERTY = 'Bingie.Refine.Applied.%s'
 DEFAULT_DRAFT = {
 	'preset_origin': 'None', 'sort': 'popularity', 'sort_label': 'Popularity', 'order': 'desc', 'order_label': 'Descending',
 	'genres': '', 'genres_label': '', 'year_start': '', 'year_end': '', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'language': '', 'language_label': '', 'mpaa': '',
-	'network': '', 'network_label': ''
+	'network': '', 'network_label': '', 'theme': '', 'theme_label': ''
 }
 SORT_OPTIONS = {
 	'movie': (('Popularity', 'popularity'), ('Release date', 'primary_release_date'), ('Revenue', 'revenue'), ('Title', 'original_title'), ('Rating', 'vote_average')),
 	'tvshow': (('Popularity', 'popularity'), ('First air date', 'first_air_date'), ('Title', 'original_name'), ('Rating', 'vote_average'))
 }
-DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Year', 'Rating', 'Votes', 'MaxVotes', 'Released', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
+DISPLAY_PROPERTIES = ('Preset', 'Sort', 'Order', 'Genres', 'Theme', 'Year', 'Rating', 'Votes', 'MaxVotes', 'Released', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
+THEME_OPTIONS = (
+	('Any', ''), ('Time Travel | Time Loop', '4379|10854'), ('Post-Apocalyptic Future | End of the World | Apocalypse | Climate Apocalypse | Robot Apocalypse', '4458|10150|12332|355070|298669'),
+	('Survival', '10349'), ('Zombie | Zombie Apocalypse', '12377|186565'), ('Space Exploration | Space Travel | Spaceship | Spacecraft', '191132|3801|252937|1612'),
+	('Artificial Intelligence | Virtual Reality', '310|4563'), ('Ancient Rome | Ancient Egypt', '5049|157894'), ('Pirate | Pirate Ship', '12988|185200'),
+	('Treasure Hunt | Quest', '6956|207372'), ('Ghost | Haunted House', '162846|3358'), ('Monster | Giant Monster | Alien Invasion', '1299|11100|14909'),
+	('Vampire | Werewolf', '3133|12564'), ('Slasher | Serial Killer', '12339|10714'), ('Psychological Thriller | Mind Game | Mind Games', '12565|184312|226106'),
+	('Heist | Bank Robbery', '10051|15363'), ('Spy | Espionage | Secret Agent', '470|5265|4289'), ('Organized Crime | Mafia | Gangster', '10291|10391|3149'),
+	('Conspiracy', '10410'), ('Dystopia | Cyberpunk', '4565|12190'), ('Whodunit', '12570'), ('Soldier | Military | Army | Special Forces', '13065|162365|6092|15218'),
+	('Dark Comedy | Satire | Parody', '10123|8201|9755'), ('Workplace Comedy | Workplace Romance | Office Romance', '210605|212796|182325')
+)
 PRESET_FIELDS = ('sort', 'order', 'rating', 'votes', 'max_votes', 'released_only')
 PRESET_RECIPES = {
 	'None': {'sort': 'popularity', 'order': 'desc', 'rating': '', 'votes': '', 'max_votes': '', 'released_only': '', 'genres': '', 'mpaa': ''},
@@ -78,6 +88,12 @@ class Refine:
 		if choice is None: return
 		self.draft['genres_label'] = ', '.join(item[0] for item in choice)
 		self.draft['genres'] = ','.join(item[1] for item in choice)
+		return self._save()
+
+	def theme(self):
+		choice = self._select('Theme', THEME_OPTIONS)
+		if choice is None: return
+		self.draft['theme_label'], self.draft['theme'] = choice if choice[1] else ('', '')
 		return self._save()
 
 	def year_start(self):
@@ -166,6 +182,7 @@ class Refine:
 		query = '%s/discover/%s?language=en-US&page=%%s&include_adult=false' % (tmdb_api.base_url, url_mediatype)
 		query += '&sort_by=%s.%s' % (self.draft['sort'], self.draft['order'])
 		if self.draft['genres']: query += '&with_genres=%s' % self.draft['genres']
+		if self.draft['theme']: query += '&with_keywords=%s' % self.draft['theme']
 		date_key = 'primary_release_date' if self.mediatype == 'movie' else 'first_air_date'
 		if self.draft['year_start']: query += '&%s.gte=%s-01-01' % (date_key, self.draft['year_start'])
 		if self.draft['year_end']: query += '&%s.lte=%s-12-31' % (date_key, self.draft['year_end'])
@@ -224,7 +241,7 @@ class Refine:
 
 	def _publish(self):
 		values = {
-			'Preset': self._preset_label(), 'Sort': self.draft['sort_label'], 'Order': self.draft['order_label'], 'Genres': self.draft['genres_label'] or 'Any',
+			'Preset': self._preset_label(), 'Sort': self.draft['sort_label'], 'Order': self.draft['order_label'], 'Genres': self.draft['genres_label'] or 'Any', 'Theme': self.draft['theme_label'] or 'Any',
 			'Year': self._year_label(), 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any', 'MaxVotes': self.draft['max_votes'] or 'Any', 'Released': 'Yes' if self.draft['released_only'] else 'No',
 			'Language': self.draft['language_label'] or 'Any', 'MPAA': self.draft['mpaa'].replace('|', ', ') if self.mediatype == 'movie' and self.draft['mpaa'] else 'Any',
 			'Network': self.draft['network_label'] if self.mediatype == 'tvshow' and self.draft['network_label'] else 'Any',
@@ -258,7 +275,7 @@ class Refine:
 		return 'Any'
 
 	def _active_count(self):
-		count = sum(bool(self.draft[key]) for key in ('genres', 'rating', 'votes', 'max_votes', 'released_only', 'language'))
+		count = sum(bool(self.draft[key]) for key in ('genres', 'theme', 'rating', 'votes', 'max_votes', 'released_only', 'language'))
 		if self.mediatype == 'movie' and self.draft['mpaa']: count += 1
 		if self.mediatype == 'tvshow' and self.draft['network']: count += 1
 		if self.draft['year_start'] or self.draft['year_end']: count += 1

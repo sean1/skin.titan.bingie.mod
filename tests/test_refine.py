@@ -146,6 +146,40 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(self.refine._properties['Refine.Genres'], 'Action, Comedy')
 		self.assertEqual(self.refine.kodi_utils.select_dialog.call_args.kwargs['allow_empty'], 'true')
 
+	def test_theme_choice_stores_keywords_publishes_label_and_preserves_other_state(self):
+		menu = self.refine.Refine({'mediatype': 'movie'})
+		menu.draft.update({'sort': 'vote_average', 'rating': '7.0', 'genres': '28', 'genres_label': 'Action'})
+		menu._select = Mock(return_value=('Time Travel | Time Loop', '4379|10854'))
+
+		values = menu.theme()
+
+		self.assertEqual((menu.draft['theme'], menu.draft['theme_label']), ('4379|10854', 'Time Travel | Time Loop'))
+		self.assertEqual((menu.draft['sort'], menu.draft['rating'], menu.draft['genres']), ('vote_average', '7.0', '28'))
+		self.assertEqual((values['Theme'], values['Count']), ('Time Travel | Time Loop', '4'))
+
+	def test_any_theme_clears_only_theme(self):
+		menu = self.refine.Refine({'mediatype': 'tvshow'})
+		menu.draft.update({'theme': '12377|186565', 'theme_label': 'Zombie | Zombie Apocalypse', 'votes': '500'})
+		menu._select = Mock(return_value=('Any', ''))
+
+		values = menu.theme()
+
+		self.assertEqual((menu.draft['theme'], menu.draft['theme_label']), ('', ''))
+		self.assertEqual(menu.draft['votes'], '500')
+		self.assertEqual((values['Theme'], values['Count']), ('Any', '1'))
+
+	def test_every_curated_theme_is_available_and_encodes_only_its_keywords(self):
+		self.assertEqual(len(self.refine.THEME_OPTIONS), 24)
+		for mediatype in ('movie', 'tvshow'):
+			for label, keywords in self.refine.THEME_OPTIONS[1:]:
+				with self.subTest(mediatype=mediatype, label=label):
+					menu = self.refine.Refine({'mediatype': mediatype})
+					menu.draft.update({'theme': keywords, 'theme_label': label})
+					command = unquote(menu.apply())
+					self.assertIn('&with_keywords=%s' % keywords, command)
+					self.assertNotIn('&with_genres=', command)
+					self.assertNotIn('&vote_count.gte=', command)
+
 	def test_show_results_encodes_all_filters_and_starts_a_fresh_movie_listing(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
 		menu.draft.update({

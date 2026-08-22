@@ -90,6 +90,11 @@
                     <label>Genres: $INFO[Window(Home).Property(Refine.Genres)]</label>
                     <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.genres)</onclick>
                 </control>
+                <control type="button" id="9115">
+                    <include>SideBladeMenuButton</include>
+                    <label>Theme: $INFO[Window(Home).Property(Refine.Theme)]</label>
+                    <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.theme)</onclick>
+                </control>
                 <control type="button" id="9104">
                     <include>SideBladeMenuButton</include>
                     <label>Year: $INFO[Window(Home).Property(Refine.Year)]</label>

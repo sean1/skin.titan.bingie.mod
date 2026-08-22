@@ -26,7 +26,6 @@ class Navigator:
 
 	def discover_hub_actions(self):
 		actions = (
-			({'mode': 'discover.pick_my_night', 'name': ls(32900), 'exclude_external': 'true'}, 'discover.png', False, 'pick_my_night'),
 			({'mode': 'discover.router', 'mediatype': 'movie', 'name': ls(32901), 'exclude_external': 'true'}, 'search_movie.png', True, 'movie_mix'),
 			({'mode': 'discover.router', 'mediatype': 'tvshow', 'name': ls(32902), 'exclude_external': 'true'}, 'search_tv.png', True, 'tv_mix')
 		)

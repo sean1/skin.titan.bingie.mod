@@ -127,24 +127,6 @@
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">3</property>
-			<label>Pick My Night</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">32900</property>
-			<property name="defaultID">32900</property>
-			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true)</onclick>
-			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=tvshow&amp;name=32900&amp;exclude_external=true</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property>
-			<property name="mainmenuid">3</property>
 			<label>Search</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -194,24 +176,6 @@
 		</item>
 		<item id="3">
 			<property name="id">$NUMBER[3]</property>
-			<property name="mainmenuid">2</property>
-			<label>Pick My Night</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">32900</property>
-			<property name="defaultID">32900</property>
-			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true)</onclick>
-			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=discover.pick_my_night&amp;mediatype=movie&amp;name=32900&amp;exclude_external=true</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="4">
-			<property name="id">$NUMBER[4]</property>
 			<property name="mainmenuid">2</property>
 			<label>Search</label>
 			<label2>Movies</label2>

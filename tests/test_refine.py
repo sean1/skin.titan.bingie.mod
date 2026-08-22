@@ -32,6 +32,7 @@ def load_refine_module():
 	meta_lists.tvshow_genres = {'Comedy': ('35', 'genre_comedy.png'), 'Drama': ('18', 'genre_drama.png')}
 	meta_lists.movie_certifications = ('G', 'PG', 'PG-13', 'R', 'NC-17', 'NR')
 	meta_lists.meta_languages = {'English': {'iso': 'en'}, 'French': {'iso': 'fr'}}
+	meta_lists.networks = ({'id': 213, 'name': 'Netflix', 'logo': 'netflix.png'}, {'id': 49, 'name': 'HBO', 'logo': 'hbo.png'})
 	modules = types.ModuleType('modules')
 	modules.kodi_utils, modules.meta_lists = kodi_utils, meta_lists
 	stubs = {'indexers': indexers, 'indexers.tmdb_api': tmdb_api, 'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.meta_lists': meta_lists}
@@ -138,6 +139,42 @@ class RefineTests(unittest.TestCase):
 		self.assertNotIn('certification=', command)
 		self.assertEqual(menu._publish()['MPAA'], 'Any')
 		self.assertEqual(menu._active_count(), 1)
+
+	def test_tv_network_choice_displays_name_stores_id_and_persists(self):
+		menu = self.refine.Refine({'mediatype': 'tvshow'})
+		menu._select = Mock(return_value=('Netflix', '213'))
+
+		menu.network()
+
+		menu._select.assert_called_once_with('Original network', [('Any', ''), ('HBO', '49'), ('Netflix', '213')])
+		stored = json.loads(self.refine._properties['Bingie.Refine.Draft.tvshow'])
+		self.assertEqual((stored['network'], stored['network_label']), ('213', 'Netflix'))
+		self.assertEqual(self.refine._properties['Refine.Network'], 'Netflix')
+		self.assertEqual(self.refine._properties['Refine.Count'], '1')
+		self.assertEqual(self.refine.Refine({'mediatype': 'tvshow'}).draft['network'], '213')
+
+	def test_tv_network_is_encoded_and_movies_ignore_network_state(self):
+		tv = self.refine.Refine({'mediatype': 'tvshow'})
+		tv.draft.update({'network': '213', 'network_label': 'Netflix'})
+		self.assertIn('with_networks=213', unquote(tv.apply()))
+
+		movie = self.refine.Refine({'mediatype': 'movie'})
+		movie.draft.update({'network': '213', 'network_label': 'Netflix'})
+		command = unquote(movie.apply())
+		self.assertNotIn('with_networks=', command)
+		self.assertEqual(movie._publish()['Network'], 'Any')
+		self.assertEqual(movie._active_count(), 0)
+
+	def test_any_network_clears_tv_network(self):
+		menu = self.refine.Refine({'mediatype': 'tvshow'})
+		menu.draft.update({'network': '213', 'network_label': 'Netflix'})
+		menu._select = Mock(return_value=('Any', ''))
+
+		menu.network()
+
+		self.assertEqual((menu.draft['network'], menu.draft['network_label']), ('', ''))
+		self.assertEqual(self.refine._properties['Refine.Network'], 'Any')
+		self.assertEqual(self.refine._properties['Refine.Count'], '0')
 
 	def test_year_range_counts_once_and_reversed_range_is_not_staged(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})

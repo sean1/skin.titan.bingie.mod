@@ -9,13 +9,14 @@ STATE_PROPERTY = 'Bingie.Refine.Draft.%s'
 APPLIED_STATE_PROPERTY = 'Bingie.Refine.Applied.%s'
 DEFAULT_DRAFT = {
 	'sort': 'popularity', 'sort_label': 'Popularity', 'order': 'desc', 'order_label': 'Descending',
-	'genres': '', 'genres_label': '', 'year_start': '', 'year_end': '', 'rating': '', 'votes': '', 'language': '', 'language_label': '', 'mpaa': ''
+	'genres': '', 'genres_label': '', 'year_start': '', 'year_end': '', 'rating': '', 'votes': '', 'language': '', 'language_label': '', 'mpaa': '',
+	'network': '', 'network_label': ''
 }
 SORT_OPTIONS = {
 	'movie': (('Popularity', 'popularity'), ('Release date', 'primary_release_date'), ('Revenue', 'revenue'), ('Title', 'original_title'), ('Rating', 'vote_average')),
 	'tvshow': (('Popularity', 'popularity'), ('First air date', 'first_air_date'), ('Title', 'original_name'), ('Rating', 'vote_average'))
 }
-DISPLAY_PROPERTIES = ('Sort', 'Order', 'Genres', 'Year', 'Rating', 'Votes', 'Language', 'MPAA', 'Count', 'Eligible', 'Type')
+DISPLAY_PROPERTIES = ('Sort', 'Order', 'Genres', 'Year', 'Rating', 'Votes', 'Language', 'MPAA', 'Network', 'Count', 'Eligible', 'Type')
 
 
 class Refine:
@@ -102,6 +103,16 @@ class Refine:
 		self.draft['mpaa'] = choice[1]
 		return self._save()
 
+	def network(self):
+		if self.mediatype != 'tvshow':
+			self.draft['network'], self.draft['network_label'] = '', ''
+			return self._save()
+		options = [('Any', '')] + [(item['name'], str(item['id'])) for item in sorted(meta_lists.networks, key=lambda item: item['name'])]
+		choice = self._select('Original network', options)
+		if choice is None: return
+		self.draft['network_label'], self.draft['network'] = choice if choice[1] else ('', '')
+		return self._save()
+
 	def clear(self):
 		self.draft = dict(DEFAULT_DRAFT)
 		return self._save()
@@ -120,6 +131,7 @@ class Refine:
 		if self.draft['votes']: query += '&vote_count.gte=%s' % self.draft['votes']
 		if self.draft['language']: query += '&with_original_language=%s' % self.draft['language']
 		if self.mediatype == 'movie' and self.draft['mpaa']: query += '&certification_country=US&certification=%s' % self.draft['mpaa']
+		if self.mediatype == 'tvshow' and self.draft['network']: query += '&with_networks=%s' % self.draft['network']
 		mode, action, name = ('build_movie_list', 'tmdb_movies_discover', 'Refined Movies') if self.mediatype == 'movie' else ('build_tvshow_list', 'tmdb_tv_discover', 'Refined TV Shows')
 		url = kodi_utils.build_url({'mode': mode, 'action': action, 'query': query, 'name': name, 'iconImage': 'discover.png'})
 		return kodi_utils.execute_builtin('ActivateWindow(Videos,%s,return)' % url)
@@ -170,6 +182,7 @@ class Refine:
 			'Sort': self.draft['sort_label'], 'Order': self.draft['order_label'], 'Genres': self.draft['genres_label'] or 'Any',
 			'Year': self._year_label(), 'Rating': self.draft['rating'] or 'Any', 'Votes': self.draft['votes'] or 'Any',
 			'Language': self.draft['language_label'] or 'Any', 'MPAA': self.draft['mpaa'] if self.mediatype == 'movie' and self.draft['mpaa'] else 'Any',
+			'Network': self.draft['network_label'] if self.mediatype == 'tvshow' and self.draft['network_label'] else 'Any',
 			'Count': str(self._active_count()), 'Eligible': 'true', 'Type': self.mediatype
 		}
 		for key in DISPLAY_PROPERTIES: kodi_utils.set_property(PROPERTY_PREFIX + key, values[key])
@@ -185,6 +198,7 @@ class Refine:
 	def _active_count(self):
 		count = sum(bool(self.draft[key]) for key in ('genres', 'rating', 'votes', 'language'))
 		if self.mediatype == 'movie' and self.draft['mpaa']: count += 1
+		if self.mediatype == 'tvshow' and self.draft['network']: count += 1
 		if self.draft['year_start'] or self.draft['year_end']: count += 1
 		if self.draft['sort'] != DEFAULT_DRAFT['sort'] or self.draft['order'] != DEFAULT_DRAFT['order']: count += 1
 		return count

@@ -143,22 +143,6 @@
 		<item id="5">
 			<property name="id">$NUMBER[5]</property>
 			<property name="mainmenuid">3</property>
-			<label>By Original Network</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">by-network-service</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_networks,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.tv_networks,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.tv_networks</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="6">
-			<property name="id">$NUMBER[6]</property>
-			<property name="mainmenuid">3</property>
 			<label>Pick My Night</label>
 			<label2>TV Shows</label2>
 			<icon>DefaultShortcut.png</icon>
@@ -174,8 +158,8 @@
 			<property name="group">tvshows</property>
 			<property name="isSubmenu">True</property>
 		</item>
-		<item id="7">
-			<property name="id">$NUMBER[7]</property>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
 			<property name="mainmenuid">3</property>
 			<label>Search</label>
 			<label2>TV Shows</label2>

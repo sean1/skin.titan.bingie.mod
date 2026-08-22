@@ -65,14 +65,18 @@ class MainMenuTests(unittest.TestCase):
 	def test_tv_submenu_keeps_unique_feeds_and_browse_refine(self):
 		submenu = self.root.find("include[@name='StaticSubmenu']")
 		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'tvshows']
-		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 8)])
+		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 7)])
 		self.assertEqual([item.findtext('label') for item in items], [
-			'Browse & Refine', 'Trending TV Shows This Week', 'New Series', 'Top Rated TV Shows', 'By Original Network', 'Pick My Night', 'Search'
+			'Browse & Refine', 'Trending TV Shows This Week', 'New Series', 'Top Rated TV Shows', 'Pick My Night', 'Search'
 		])
 		actions = {item.findtext('label'): [action.text for action in item.findall('onclick')] for item in items}
 		self.assertTrue(any('tmdb_tv_popular' in action for action in actions['Browse & Refine']))
 		self.assertTrue(any('tmdb_tv_new_series' in action for action in actions['New Series']))
-		self.assertTrue(any('navigator.tv_networks' in action for action in actions['By Original Network']))
+		self.assertNotIn('By Original Network', actions)
+
+		bingie_root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
+		tv_centering = bingie_root.find(".//control[@type='list'][@id='4444']/animation[@condition='String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)']")
+		self.assertEqual(tv_centering.get('end'), '0,159')
 
 	def test_discover_is_absent_from_static_navigation(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
@@ -88,15 +92,18 @@ class MainMenuTests(unittest.TestCase):
 		self.assertIn('Container.Content(movies) | Container.Content(tvshows)', refine_menu.getparent().findtext('visible') if hasattr(refine_menu, 'getparent') else ''.join(listing_root.itertext()))
 		buttons = refine_menu.findall("control[@type='button']")
 		self.assertEqual([button.findtext('label').split(':', 1)[0] for button in buttons], [
-			'Sort by', 'Order', 'Genres', 'Year', 'Minimum rating', 'Minimum votes', 'Language', 'MPAA rating', 'SHOW RESULTS', 'CLEAR ALL'
+			'Sort by', 'Order', 'Genres', 'Year', 'Minimum rating', 'Minimum votes', 'Language', 'Original network', 'MPAA rating', 'SHOW RESULTS', 'CLEAR ALL'
 		])
 		self.assertEqual([button.findtext('onclick') for button in buttons], [
 			'RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.%s)' % mode
-			for mode in ('sort', 'order', 'genres', 'year', 'rating', 'votes', 'language', 'mpaa', 'apply', 'clear')
+			for mode in ('sort', 'order', 'genres', 'year', 'rating', 'votes', 'language', 'network', 'mpaa', 'apply', 'clear')
 		])
-		for button in buttons[:8]:
+		for button in buttons[:9]:
 			self.assertIn('Window(Home).Property(Refine.', button.findtext('label'))
-		mpaa_button = buttons[7]
+		network_button = buttons[7]
+		self.assertEqual(network_button.get('id'), '9111')
+		self.assertEqual(network_button.findtext('visible'), 'Container.Content(tvshows)')
+		mpaa_button = buttons[8]
 		self.assertEqual(mpaa_button.get('id'), '9110')
 		self.assertEqual(mpaa_button.findtext('visible'), 'Container.Content(movies)')
 		self.assertEqual(buttons[-2].findtext('label'), 'SHOW RESULTS')

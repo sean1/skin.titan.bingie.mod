@@ -105,6 +105,12 @@
                     <label>Language: $INFO[Window(Home).Property(Refine.Language)]</label>
                     <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.language)</onclick>
                 </control>
+                <control type="button" id="9111">
+                    <include>SideBladeMenuButton</include>
+                    <label>Original network: $INFO[Window(Home).Property(Refine.Network)]</label>
+                    <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.network)</onclick>
+                    <visible>Container.Content(tvshows)</visible>
+                </control>
                 <control type="button" id="9110">
                     <include>SideBladeMenuButton</include>
                     <label>MPAA rating: $INFO[Window(Home).Property(Refine.MPAA)]</label>

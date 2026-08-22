@@ -84,15 +84,44 @@ class MainMenuTests(unittest.TestCase):
 		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'discover']
 		self.assertEqual(items, [])
 
-	def test_legacy_options_sideblade_is_removed(self):
-		for filename in ('MyVideoNav.xml', 'MyPrograms.xml', 'MyPlaylist.xml', 'MyFavourites.xml', 'AddonBrowser.xml'):
+	def test_listing_refine_sideblade_replaces_legacy_options_sideblade(self):
+		listing_root = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()
+		refine_menu = listing_root.find(".//control[@type='grouplist'][@id='9000']")
+		self.assertIsNotNone(refine_menu)
+		self.assertIn('Container.Content(movies) | Container.Content(tvshows)', refine_menu.getparent().findtext('visible') if hasattr(refine_menu, 'getparent') else ''.join(listing_root.itertext()))
+		buttons = refine_menu.findall("control[@type='button']")
+		self.assertEqual([button.findtext('label').split(':', 1)[0] for button in buttons], [
+			'Sort by', 'Order', 'Genres', 'Year', 'Minimum rating', 'Minimum votes', 'Language', 'MPAA rating', 'SHOW RESULTS', 'CLEAR ALL'
+		])
+		self.assertEqual([button.findtext('onclick') for button in buttons], [
+			'RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.%s)' % mode
+			for mode in ('sort', 'order', 'genres', 'year', 'rating', 'votes', 'language', 'mpaa', 'apply', 'clear')
+		])
+		for button in buttons[:8]:
+			self.assertIn('Window(Home).Property(Refine.', button.findtext('label'))
+		mpaa_button = buttons[7]
+		self.assertEqual(mpaa_button.get('id'), '9110')
+		self.assertEqual(mpaa_button.findtext('visible'), 'Container.Content(movies)')
+		self.assertEqual(buttons[-2].findtext('label'), 'SHOW RESULTS')
+		self.assertEqual(buttons[-1].findtext('label'), 'CLEAR ALL')
+
+		view_root = ET.parse(ROOT / 'xml' / 'View_523_BingieMainLandscape.xml').getroot()
+		all_left_actions = view_root.findall('.//onleft')
+		initialize_actions = [action for action in all_left_actions if (action.text or '').strip() == 'RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.initialize)']
+		self.assertEqual(len(initialize_actions), 1)
+		self.assertEqual(initialize_actions[0].get('condition'), 'Container.Content(movies) | Container.Content(tvshows)')
+		open_actions = [action for action in all_left_actions if (action.text or '').strip() == '9000']
+		self.assertEqual(len(open_actions), 1)
+		self.assertEqual(open_actions[0].get('condition'), 'Container.Content(movies) | Container.Content(tvshows)')
+
+		for filename in ('MyPrograms.xml', 'MyPlaylist.xml', 'MyFavourites.xml', 'AddonBrowser.xml'):
 			root = ET.parse(ROOT / 'xml' / filename).getroot()
 			self.assertIsNone(root.find(".//include[.='SideBladeModern']"), filename)
 			self.assertIsNone(root.find(".//control[@id='9000']"), filename)
 		includes = ET.parse(ROOT / 'xml' / 'IncludesViews.xml').getroot()
 		for name in ('videoViewIds', 'genericViewIds'):
 			self.assertIsNone(includes.find("include[@name='%s']/menucontrol" % name))
-		for filename in ('View_50_List.xml', 'View_523_BingieMainLandscape.xml', 'View_525_Bingie_Episodes.xml', 'View_527_Bingie_Seasons.xml'):
+		for filename in ('View_50_List.xml', 'View_525_Bingie_Episodes.xml', 'View_527_Bingie_Seasons.xml'):
 			root = ET.parse(ROOT / 'xml' / filename).getroot()
 			self.assertFalse(any((action.text or '').strip() == '9000' for action in root.findall('.//onleft')), filename)
 		context_includes = ET.parse(ROOT / 'xml' / 'IncludesContextMenu.xml').getroot()

@@ -85,6 +85,8 @@
             <pagecontrol>60</pagecontrol>
             <include>ScrollTime</include>
             <onright>60</onright>
+			<onleft condition="Container.Content(movies) | Container.Content(tvshows)">RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.initialize)</onleft>
+			<onleft condition="Container.Content(movies) | Container.Content(tvshows)">9000</onleft>
 			<onleft>523</onleft>
             <onup>523</onup>
             <ondown>523</ondown>

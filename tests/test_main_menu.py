@@ -13,8 +13,37 @@ class MainMenuTests(unittest.TestCase):
 
 	def test_static_main_menu_is_lean_and_content_first(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
-		self.assertEqual([item.get('id') for item in menu.findall('item')], ['1', '2', '3'])
-		self.assertEqual([item.findtext('label2') for item in menu.findall('item')], ['Home', 'Movies', 'TV shows'])
+		self.assertEqual([item.get('id') for item in menu.findall('item')], ['1', '2', '3', '4'])
+		self.assertEqual([item.findtext('label2') for item in menu.findall('item')], ['Home', 'Movies', 'TV shows', 'My Videos'])
+
+	def test_my_videos_loads_registered_video_sources_dynamically(self):
+		menu = self.root.find("include[@name='StaticMainMenu']")
+		main_item = next(item for item in menu.findall('item') if item.findtext('label2') == 'My Videos')
+		self.assertEqual(main_item.findtext("property[@name='submenuVisibility']"), 'myvideos')
+		self.assertEqual(main_item.findtext("property[@name='hasSubmenu']"), 'True')
+		self.assertEqual(main_item.findtext('onclick'), 'ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.video_sources&group=myvideos,return)')
+		self.assertEqual(main_item.findtext("property[@name='list']"), 'plugin://skin.titan.bingie.lite/?mode=navigator.video_sources&group=myvideos')
+		self.assertFalse(any(item.findtext("property[@name='group']") == 'myvideos' for item in self.root.find("include[@name='StaticSubmenu']").findall('item')))
+
+		bingie = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
+		for control_id in ('4444', '4445'):
+			control = bingie.find(".//control[@type='list'][@id='%s']" % control_id)
+			self.assertTrue(any(content.find('include') is not None and content.find('include').text == 'StaticSubmenu' for content in control.findall('content')))
+			dynamic = next(content for content in control.findall('content') if content.text and 'navigator.video_sources' in content.text)
+			self.assertIn('group=$INFO[Container(900).ListItem.Property(submenuVisibility)]', dynamic.text)
+			self.assertEqual(dynamic.get('target'), 'videos')
+			self.assertEqual(dynamic.get('browse'), 'never')
+
+	def test_video_sources_use_the_native_list_with_add_source_item(self):
+		nav = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()
+		onload_conditions = [action.get('condition') for action in nav.findall('onload') if action.text == 'Container.SetViewMode(50)']
+		self.assertIn('String.IsEqual(Container.FolderPath,sources://video/)', onload_conditions)
+
+		list_view = ET.parse(ROOT / 'xml' / 'View_50_List.xml').getroot().find(".//control[@type='list'][@id='50']")
+		self.assertIn('String.IsEqual(Container.FolderPath,sources://video/)', list_view.findtext('visible'))
+
+		bingie_view = ET.parse(ROOT / 'xml' / 'View_523_BingieMainLandscape.xml').getroot().find(".//control[@id='523']")
+		self.assertIn('!String.IsEqual(Container.FolderPath,sources://video/)', [visible.text for visible in bingie_view.findall('visible')])
 
 	def test_home_widgets_exclude_popular_rows(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
@@ -61,7 +90,7 @@ class MainMenuTests(unittest.TestCase):
 
 		bingie_root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
 		movie_centering = bingie_root.find(".//control[@type='list'][@id='4444']/animation[@condition='String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)']")
-		self.assertEqual(movie_centering.get('end'), '0,154')
+		self.assertEqual(movie_centering.get('end'), '0,112')
 
 	def test_tv_submenu_keeps_unique_feeds_and_browse_refine(self):
 		submenu = self.root.find("include[@name='StaticSubmenu']")
@@ -78,7 +107,7 @@ class MainMenuTests(unittest.TestCase):
 
 		bingie_root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
 		tv_centering = bingie_root.find(".//control[@type='list'][@id='4444']/animation[@condition='String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)']")
-		self.assertEqual(tv_centering.get('end'), '0,238')
+		self.assertEqual(tv_centering.get('end'), '0,196')
 
 	def test_discover_is_absent_from_static_navigation(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
@@ -196,9 +225,9 @@ class MainMenuTests(unittest.TestCase):
 		self.assertFalse(any('Container(900).NumItems' in condition or 'Container(900).Position' in condition for condition in vertical_alignment_conditions))
 		main = root.find(".//control[@type='list'][@id='900']")
 		main_row_height = int(main.find('itemlayout').get('height'))
-		main_count_offset = next(int(animation.get('end').split(',')[1]) for animation in main.findall('animation') if 'Container(900).NumItems,3' in animation.get('condition', ''))
-		main_top = int(main.findtext('top')) + main_count_offset
 		main_items = self.root.find("include[@name='StaticMainMenu']").findall('item')
+		main_count_offset = next(int(animation.get('end').split(',')[1]) for animation in main.findall('animation') if 'Container(900).NumItems,%d' % len(main_items) in animation.get('condition', ''))
+		main_top = int(main.findtext('top')) + main_count_offset
 		base_submenu_top = int(group.findtext('posy')) + int(submenu.findtext('posy'))
 		for submenu_group in ('movies', 'tvshows'):
 			main_index = next(index for index, item in enumerate(main_items) if item.findtext("property[@name='submenuVisibility']") == submenu_group)
@@ -206,6 +235,7 @@ class MainMenuTests(unittest.TestCase):
 			content_height = item_count * row_height + (item_count - 1) * item_gap
 			offset = next(int(animation.get('end').split(',')[1]) for animation in submenu.findall('animation') if animation.get('condition', '').endswith(',%s)' % submenu_group))
 			self.assertLessEqual(abs(2 * (base_submenu_top + offset) + content_height - (2 * (main_top + main_index * main_row_height) + main_row_height)), 1)
+		self.assertTrue(any(animation.get('condition', '').endswith(',myvideos)') for animation in submenu.findall('animation')))
 
 	def test_submenu_focus_keeps_main_menu_open(self):
 		root = ET.parse(ROOT / 'xml' / 'Includes.xml').getroot()

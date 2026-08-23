@@ -1,3 +1,4 @@
+import json
 import sys
 from caches.navigator_cache import navigator_cache as nc
 from modules import kodi_utils as ku, settings as ks
@@ -23,6 +24,28 @@ class Navigator:
 		self._add_item({'mode': 'discover.router', 'mediatype': 'tvshow',  'name': tv_str  }, 'discover.png', n_ins)
 		self._add_item({'mode': 'discover.help',                           'name': help_str}, 'discover.png', n_ins, False)
 		self._end_directory()
+
+	def video_sources(self):
+		handle, fanart = self.params_get('handle'), self.params_get('fanart')
+		if self.params_get('group') != 'myvideos':
+			return ku.end_directory(handle, cacheToDisc=False)
+		request = {'jsonrpc': '2.0', 'id': 1, 'method': 'Files.GetSources', 'params': {'media': 'video'}}
+		try: sources = json.loads(ku.execJSONRPC(json.dumps(request))).get('result', {}).get('sources', [])
+		except (TypeError, ValueError): sources = []
+		for source in sources:
+			path, label = source.get('file', ''), source.get('label', '')
+			if not path or path.lower().startswith('addons://'): continue
+			listitem = make_listitem()
+			listitem.setLabel(label or path)
+			listitem.setArt({'icon': 'DefaultVideo.png', 'poster': 'DefaultVideo.png', 'thumb': 'DefaultVideo.png', 'fanart': fanart})
+			add_item(handle, path, listitem, True)
+		listitem = make_listitem()
+		listitem.setLabel('Manage Sources...')
+		listitem.setArt({'icon': 'dialogs/filebrowser/DefaultAddSource.png', 'poster': 'dialogs/filebrowser/DefaultAddSource.png', 'thumb': 'dialogs/filebrowser/DefaultAddSource.png', 'fanart': fanart})
+		add_item(handle, 'sources://video/', listitem, True)
+		ku.set_category(handle, 'My Videos')
+		ku.set_content(handle, 'files')
+		ku.end_directory(handle, cacheToDisc=False)
 
 	def discover_hub_actions(self):
 		actions = (

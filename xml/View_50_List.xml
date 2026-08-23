@@ -219,7 +219,7 @@
             </control>
             <!-- ID="50" -->
             <control type="list" id="50">
-                <visible>!Window.IsActive(MyVideoNav.xml) | $EXP[IsPovLiteNavigationMenu]</visible>
+                <visible>!Window.IsActive(MyVideoNav.xml) | $EXP[IsPovLiteNavigationMenu] | String.IsEqual(Container.FolderPath,sources://video/)</visible>
                 <posy>11</posy>
                 <posx>55</posx>
                 <width>1880</width>

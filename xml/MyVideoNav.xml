@@ -4,6 +4,7 @@
     <defaultcontrol always="true">5000</defaultcontrol>
 	    <include>videoViewIds</include>
     <onload condition="$EXP[IsPovLiteNavigationMenu]">Container.SetViewMode(50)</onload>
+	<onload condition="String.IsEqual(Container.FolderPath,sources://video/)">Container.SetViewMode(50)</onload>
 	<onload>ClearProperty(ShowViewSubMenu,Home)</onload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
     <!-- return to infodialog if previous window -->

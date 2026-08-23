@@ -74,6 +74,7 @@
 		<control type="$PARAM[containerType]" id="523">
 			<visible>!Container.Content(episodes) + !Container.Content(seasons)</visible>
             <visible>!$EXP[IsPovLiteNavigationMenu]</visible>
+			<visible>!String.IsEqual(Container.FolderPath,sources://video/)</visible>
             <viewtype label="31018">panel</viewtype>
             <focusedposition>0</focusedposition>
             <top>51</top>

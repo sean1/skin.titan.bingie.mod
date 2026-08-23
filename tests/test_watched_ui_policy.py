@@ -52,13 +52,5 @@ class WatchedUiPolicyTests(unittest.TestCase):
 		self.assertTrue(all('BingieProgressRefreshMovie' in path for path in movie_paths))
 		self.assertTrue(all('BingieProgressRefreshEpisode' in path for path in episode_paths))
 
-	def test_discover_widgets_use_public_popular_lists(self):
-		hub_source = (ROOT / 'xml' / 'IncludesHubs.xml').read_text(encoding='utf-8')
-		self.assertIn('action=tmdb_movies_popular', hub_source)
-		self.assertIn('action=tmdb_tv_popular', hub_source)
-		self.assertNotIn('tmdb_movies_because_you_watched', hub_source)
-		self.assertNotIn('tmdb_tv_because_you_watched', hub_source)
-
-
 if __name__ == '__main__':
 	unittest.main()

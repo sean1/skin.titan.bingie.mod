@@ -73,7 +73,7 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 				self.dbcur.execute('CREATE TABLE navigator (list_name TEXT, list_type TEXT, list_contents TEXT, UNIQUE (list_name, list_type))')
 				rows = (
 					('RootList', 'default', [{'action': 'in_progress_movies'}]),
-					('MovieList', 'default', [{'action': 'watched_movies'}, {'action': 'in_progress_movies'}]),
+					('MovieList', 'default', [{'action': 'watched_movies'}, {'mode': 'navigator.discover_main'}, {'action': 'in_progress_movies'}]),
 					('TVShowList', 'edited', [{'action': 'watched_tvshows'}, {'action': 'in_progress_tvshows'}, {'mode': 'build_next_episode'}, {'action': 'tmdb_tv_popular'}]),
 					('Keep Watching', 'shortcut_folder', [{'action': 'watched_movies'}, {'action': 'navigator.because_you_watched'}])
 				)

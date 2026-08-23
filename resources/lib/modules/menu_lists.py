@@ -2,7 +2,6 @@ root_list = [
 	{'name': 32028, 'iconImage': 'movies.png', 'mode': 'navigator.main', 'action': 'MovieList'},
 	{'name': 32029, 'iconImage': 'tv.png', 'mode': 'navigator.main', 'action': 'TVShowList'},
 	{'name': 32452, 'iconImage': 'people.png', 'mode': 'build_popular_people', 'isFolder': 'false'},
-	{'name': 32451, 'iconImage': 'discover.png', 'mode': 'navigator.discover_main'},
 	{'name': 32450, 'iconImage': 'search.png', 'mode': 'navigator.search'},
 	{'name': 'Dropped', 'iconImage': 'tv.png', 'mode': 'build_tvshow_list', 'action': 'dropped_tvshows'},
 	{'name': 32455, 'iconImage': 'premium.png', 'mode': 'navigator.premium'},

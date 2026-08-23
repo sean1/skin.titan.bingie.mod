@@ -58,7 +58,7 @@ def normalize_menu_data():
 		from caches.navigator_cache import navigator_cache
 		hidden_actions = {
 			'watched_movies', 'watched_tvshows', 'in_progress_tvshows', 'navigator.because_you_watched', 'build_next_episode',
-			'tmdb_movies_because_you_watched', 'tmdb_tv_because_you_watched'
+			'tmdb_movies_because_you_watched', 'tmdb_tv_because_you_watched', 'navigator.discover_main'
 		}
 		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
 		for list_name, list_type, list_contents in rows:

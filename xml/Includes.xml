@@ -44,9 +44,9 @@
     <constant name="episodes_thumb_width">466</constant>
 
     <!-- expressions -->
-    <expression name="IsBingieViewsActive">Window.IsActive(Home) | Window.IsActive(1119) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1118)</expression>
+    <expression name="IsBingieViewsActive">Window.IsActive(Home) | Window.IsActive(1119) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1118)</expression>
 
-    <expression name="IsBingieHubsActive">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113) | Window.IsActive(1118)</expression>
+    <expression name="IsBingieHubsActive">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1118)</expression>
 
 	<expression name="IsBingieListsActive">false</expression>
 
@@ -80,7 +80,6 @@
 	<expression name="MenuPathMovies">String.IsEqual(ListItem.Property(path), ActivateWindow(1111,return))</expression>
 	<expression name="MenuPathMyVideos">String.IsEqual(ListItem.Property(path), ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.video_sources&amp;group=myvideos,return))</expression>
 	<expression name="MenuPathNew">String.IsEqual(ListItem.Property(path), ActivateWindow(1112,return))</expression>
-	<expression name="MenuPathDiscover">String.IsEqual(ListItem.Property(path), ActivateWindow(1113,return))</expression>
 	<expression name="MenuPathGenres">String.IsEqual(ListItem.Property(path), ActivateWindow(1119,return))</expression>
 
 	<expression name="MenuActiveHome">Window.IsActive(Home) + $EXP[MenuPathHome]</expression>
@@ -88,16 +87,15 @@
 	<expression name="MenuActiveMovies">Window.IsActive(1111) + $EXP[MenuPathMovies]</expression>
 	<expression name="MenuActiveMyVideos">Window.IsActive(Videos) + $EXP[MenuPathMyVideos]</expression>
 	<expression name="MenuActiveNew">Window.IsActive(1112) + $EXP[MenuPathNew]</expression>
-	<expression name="MenuActiveDiscover">Window.IsActive(1113) + $EXP[MenuPathDiscover]</expression>
 	<expression name="MenuActiveGenres">Window.IsActive(1119) + $EXP[MenuPathGenres]</expression>
 
-	<expression name="IsMenuEntryActive">$EXP[MenuActiveHome] | $EXP[MenuActiveTV] | $EXP[MenuActiveMovies] | $EXP[MenuActiveMyVideos] | $EXP[MenuActiveNew] | $EXP[MenuActiveDiscover] | $EXP[MenuActiveGenres]</expression>
-	<expression name="IsKnownMenuEntryPath">$EXP[MenuPathHome] | $EXP[MenuPathTV] | $EXP[MenuPathMovies] | $EXP[MenuPathMyVideos] | $EXP[MenuPathNew] | $EXP[MenuPathDiscover] | $EXP[MenuPathGenres]</expression>
+	<expression name="IsMenuEntryActive">$EXP[MenuActiveHome] | $EXP[MenuActiveTV] | $EXP[MenuActiveMovies] | $EXP[MenuActiveMyVideos] | $EXP[MenuActiveNew] | $EXP[MenuActiveGenres]</expression>
+	<expression name="IsKnownMenuEntryPath">$EXP[MenuPathHome] | $EXP[MenuPathTV] | $EXP[MenuPathMovies] | $EXP[MenuPathMyVideos] | $EXP[MenuPathNew] | $EXP[MenuPathGenres]</expression>
 	<expression name="IsPovLiteNavigationMenu">
 		String.IsEqual(Container.FolderPath,plugin://skin.titan.bingie.lite/) |
 		String.IsEqual(Container.FolderPath,plugin://skin.titan.bingie.lite) |
 		[String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) +
-		[String.Contains(Container.FolderPath,mode=navigator.) | String.Contains(Container.FolderPath,mode=search_history) | String.Contains(Container.FolderPath,mode=discover.)]]
+		[String.Contains(Container.FolderPath,mode=navigator.) | String.Contains(Container.FolderPath,mode=search_history)]]
 	</expression>
 	<expression name="IsMovieOrTvShowListItem">
 		String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) |

@@ -46,7 +46,7 @@
         <!-- global background -->
         <control type="multiimage" id="99004">
             <include>HiddenObject</include>
-            <include condition="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113)]">FullscreenDimensions</include>
+            <include condition="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112)]">FullscreenDimensions</include>
             <imagepath background="true" fallback="colors/color_black.png">$VAR[backgroundVar]</imagepath>
             <aspectratio>scale</aspectratio>
             <fadetime>800</fadetime>
@@ -68,7 +68,7 @@
             <focusedlayout/>
             <content limit="5" sortby="random">$VAR[ItemArtContentRandomizer]</content>
         </control>
-		<include condition="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1113)]">DialogOverlay</include>
+		<include condition="![Window.IsActive(Home) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112)]">DialogOverlay</include>
     </include>
 
 

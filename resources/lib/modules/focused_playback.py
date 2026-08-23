@@ -1,8 +1,8 @@
 from modules import kodi_utils
 
 
-ALLOWED_WINDOW_IDS = (10000, 10025, 11110, 11111, 11112, 11113, 11118, 11119, 11123)
-ALLOWED_WINDOW_VISIBILITY = ' | '.join('Window.IsActive(%s)' % window for window in ('Home', 'Videos', 1110, 1111, 1112, 1113, 1118, 1119, 1123, 11123))
+ALLOWED_WINDOW_IDS = (10000, 10025, 11110, 11111, 11112, 11118, 11119, 11123)
+ALLOWED_WINDOW_VISIBILITY = ' | '.join('Window.IsActive(%s)' % window for window in ('Home', 'Videos', 1110, 1111, 1112, 1118, 1119, 1123, 11123))
 PLAYBACK_WINDOW_VISIBILITY = 'Window.IsActive(FullscreenVideo) | Window.IsActive(VideoOSD)'
 
 

@@ -110,12 +110,22 @@ class MainMenuTests(unittest.TestCase):
 		tv_centering = bingie_root.find(".//control[@type='list'][@id='4444']/animation[@condition='String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)']")
 		self.assertEqual(tv_centering.get('end'), '0,196')
 
-	def test_discover_is_absent_from_static_navigation(self):
+	def test_legacy_discover_feature_is_removed(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
 		self.assertNotIn('Discover', [item.findtext('label2') for item in menu.findall('item')])
 		submenu = self.root.find("include[@name='StaticSubmenu']")
 		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'discover']
 		self.assertEqual(items, [])
+		self.assertFalse((ROOT / 'xml' / 'Custom_1113_Discover_Hub.xml').exists())
+		self.assertFalse((ROOT / 'resources' / 'lib' / 'menus' / 'discover.py').exists())
+		self.assertNotIn("mode.startswith('discover.')", (ROOT / 'resources' / 'lib' / 'routing.py').read_text(encoding='utf-8'))
+		self.assertNotIn('navigator.discover_main', (ROOT / 'resources' / 'lib' / 'modules' / 'menu_lists.py').read_text(encoding='utf-8'))
+		self.assertNotIn('bingie_items_discover', (ROOT / 'xml' / 'IncludesHubs.xml').read_text(encoding='utf-8'))
+
+	def test_refine_keeps_tmdb_discover_result_backend(self):
+		refine_source = (ROOT / 'resources' / 'lib' / 'menus' / 'refine.py').read_text(encoding='utf-8')
+		self.assertIn("'tmdb_movies_discover'", refine_source)
+		self.assertIn("'tmdb_tv_discover'", refine_source)
 
 	def test_listing_refine_sideblade_replaces_legacy_options_sideblade(self):
 		listing_root = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()

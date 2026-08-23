@@ -17,14 +17,6 @@ class Navigator:
 		self.params_get = self.params.get
 		self.list_name = self.params_get('action', 'RootList')
 
-	def discover_main(self):
-		discover_str, help_str = ls(32451), ls(32487)
-		n_ins = _in_str % (discover_str.upper(), '')
-		self._add_item({'mode': 'discover.router', 'mediatype': 'movie',   'name': mov_str }, 'discover.png', n_ins)
-		self._add_item({'mode': 'discover.router', 'mediatype': 'tvshow',  'name': tv_str  }, 'discover.png', n_ins)
-		self._add_item({'mode': 'discover.help',                           'name': help_str}, 'discover.png', n_ins, False)
-		self._end_directory()
-
 	def video_sources(self):
 		handle, fanart = self.params_get('handle'), self.params_get('fanart')
 		if self.params_get('group') != 'myvideos':
@@ -46,15 +38,6 @@ class Navigator:
 		ku.set_category(handle, 'My Videos')
 		ku.set_content(handle, 'files')
 		ku.end_directory(handle, cacheToDisc=False)
-
-	def discover_hub_actions(self):
-		actions = (
-			({'mode': 'discover.router', 'mediatype': 'movie', 'name': ls(32901), 'exclude_external': 'true'}, 'search_movie.png', True, 'movie_mix'),
-			({'mode': 'discover.router', 'mediatype': 'tvshow', 'name': ls(32902), 'exclude_external': 'true'}, 'search_tv.png', True, 'tv_mix')
-		)
-		for params, icon, is_folder, category in actions:
-			self._add_item(params, icon, isFolder=is_folder, properties={'DBTYPE': 'category', 'category': category})
-		self._end_directory()
 
 	def premium(self):
 		from modules.debrid import debrid_enabled

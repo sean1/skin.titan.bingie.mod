@@ -88,7 +88,6 @@ def routing(sys_obj):
 
 	if mode.startswith('navigator.'): return _run_class_method('menus.navigator', 'Navigator', params, mode)
 
-	if mode.startswith('discover.'): return _run_class_method('menus.discover', 'Discover', params, mode)
 	if mode.startswith('refine.'): return _run_class_method('menus.refine', 'Refine', params, mode)
 
 	if mode.startswith('menu_editor.'): return _run_class_method('modules.menu_editor', 'MenuEditor', params, mode)

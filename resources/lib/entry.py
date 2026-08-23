@@ -53,6 +53,7 @@ FOCUSED_METADATA_FIELDS = (
 DATABASE_MAINTENANCE_DELAY = 60.0
 DATABASE_MAINTENANCE_RETRY = 5.0
 DATABASE_MAINTENANCE_IDLE_SECONDS = 10
+STREAMING_CACHE_RETRY = 2.0
 
 class FocusedFanart:
 	def __init__(self):
@@ -802,7 +803,10 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		normalizeMenuData()
 		try: viewsSetWindowProperties()
 		except: pass
-		self.threads = (Thread(target=self._deferred_database_maintenance),)
+		self.threads = [Thread(target=self._deferred_database_maintenance)]
+		if self._streaming_cache_ready(): self._tune_streaming_cache()
+		else: self.threads.append(Thread(target=self._deferred_streaming_cache_tune))
+		self.threads = tuple(self.threads)
 		self.focused_fanart = FocusedFanart()
 		self.trailer_preview = TrailerPreview()
 		self.next_page_prefetch = NextPagePrefetch()
@@ -839,6 +843,20 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			if self.waitForAbort(DATABASE_MAINTENANCE_RETRY): return
 		try: databaseMaintenance()
 		except: pass
+
+	def _deferred_streaming_cache_tune(self):
+		while not self._streaming_cache_ready():
+			if self.waitForAbort(STREAMING_CACHE_RETRY): return
+		self._tune_streaming_cache()
+
+	def _streaming_cache_ready(self):
+		return not kodi_utils.get_visibility('Player.HasMedia') and not kodi_utils.get_visibility('Window.IsVisible(busydialog)') and not kodi_utils.get_visibility('Window.IsVisible(busydialognocancel)')
+
+	def _tune_streaming_cache(self):
+		try:
+			from modules.streaming_cache import tune
+			tune()
+		except Exception as exc: logger('BINGIE streaming cache', str(exc))
 
 	def _database_maintenance_ready(self):
 		if kodi_utils.get_visibility('Container.IsUpdating'): return False

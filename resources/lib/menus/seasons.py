@@ -96,14 +96,6 @@ class Seasons(BaseSeason):
 				})
 				cm_append((options_str, run_plugin % options_params))
 				cm_append((extras_str, run_plugin % extras_params))
-				if not playcount: cm_append((watched_str % self.watched_title, run_plugin % build_url({
-					'mode': 'mark_as_watched_unwatched_season', 'action': 'mark_as_watched', 'year': show.year,
-					'tmdb_id': show.tmdb_id, 'tvdb_id': show.tvdb_id, 'season': season_number, 'title': show.title
-				})))
-				if watched: cm_append((unwatched_str % self.watched_title, run_plugin % build_url({
-					'mode': 'mark_as_watched_unwatched_season', 'action': 'mark_as_unwatched', 'year': show.year,
-					'tmdb_id': show.tmdb_id, 'tvdb_id': show.tvdb_id, 'season': season_number, 'title': show.title
-				})))
 				props = {
 					'pov_lite_sort_order': string(params.get('sort', '')), 'totalepisodes': string(episode_count),
 					'watchedepisodes': string(watched), 'unwatchedepisodes': string(unwatched), 'main_actors': main_actors(show.cast)
@@ -185,14 +177,6 @@ class Episodes(BaseSeason):
 					if progress != '0' or resumetime != '0': cm_append((clearprog_str, run_plugin % build_url({
 						'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode',
 						'tmdb_id': show.tmdb_id, 'season': season, 'episode': episode, 'refresh': 'progress'
-					})))
-					if playcount: cm_append((unwatched_str % self.watched_title, run_plugin % build_url({
-						'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_unwatched', 'year': show.year,
-						'tmdb_id': show.tmdb_id, 'tvdb_id': show.tvdb_id, 'season': season, 'episode': episode, 'title': show.title
-					})))
-					else: cm_append((watched_str % self.watched_title, run_plugin % build_url({
-						'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_watched', 'year': show.year,
-						'tmdb_id': show.tmdb_id, 'tvdb_id': show.tvdb_id, 'season': season, 'episode': episode, 'title': show.title
 					})))
 				props = {'episode_type': item_get('episode_type'), 'watchedprogress': progress, 'pov_lite_first_aired': premiered or '', 'main_actors': main_actors(cast)}
 				props.update(media_percentage_properties(item_get('rating'), progress))

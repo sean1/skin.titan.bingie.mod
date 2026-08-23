@@ -46,6 +46,9 @@ def check_databases():
 	dbcon = database_connect(watched_db) # Watched Status
 	for i in watched_schema: dbcon.execute(i)
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS dropped (db_type TEXT, tmdb_id TEXT, title TEXT, UNIQUE (db_type, tmdb_id))""")
+	# Resume-only policy: completed-title history is never retained.
+	dbcon.execute("""DELETE FROM watched_status""")
+	dbcon.commit()
 	dbcon.close()
 	dbcon = database_connect(trakt_db) # Trakt
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS trakt_data (id TEXT UNIQUE, data TEXT)""")
@@ -53,11 +56,14 @@ def check_databases():
 def normalize_menu_data():
 	try:
 		from caches.navigator_cache import navigator_cache
-		hidden_actions = {'watched_movies', 'watched_tvshows'}
+		hidden_actions = {
+			'watched_movies', 'watched_tvshows', 'in_progress_tvshows', 'navigator.because_you_watched', 'build_next_episode',
+			'tmdb_movies_because_you_watched', 'tmdb_tv_because_you_watched'
+		}
 		rows = navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator').fetchall()
 		for list_name, list_type, list_contents in rows:
 			items = navigator_cache.jsloads(list_contents)
-			filtered = [item for item in items if item.get('action') not in hidden_actions]
+			filtered = [item for item in items if item.get('action') not in hidden_actions and item.get('mode') not in hidden_actions]
 			changed = len(filtered) != len(items)
 			if list_name == 'RootList' and list_type == 'default' and not any(item.get('action') == 'dropped_tvshows' for item in filtered):
 				from modules.menu_lists import root_list

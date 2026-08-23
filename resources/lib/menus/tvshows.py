@@ -105,16 +105,6 @@ class TVShows:
 				cm_append((self.cm_sort['extras'], browse_str, container_update % url_params))
 			else:
 				cm_append((self.cm_sort['extras'], extras_str, run_plugin % extras_params))
-			if not playcount: cm_append((
-				self.cm_sort['mark'], watched_str % self.watched_title, run_plugin % build_url({
-					'mode': 'mark_as_watched_unwatched_tvshow', 'action': 'mark_as_watched', 'year': year,
-					'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id, 'title': title
-			})))
-			if total_watched: cm_append((
-				self.cm_sort['mark'], unwatched_str % self.watched_title, run_plugin % build_url({
-					'mode': 'mark_as_watched_unwatched_tvshow', 'action': 'mark_as_unwatched', 'year': year,
-					'tmdb_id': tmdb_id, 'imdb_id': imdb_id, 'tvdb_id': tvdb_id, 'title': title
-			})))
 			cm_append((self.cm_sort['exit'], exit_str, container_refresh % self.exit_list_params))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]

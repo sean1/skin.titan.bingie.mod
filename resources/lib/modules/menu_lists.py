@@ -19,7 +19,6 @@ movie_list = [
 	{'name': 32968, 'iconImage': 'most_voted.png', 'mode': 'build_movie_list', 'action': 'tmdb_movies_top_rated'},
 	{'name': 32470, 'iconImage': 'genres.png', 'mode': 'navigator.genres', 'menu_type': 'movie'},
 	{'name': 32472, 'iconImage': 'calender.png', 'mode': 'navigator.years', 'menu_type': 'movie'},
-	{'name': 32474, 'iconImage': 'because_you_watched.png', 'mode': 'navigator.because_you_watched', 'menu_type': 'movie'},
 	{'name': 32476, 'iconImage': 'player.png', 'mode': 'build_movie_list', 'action': 'in_progress_movies'}
 ]
 
@@ -33,10 +32,7 @@ tvshow_list = [
 	{'name': 32470, 'iconImage': 'genres.png', 'mode': 'navigator.genres', 'menu_type': 'tvshow'},
 	{'name': 32480, 'iconImage': 'networks.png', 'mode': 'navigator.networks', 'menu_type': 'tvshow'},
 	{'name': 32472, 'iconImage': 'calender.png', 'mode': 'navigator.years', 'menu_type': 'tvshow'},
-	{'name': 32474, 'iconImage': 'because_you_watched.png', 'mode': 'navigator.because_you_watched', 'menu_type': 'tvshow'},
-	{'name': 32481, 'iconImage': 'in_progress_tvshow.png', 'mode': 'build_tvshow_list', 'action': 'in_progress_tvshows'},
-	{'name': 32482, 'iconImage': 'player.png', 'mode': 'build_in_progress_episode'},
-	{'name': 32483, 'iconImage': 'next_episodes.png', 'mode': 'build_next_episode'}
+	{'name': 32482, 'iconImage': 'player.png', 'mode': 'build_in_progress_episode'}
 ]
 
 main_menu_items, main_menus, default_menu_items = {

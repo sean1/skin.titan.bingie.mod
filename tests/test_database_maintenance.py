@@ -74,7 +74,7 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 				rows = (
 					('RootList', 'default', [{'action': 'in_progress_movies'}]),
 					('MovieList', 'default', [{'action': 'watched_movies'}, {'action': 'in_progress_movies'}]),
-					('TVShowList', 'edited', [{'action': 'watched_tvshows'}, {'action': 'tmdb_tv_popular'}]),
+					('TVShowList', 'edited', [{'action': 'watched_tvshows'}, {'action': 'in_progress_tvshows'}, {'mode': 'build_next_episode'}, {'action': 'tmdb_tv_popular'}]),
 					('Keep Watching', 'shortcut_folder', [{'action': 'watched_movies'}, {'action': 'navigator.because_you_watched'}])
 				)
 				self.dbcur.executemany('INSERT INTO navigator VALUES (?, ?, ?)', ((name, list_type, json.dumps(items)) for name, list_type, items in rows))
@@ -103,8 +103,24 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 		self.assertEqual(first_contents, second_contents)
 		self.assertEqual(contents[('MovieList', 'default')], [{'action': 'in_progress_movies'}])
 		self.assertEqual(contents[('TVShowList', 'edited')], [{'action': 'tmdb_tv_popular'}])
-		self.assertEqual(contents[('Keep Watching', 'shortcut_folder')], [{'action': 'navigator.because_you_watched'}])
+		self.assertEqual(contents[('Keep Watching', 'shortcut_folder')], [])
 		self.assertEqual(contents[('RootList', 'default')], [{'action': 'in_progress_movies'}, {'action': 'dropped_tvshows', 'name': 'Dropped Shows'}])
+
+	def test_database_check_clears_watched_history_but_preserves_resume_and_dropped_rows(self):
+		with tempfile.TemporaryDirectory() as temp_dir:
+			self._configure_database_check(temp_dir)
+			self.cache.check_databases()
+			with sqlite3.connect(self.cache.watched_db) as dbcon:
+				dbcon.execute('INSERT INTO watched_status VALUES (?, ?, ?, ?, ?, ?)', ('movie', '101', 0, 0, '2026-08-23', 'Completed'))
+				dbcon.execute('INSERT INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', ('episode', '202', 1, 2, '45', '1800', '2026-08-23', 0, 'Paused'))
+				dbcon.execute('INSERT INTO dropped VALUES (?, ?, ?)', ('tvshow', '303', 'Dropped'))
+
+			self.cache.check_databases()
+
+			with sqlite3.connect(self.cache.watched_db) as dbcon:
+				self.assertEqual(dbcon.execute('SELECT * FROM watched_status').fetchall(), [])
+				self.assertEqual(dbcon.execute('SELECT db_type, media_id, season, episode FROM progress').fetchall(), [('episode', '202', 1, 2)])
+				self.assertEqual(dbcon.execute('SELECT db_type, tmdb_id FROM dropped').fetchall(), [('tvshow', '303')])
 
 	def test_metacache_external_id_indexes_support_stable_lookup_and_schema_is_idempotent(self):
 		with tempfile.TemporaryDirectory() as temp_dir:

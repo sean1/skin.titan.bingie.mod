@@ -100,16 +100,6 @@ class Movies:
 					'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'movie',
 					'tmdb_id': tmdb_id, 'refresh': 'progress'
 			})))
-			if playcount: cm_append((
-				self.cm_sort['mark'], unwatched_str % self.watched_title, run_plugin % build_url({
-					'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_unwatched',
-					'tmdb_id': tmdb_id, 'title': title, 'year': year
-			})))
-			else: cm_append((
-				self.cm_sort['mark'], watched_str % self.watched_title, run_plugin % build_url({
-					'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_watched',
-					'tmdb_id': tmdb_id, 'title': title, 'year': year
-			})))
 			cm_append((self.cm_sort['exit'], exit_str, container_refresh % self.exit_list_params))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]

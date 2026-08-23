@@ -126,16 +126,6 @@ class Episodes:
 						'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode',
 						'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'refresh': 'progress'
 				})))
-				if playcount: cm_append((
-					self.cm_sort['mark'], unwatched_str % self.watched_title, run_plugin % build_url({
-						'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_unwatched', 'year': year,
-						'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'season': season, 'episode': episode, 'title': title
-				})))
-				else: cm_append((
-					self.cm_sort['mark'], watched_str % self.watched_title, run_plugin % build_url({
-						'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_watched', 'year': year,
-						'tmdb_id': tmdb_id, 'tvdb_id': tvdb_id, 'season': season, 'episode': episode,  'title': title
-				})))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]
 			props['episode_type'] = item_get('episode_type')

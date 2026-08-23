@@ -40,10 +40,6 @@ POV_ROUTES = {
 	'hydrate_person_info': lambda p: _import('menus.people', 'hydrate_person_info')(p),
 	'person_data_dialog': lambda p: _import('menus.people', 'person_data_dialog')(p),
 
-	'mark_as_watched_unwatched_episode': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_episode')(p),
-	'mark_as_watched_unwatched_season': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_season')(p),
-	'mark_as_watched_unwatched_tvshow': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_tvshow')(p),
-	'mark_as_watched_unwatched_movie': lambda p: _import('caches.watched_cache', 'mark_as_watched_unwatched_movie')(p),
 	'watched_unwatched_erase_bookmark': lambda p: _import('caches.progress_cache', 'erase_bookmark')(
 		p.get('mediatype'), p.get('tmdb_id'), p.get('season', ''), p.get('episode', ''), p.get('refresh', 'false')
 	),

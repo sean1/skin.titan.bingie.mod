@@ -184,12 +184,6 @@
     <variable name="BingieTVHubTopRatedPath">
         <value condition="Integer.IsGreater(Window(1110).Property(BingieHubWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_top_rated&amp;name=Top+Rated+TV+Shows&amp;limit=5&amp;hub_next=true&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
     </variable>
-    <variable name="BingieDiscoverBecauseMoviesPath">
-        <value>plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_because_you_watched&amp;name=Because+You+Watched&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
-    </variable>
-    <variable name="BingieDiscoverBecauseTVPath">
-        <value>plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_because_you_watched&amp;name=Because+You+Watched&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
-    </variable>
     <!-- Bingie Items Movies -->
     <include name="bingie_items_movies">
         <include>Empty_Hub_Alt_Buttons</include>
@@ -298,15 +292,15 @@
 			<param name="widgetid" value="1510" />
             <param name="pollEmpty" value="true" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Recommended for You • Movies" />
-            <param name="path" value="$VAR[BingieDiscoverBecauseMoviesPath]" />
+            <param name="label" value="Popular Movies" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular&amp;name=Popular+Movies&amp;limit=10" />
         </include>
         <include content="bingie_pov_hub_item">
 			<param name="widgetid" value="1520" />
             <param name="pollEmpty" value="true" />
             <param name="widgetStyle" value="widget_layout_default" />
-            <param name="label" value="Recommended for You • TV Shows" />
-            <param name="path" value="$VAR[BingieDiscoverBecauseTVPath]" />
+            <param name="label" value="Popular TV Shows" />
+            <param name="path" value="plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular&amp;name=Popular+TV+Shows&amp;limit=10" />
         </include>
     </include>
 

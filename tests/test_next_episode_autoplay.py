@@ -228,6 +228,30 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		player_module.ws.set_bookmark.assert_called_once_with('movie', '101', 100, 200, 'Movie', '', '', 'progress')
 		player_module.kodi_utils.sleep.assert_not_called()
 
+	def test_completed_playback_erases_resume_without_recording_watched(self):
+		player_module = load_player()
+		player_module.kodi_utils.clear_property = mock.Mock()
+		player_module.ws.erase_bookmark = mock.Mock(return_value=True)
+		player_module.ws.mark_as_watched_unwatched_movie = mock.Mock()
+		player_module.ws.mark_as_watched_unwatched_episode = mock.Mock()
+		for mediatype, season, episode in (('movie', '', ''), ('episode', 2, 3)):
+			with self.subTest(mediatype=mediatype):
+				player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+				player.media_marked = False
+				player.current_point = 95
+				player.set_watched = 90
+				player.mediatype = mediatype
+				player.tmdb_id = '101'
+				player.season = season
+				player.episode = episode
+
+				player.media_watched_marker()
+
+				self.assertTrue(player.media_marked)
+				player_module.ws.erase_bookmark.assert_called_with(mediatype, '101', season, episode, 'progress')
+		player_module.ws.mark_as_watched_unwatched_movie.assert_not_called()
+		player_module.ws.mark_as_watched_unwatched_episode.assert_not_called()
+
 	def test_credit_marker_controls_popup_timing(self):
 		player_module = load_player()
 		player_module.settings.autoplay_next_settings = lambda: {

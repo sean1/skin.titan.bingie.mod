@@ -450,18 +450,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.media_marked = True
 		try:
 			if self.current_point >= self.set_watched:
-				if self.mediatype == 'movie': watched_params, watched_function = {
-					'mode': 'mark_as_watched_unwatched_movie', 'action': 'mark_as_watched',
-					'refresh': 'false', 'from_playback': 'true',
-					'tmdb_id': self.tmdb_id, 'title': self.title, 'year': self.year
-					}, ws.mark_as_watched_unwatched_movie
-				else: watched_params, watched_function = {
-					'mode': 'mark_as_watched_unwatched_episode', 'action': 'mark_as_watched',
-					'refresh': 'false', 'from_playback': 'true',
-					'tmdb_id': self.tmdb_id, 'title': self.title, 'year': self.year,
-					'tvdb_id': self.tvdb_id, 'season': self.season, 'episode': self.episode
-					}, ws.mark_as_watched_unwatched_episode
-				return self.exec_task('media_watched', watched_function, watched_params)
+				kodi_utils.clear_property('pov_lite_total_autoplays')
+				return ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode, 'progress')
 			kodi_utils.clear_property('pov_lite_total_autoplays')
 			if self.current_point < self.set_resume: return
 			self.exec_task(

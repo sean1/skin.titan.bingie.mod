@@ -7,6 +7,8 @@ from indexers.segments import SegmentScraper
 from indexers.metadata import art_infodict, movie_show_infodict, episode_infodict, info_tagger, resized_cast
 from indexers import tmdb_api
 from modules import kodi_utils, settings
+try: from modules import playback_health
+except Exception: playback_health = None
 from modules.meta_lists import meta_languages
 from modules.utils import sec2time
 # from modules.kodi_utils import logger
@@ -38,6 +40,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.set_resume, self.set_watched = 5, 90
 		self.playback_event, self.progress_media = None, None
 		self.playback_error, self.retry_resume_percent = False, 0
+		self.playback_health_context, self.playback_health_started_at, self.playback_health_recorded = None, None, False
 		self.ignore_startup_stop, self.startup_playback_started = False, False
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
@@ -149,10 +152,12 @@ class POVPlayer(kodi_utils.xbmc_player):
 		kodi_utils.clear_property('pov_lite_total_autoplays')
 
 	def onPlayBackEnded(self):
+		self._record_healthy_play(natural_end=True)
 		self._set_terminal_playback_event()
 
 	def onPlayBackError(self):
 		if self.playback_event is True:
+			self._record_playback_health('stream_error', elapsed=self._playback_health_elapsed())
 			self.playback_error = True
 			self.retry_resume_percent = self._current_resume_percent()
 		else:
@@ -195,6 +200,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 		if not url: return
 		try:
 			self.meta = meta or {}
+			self.playback_health_context = self.meta.pop('_playback_health_context', None)
+			self.playback_health_started_at = self.meta.pop('_playback_health_started_at', None)
+			self.playback_health_recorded = False
 			self.meta_get = self.meta.get
 			self.tmdb_id, self.imdb_id = self.meta_get('tmdb_id'), self.meta_get('imdb_id')
 			self.title, self.year = self.meta_get('title'), self.meta_get('year')
@@ -222,12 +230,15 @@ class POVPlayer(kodi_utils.xbmc_player):
 			while self.playback_event is None and monotonic() < start_deadline:
 				if kodi_utils.monitor.waitForAbort(0.1): return
 			if self.playback_event is not True:
+				self._record_playback_health('startup_fail', latency=self._playback_health_elapsed())
 				kodi_utils.logger('POVPlayer', 'Playback startup failed or timed out')
 				return False
 			if not self._duration_is_plausible():
+				self._record_playback_health('startup_fail', latency=self._playback_health_elapsed())
 				kodi_utils.logger('POVPlayer', 'Playback duration is implausibly short; trying the next source')
 				self.stop()
 				return False
+			self._record_playback_health('startup_ok', latency=self._playback_health_elapsed())
 			if callable(progress_media): progress_media()
 			kodi_utils.close_all_dialog()
 			if self.mediatype == 'episode':
@@ -253,6 +264,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.total_time, self.curr_time = self.getTotalTime(), self.getTime()
 			self.current_point = round(float(self.curr_time/self.total_time * 100), 1)
 			self.remaining_time = round(self.total_time - self.curr_time)
+			if self.curr_time >= 60: self._record_healthy_play()
 			if not self.subs_searched:
 				self.exec_task('subtitles')
 			if not self.stingers_checked and self.mediatype == 'movie':
@@ -269,6 +281,25 @@ class POVPlayer(kodi_utils.xbmc_player):
 				elif self.autoscrape_next_episode and self.remaining_time <= self.autoscrape_next_window_time:
 					if self.autoscrape_nextep: self.exec_task('scrape_next_ep')
 		except: pass
+
+	def _playback_health_elapsed(self):
+		try: return max(0, monotonic() - float(self.playback_health_started_at))
+		except: return None
+
+	def _record_playback_health(self, event, **kwargs):
+		context = getattr(self, 'playback_health_context', None)
+		if playback_health is None or not context: return
+		try: playback_health.record(context, event, **kwargs)
+		except: pass
+
+	def _record_healthy_play(self, natural_end=False):
+		if getattr(self, 'playback_health_recorded', False) or getattr(self, 'playback_error', False): return
+		if not natural_end:
+			try:
+				if self.getTime() < 60: return
+			except: return
+		self.playback_health_recorded = True
+		self._record_playback_health('healthy_play', elapsed=self._playback_health_elapsed())
 
 	def make_listitem(self):
 		listitem = kodi_utils.make_listitem()

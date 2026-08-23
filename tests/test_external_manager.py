@@ -221,6 +221,24 @@ class ExternalManagerTests(unittest.TestCase):
 
 		self.assertEqual([(item['quality'], item['size']) for item in results], [('4K', 30.0), ('4K', 0.5), ('1080p', 6.0)])
 
+	def test_autoplay_health_breaks_ties_after_explicit_provider_rank(self):
+		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
+		processor = SOURCES.ResultsProcessor(source)
+		results = [
+			{'quality': '4K', 'quality_rank': 1, 'size': 10.0, 'provider_rank': 2, 'scrape_provider': 'preferred'},
+			{'quality': '4K', 'quality_rank': 1, 'size': 10.0, 'provider_rank': 1, 'scrape_provider': 'unhealthy'},
+			{'quality': '4K', 'quality_rank': 1, 'size': 10.0, 'provider_rank': 2, 'scrape_provider': 'healthy'},
+		]
+		original = SOURCES.playback_health
+		SOURCES.playback_health = types.SimpleNamespace(
+			source_context=lambda item: {'provider': item['scrape_provider']},
+			provider_penalty=lambda provider: {'unhealthy': 100, 'healthy': 0, 'preferred': 50}[provider]
+		)
+		try: results.sort(key=processor.autoplay_source_key)
+		finally: SOURCES.playback_health = original
+
+		self.assertEqual([item['scrape_provider'] for item in results], ['unhealthy', 'healthy', 'preferred'])
+
 
 if __name__ == '__main__':
 	unittest.main()

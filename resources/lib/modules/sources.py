@@ -9,6 +9,8 @@ from caches.providers_cache import ExternalProvidersCache
 from indexers.metadata import movie_meta, tvshow_meta, season_episodes_meta, get_title
 from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCheck
 from modules import player, kodi_utils, settings, source_utils
+try: from modules import playback_health
+except Exception: playback_health = None
 from modules.source_search import CORE_CACHED_RESULT_TARGET, external_worker_count, split_external_providers
 from modules.utils import get_datetime, safe_string, string_to_float
 #from modules.kodi_utils import logger
@@ -235,6 +237,7 @@ class Sources:
 				progress_media = None
 			for count, item in enumerate(items, 1):
 				link = None
+				health_context = self._playback_health_context(item)
 				try:
 					if monitor.abortRequested(): break
 					elif self.progress_dialog.full_screen and self.progress_dialog.iscanceled(): break
@@ -249,15 +252,25 @@ class Sources:
 						self.progress_dialog.update(format_line % (line1, line2, name), percent)
 					else: progressDialogBG.update(percent, name)
 				except: pass
-				if 'unrestricted_link' in item: link = item['unrestricted_link']
-				else: link = Source(item, self.meta).resolve_sources()
-				if link is None: continue
+				resolve_started = time.monotonic()
+				try:
+					if 'unrestricted_link' in item: link = item['unrestricted_link']
+					else: link = Source(item, self.meta).resolve_sources()
+				except: link = None
+				resolve_latency = time.monotonic() - resolve_started
+				if link is None:
+					self._record_playback_health(health_context, 'resolve_fail', latency=resolve_latency)
+					continue
+				health_context = self._playback_health_context(item, link) or health_context
+				self._record_playback_health(health_context, 'resolve_ok', latency=resolve_latency)
 				if not self.progress_dialog.full_screen: progressDialogBG.close()
 				playback_meta = self.meta.copy()
 				playback_meta.update({
 					'release_name': item.get('name') or item.get('display_name') or '',
 					'release_quality': item.get('quality') or '',
-					'release_info': item.get('extraInfo') or ''
+					'release_info': item.get('extraInfo') or '',
+					'_playback_health_context': health_context,
+					'_playback_health_started_at': time.monotonic()
 				})
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
 				playback_player = POVPlayer()
@@ -268,6 +281,18 @@ class Sources:
 				if self.progress_dialog.full_screen: self.progress_dialog.kill()
 				else: progressDialogBG.close()
 				return self._no_results()
+		except: pass
+
+	@staticmethod
+	def _playback_health_context(item, link=None):
+		if playback_health is None: return None
+		try: return playback_health.source_context(item, link)
+		except: return None
+
+	@staticmethod
+	def _record_playback_health(context, event, **kwargs):
+		if playback_health is None or not context: return
+		try: playback_health.record(context, event, **kwargs)
 		except: pass
 
 class ConfigLoader:
@@ -554,7 +579,13 @@ class ResultsProcessor:
 		minimum_plausible_size = ((0.125 * minimum_bitrate) * duration) / 1000
 		implausibly_tiny = not unknown_size and size < minimum_plausible_size
 		fallback_rank = 3 if unknown_size else 2 if implausibly_tiny else 1 if oversized else 0
-		return item['quality_rank'], fallback_rank, -size if fallback_rank == 0 else size
+		provider_penalty = 0
+		if playback_health is not None:
+			try:
+				provider = playback_health.source_context(item).get('provider')
+				provider_penalty = playback_health.provider_penalty(provider)
+			except: pass
+		return item['quality_rank'], fallback_rank, item.get('provider_rank', 11), provider_penalty, -size if fallback_rank == 0 else size
 
 	def get_provider_rank(self, account_type):
 		return self.source.provider_sort_ranks[account_type] or 11

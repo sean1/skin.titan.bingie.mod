@@ -50,7 +50,9 @@ class MenuMediaTests(unittest.TestCase):
 		self.listitem.setLabel.assert_called_once_with('Movie')
 		self.listitem.setProperties.assert_called_once_with({
 			'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|movie|101', 'pov_lite_sort_order': '3',
-			'tmdb_id': '101', 'PovInfoSourceTmdb': '55', 'card_language': 'EN', 'rating_percent': '7.5'
+			'tmdb_id': '101', 'PovInfoSourceTmdb': '55',
+			'PovLiteSourceSelect': {'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': 101, 'autoplay': 'false'},
+			'card_language': 'EN', 'rating_percent': '7.5'
 		})
 		self.listitem.setArt.assert_called_once_with({
 			'poster': 'https://image/w342/poster.jpg', 'icon': 'https://image/w342/poster.jpg', 'fanart': 'https://image/w1280/backdrop.jpg',
@@ -76,7 +78,8 @@ class MenuMediaTests(unittest.TestCase):
 		})
 		self.listitem.setProperties.assert_called_once_with({
 			'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|tvshow|202', 'pov_lite_sort_order': '4', 'tmdb_id': '202',
-			'PovInfoSourceTmdb': '', 'card_flag': 'flags/country/ca.png', 'rating_percent': '0'
+			'PovInfoSourceTmdb': '', 'PovLiteSourceSelect': {'mode': 'smart_play_media', 'tmdb_id': 202, 'autoplay': 'false'},
+			'card_flag': 'flags/country/ca.png', 'rating_percent': '0'
 		})
 		self.video.setTitle.assert_called_once_with('Show')
 		self.video.setTvShowTitle.assert_called_once_with('Show')

@@ -330,6 +330,9 @@ class MenuCompletionTests(unittest.TestCase):
 		self.assertEqual(len(menu.items), 1)
 		properties = listitem.setProperties.call_args.args[0]
 		self.assertEqual(properties['card_language'], 'JA')
+		self.assertEqual(properties['PovLiteSourceSelect'], {
+			'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': 101, 'autoplay': 'false'
+		})
 		self.assertNotIn('card_flag', properties)
 
 

@@ -120,6 +120,7 @@ class TVShows:
 			cm = [v for k, *v in cm if k]
 			props = {
 				'PovLiteItem': 'true', 'pov_lite_sort_order': string(position), 'unwatchedepisodes': string(total_unwatched),
+				'PovLiteSourceSelect': build_url({'mode': 'smart_play_media', 'tmdb_id': tmdb_id, 'autoplay': 'false'}),
 				'totalseasons': string(total_seasons), 'totalepisodes': string(total_aired_eps),
 				'watchedepisodes': string(total_watched), 'watchedprogress': string(int(watchedprogress)),
 				'year_range': meta_get('year_range', ''), 'main_actors': main_actors(meta_get('cast', [])),

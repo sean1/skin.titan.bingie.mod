@@ -115,6 +115,7 @@ class Movies:
 			cm = [v for k, *v in cm if k]
 			props = {
 				'PovLiteItem': 'true', 'pov_lite_sort_order': string(position), 'watchedprogress': progress,
+				'PovLiteSourceSelect': build_url({'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': tmdb_id, 'autoplay': 'false'}),
 				'main_actors': main_actors(meta_get('cast', [])),
 				'PovInfoCollectionId': string((meta_get('extra_info') or {}).get('collection_id') or ''),
 				'PovInfoSourceTmdb': string(self.params.get('tmdb_id') or '')

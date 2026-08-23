@@ -4,6 +4,7 @@ POV_ROUTES = {
 	'play_trailer': lambda p: _import('modules.trailers', 'play')(p),
 	'smart_play_media': lambda p: _import('modules.episode_tools', 'SmartPlay')(p),
 	'play_media': lambda p: _import('modules.sources', 'Sources').factory(p),
+	'source_select_focused': lambda p: _import('modules.focused_playback', 'source_select_focused')(),
 	'media_play': lambda p: _import('modules.debrid', 'play_from_cloud')(p),
 
 	'options_menu_choice': lambda p: _import('modules.dialogs', 'options_menu')(p),

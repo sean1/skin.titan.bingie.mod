@@ -801,6 +801,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 	def __enter__(self):
 		initializeDatabases()
 		normalizeMenuData()
+		self._install_keymap()
 		try: viewsSetWindowProperties()
 		except: pass
 		self.threads = [Thread(target=self._deferred_database_maintenance)]
@@ -857,6 +858,12 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			from modules.streaming_cache import tune
 			tune()
 		except Exception as exc: logger('BINGIE streaming cache', str(exc))
+
+	def _install_keymap(self):
+		try:
+			from modules.keymap import install
+			if install(): logger('BINGIE keymap', 'Installed long-Play source selection keymap')
+		except Exception as exc: logger('BINGIE keymap', str(exc))
 
 	def _database_maintenance_ready(self):
 		if kodi_utils.get_visibility('Container.IsUpdating'): return False

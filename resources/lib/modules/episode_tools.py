@@ -25,6 +25,9 @@ def SmartPlay(params):
 	nextep_meta, nextep_params = nextep_playback_info(meta)
 	if nextep_params == 'error': return kodi_utils.notification(32574)
 	if nextep_params == 'no_next_episode': return kodi_utils.notification('%s %s' % (nextep_str, nores_str))
+	if str(params.get('autoplay', '')).lower() == 'false':
+		nextep_params['autoplay'] = 'false'
+		nextep_params.pop('autoplay_next', None)
 	Sources.factory(nextep_params)
 
 def get_random_episode(tmdb_id, continual=False):

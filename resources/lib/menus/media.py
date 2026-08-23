@@ -76,7 +76,11 @@ def build_tmdb_detail_shelf_item(position, item, source_tmdb_id, mediatype, genr
 	url_params = kodi_utils.build_url({'mode': 'show_media_info', 'mediatype': mediatype, 'tmdb_id': tmdb_id})
 	props = {
 		'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|%s|%s' % (mediatype, tmdb_id),
-		'pov_lite_sort_order': str(position), 'tmdb_id': str(tmdb_id), 'PovInfoSourceTmdb': str(source_tmdb_id or '')
+		'pov_lite_sort_order': str(position), 'tmdb_id': str(tmdb_id), 'PovInfoSourceTmdb': str(source_tmdb_id or ''),
+		'PovLiteSourceSelect': kodi_utils.build_url(
+			{'mode': 'smart_play_media', 'tmdb_id': tmdb_id, 'autoplay': 'false'} if is_tvshow
+			else {'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': tmdb_id, 'autoplay': 'false'}
+		)
 	}
 	props.update(card_badge_properties(item, mediatype))
 	props.update(media_percentage_properties(rating))

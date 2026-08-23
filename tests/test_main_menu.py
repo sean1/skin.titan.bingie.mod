@@ -21,6 +21,7 @@ class MainMenuTests(unittest.TestCase):
 		main_item = next(item for item in menu.findall('item') if item.findtext('label2') == 'My Videos')
 		self.assertEqual(main_item.findtext("property[@name='submenuVisibility']"), 'myvideos')
 		self.assertEqual(main_item.findtext("property[@name='hasSubmenu']"), 'True')
+		self.assertEqual(main_item.findtext('icon'), 'shortcuts/mylist.png')
 		self.assertEqual(main_item.findtext('onclick'), 'ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.video_sources&group=myvideos,return)')
 		self.assertEqual(main_item.findtext("property[@name='list']"), 'plugin://skin.titan.bingie.lite/?mode=navigator.video_sources&group=myvideos')
 		self.assertFalse(any(item.findtext("property[@name='group']") == 'myvideos' for item in self.root.find("include[@name='StaticSubmenu']").findall('item')))

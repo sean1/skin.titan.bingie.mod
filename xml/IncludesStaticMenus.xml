@@ -78,7 +78,7 @@
 			<property name="id">$NUMBER[4]</property>
 			<label>My Videos</label>
 			<label2>My Videos</label2>
-			<icon>DefaultVideo.png</icon>
+			<icon>shortcuts/mylist.png</icon>
 			<thumb />
 			<property name="labelID">my-videos</property>
 			<property name="defaultID">10025</property>

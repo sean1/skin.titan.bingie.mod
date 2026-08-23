@@ -45,6 +45,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.playback_paused, self.playback_seek_grace_until = False, 0
 		self.playback_sample_wall, self.playback_sample_media = None, None
 		self.playback_stall_seconds, self.playback_stall_count, self.playback_stall_active = 0, 0, False
+		self.allow_stall_recovery, self.has_stall_fallback, self.stall_recovery_requested = False, False, False
 		self.ignore_startup_stop, self.startup_playback_started = False, False
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
@@ -151,6 +152,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def onPlayBackStopped(self):
 		if not self._set_terminal_playback_event(): return
+		if getattr(self, 'stall_recovery_requested', False): return
 		self._finalize_stream(True)
 		if self.next_episode_requested: return
 		from modules.sources import Sources
@@ -162,6 +164,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self._set_terminal_playback_event()
 
 	def onPlayBackError(self):
+		if getattr(self, 'stall_recovery_requested', False):
+			self.playback_event = False
+			return
 		if self.playback_event is True:
 			self._finalize_stream(False)
 			self.playback_error = True
@@ -218,16 +223,19 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.stop()
 
 	def run(self, url=None, meta=None, progress_media=None):
-		if not url: return
+		if not url: return False
 		try:
 			self.meta = meta or {}
 			self.playback_health_context = self.meta.pop('_playback_health_context', None)
 			self.playback_health_started_at = self.meta.pop('_playback_health_started_at', None)
 			self.playback_health_bitrate_mbps = self.meta.pop('_playback_health_bitrate_mbps', None)
+			self.allow_stall_recovery = bool(self.meta.pop('_playback_health_allow_stall_recovery', False))
+			self.has_stall_fallback = bool(self.meta.pop('_playback_health_has_stall_fallback', False))
 			self.playback_health_finalized, self.playback_health_qualified = False, False
 			self.playback_paused, self.playback_seek_grace_until = False, 0
 			self.playback_sample_wall, self.playback_sample_media = None, None
 			self.playback_stall_seconds, self.playback_stall_count, self.playback_stall_active = 0, 0, False
+			self.stall_recovery_requested = False
 			self.meta_get = self.meta.get
 			self.tmdb_id, self.imdb_id = self.meta_get('tmdb_id'), self.meta_get('imdb_id')
 			self.title, self.year = self.meta_get('title'), self.meta_get('year')
@@ -282,7 +290,17 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if not self.media_marked: self.media_watched_marker()
 			ws.clear_local_bookmarks()
 			return True
-		except: pass
+		except Exception as exc:
+			try: kodi_utils.logger('POVPlayer', 'Playback failed: %s' % exc)
+			except: pass
+			if getattr(self, 'playback_event', None) is True:
+				self.retry_resume_percent = self._current_resume_percent()
+				self.playback_error = True
+				self._finalize_stream(False)
+				try:
+					if self.isPlayingVideo(): self.stop()
+				except: pass
+			return False
 
 	def check_playback_events(self):
 		try:
@@ -356,8 +374,20 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if self.playback_stall_seconds >= 3 and not self.playback_stall_active:
 				self.playback_stall_count += 1
 				self.playback_stall_active = True
+				self._recover_from_stalls()
 		elif media_delta >= 0.5:
 			self.playback_stall_seconds, self.playback_stall_active = 0, False
+
+	def _recover_from_stalls(self):
+		if not getattr(self, 'allow_stall_recovery', False) or not getattr(self, 'has_stall_fallback', False) or getattr(self, 'stall_recovery_requested', False): return False
+		if not getattr(self, 'playback_health_qualified', False) or getattr(self, 'playback_stall_count', 0) < 2: return False
+		self.stall_recovery_requested = True
+		self.retry_resume_percent = self._current_resume_percent()
+		self.playback_error = True
+		self._finalize_stream(True)
+		try: self.stop()
+		except: pass
+		return True
 
 	def make_listitem(self):
 		listitem = kodi_utils.make_listitem()

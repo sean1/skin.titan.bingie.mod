@@ -108,6 +108,30 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertTrue(result)
 		self.assertEqual(played, ['https://stream.invalid/first', 'https://stream.invalid/second'])
 
+	def test_player_exception_tries_next_resolved_source(self):
+		sources_module = load_sources_module()
+		played = []
+
+		class Player:
+			def run(self, link, meta, progress):
+				played.append(link)
+				if len(played) == 1: raise RuntimeError('decoder setup')
+				return True
+
+		sources_module.POVPlayer = Player
+		instance = sources_module.Sources.__new__(sources_module.Sources)
+		instance.background, instance.autoplay = False, True
+		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
+		instance.meta = {'title': 'Movie'}
+		instance._no_results = lambda: None
+		items = [
+			{'name': 'first', 'unrestricted_link': 'https://stream.invalid/first', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+			{'name': 'second', 'unrestricted_link': 'https://stream.invalid/second', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+		]
+
+		self.assertTrue(instance.play_file(items))
+		self.assertEqual(played, ['https://stream.invalid/first', 'https://stream.invalid/second'])
+
 	def test_autoplay_defers_unhealthy_host_but_keeps_last_resort(self):
 		sources_module = load_sources_module()
 		played = []
@@ -143,7 +167,8 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		sources_module.playback_health = types.SimpleNamespace(
 			source_context=lambda item, link=None: {'provider': 'rd', 'host': 'bad.invalid'}, record=lambda *args, **kwargs: None, host_penalty=lambda context: 100
 		)
-		sources_module.POVPlayer = type('Player', (), {'run': lambda self, link, meta, progress: played.append(link) or True})
+		seen_meta = []
+		sources_module.POVPlayer = type('Player', (), {'run': lambda self, link, meta, progress: (played.append(link), seen_meta.append(meta), True)[-1]})
 		instance = sources_module.Sources.__new__(sources_module.Sources)
 		instance.background, instance.autoplay = False, False
 		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
@@ -153,6 +178,56 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 
 		self.assertTrue(instance.play_file([bad], bad))
 		self.assertEqual(played, ['https://bad.invalid/file'])
+		self.assertFalse(seen_meta[0]['_playback_health_allow_stall_recovery'])
+
+	def test_expired_deferred_unrestricted_link_is_not_replayed(self):
+		sources_module = load_sources_module()
+		played = []
+		sources_module.playback_health = types.SimpleNamespace(
+			source_context=lambda item, link=None: {'provider': 'rd', 'host': link.split('/')[2] if link else ''},
+			record=lambda *args, **kwargs: None,
+			host_penalty=lambda context: 100 if context.get('host') == 'bad.invalid' else 0
+		)
+		sources_module.POVPlayer = type('Player', (), {'run': lambda self, link, meta, progress: played.append(link) or False})
+		instance = sources_module.Sources.__new__(sources_module.Sources)
+		instance.background, instance.autoplay = False, True
+		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
+		instance.meta = {'title': 'Movie'}
+		instance._no_results = lambda: 'none'
+		bad = {'name': 'bad', 'unrestricted_link': 'https://bad.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
+		good = {'name': 'good', 'unrestricted_link': 'https://good.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
+
+		with mock.patch.object(sources_module, 'DEFERRED_LINK_TTL', 0): result = instance.play_file([bad, good])
+		self.assertEqual(result, 'none')
+		self.assertEqual(played, ['https://good.invalid/file'])
+
+	def test_deferred_host_records_one_resolve_and_preserves_caller_items(self):
+		sources_module = load_sources_module()
+		events, played = [], []
+		sources_module.playback_health = types.SimpleNamespace(
+			source_context=lambda item, link=None: {'provider': 'rd', 'host': link.split('/')[2] if link else ''},
+			record=lambda context, event, **kwargs: events.append((context.get('host'), event)),
+			host_penalty=lambda context: 100 if context.get('host') == 'bad.invalid' else 0
+		)
+
+		class Player:
+			def run(self, link, meta, progress):
+				played.append(link)
+				return link.startswith('https://bad.invalid')
+
+		sources_module.POVPlayer = Player
+		instance = sources_module.Sources.__new__(sources_module.Sources)
+		instance.background, instance.autoplay = False, True
+		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
+		instance.meta = {'title': 'Movie'}
+		instance._no_results = lambda: None
+		bad = {'name': 'bad', 'unrestricted_link': 'https://bad.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
+		good = {'name': 'good', 'unrestricted_link': 'https://good.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
+
+		self.assertTrue(instance.play_file([bad, good]))
+		self.assertEqual(played, ['https://good.invalid/file', 'https://bad.invalid/file'])
+		self.assertEqual(events.count(('bad.invalid', 'resolve_ok')), 1)
+		self.assertNotIn('_bingie_host_deferred', bad)
 
 	def test_playback_error_resume_position_reaches_next_source(self):
 		sources_module = load_sources_module()
@@ -178,7 +253,10 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 
 		self.assertTrue(instance.play_file(items))
 		self.assertNotIn('_retry_resume_percent', seen_meta[0])
+		self.assertTrue(seen_meta[0]['_playback_health_allow_stall_recovery'])
+		self.assertTrue(seen_meta[0]['_playback_health_has_stall_fallback'])
 		self.assertEqual(seen_meta[1]['_retry_resume_percent'], 37.5)
+		self.assertFalse(seen_meta[1]['_playback_health_has_stall_fallback'])
 		self.assertEqual(seen_meta[1]['release_name'], 'second')
 
 	def test_duration_mismatch_retry_does_not_invent_resume_position(self):
@@ -242,6 +320,44 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		player._finalize_stream(False)
 
 		self.assertEqual(events, ['stalled_play'])
+
+	def test_two_confirmed_stalls_request_autoplay_fallback_with_resume(self):
+		player_module = load_player()
+		events = []
+		player_module.playback_health = types.SimpleNamespace(record=lambda context, event, **kwargs: events.append(event))
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.playback_health_context = {'provider': 'rd'}
+		player.playback_health_started_at = player_module.monotonic() - 70
+		player.playback_health_bitrate_mbps = 30
+		player.playback_health_qualified, player.playback_health_finalized = True, False
+		player.playback_paused, player.playback_seek_grace_until = False, 0
+		player.playback_sample_wall, player.playback_sample_media = None, None
+		player.playback_stall_seconds, player.playback_stall_count, player.playback_stall_active = 0, 0, False
+		player.allow_stall_recovery, player.has_stall_fallback, player.stall_recovery_requested = True, True, False
+		player.playback_error, player.retry_resume_percent = False, 0
+		player.curr_time, player.remaining_time = 100, 900
+		player.getPlaySpeed, player.getTime, player.getTotalTime = lambda: 1, lambda: 100, lambda: 1000
+		player.stop = mock.Mock()
+
+		for now in (0, 1, 2, 3): player._sample_playback_stall(now)
+		player.curr_time = 101
+		player._sample_playback_stall(4)
+		for now in (5, 6, 7): player._sample_playback_stall(now)
+
+		self.assertTrue(player.playback_error)
+		self.assertEqual(player.retry_resume_percent, 10)
+		player.stop.assert_called_once_with()
+		self.assertEqual(events, ['stalled_play'])
+
+	def test_manual_or_last_source_never_uses_stall_recovery(self):
+		player_module = load_player()
+		for allowed, has_fallback in ((False, True), (True, False)):
+			player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+			player.allow_stall_recovery, player.has_stall_fallback = allowed, has_fallback
+			player.stall_recovery_requested, player.playback_health_qualified, player.playback_stall_count = False, True, 2
+			player.stop = mock.Mock()
+			self.assertFalse(player._recover_from_stalls())
+			player.stop.assert_not_called()
 
 	def test_player_passes_release_context_to_subtitle_task(self):
 		player_module = load_player()

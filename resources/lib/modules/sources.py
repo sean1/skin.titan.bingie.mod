@@ -25,6 +25,7 @@ default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers, 
 pack_enable_check, sources_quality_count = source_utils.pack_enable_check, source_utils.sources_quality_count
 get_cache_expiry, get_file_info = source_utils.get_cache_expiry, source_utils.get_file_info
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
+DEFERRED_LINK_TTL = 30.0
 av1_filter_key, hevc_filter_key, hdr_filter_key, dolby_vision_filter_key = '[B]AV1[/B]', '[B]HEVC[/B]', '[B]HDR[/B]', '[B]D/VISION[/B]'
 total_format, int_format, ext_format = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR %s][B]Int: [/B][/COLOR]%s', '[COLOR %s][B]Ext: [/B][/COLOR]%s'
 ext_scr_format, unfinshed_import_format, format_line = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR red]+%s[/COLOR]', '%s[CR]%s[CR]%s'
@@ -240,6 +241,9 @@ class Sources:
 			for count, item in enumerate(items, 1):
 				link = None
 				health_context = self._playback_health_context(item)
+				if item.get('_bingie_host_deferred') and time.monotonic() - item.get('_bingie_resolved_at', 0) > DEFERRED_LINK_TTL:
+					if item.get('_bingie_can_reresolve'): item.pop('unrestricted_link', None)
+					else: continue
 				try:
 					if monitor.abortRequested(): break
 					elif self.progress_dialog.full_screen and self.progress_dialog.iscanceled(): break
@@ -264,10 +268,13 @@ class Sources:
 					self._record_playback_health(health_context, 'resolve_fail', latency=resolve_latency)
 					continue
 				health_context = self._playback_health_context(item, link) or health_context
-				self._record_playback_health(health_context, 'resolve_ok', latency=resolve_latency)
+				if not item.get('_bingie_resolve_recorded'): self._record_playback_health(health_context, 'resolve_ok', latency=resolve_latency)
 				if not manual_selection and not item.get('_bingie_host_deferred') and count < original_total and self._host_health_penalty(health_context) >= 60:
 					deferred_item = item.copy()
-					deferred_item.update({'unrestricted_link': link, '_bingie_host_deferred': True})
+					deferred_item.update({
+						'unrestricted_link': link, '_bingie_host_deferred': True, '_bingie_resolve_recorded': True,
+						'_bingie_can_reresolve': 'unrestricted_link' not in item, '_bingie_resolved_at': time.monotonic()
+					})
 					items.append(deferred_item)
 					continue
 				if not self.progress_dialog.full_screen: progressDialogBG.close()
@@ -278,11 +285,17 @@ class Sources:
 					'release_info': item.get('extraInfo') or '',
 					'_playback_health_context': health_context,
 					'_playback_health_started_at': time.monotonic(),
-					'_playback_health_bitrate_mbps': self._source_bitrate_mbps(item)
+					'_playback_health_bitrate_mbps': self._source_bitrate_mbps(item),
+					'_playback_health_allow_stall_recovery': self.autoplay and not manual_selection,
+					'_playback_health_has_stall_fallback': count < len(items)
 				})
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
 				playback_player = POVPlayer()
-				playback_result = playback_player.run(link, playback_meta, progress_media)
+				try: playback_result = playback_player.run(link, playback_meta, progress_media)
+				except Exception as exc:
+					try: kodi_utils.logger('Sources', 'Playback attempt failed: %s' % exc)
+					except: pass
+					playback_result = False
 				retry_resume_percent = getattr(playback_player, 'retry_resume_percent', 0)
 				if playback_result is not False: return playback_result
 			else:

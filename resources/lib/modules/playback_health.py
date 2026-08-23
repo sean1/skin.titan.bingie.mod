@@ -68,6 +68,10 @@ def _empty_state(now):
 	return {'version': _VERSION, 'updated': now, 'providers': {}, 'hosts': {}, 'bandwidth': []}
 
 
+def _host_key(provider, host):
+	return '%s|%s' % (provider, host)
+
+
 def _clean_stage(stage):
 	if not isinstance(stage, dict): return None
 	try:
@@ -105,14 +109,17 @@ def _load(now):
 			if record: clean['providers'][provider] = record
 	hosts = state.get('hosts', {})
 	if isinstance(hosts, dict):
-		for host, value in hosts.items():
+		for stored_key, value in hosts.items():
 			if len(clean['hosts']) >= _MAX_HOSTS: break
-			if not isinstance(value, dict) or _provider(value.get('provider')) not in _KNOWN_PROVIDERS: continue
-			safe_host = _hostname('https://%s' % host)
+			if not isinstance(value, dict): continue
+			provider = _provider(value.get('provider'))
+			if provider not in _KNOWN_PROVIDERS: continue
+			stored_host = stored_key.split('|', 1)[1] if stored_key.startswith('%s|' % provider) else stored_key
+			safe_host = _hostname('https://%s' % stored_host)
 			record = _clean_record(value, now)
 			if safe_host and record:
-				record['provider'] = _provider(value['provider'])
-				clean['hosts'][safe_host] = record
+				record['provider'] = provider
+				clean['hosts'][_host_key(provider, safe_host)] = record
 	bandwidth = state.get('bandwidth', [])
 	if isinstance(bandwidth, list):
 		for sample in bandwidth[-_MAX_BANDWIDTH_SAMPLES:]:
@@ -170,8 +177,8 @@ def record(context, event, latency=None, elapsed=None, bitrate_mbps=None, stalls
 		target = state['providers'].setdefault(provider, {'updated': now, 'stages': {}})
 		_record_event(target, stage_name, success, measurement, now)
 		if host:
-			host_target = state['hosts'].setdefault(host, {'provider': provider, 'updated': now, 'stages': {}})
-			if host_target.get('provider') == provider: _record_event(host_target, stage_name, success, measurement, now)
+			host_target = state['hosts'].setdefault(_host_key(provider, host), {'provider': provider, 'updated': now, 'stages': {}})
+			_record_event(host_target, stage_name, success, measurement, now)
 		if len(state['hosts']) > _MAX_HOSTS:
 			oldest = sorted(state['hosts'], key=lambda key: state['hosts'][key].get('updated', 0))[:len(state['hosts']) - _MAX_HOSTS]
 			for key in oldest: del state['hosts'][key]
@@ -229,7 +236,7 @@ def host_penalty(context, now=None):
 	except (TypeError, ValueError, OverflowError): return 0.0
 	if not math.isfinite(now): return 0.0
 	with _lock:
-		record_data = _load(now)['hosts'].get(host)
+		record_data = _load(now)['hosts'].get(_host_key(provider, host))
 		if not record_data or record_data.get('provider') != provider: return 0.0
 		return _penalty(record_data, now)
 

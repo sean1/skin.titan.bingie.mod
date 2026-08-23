@@ -89,8 +89,8 @@ class PlaybackHealthTests(unittest.TestCase):
 	def test_host_history_is_capped_at_32_and_evicts_oldest(self):
 		for index in range(40): self.module.record({'provider': 'rd', 'host': 'cdn%02d.example.com' % index}, 'resolve_ok', now=index + 1)
 		self.assertEqual(len(FakeCache.data['hosts']), 32)
-		self.assertNotIn('cdn00.example.com', FakeCache.data['hosts'])
-		self.assertIn('cdn39.example.com', FakeCache.data['hosts'])
+		self.assertNotIn('realdebrid|cdn00.example.com', FakeCache.data['hosts'])
+		self.assertIn('realdebrid|cdn39.example.com', FakeCache.data['hosts'])
 
 	def test_host_penalty_requires_three_matching_provider_attempts(self):
 		context = {'provider': 'rd', 'host': 'bad.example.com'}
@@ -100,6 +100,14 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertEqual(self.module.host_penalty(context, now=3), 80)
 		self.assertEqual(self.module.host_penalty({'provider': 'ad', 'host': 'bad.example.com'}, now=3), 0)
 		self.assertEqual(self.module.host_penalty({'provider': 'rd', 'host': '127.0.0.1'}, now=3), 0)
+
+	def test_shared_hostname_keeps_provider_health_independent(self):
+		host = 'shared.cdn.example.com'
+		for now in (1, 2, 3): self.module.record({'provider': 'rd', 'host': host}, 'stream_error', now=now)
+		for now in (4, 5, 6): self.module.record({'provider': 'ad', 'host': host}, 'healthy_play', now=now)
+		self.assertEqual(self.module.host_penalty({'provider': 'rd', 'host': host}, now=6), 80)
+		self.assertEqual(self.module.host_penalty({'provider': 'ad', 'host': host}, now=6), 0)
+		self.assertEqual(len(FakeCache.data['hosts']), 2)
 
 	def test_learned_bandwidth_needs_repeat_success_and_respects_stalls(self):
 		context = {'provider': 'rd'}

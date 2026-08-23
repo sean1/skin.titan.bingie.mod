@@ -239,6 +239,21 @@ class ExternalManagerTests(unittest.TestCase):
 
 		self.assertEqual([item['scrape_provider'] for item in results], ['unhealthy', 'healthy', 'preferred'])
 
+	def test_learned_bandwidth_keeps_resolution_first(self):
+		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
+		processor = SOURCES.ResultsProcessor(source)
+		results = [
+			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 8.0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 6.0},
+		]
+		original = SOURCES.playback_health
+		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10)
+		try: results.sort(key=processor.autoplay_source_key)
+		finally: SOURCES.playback_health = original
+
+		self.assertEqual([(item['quality'], item['size']) for item in results], [('4K', 8.0), ('4K', 30.0), ('1080p', 6.0)])
+
 
 if __name__ == '__main__':
 	unittest.main()

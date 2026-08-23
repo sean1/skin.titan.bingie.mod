@@ -92,6 +92,34 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertNotIn('cdn00.example.com', FakeCache.data['hosts'])
 		self.assertIn('cdn39.example.com', FakeCache.data['hosts'])
 
+	def test_host_penalty_requires_three_matching_provider_attempts(self):
+		context = {'provider': 'rd', 'host': 'bad.example.com'}
+		for now in (1, 2): self.module.record(context, 'stream_error', now=now)
+		self.assertEqual(self.module.host_penalty(context, now=2), 0)
+		self.module.record(context, 'stream_error', now=3)
+		self.assertEqual(self.module.host_penalty(context, now=3), 80)
+		self.assertEqual(self.module.host_penalty({'provider': 'ad', 'host': 'bad.example.com'}, now=3), 0)
+		self.assertEqual(self.module.host_penalty({'provider': 'rd', 'host': '127.0.0.1'}, now=3), 0)
+
+	def test_learned_bandwidth_needs_repeat_success_and_respects_stalls(self):
+		context = {'provider': 'rd'}
+		self.module.record(context, 'healthy_play', bitrate_mbps=50, now=1)
+		self.module.record(context, 'healthy_play', bitrate_mbps=40, now=2)
+		self.assertEqual(self.module.learned_bandwidth(20, now=2), 20)
+		self.module.record(context, 'healthy_play', bitrate_mbps=60, now=3)
+		self.assertEqual(self.module.learned_bandwidth(20, now=3), 40)
+		self.module.record(context, 'stalled_play', bitrate_mbps=30, stalls=1, now=4)
+		self.assertEqual(self.module.learned_bandwidth(20, now=4), 21)
+
+	def test_bandwidth_samples_are_numeric_bounded_and_device_local(self):
+		context = {'provider': 'tb'}
+		for index in range(20): self.module.record(context, 'healthy_play', bitrate_mbps=index + 1, now=index + 1)
+		self.assertEqual(len(FakeCache.data['bandwidth']), 12)
+		serialized = json.dumps(FakeCache.data['bandwidth'])
+		self.assertNotIn('provider', serialized)
+		self.module.record(context, 'healthy_play', bitrate_mbps=float('inf'), now=30)
+		self.assertEqual(len(FakeCache.data['bandwidth']), 12)
+
 	def test_cache_record_is_versioned_and_has_ninety_day_expiry(self):
 		self.module.record({'provider': 'ad'}, 'resolve_ok', now=1)
 		key, state, expiry = FakeCache.sets[-1]

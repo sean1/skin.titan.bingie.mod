@@ -222,8 +222,9 @@ class Sources:
 	def play_file(self, results, source=None):
 		try:
 			retry_resume_percent = 0
+			manual_selection = source is not None
 			if source is None:
-				source_index, items = 0, results
+				source_index, items = 0, list(results)
 			elif source in results:
 				source_index = results.index(source)
 				items = results[source_index:] + results[:source_index]
@@ -235,6 +236,7 @@ class Sources:
 			else:
 				progressDialogBG.create('BINGIE Lite', 'BINGIE Lite loading...')
 				progress_media = None
+			original_total = len(items)
 			for count, item in enumerate(items, 1):
 				link = None
 				health_context = self._playback_health_context(item)
@@ -263,6 +265,11 @@ class Sources:
 					continue
 				health_context = self._playback_health_context(item, link) or health_context
 				self._record_playback_health(health_context, 'resolve_ok', latency=resolve_latency)
+				if not manual_selection and not item.get('_bingie_host_deferred') and count < original_total and self._host_health_penalty(health_context) >= 60:
+					deferred_item = item.copy()
+					deferred_item.update({'unrestricted_link': link, '_bingie_host_deferred': True})
+					items.append(deferred_item)
+					continue
 				if not self.progress_dialog.full_screen: progressDialogBG.close()
 				playback_meta = self.meta.copy()
 				playback_meta.update({
@@ -270,7 +277,8 @@ class Sources:
 					'release_quality': item.get('quality') or '',
 					'release_info': item.get('extraInfo') or '',
 					'_playback_health_context': health_context,
-					'_playback_health_started_at': time.monotonic()
+					'_playback_health_started_at': time.monotonic(),
+					'_playback_health_bitrate_mbps': self._source_bitrate_mbps(item)
 				})
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
 				playback_player = POVPlayer()
@@ -294,6 +302,20 @@ class Sources:
 		if playback_health is None or not context: return
 		try: playback_health.record(context, event, **kwargs)
 		except: pass
+
+	@staticmethod
+	def _host_health_penalty(context):
+		if playback_health is None or not context: return 0
+		try: return playback_health.host_penalty(context)
+		except: return 0
+
+	def _source_bitrate_mbps(self, item):
+		try:
+			mediatype = getattr(self, 'mediatype', self.meta.get('mediatype'))
+			duration = float(self.meta.get('duration') or (3600 if mediatype == 'episode' else 5400))
+			size = float(item.get('size') or 0)
+			return round(size * 8000 / duration, 3) if duration > 0 and size > 0.01 else None
+		except (TypeError, ValueError, OverflowError): return None
 
 class ConfigLoader:
 	def _as_bool(self, value, default=False):
@@ -571,6 +593,9 @@ class ResultsProcessor:
 	def autoplay_source_key(self, item):
 		duration = self.source.meta.get('duration') or (3600 if self.source.mediatype == 'episode' else 5400)
 		bandwidth_mbps = string_to_float(get_setting('results.size.speed', '20'), '20')
+		if playback_health is not None:
+			try: bandwidth_mbps = playback_health.learned_bandwidth(bandwidth_mbps)
+			except: pass
 		max_sustainable_size = ((0.125 * (0.65 * bandwidth_mbps)) * duration) / 1000
 		size = item.get('size') or 0
 		unknown_size = size <= 0.01

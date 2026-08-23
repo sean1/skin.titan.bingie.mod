@@ -40,7 +40,11 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.set_resume, self.set_watched = 5, 90
 		self.playback_event, self.progress_media = None, None
 		self.playback_error, self.retry_resume_percent = False, 0
-		self.playback_health_context, self.playback_health_started_at, self.playback_health_recorded = None, None, False
+		self.playback_health_context, self.playback_health_started_at, self.playback_health_finalized = None, None, False
+		self.playback_health_bitrate_mbps, self.playback_health_qualified = None, False
+		self.playback_paused, self.playback_seek_grace_until = False, 0
+		self.playback_sample_wall, self.playback_sample_media = None, None
+		self.playback_stall_seconds, self.playback_stall_count, self.playback_stall_active = 0, 0, False
 		self.ignore_startup_stop, self.startup_playback_started = False, False
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
@@ -146,24 +150,41 @@ class POVPlayer(kodi_utils.xbmc_player):
 		except: pass
 
 	def onPlayBackStopped(self):
-		if not self._set_terminal_playback_event() or self.next_episode_requested: return
+		if not self._set_terminal_playback_event(): return
+		self._finalize_stream(True)
+		if self.next_episode_requested: return
 		from modules.sources import Sources
 		Sources.nextep_params.clear()
 		kodi_utils.clear_property('pov_lite_total_autoplays')
 
 	def onPlayBackEnded(self):
-		self._record_healthy_play(natural_end=True)
+		self._finalize_stream(True, natural_end=True)
 		self._set_terminal_playback_event()
 
 	def onPlayBackError(self):
 		if self.playback_event is True:
-			self._record_playback_health('stream_error', elapsed=self._playback_health_elapsed())
+			self._finalize_stream(False)
 			self.playback_error = True
 			self.retry_resume_percent = self._current_resume_percent()
 		else:
 			self.playback_error = False
 			self.retry_resume_percent = 0
 		self.playback_event = False
+
+	def onPlayBackPaused(self):
+		self.playback_paused = True
+		self._reset_playback_sample()
+
+	def onPlayBackResumed(self):
+		self.playback_paused = False
+		self._reset_playback_sample()
+
+	def onPlayBackSeek(self, *args):
+		self.playback_seek_grace_until = monotonic() + 3.0
+		self._reset_playback_sample()
+
+	def onPlayBackSeekChapter(self, *args):
+		self.onPlayBackSeek(*args)
 
 	def _current_resume_percent(self):
 		try:
@@ -202,7 +223,11 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.meta = meta or {}
 			self.playback_health_context = self.meta.pop('_playback_health_context', None)
 			self.playback_health_started_at = self.meta.pop('_playback_health_started_at', None)
-			self.playback_health_recorded = False
+			self.playback_health_bitrate_mbps = self.meta.pop('_playback_health_bitrate_mbps', None)
+			self.playback_health_finalized, self.playback_health_qualified = False, False
+			self.playback_paused, self.playback_seek_grace_until = False, 0
+			self.playback_sample_wall, self.playback_sample_media = None, None
+			self.playback_stall_seconds, self.playback_stall_count, self.playback_stall_active = 0, 0, False
 			self.meta_get = self.meta.get
 			self.tmdb_id, self.imdb_id = self.meta_get('tmdb_id'), self.meta_get('imdb_id')
 			self.title, self.year = self.meta_get('title'), self.meta_get('year')
@@ -253,6 +278,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if self.volume_check: kodi_utils.volume_checker()
 			while self.isPlayingVideo(): self.check_playback_events()
 			if self.playback_error: return False
+			self._finalize_stream(True)
 			if not self.media_marked: self.media_watched_marker()
 			ws.clear_local_bookmarks()
 			return True
@@ -264,7 +290,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.total_time, self.curr_time = self.getTotalTime(), self.getTime()
 			self.current_point = round(float(self.curr_time/self.total_time * 100), 1)
 			self.remaining_time = round(self.total_time - self.curr_time)
-			if self.curr_time >= 60: self._record_healthy_play()
+			if self.curr_time >= 60: self.playback_health_qualified = True
+			self._sample_playback_stall()
 			if not self.subs_searched:
 				self.exec_task('subtitles')
 			if not self.stingers_checked and self.mediatype == 'movie':
@@ -292,14 +319,45 @@ class POVPlayer(kodi_utils.xbmc_player):
 		try: playback_health.record(context, event, **kwargs)
 		except: pass
 
-	def _record_healthy_play(self, natural_end=False):
-		if getattr(self, 'playback_health_recorded', False) or getattr(self, 'playback_error', False): return
-		if not natural_end:
-			try:
-				if self.getTime() < 60: return
-			except: return
-		self.playback_health_recorded = True
-		self._record_playback_health('healthy_play', elapsed=self._playback_health_elapsed())
+	def _finalize_stream(self, success, natural_end=False):
+		if getattr(self, 'playback_health_finalized', False): return
+		if success and not natural_end and not getattr(self, 'playback_health_qualified', False): return
+		self.playback_health_finalized = True
+		stalls = getattr(self, 'playback_stall_count', 0)
+		event = 'stream_error' if not success else 'stalled_play' if stalls else 'healthy_play'
+		self._record_playback_health(
+			event, elapsed=self._playback_health_elapsed(), bitrate_mbps=getattr(self, 'playback_health_bitrate_mbps', None), stalls=stalls
+		)
+
+	def _reset_playback_sample(self):
+		self.playback_sample_wall, self.playback_sample_media = None, None
+		self.playback_stall_seconds, self.playback_stall_active = 0, False
+
+	def _sample_playback_stall(self, now=None):
+		try:
+			now = monotonic() if now is None else float(now)
+			media_time = float(self.curr_time)
+			remaining = float(self.remaining_time)
+		except (TypeError, ValueError, OverflowError, AttributeError): return
+		try: paused = self.playback_paused or self.getPlaySpeed() == 0
+		except: paused = self.playback_paused
+		if paused or now < self.playback_seek_grace_until or remaining <= 5:
+			self._reset_playback_sample()
+			return
+		last_wall, last_media = self.playback_sample_wall, self.playback_sample_media
+		self.playback_sample_wall, self.playback_sample_media = now, media_time
+		if last_wall is None or last_media is None: return
+		wall_delta, media_delta = now - last_wall, media_time - last_media
+		if not 0.5 <= wall_delta <= 3.0 or media_delta < -1 or media_delta > wall_delta + 5:
+			self.playback_stall_seconds, self.playback_stall_active = 0, False
+			return
+		if media_delta < 0.2:
+			self.playback_stall_seconds += wall_delta
+			if self.playback_stall_seconds >= 3 and not self.playback_stall_active:
+				self.playback_stall_count += 1
+				self.playback_stall_active = True
+		elif media_delta >= 0.5:
+			self.playback_stall_seconds, self.playback_stall_active = 0, False
 
 	def make_listitem(self):
 		listitem = kodi_utils.make_listitem()

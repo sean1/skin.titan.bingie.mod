@@ -14,6 +14,7 @@ _VERSION = 1
 _EXPIRY = timedelta(days=90)
 _HALF_LIFE = 14 * 24 * 60 * 60.0
 _MAX_HOSTS = 32
+_MAX_BANDWIDTH_SAMPLES = 12
 _MIN_ATTEMPTS = 3.0
 _KNOWN_PROVIDERS = ('realdebrid', 'alldebrid', 'torbox')
 _ALIASES = {
@@ -24,7 +25,7 @@ _ALIASES = {
 _EVENT_STAGE = {
 	'resolve_ok': ('resolve', True), 'resolve_fail': ('resolve', False),
 	'startup_ok': ('startup', True), 'startup_fail': ('startup', False),
-	'healthy_play': ('stream', True), 'stream_error': ('stream', False)
+	'healthy_play': ('stream', True), 'stalled_play': ('stream', False), 'stream_error': ('stream', False)
 }
 _HOST_RE = re.compile(r'^[a-z0-9.-]+$')
 _lock = threading.RLock()
@@ -64,7 +65,7 @@ def source_context(item, link=None):
 
 
 def _empty_state(now):
-	return {'version': _VERSION, 'updated': now, 'providers': {}, 'hosts': {}}
+	return {'version': _VERSION, 'updated': now, 'providers': {}, 'hosts': {}, 'bandwidth': []}
 
 
 def _clean_stage(stage):
@@ -112,6 +113,14 @@ def _load(now):
 			if safe_host and record:
 				record['provider'] = _provider(value['provider'])
 				clean['hosts'][safe_host] = record
+	bandwidth = state.get('bandwidth', [])
+	if isinstance(bandwidth, list):
+		for sample in bandwidth[-_MAX_BANDWIDTH_SAMPLES:]:
+			if not isinstance(sample, dict): continue
+			try: mbps, updated = float(sample.get('mbps')), float(sample.get('updated', now))
+			except (TypeError, ValueError, OverflowError): continue
+			if math.isfinite(mbps) and math.isfinite(updated) and 0.25 <= mbps <= 500 and now - min(updated, now) <= _EXPIRY.total_seconds():
+				clean['bandwidth'].append({'mbps': mbps, 'ok': bool(sample.get('ok')), 'updated': min(updated, now)})
 	return clean
 
 
@@ -145,7 +154,7 @@ def _record_event(target, stage_name, success, latency, now):
 			stage['latency_count'] += 1.0
 
 
-def record(context, event, latency=None, elapsed=None, now=None):
+def record(context, event, latency=None, elapsed=None, bitrate_mbps=None, stalls=0, now=None):
 	"""Record one stage outcome; identifiers other than provider and hostname are discarded."""
 	if event not in _EVENT_STAGE or not isinstance(context, dict): return False
 	provider = _provider(context.get('provider'))
@@ -166,24 +175,21 @@ def record(context, event, latency=None, elapsed=None, now=None):
 		if len(state['hosts']) > _MAX_HOSTS:
 			oldest = sorted(state['hosts'], key=lambda key: state['hosts'][key].get('updated', 0))[:len(state['hosts']) - _MAX_HOSTS]
 			for key in oldest: del state['hosts'][key]
+		if event in ('healthy_play', 'stalled_play'):
+			try: bitrate = float(bitrate_mbps)
+			except (TypeError, ValueError, OverflowError): bitrate = 0
+			if math.isfinite(bitrate) and 0.25 <= bitrate <= 500:
+				try: stalled = int(stalls) > 0
+				except (TypeError, ValueError, OverflowError): stalled = False
+				state['bandwidth'].append({'mbps': bitrate, 'ok': event == 'healthy_play' and not stalled, 'updated': now})
+				state['bandwidth'] = state['bandwidth'][-_MAX_BANDWIDTH_SAMPLES:]
 		state['updated'] = now
 		_save(state)
 	return True
 
 
-def provider_penalty(provider, now=None):
-	"""Return a bounded positive sort penalty after enough stage-specific evidence."""
-	if isinstance(provider, dict): provider = provider.get('provider')
-	provider = _provider(provider)
-	if not provider: return 0.0
-	try: now = float(time.time() if now is None else now)
-	except (TypeError, ValueError, OverflowError): return 0.0
-	if not math.isfinite(now): return 0.0
-	with _lock:
-		state = _load(now)
-		record_data = state['providers'].get(provider)
-		if not record_data: return 0.0
-		record_data = _decay(record_data, now)
+def _penalty(record_data, now):
+	record_data = _decay(record_data, now)
 	stages = [value for value in record_data.get('stages', {}).values() if value.get('attempts', 0) >= _MIN_ATTEMPTS]
 	if not stages: return 0.0
 	weighted_failure, weight = 0.0, 0.0
@@ -197,3 +203,51 @@ def provider_penalty(provider, now=None):
 		average_latency = startup['latency_total'] / startup['latency_count']
 		penalty += min(20.0, max(0.0, average_latency - 2.0))
 	return round(min(100.0, max(0.0, penalty)), 3)
+
+
+def provider_penalty(provider, now=None):
+	"""Return a bounded positive provider sort penalty after enough evidence."""
+	if isinstance(provider, dict): provider = provider.get('provider')
+	provider = _provider(provider)
+	if not provider: return 0.0
+	try: now = float(time.time() if now is None else now)
+	except (TypeError, ValueError, OverflowError): return 0.0
+	if not math.isfinite(now): return 0.0
+	with _lock:
+		state = _load(now)
+		record_data = state['providers'].get(provider)
+		if not record_data: return 0.0
+		return _penalty(record_data, now)
+
+
+def host_penalty(context, now=None):
+	"""Return health for one sanitized provider/hostname pair."""
+	if not isinstance(context, dict): return 0.0
+	provider, host = _provider(context.get('provider')), _hostname('https://%s' % context.get('host', ''))
+	if not provider or not host: return 0.0
+	try: now = float(time.time() if now is None else now)
+	except (TypeError, ValueError, OverflowError): return 0.0
+	if not math.isfinite(now): return 0.0
+	with _lock:
+		record_data = _load(now)['hosts'].get(host)
+		if not record_data or record_data.get('provider') != provider: return 0.0
+		return _penalty(record_data, now)
+
+
+def learned_bandwidth(default_mbps, now=None):
+	"""Return a conservative device-local estimate after enough observations."""
+	try: fallback = float(default_mbps)
+	except (TypeError, ValueError, OverflowError): fallback = 20.0
+	if not math.isfinite(fallback) or fallback <= 0: fallback = 20.0
+	try: now = float(time.time() if now is None else now)
+	except (TypeError, ValueError, OverflowError): return fallback
+	if not math.isfinite(now): return fallback
+	with _lock: samples = _load(now).get('bandwidth', [])
+	if len(samples) < 3: return fallback
+	successes = sorted(sample['mbps'] for sample in samples if sample['ok'])
+	failures = sorted(sample['mbps'] for sample in samples if not sample['ok'])
+	if len(successes) < 2: return fallback
+	# Require repeat success, then leave headroom and respect the lowest observed stall.
+	estimate = successes[-2] * 0.8
+	if failures: estimate = min(estimate, failures[0] * 0.7)
+	return round(min(200.0, max(2.0, estimate)), 2)

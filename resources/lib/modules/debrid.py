@@ -156,15 +156,16 @@ class Source:
 
 class DebridCheck:
 	_debrid_dict = {i[0]: i for i in debrid_list}
-	hash_list, cached_hashes = [], []
 
 	@classmethod
-	def set_cached_hashes(cls, hash_list):
-		cls.hash_list = hash_list
-		with DebridCache() as cache: cls.cached_hashes = cache.get_many(hash_list) or []
+	def request_context(cls, hash_list):
+		hash_list = tuple(hash_list)
+		with DebridCache() as cache: cached_hashes = tuple(cache.get_many(hash_list) or ())
+		return hash_list, cached_hashes
 
-	def __init__(self, meta, name):
+	def __init__(self, meta, name, hash_list, cached_hashes):
 		self.cached_list, self.checked_list = [], set()
+		self.hash_list, self.cached_hashes = tuple(hash_list), tuple(cached_hashes)
 		self.name, self.debrid, self.function = self._debrid_dict[name]
 		self.imdb, self.season, self.episode = meta.get('imdb_id'), meta.get('season'), meta.get('episode')
 

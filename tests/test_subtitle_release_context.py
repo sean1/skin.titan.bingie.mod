@@ -349,6 +349,22 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		player.stop.assert_called_once_with()
 		self.assertEqual(events, ['stalled_play'])
 
+	def test_stall_recovery_stops_the_current_event_loop_tick(self):
+		player_module = load_player()
+		player_module.kodi_utils.sleep = mock.Mock()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.getTotalTime, player.getTime = lambda: 1000, lambda: 940
+		player.stall_recovery_requested = False
+		player._sample_playback_stall = lambda: setattr(player, 'stall_recovery_requested', True)
+		player.exec_task = mock.Mock()
+		player.media_watched_marker = mock.Mock()
+		player.subs_searched, player.media_marked = False, False
+
+		player.check_playback_events()
+
+		player.exec_task.assert_not_called()
+		player.media_watched_marker.assert_not_called()
+
 	def test_manual_or_last_source_never_uses_stall_recovery(self):
 		player_module = load_player()
 		for allowed, has_fallback in ((False, True), (True, False)):

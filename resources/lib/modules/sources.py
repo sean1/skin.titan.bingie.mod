@@ -540,6 +540,7 @@ class ScraperProcessor:
 class ResultsProcessor:
 	def __init__(self, source_instance):
 		self.source = source_instance
+		self._bandwidth_profile = None
 
 	def process(self, results):
 		if self.source.prescrape:
@@ -605,10 +606,16 @@ class ResultsProcessor:
 
 	def autoplay_source_key(self, item):
 		duration = self.source.meta.get('duration') or (3600 if self.source.mediatype == 'episode' else 5400)
-		bandwidth_mbps = string_to_float(get_setting('results.size.speed', '20'), '20')
-		if playback_health is not None:
-			try: bandwidth_mbps = playback_health.learned_bandwidth(bandwidth_mbps)
-			except: pass
+		if self._bandwidth_profile is None:
+			bandwidth_mbps = string_to_float(get_setting('results.size.speed', '20'), '20')
+			resolution_fallback_mbps = None
+			if playback_health is not None:
+				try: bandwidth_mbps = playback_health.learned_bandwidth(bandwidth_mbps)
+				except: pass
+				try: resolution_fallback_mbps = playback_health.resolution_fallback_limit()
+				except: pass
+			self._bandwidth_profile = bandwidth_mbps, resolution_fallback_mbps
+		else: bandwidth_mbps, resolution_fallback_mbps = self._bandwidth_profile
 		max_sustainable_size = ((0.125 * (0.65 * bandwidth_mbps)) * duration) / 1000
 		size = item.get('size') or 0
 		unknown_size = size <= 0.01
@@ -623,7 +630,12 @@ class ResultsProcessor:
 				provider = playback_health.source_context(item).get('provider')
 				provider_penalty = playback_health.provider_penalty(provider)
 			except: pass
-		return item['quality_rank'], fallback_rank, item.get('provider_rank', 11), provider_penalty, -size if fallback_rank == 0 else size
+		quality, quality_rank, resolution_tier = item.get('quality'), item['quality_rank'], 0
+		resolution_oversized = resolution_fallback_mbps is not None and not unknown_size and size > ((0.125 * resolution_fallback_mbps) * duration) / 1000
+		if quality == '4K' and resolution_oversized:
+			quality_rank, resolution_tier = quality_ranks['1080p'], 1
+		elif resolution_fallback_mbps is not None and quality == '1080p' and (resolution_oversized or unknown_size or implausibly_tiny): resolution_tier = 2
+		return quality_rank, resolution_tier, fallback_rank, item['quality_rank'], item.get('provider_rank', 11), provider_penalty, -size if fallback_rank == 0 else size
 
 	def get_provider_rank(self, account_type):
 		return self.source.provider_sort_ranks[account_type] or 11
@@ -742,7 +754,7 @@ class ExternalManager:
 			core_results = self.fetch_sources(core_dict, info, tpe)
 			core_sources = list(self.process_duplicates(core_results, unique_urls, unique_hashes))
 			self.sources.extend(core_sources)
-			core_final, core_cached = self.cache_sources(core_sources, tpe)
+			core_final, core_cached = self.cache_sources(core_sources)
 			self.final_sources.extend(core_final)
 			if fallback_dict and self.eligible_cached_count(core_final, core_cached) >= CORE_CACHED_RESULT_TARGET:
 				self.meta['full_search_available'] = True
@@ -753,7 +765,7 @@ class ExternalManager:
 				fallback_results = self.fetch_sources(fallback_dict, info, tpe)
 				fallback_sources = list(self.process_duplicates(fallback_results, unique_urls, unique_hashes))
 				self.sources.extend(fallback_sources)
-				fallback_final, _cached = self.cache_sources(fallback_sources, tpe)
+				fallback_final, _cached = self.cache_sources(fallback_sources)
 				self.final_sources.extend(fallback_final)
 		except: notification(32574)
 		finally: tpe.shutdown(wait=False, cancel_futures=True)
@@ -775,7 +787,7 @@ class ExternalManager:
 			except: pass
 		return results
 
-	def cache_sources(self, sources, tpe):
+	def cache_sources(self, sources):
 		torrent_sources = [i for i in sources if 'torrent' in i['source']]
 		if not torrent_sources: return [], set()
 		try: check_sources = self.eligibility_filter(list(torrent_sources)) if self.eligibility_filter else torrent_sources
@@ -786,31 +798,34 @@ class ExternalManager:
 				{**i, 'cache_provider': '%s %s' % ('Unchecked', name), 'debrid': name}
 				for name in self.debrid_torrents for i in torrent_sources
 			], set()
-		DebridCheck.set_cached_hashes(check_hashes)
-		threads = []
-		for item in self.debrid_torrents:
-			fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
-			fut.name = item
-			threads.append(fut)
-		self.thread_monitor(threads, ls(32579), True)
-		results, cached_hashes = [], set()
-		for fut in threads:
-			if not fut.done():
-				fut.cancel()
-				continue
-			try: cache_result = fut.result()
-			except: continue
-			if isinstance(cache_result, dict):
-				hashes = set(cache_result.get('cached', ()))
-				checked_hashes = set(cache_result.get('checked', ()))
-			else:
-				hashes = set(cache_result)
-				checked_hashes = set()
-			cached_hashes.update(hashes)
-			results.extend({
-				**i, 'cache_provider': fut.name if i['hash'] in hashes else '%s %s' % ('Uncached' if i['hash'] in checked_hashes else 'Unchecked', fut.name), 'debrid': fut.name
-			} for i in torrent_sources)
-		return results, cached_hashes
+		hash_list, cached_context = DebridCheck.request_context(check_hashes)
+		tpe = TPE(external_worker_count(0, len(self.debrid_torrents), True))
+		try:
+			threads = []
+			for item in self.debrid_torrents:
+				fut = tpe.submit(DebridCheck(self.meta, item, hash_list, cached_context).cache_check)
+				fut.name = item
+				threads.append(fut)
+			self.thread_monitor(threads, ls(32579), True)
+			results, cached_hashes = [], set()
+			for fut in threads:
+				if not fut.done():
+					fut.cancel()
+					continue
+				try: cache_result = fut.result()
+				except: continue
+				if isinstance(cache_result, dict):
+					hashes = set(cache_result.get('cached', ()))
+					checked_hashes = set(cache_result.get('checked', ()))
+				else:
+					hashes = set(cache_result)
+					checked_hashes = set()
+				cached_hashes.update(hashes)
+				results.extend({
+					**i, 'cache_provider': fut.name if i['hash'] in hashes else '%s %s' % ('Uncached' if i['hash'] in checked_hashes else 'Unchecked', fut.name), 'debrid': fut.name
+				} for i in torrent_sources)
+			return results, cached_hashes
+		finally: tpe.shutdown(wait=False, cancel_futures=True)
 
 	def eligible_cached_count(self, sources, cached_hashes):
 		try: eligible = self.eligibility_filter(list(sources)) if self.eligibility_filter else sources

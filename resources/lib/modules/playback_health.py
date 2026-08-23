@@ -258,3 +258,16 @@ def learned_bandwidth(default_mbps, now=None):
 	estimate = successes[-2] * 0.8
 	if failures: estimate = min(estimate, failures[0] * 0.7)
 	return round(min(200.0, max(2.0, estimate)), 2)
+
+
+def resolution_fallback_limit(now=None):
+	"""Return a stall-backed bitrate ceiling without contradicting proven healthy playback."""
+	try: now = float(time.time() if now is None else now)
+	except (TypeError, ValueError, OverflowError): return None
+	if not math.isfinite(now): return None
+	with _lock: samples = _load(now).get('bandwidth', [])
+	successes = sorted(sample['mbps'] for sample in samples if sample['ok'])
+	stalls = sorted(sample['mbps'] for sample in samples if not sample['ok'])
+	if len(successes) < 2 or len(stalls) < 2: return None
+	limit = max(successes[-1], stalls[1] * 0.8)
+	return round(min(500.0, max(2.0, limit)), 2)

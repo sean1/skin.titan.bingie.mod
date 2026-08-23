@@ -168,6 +168,34 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		self.assertFalse(player.playback_event)
 		self.assertEqual(player.retry_resume_percent, 0)
 
+	def test_startup_timeout_stops_pending_play_request(self):
+		player_module = load_player()
+		player_module.kodi_utils.logger = mock.Mock()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		listitem = mock.Mock()
+		player.art_provider = ()
+		player.bookmarkPOV = lambda: 0
+		player.make_listitem = lambda: listitem
+		player.isPlaying = lambda: False
+		player.play = mock.Mock()
+		player.stop = mock.Mock()
+		player._record_playback_health = mock.Mock()
+
+		with mock.patch.object(player_module, 'PLAYBACK_START_TIMEOUT', 0):
+			result = player.run('https://stream.invalid/movie', {'title': 'Movie', 'year': 2025, 'mediatype': 'movie', 'tmdb_id': '1'})
+
+		self.assertFalse(result)
+		player.play.assert_called_once()
+		player.stop.assert_called_once_with()
+		self.assertTrue(player.ignore_startup_stop)
+		self.assertFalse(player.startup_playback_started)
+		self.assertTrue(player.startup_cancel_requested)
+		player._record_playback_health.assert_called_once()
+
+		player.onAVStarted()
+		self.assertFalse(player.playback_event)
+		self.assertEqual(player.stop.call_count, 2)
+
 	def test_stop_and_end_do_not_request_error_recovery(self):
 		player_module = load_player()
 		for callback in ('onPlayBackStopped', 'onPlayBackEnded'):

@@ -46,7 +46,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.playback_sample_wall, self.playback_sample_media = None, None
 		self.playback_stall_seconds, self.playback_stall_count, self.playback_stall_active = 0, 0, False
 		self.allow_stall_recovery, self.has_stall_fallback, self.stall_recovery_requested = False, False, False
-		self.ignore_startup_stop, self.startup_playback_started = False, False
+		self.ignore_startup_stop, self.startup_playback_started, self.startup_cancel_requested = False, False, False
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
 		self.nextep_started, self.next_episode_requested, self.play_random_continual = False, False, False
@@ -61,6 +61,11 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.volume_check = get_setting('volumecheck.enabled', 'false') == 'true'
 
 	def onAVStarted(self):
+		if getattr(self, 'startup_cancel_requested', False):
+			self.playback_event = False
+			try: self.stop()
+			except: pass
+			return
 		self.playback_event = True
 		try: playback_file = self.getPlayingFile()
 		except: playback_file = ''
@@ -146,11 +151,15 @@ class POVPlayer(kodi_utils.xbmc_player):
 		return not cls._is_original_audio(stream), not bool(stream.get('isdefault')), stream.get('index', 0)
 
 	def onPlayBackStarted(self):
+		if getattr(self, 'startup_cancel_requested', False): return
 		if self.playback_event is None: self.startup_playback_started = True
 		try: kodi_utils.hide_busy_dialog()
 		except: pass
 
 	def onPlayBackStopped(self):
+		if getattr(self, 'startup_cancel_requested', False):
+			self.playback_event = False
+			return
 		if not self._set_terminal_playback_event(): return
 		if getattr(self, 'stall_recovery_requested', False): return
 		self._finalize_stream(True)
@@ -160,10 +169,16 @@ class POVPlayer(kodi_utils.xbmc_player):
 		kodi_utils.clear_property('pov_lite_total_autoplays')
 
 	def onPlayBackEnded(self):
+		if getattr(self, 'startup_cancel_requested', False):
+			self.playback_event = False
+			return
 		self._finalize_stream(True, natural_end=True)
 		self._set_terminal_playback_event()
 
 	def onPlayBackError(self):
+		if getattr(self, 'startup_cancel_requested', False):
+			self.playback_event = False
+			return
 		if getattr(self, 'stall_recovery_requested', False):
 			self.playback_event = False
 			return
@@ -255,7 +270,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			listitem.setProperty('StartPercent', str(bookmark))
 
 			self.ignore_startup_stop = self.isPlaying()
-			self.startup_playback_started = False
+			self.startup_playback_started, self.startup_cancel_requested = False, False
 			self.playback_error, self.retry_resume_percent = False, 0
 			self.playback_event = None
 			self.play(url, listitem)
@@ -263,6 +278,11 @@ class POVPlayer(kodi_utils.xbmc_player):
 			while self.playback_event is None and monotonic() < start_deadline:
 				if kodi_utils.monitor.waitForAbort(0.1): return
 			if self.playback_event is not True:
+				if self.playback_event is None:
+					self.startup_cancel_requested = True
+					self.ignore_startup_stop, self.startup_playback_started = True, False
+					try: self.stop()
+					except: pass
 				self._record_playback_health('startup_fail', latency=self._playback_health_elapsed())
 				kodi_utils.logger('POVPlayer', 'Playback startup failed or timed out')
 				return False
@@ -310,6 +330,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.remaining_time = round(self.total_time - self.curr_time)
 			if self.curr_time >= 60: self.playback_health_qualified = True
 			self._sample_playback_stall()
+			if getattr(self, 'stall_recovery_requested', False): return
 			if not self.subs_searched:
 				self.exec_task('subtitles')
 			if not self.stingers_checked and self.mediatype == 'movie':

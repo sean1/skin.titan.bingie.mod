@@ -114,10 +114,31 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.module.record(context, 'healthy_play', bitrate_mbps=50, now=1)
 		self.module.record(context, 'healthy_play', bitrate_mbps=40, now=2)
 		self.assertEqual(self.module.learned_bandwidth(20, now=2), 20)
+		self.assertIsNone(self.module.resolution_fallback_limit(now=2))
 		self.module.record(context, 'healthy_play', bitrate_mbps=60, now=3)
 		self.assertEqual(self.module.learned_bandwidth(20, now=3), 40)
+		self.assertIsNone(self.module.resolution_fallback_limit(now=3))
 		self.module.record(context, 'stalled_play', bitrate_mbps=30, stalls=1, now=4)
 		self.assertEqual(self.module.learned_bandwidth(20, now=4), 21)
+		self.assertIsNone(self.module.resolution_fallback_limit(now=4))
+		self.module.record(context, 'stalled_play', bitrate_mbps=35, stalls=1, now=5)
+		self.assertEqual(self.module.resolution_fallback_limit(now=5), 60)
+
+	def test_resolution_fallback_limit_requires_repeated_stalls_and_preserves_proven_bitrate(self):
+		context = {'provider': 'rd'}
+		for bitrate, now in ((10, 1), (12, 2)):
+			self.module.record(context, 'healthy_play', bitrate_mbps=bitrate, now=now)
+		for bitrate, now in ((30, 3), (35, 4)):
+			self.module.record(context, 'stalled_play', bitrate_mbps=bitrate, stalls=2, now=now)
+		self.assertEqual(self.module.resolution_fallback_limit(now=4), 28)
+
+	def test_resolution_fallback_limit_ignores_one_low_stall_outlier(self):
+		context = {'provider': 'rd'}
+		for bitrate, now in ((10, 1), (12, 2)):
+			self.module.record(context, 'healthy_play', bitrate_mbps=bitrate, now=now)
+		for bitrate, now in ((5, 3), (30, 4)):
+			self.module.record(context, 'stalled_play', bitrate_mbps=bitrate, stalls=2, now=now)
+		self.assertEqual(self.module.resolution_fallback_limit(now=4), 24)
 
 	def test_bandwidth_samples_are_numeric_bounded_and_device_local(self):
 		context = {'provider': 'tb'}

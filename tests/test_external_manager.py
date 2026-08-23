@@ -58,6 +58,34 @@ def load_sources_module():
 	return load_module('test_sources_runtime', path, stubs)
 
 
+class FakeDebridCache:
+	rows = []
+
+	def __enter__(self): return self
+	def __exit__(self, *args): pass
+	def get_many(self, hash_list): return [row for row in self.rows if row[0] in hash_list]
+	def set_many(self, *args): pass
+
+
+def load_debrid_module():
+	debrids = module_stub(
+		all_debrid_api=module_stub(AllDebridAPI=object), real_debrid_api=module_stub(RealDebridAPI=object), torbox_api=module_stub(TorBoxAPI=object)
+	)
+	kodi_utils = module_stub(
+		local_string=str, get_setting=lambda *args: '', notification=lambda *args: None, show_busy_dialog=lambda: None, hide_busy_dialog=lambda: None,
+		ok_dialog=lambda *args, **kwargs: None, confirm_dialog=lambda *args, **kwargs: False, select_dialog=lambda *args, **kwargs: None, logger=lambda *args: None
+	)
+	settings = module_stub(default_internal_scrapers=(), enabled_debrids_check=lambda *args: False)
+	request_session = types.SimpleNamespace(headers={})
+	stubs = {
+		'debrids': debrids, 'caches.debrid_cache': module_stub(DebridCache=FakeDebridCache), 'indexers.metadata': module_stub(),
+		'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'requests': module_stub(session=lambda: request_session),
+		'fenom': module_stub(), 'fenom.client': module_stub(randomagent=lambda: 'test')
+	}
+	path = ROOT / 'resources' / 'lib' / 'modules' / 'debrid.py'
+	return load_module('test_debrid_runtime', path, stubs)
+
+
 SOURCES = load_sources_module()
 
 
@@ -76,18 +104,19 @@ class FakeExternalSource:
 
 
 class FakeDebridCheck:
-	hash_list = []
 	cached = set()
 	cached_by_provider = {}
 	exact_providers = set()
 	checked_batches = []
 
 	@classmethod
-	def set_cached_hashes(cls, hash_list):
-		cls.hash_list = hash_list
+	def request_context(cls, hash_list):
+		hash_list = tuple(hash_list)
 		cls.checked_batches.append(set(hash_list))
+		return hash_list, ()
 
-	def __init__(self, meta, name): self.name = name
+	def __init__(self, meta, name, hash_list, cached_hashes):
+		self.name, self.hash_list, self.cached_hashes = name, tuple(hash_list), tuple(cached_hashes)
 
 	def cache_check(self):
 		cached = self.cached_by_provider.get(self.name, self.cached)
@@ -98,12 +127,15 @@ class FakeDebridCheck:
 
 class RecordingExecutor:
 	worker_counts = []
+	submissions = []
 
 	def __init__(self, max_workers):
+		self.executor_id = len(self.worker_counts)
 		self.worker_counts.append(max_workers)
 		self.executor = ThreadPoolExecutor(max_workers)
 
 	def submit(self, *args, **kwargs):
+		self.submissions.append((self.executor_id, getattr(args[0], '__name__', 'unknown')))
 		return self.executor.submit(*args, **kwargs)
 
 	def shutdown(self, *args, **kwargs):
@@ -118,6 +150,7 @@ class ExternalManagerTests(unittest.TestCase):
 		FakeDebridCheck.exact_providers = set()
 		FakeDebridCheck.checked_batches = []
 		RecordingExecutor.worker_counts = []
+		RecordingExecutor.submissions = []
 		SOURCES.ExternalSource = FakeExternalSource
 		SOURCES.DebridCheck = FakeDebridCheck
 		SOURCES.TPE = RecordingExecutor
@@ -161,19 +194,38 @@ class ExternalManagerTests(unittest.TestCase):
 		manager.results({})
 		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
 		self.assertNotIn('full_search_available', manager.meta)
-		self.assertEqual(RecordingExecutor.worker_counts, [6])
+		self.assertEqual(RecordingExecutor.worker_counts, [6, 1])
 
 	def test_automatic_fallback_phase_starts_every_request(self):
 		fallback = tuple('fallback-%d' % index for index in range(10))
 		manager = self.manager(provider_names=(*sorted(CORE_EXTERNAL_PROVIDERS), *fallback))
 		manager.results({})
-		self.assertEqual(RecordingExecutor.worker_counts, [4, 10])
+		self.assertEqual(RecordingExecutor.worker_counts, [4, 1, 10, 1])
 
 	def test_no_core_provider_path_starts_every_request(self):
 		fallback = tuple('fallback-%d' % index for index in range(10))
 		manager = self.manager(provider_names=fallback)
 		manager.results({})
-		self.assertEqual(RecordingExecutor.worker_counts, [10])
+		self.assertEqual(RecordingExecutor.worker_counts, [10, 1])
+
+	def test_cache_checks_use_a_separate_executor(self):
+		self.manager(provider_names=['torrentio']).results({})
+		provider_executors = {executor_id for executor_id, function_name in RecordingExecutor.submissions if function_name == 'results'}
+		cache_executors = {executor_id for executor_id, function_name in RecordingExecutor.submissions if function_name == 'cache_check'}
+		self.assertTrue(provider_executors)
+		self.assertTrue(cache_executors)
+		self.assertTrue(provider_executors.isdisjoint(cache_executors))
+
+	def test_debrid_request_context_is_immutable_per_search(self):
+		debrid = load_debrid_module()
+		FakeDebridCache.rows = [('a', 'rd', 'True', 999)]
+		context_a = debrid.DebridCheck.request_context(['a'])
+		check_a = debrid.DebridCheck({}, 'realdebrid', *context_a)
+		FakeDebridCache.rows = [('b', 'rd', 'True', 999)]
+		debrid.DebridCheck.request_context(['b'])
+
+		self.assertEqual(check_a.hash_list, ('a',))
+		self.assertEqual(check_a.cached_hashes, (('a', 'rd', 'True', 999),))
 
 	def test_only_eligible_hashes_are_cache_checked(self):
 		FakeDebridCheck.cached = {'%s-%d' % (provider, index) for provider in CORE_EXTERNAL_PROVIDERS for index in range(2)}
@@ -239,7 +291,7 @@ class ExternalManagerTests(unittest.TestCase):
 
 		self.assertEqual([item['scrape_provider'] for item in results], ['unhealthy', 'healthy', 'preferred'])
 
-	def test_learned_bandwidth_keeps_resolution_first(self):
+	def test_insufficient_bandwidth_confidence_keeps_resolution_first(self):
 		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
 		processor = SOURCES.ResultsProcessor(source)
 		results = [
@@ -248,11 +300,71 @@ class ExternalManagerTests(unittest.TestCase):
 			{'quality': '1080p', 'quality_rank': 2, 'size': 6.0},
 		]
 		original = SOURCES.playback_health
-		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10)
+		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10, resolution_fallback_limit=lambda: None)
 		try: results.sort(key=processor.autoplay_source_key)
 		finally: SOURCES.playback_health = original
 
 		self.assertEqual([(item['quality'], item['size']) for item in results], [('4K', 8.0), ('4K', 30.0), ('1080p', 6.0)])
+
+	def test_confident_bandwidth_demotes_only_unsustainable_4k_below_sustainable_1080p(self):
+		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
+		processor = SOURCES.ResultsProcessor(source)
+		results = [
+			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 5.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 8.0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 5.0},
+			{'quality': '720p', 'quality_rank': 3, 'size': 2.0},
+		]
+		original = SOURCES.playback_health
+		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10, resolution_fallback_limit=lambda: 7)
+		try: results.sort(key=processor.autoplay_source_key)
+		finally: SOURCES.playback_health = original
+
+		self.assertEqual([(item['quality'], item['size']) for item in results], [
+			('4K', 5.0), ('1080p', 5.0), ('4K', 8.0), ('4K', 30.0), ('720p', 2.0)
+		])
+
+	def test_resolution_fallback_keeps_exact_limit_and_unknown_4k_ahead_of_1080p(self):
+		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
+		processor = SOURCES.ResultsProcessor(source)
+		results = [
+			{'quality': '4K', 'quality_rank': 1, 'size': 6.3},
+			{'quality': '4K', 'quality_rank': 1, 'size': 6.31},
+			{'quality': '4K', 'quality_rank': 1, 'size': 0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 5.0},
+			{'quality': '720p', 'quality_rank': 3, 'size': 2.0},
+		]
+		original = SOURCES.playback_health
+		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10, resolution_fallback_limit=lambda: 7)
+		try: results.sort(key=processor.autoplay_source_key)
+		finally: SOURCES.playback_health = original
+
+		self.assertEqual([(item['quality'], item['size']) for item in results], [
+			('4K', 6.3), ('4K', 0), ('1080p', 5.0), ('4K', 6.31), ('720p', 2.0)
+		])
+
+	def test_resolution_fallback_uses_direct_limit_before_legacy_sustainability_rank(self):
+		source = types.SimpleNamespace(meta={'duration': 8000}, mediatype='movie')
+		processor = SOURCES.ResultsProcessor(source)
+		results = [
+			{'quality': '4K', 'quality_rank': 1, 'size': 20.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 28.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 10.0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 30.0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 0},
+			{'quality': '720p', 'quality_rank': 3, 'size': 2.0},
+		]
+		original = SOURCES.playback_health
+		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 8, resolution_fallback_limit=lambda: 28)
+		try: results.sort(key=processor.autoplay_source_key)
+		finally: SOURCES.playback_health = original
+
+		self.assertEqual([(item['quality'], item['size']) for item in results], [
+			('4K', 20.0), ('4K', 28.0), ('4K', 0), ('1080p', 10.0), ('4K', 30.0), ('1080p', 30.0), ('1080p', 0), ('720p', 2.0)
+		])
 
 
 if __name__ == '__main__':

@@ -17,6 +17,9 @@ get_art_provider, meta_user_info = settings.get_art_provider, settings.metadata_
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 PLAYBACK_START_TIMEOUT = 30.0
+PLAYBACK_DURATION_TIMEOUT = 5.0
+MINIMUM_DURATION_RATIO = 0.5
+MINIMUM_DURATION_GAP = 600
 ENGLISH_AUDIO_LANGUAGES = ('en', 'eng', 'english')
 ALTERNATE_AUDIO_NAMES = ('commentary', 'audio description', 'descriptive audio')
 ISO_639_EQUIVALENTS = (
@@ -34,6 +37,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		kodi_utils.xbmc_player.__init__(self)
 		self.set_resume, self.set_watched = 5, 90
 		self.playback_event, self.progress_media = None, None
+		self.playback_error, self.retry_resume_percent = False, 0
 		self.ignore_startup_stop, self.startup_playback_started = False, False
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
@@ -148,7 +152,33 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self._set_terminal_playback_event()
 
 	def onPlayBackError(self):
+		if self.playback_event is True:
+			self.playback_error = True
+			self.retry_resume_percent = self._current_resume_percent()
+		else:
+			self.playback_error = False
+			self.retry_resume_percent = 0
 		self.playback_event = False
+
+	def _current_resume_percent(self):
+		try:
+			total_time, curr_time = self.getTotalTime(), self.getTime()
+			return max(0, min(100, float(curr_time) / float(total_time) * 100)) if total_time > 0 else 0
+		except: return 0
+
+	def _duration_is_plausible(self):
+		try: expected = float(self.meta_get('duration') or 0)
+		except: expected = 0
+		if expected <= 0: return True
+		deadline = monotonic() + PLAYBACK_DURATION_TIMEOUT
+		actual = 0
+		while monotonic() < deadline:
+			try: actual = float(self.getTotalTime() or 0)
+			except: actual = 0
+			if actual > 0: break
+			if kodi_utils.monitor.waitForAbort(0.2): return True
+		if actual <= 0: return True
+		return not (actual < expected * MINIMUM_DURATION_RATIO and expected - actual > MINIMUM_DURATION_GAP)
 
 	def _set_terminal_playback_event(self):
 		if self.playback_event is None and self.ignore_startup_stop and not self.startup_playback_started:
@@ -170,7 +200,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.title, self.year = self.meta_get('title'), self.meta_get('year')
 			self.mediatype, self.tvdb_id = self.meta_get('mediatype'), self.meta_get('tvdb_id')
 			self.season, self.episode = self.meta_get('season', ''), self.meta_get('episode', '')
-			if any(i in self.meta for i in ('random', 'random_continual')): bookmark = 0
+			retry_resume = self.meta.pop('_retry_resume_percent', 0)
+			if retry_resume: bookmark = retry_resume
+			elif any(i in self.meta for i in ('random', 'random_continual')): bookmark = 0
 			else: bookmark = self.bookmarkPOV()
 			if bookmark == 'cancel': return
 			self.meta.update({'url': url, 'bookmark': bookmark})
@@ -183,6 +215,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 			self.ignore_startup_stop = self.isPlaying()
 			self.startup_playback_started = False
+			self.playback_error, self.retry_resume_percent = False, 0
 			self.playback_event = None
 			self.play(url, listitem)
 			start_deadline = monotonic() + PLAYBACK_START_TIMEOUT
@@ -190,6 +223,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 				if kodi_utils.monitor.waitForAbort(0.1): return
 			if self.playback_event is not True:
 				kodi_utils.logger('POVPlayer', 'Playback startup failed or timed out')
+				return False
+			if not self._duration_is_plausible():
+				kodi_utils.logger('POVPlayer', 'Playback duration is implausibly short; trying the next source')
+				self.stop()
 				return False
 			if callable(progress_media): progress_media()
 			kodi_utils.close_all_dialog()
@@ -204,6 +241,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self.exec_task('episode_handler')
 			if self.volume_check: kodi_utils.volume_checker()
 			while self.isPlayingVideo(): self.check_playback_events()
+			if self.playback_error: return False
 			if not self.media_marked: self.media_watched_marker()
 			ws.clear_local_bookmarks()
 			return True

@@ -219,6 +219,7 @@ class Sources:
 
 	def play_file(self, results, source=None):
 		try:
+			retry_resume_percent = 0
 			if source is None:
 				source_index, items = 0, results
 			elif source in results:
@@ -258,7 +259,10 @@ class Sources:
 					'release_quality': item.get('quality') or '',
 					'release_info': item.get('extraInfo') or ''
 				})
-				playback_result = POVPlayer().run(link, playback_meta, progress_media)
+				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
+				playback_player = POVPlayer()
+				playback_result = playback_player.run(link, playback_meta, progress_media)
+				retry_resume_percent = getattr(playback_player, 'retry_resume_percent', 0)
 				if playback_result is not False: return playback_result
 			else:
 				if self.progress_dialog.full_screen: self.progress_dialog.kill()

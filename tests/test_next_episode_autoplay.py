@@ -140,6 +140,83 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 
 		self.assertEqual(sources.nextep_params, [{'episode': 2}])
 
+	def test_playback_error_requests_retry_at_current_position(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.getTotalTime = lambda: 1000
+		player.getTime = lambda: 375
+		player.playback_event = True
+
+		player.onPlayBackError()
+
+		self.assertTrue(player.playback_error)
+		self.assertFalse(player.playback_event)
+		self.assertEqual(player.retry_resume_percent, 37.5)
+
+	def test_startup_playback_error_does_not_capture_stale_position(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.playback_event = None
+		player.playback_error = True
+		player.retry_resume_percent = 72
+		player.getTotalTime = lambda: 1000
+		player.getTime = lambda: 720
+
+		player.onPlayBackError()
+
+		self.assertFalse(player.playback_error)
+		self.assertFalse(player.playback_event)
+		self.assertEqual(player.retry_resume_percent, 0)
+
+	def test_stop_and_end_do_not_request_error_recovery(self):
+		player_module = load_player()
+		for callback in ('onPlayBackStopped', 'onPlayBackEnded'):
+			with self.subTest(callback=callback):
+				player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+				player.playback_event = True
+				player.playback_error = False
+				player.retry_resume_percent = 0
+				player.ignore_startup_stop = False
+				player.startup_playback_started = True
+				player.next_episode_requested = True
+
+				getattr(player, callback)()
+
+				self.assertFalse(player.playback_error)
+				self.assertEqual(player.retry_resume_percent, 0)
+
+	def test_implausibly_short_playback_is_rejected(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.meta_get = {'duration': 7200}.get
+		player.getTotalTime = lambda: 177
+
+		self.assertFalse(player._duration_is_plausible())
+
+	def test_short_episode_with_matching_metadata_is_allowed(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.meta_get = {'duration': 1500}.get
+		player.getTotalTime = lambda: 1200
+
+		self.assertTrue(player._duration_is_plausible())
+
+	def test_longer_edition_is_allowed(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.meta_get = {'duration': 7200}.get
+		player.getTotalTime = lambda: 8100
+
+		self.assertTrue(player._duration_is_plausible())
+
+	def test_missing_expected_duration_is_allowed(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.meta_get = {}.get
+		player.getTotalTime = lambda: 177
+
+		self.assertTrue(player._duration_is_plausible())
+
 	def test_resume_save_has_no_forced_cleanup_sleep(self):
 		player_module = load_player()
 		player = player_module.POVPlayer.__new__(player_module.POVPlayer)

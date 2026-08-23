@@ -63,6 +63,58 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertTrue(result)
 		self.assertEqual(played, ['https://stream.invalid/first', 'https://stream.invalid/second'])
 
+	def test_playback_error_resume_position_reaches_next_source(self):
+		sources_module = load_sources_module()
+		seen_meta = []
+
+		class Player:
+			def run(self, link, meta, progress):
+				seen_meta.append(meta)
+				self.retry_resume_percent = 37.5 if len(seen_meta) == 1 else 0
+				return len(seen_meta) > 1
+
+		sources_module.POVPlayer = Player
+		instance = sources_module.Sources.__new__(sources_module.Sources)
+		instance.background = False
+		instance.autoplay = True
+		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
+		instance.meta = {'title': 'Movie', 'bookmark': 12}
+		instance._no_results = lambda: None
+		items = [
+			{'name': 'first', 'unrestricted_link': 'https://stream.invalid/first', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+			{'name': 'second', 'unrestricted_link': 'https://stream.invalid/second', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+		]
+
+		self.assertTrue(instance.play_file(items))
+		self.assertNotIn('_retry_resume_percent', seen_meta[0])
+		self.assertEqual(seen_meta[1]['_retry_resume_percent'], 37.5)
+		self.assertEqual(seen_meta[1]['release_name'], 'second')
+
+	def test_duration_mismatch_retry_does_not_invent_resume_position(self):
+		sources_module = load_sources_module()
+		seen_meta = []
+
+		class Player:
+			def run(self, link, meta, progress):
+				seen_meta.append(meta)
+				self.retry_resume_percent = 0
+				return len(seen_meta) > 1
+
+		sources_module.POVPlayer = Player
+		instance = sources_module.Sources.__new__(sources_module.Sources)
+		instance.background = False
+		instance.autoplay = True
+		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
+		instance.meta = {'title': 'Movie'}
+		instance._no_results = lambda: None
+		items = [
+			{'name': 'trailer', 'unrestricted_link': 'https://stream.invalid/trailer', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+			{'name': 'movie', 'unrestricted_link': 'https://stream.invalid/movie', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+		]
+
+		self.assertTrue(instance.play_file(items))
+		self.assertNotIn('_retry_resume_percent', seen_meta[1])
+
 	def test_player_passes_release_context_to_subtitle_task(self):
 		player_module = load_player()
 		player = player_module.POVPlayer.__new__(player_module.POVPlayer)

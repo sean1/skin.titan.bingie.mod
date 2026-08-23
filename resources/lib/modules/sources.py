@@ -250,19 +250,20 @@ class Sources:
 				except: pass
 				if 'unrestricted_link' in item: link = item['unrestricted_link']
 				else: link = Source(item, self.meta).resolve_sources()
-				if link is not None: break
+				if link is None: continue
+				if not self.progress_dialog.full_screen: progressDialogBG.close()
+				playback_meta = self.meta.copy()
+				playback_meta.update({
+					'release_name': item.get('name') or item.get('display_name') or '',
+					'release_quality': item.get('quality') or '',
+					'release_info': item.get('extraInfo') or ''
+				})
+				playback_result = POVPlayer().run(link, playback_meta, progress_media)
+				if playback_result is not False: return playback_result
 			else:
 				if self.progress_dialog.full_screen: self.progress_dialog.kill()
 				else: progressDialogBG.close()
 				return self._no_results()
-			if not self.progress_dialog.full_screen: progressDialogBG.close()
-			playback_meta = self.meta.copy()
-			playback_meta.update({
-				'release_name': item.get('name') or item.get('display_name') or '',
-				'release_quality': item.get('quality') or '',
-				'release_info': item.get('extraInfo') or ''
-			})
-			return POVPlayer().run(link, playback_meta, progress_media)
 		except: pass
 
 class ConfigLoader:
@@ -531,11 +532,25 @@ class ResultsProcessor:
 			item['provider_rank'] = self.get_provider_rank(account_type)
 			item['quality_rank'] = self.get_quality_rank(quality)
 		results.sort(key=self.source.sort_function)
+		if self.source.autoplay: results.sort(key=self.autoplay_source_key)
 		if self.source.priority_language:
 			results = self.sort_language_to_top(results)
 		results = self.sort_uncached_torrents(results)
 		clear_property('pov_lite_fs_filterless_search')
 		return results
+
+	def autoplay_source_key(self, item):
+		duration = self.source.meta.get('duration') or (3600 if self.source.mediatype == 'episode' else 5400)
+		bandwidth_mbps = string_to_float(get_setting('results.size.speed', '20'), '20')
+		max_sustainable_size = ((0.125 * (0.65 * bandwidth_mbps)) * duration) / 1000
+		size = item.get('size') or 0
+		unknown_size = size <= 0.01
+		oversized = not unknown_size and size > max_sustainable_size
+		minimum_bitrate = {'4K': 8.0, '1080p': 3.0, '720p': 1.5, 'SD': 0.5}.get(item.get('quality'), 0.5)
+		minimum_plausible_size = ((0.125 * minimum_bitrate) * duration) / 1000
+		implausibly_tiny = not unknown_size and size < minimum_plausible_size
+		fallback_rank = 3 if unknown_size else 2 if implausibly_tiny else 1 if oversized else 0
+		return item['quality_rank'], fallback_rank, -size if fallback_rank == 0 else size
 
 	def get_provider_rank(self, account_type):
 		return self.source.provider_sort_ranks[account_type] or 11

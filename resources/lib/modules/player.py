@@ -190,7 +190,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 				if kodi_utils.monitor.waitForAbort(0.1): return
 			if self.playback_event is not True:
 				kodi_utils.logger('POVPlayer', 'Playback startup failed or timed out')
-				return
+				return False
 			if callable(progress_media): progress_media()
 			kodi_utils.close_all_dialog()
 			if self.mediatype == 'episode':
@@ -206,6 +206,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			while self.isPlayingVideo(): self.check_playback_events()
 			if not self.media_marked: self.media_watched_marker()
 			ws.clear_local_bookmarks()
+			return True
 		except: pass
 
 	def check_playback_events(self):

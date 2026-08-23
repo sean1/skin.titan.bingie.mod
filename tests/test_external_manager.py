@@ -52,7 +52,7 @@ def load_sources_module():
 			pack_enable_check=lambda *args: (False, False), sources_quality_count=lambda sources: {}, get_cache_expiry=lambda *args: (1, 1, 1),
 			get_file_info=lambda *args, **kwargs: ('SD', '')
 		),
-		'modules.utils': module_stub(manual_function_import=lambda *args: None, get_datetime=lambda: None, safe_string=str, string_to_float=float),
+		'modules.utils': module_stub(manual_function_import=lambda *args: None, get_datetime=lambda: None, safe_string=str, string_to_float=lambda value, fallback='0': float(value or fallback)),
 	}
 	path = ROOT / 'resources' / 'lib' / 'modules' / 'sources.py'
 	return load_module('test_sources_runtime', path, stubs)
@@ -193,6 +193,33 @@ class ExternalManagerTests(unittest.TestCase):
 			{'quality': '1080p', 'extraInfo': '[B]H.264[/B]'}
 		]
 		self.assertEqual(processor.filter_staged_results(results), [results[1]])
+
+	def test_autoplay_source_order_prefers_largest_plausible_sustainable_file(self):
+		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
+		processor = SOURCES.ResultsProcessor(source)
+		results = [
+			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 8.0},
+			{'quality': '4K', 'quality_rank': 1, 'size': 10.0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 5.0},
+		]
+
+		results.sort(key=processor.autoplay_source_key)
+
+		self.assertEqual([item['size'] for item in results], [10.0, 8.0, 30.0, 5.0])
+
+	def test_autoplay_source_order_does_not_prefer_trailer_sized_4k_result(self):
+		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
+		processor = SOURCES.ResultsProcessor(source)
+		results = [
+			{'quality': '4K', 'quality_rank': 1, 'size': 0.5},
+			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
+			{'quality': '1080p', 'quality_rank': 2, 'size': 6.0},
+		]
+
+		results.sort(key=processor.autoplay_source_key)
+
+		self.assertEqual([(item['quality'], item['size']) for item in results], [('4K', 30.0), ('4K', 0.5), ('1080p', 6.0)])
 
 
 if __name__ == '__main__':

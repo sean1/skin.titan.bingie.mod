@@ -38,7 +38,7 @@ class StreamingCacheTests(unittest.TestCase):
 		self.assertIsNone(self.cache._memory_label_mb('unknown'))
 
 	def test_tuner_applies_only_changed_kodi_settings(self):
-		current = {'filecache.buffermode': 4, 'filecache.readfactor': 400, 'filecache.chunksize': 131072, 'filecache.memorysize': 20}
+		current = {'filecache.buffermode': 4, 'filecache.readfactor': 400, 'filecache.chunksize': 131072, 'smb.chunksize': 128, 'filecache.memorysize': 20}
 		def rpc(payload):
 			request = json.loads(payload)
 			if request['method'] == 'Settings.GetSettingValue': return json.dumps({'result': {'value': current[request['params']['setting']]}})
@@ -50,7 +50,7 @@ class StreamingCacheTests(unittest.TestCase):
 
 		writes = [json.loads(call.args[0]) for call in self.ku.execJSONRPC.call_args_list if json.loads(call.args[0])['method'] == 'Settings.SetSettingValue']
 		self.assertEqual([(write['params']['setting'], write['params']['value']) for write in writes], [
-			('filecache.readfactor', 0), ('filecache.chunksize', 262144), ('filecache.memorysize', 128)
+			('filecache.readfactor', 0), ('filecache.chunksize', 262144), ('smb.chunksize', 256), ('filecache.memorysize', 128)
 		])
 		self.assertTrue(all(isinstance(write['params']['value'], int) for write in writes))
 

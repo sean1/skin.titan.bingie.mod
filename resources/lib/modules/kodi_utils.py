@@ -361,8 +361,8 @@ def fetch_kodi_imagecache(image):
 
 FIXED_SETTINGS = {
 	'amble.indicators': '',
-	'auto_play_episode': 'false',
-	'auto_play_movie': 'false',
+	'auto_play_episode': 'true',
+	'auto_play_movie': 'true',
 	'auto_resume_episode': '0',
 	'auto_resume_movie': '0',
 	'ad.enabled': 'true',

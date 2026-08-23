@@ -37,6 +37,32 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertEqual(seen['meta']['release_info'], 'HEVC | HDR')
 		self.assertNotEqual(seen['meta']['release_name'], seen['link'])
 
+	def test_playback_start_failure_tries_next_resolved_source(self):
+		sources_module = load_sources_module()
+		played = []
+
+		class Player:
+			def run(self, link, meta, progress):
+				played.append(link)
+				return len(played) > 1
+
+		sources_module.POVPlayer = Player
+		instance = sources_module.Sources.__new__(sources_module.Sources)
+		instance.background = False
+		instance.autoplay = True
+		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
+		instance.meta = {'title': 'Movie'}
+		instance._no_results = lambda: None
+		items = [
+			{'name': 'first', 'unrestricted_link': 'https://stream.invalid/first', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+			{'name': 'second', 'unrestricted_link': 'https://stream.invalid/second', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
+		]
+
+		result = instance.play_file(items)
+
+		self.assertTrue(result)
+		self.assertEqual(played, ['https://stream.invalid/first', 'https://stream.invalid/second'])
+
 	def test_player_passes_release_context_to_subtitle_task(self):
 		player_module = load_player()
 		player = player_module.POVPlayer.__new__(player_module.POVPlayer)

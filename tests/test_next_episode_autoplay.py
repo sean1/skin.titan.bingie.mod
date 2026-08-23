@@ -61,7 +61,10 @@ def load_episode_tools():
 
 class NextEpisodeAutoplayTests(unittest.TestCase):
 	def test_feature_is_enabled_by_default(self):
-		self.assertEqual(load_kodi_utils().FIXED_SETTINGS['autoplay_next_episode'], 'true')
+		settings = load_kodi_utils().FIXED_SETTINGS
+		self.assertEqual(settings['auto_play_movie'], 'true')
+		self.assertEqual(settings['auto_play_episode'], 'true')
+		self.assertEqual(settings['autoplay_next_episode'], 'true')
 
 	def test_feature_does_not_require_initial_episode_autoplay(self):
 		settings = load_settings({'auto_play_episode': 'false', 'autoplay_next_episode': 'true'})

@@ -8,6 +8,7 @@ CACHE_SETTINGS = {
 	'filecache.buffermode': 4,
 	'filecache.readfactor': 0,
 	'filecache.chunksize': 262144,
+	'smb.chunksize': 256,
 }
 CACHE_TIERS = (32, 48, 64, 96, 128, 192, 256, 384, 512)
 

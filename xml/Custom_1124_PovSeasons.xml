@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<window id="1124">
+	<defaultcontrol always="true">527</defaultcontrol>
+	<onload>SetFocus(527)</onload>
+	<controls>
+		<include>GlobalBackground</include>
+		<include>View_527_Seasons</include>
+	</controls>
+</window>

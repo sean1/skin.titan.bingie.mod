@@ -239,12 +239,6 @@
         </control>
     </include>
 
-	<!-- height for left list without fanart thumb -->
-	<include name="HeightWithoutThumb">
-		<height>650</height>
-	</include>
-	<!-- height for left list with fanart thumb -->
-
     <!-- View525 Content -->
     <include name="View_525_Episodes">
         <control type="group">

@@ -10,14 +10,13 @@ from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, me
 
 KODI_VERSION, make_cast_list, default_duration = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list, 3600
 string, ls, build_url, get_infolabel = str, kodi_utils.local_string, kodi_utils.build_url, kodi_utils.get_infolabel
-run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Refresh(%s)', 'Container.Update(%s)'
+run_plugin, container_refresh = 'RunPlugin(%s)', 'Container.Refresh(%s)'
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 item_jump = kodi_utils.media_path('item_jump.png')
 item_next = kodi_utils.media_path('item_next.png')
-watched_str, unwatched_str = ls(32642), ls(32643)
-extras_str, options_str, recomm_str = ls(32645), ls(32646), '[B]%s...[/B]' % ls(32503)
-hide_str, exit_str, clearprog_str, play_str = ls(32648), ls(32649), ls(32651), '[B]%s...[/B]' % ls(32174)
+extras_str, options_str = ls(32645), ls(32646)
+exit_str, clearprog_str, play_str = ls(32649), ls(32651), '[B]%s...[/B]' % ls(32174)
 nextpage_str, switchjump_str, jumpto_str = ls(32799), ls(32784), ls(32964)
 PREFETCH_THREADS = 5
 MOVIE_GENRE_NAMES = {int(value[0]): name for name, value in movie_genres.items()}
@@ -57,7 +56,7 @@ class Movies:
 		try:
 			result = build_tmdb_detail_shelf_item(position, item, self.params.get('tmdb_id'), 'movie', MOVIE_GENRE_NAMES, poster_empty, fanart_empty, KODI_VERSION)
 			if result: self.append(result)
-		except: pass
+		except Exception as exc: kodi_utils.logger('build_movie_shelf_content', 'position=%s: %s' % (position, exc))
 
 	def build_movie_content(self, position, tag):
 		try:
@@ -69,7 +68,7 @@ class Movies:
 			resumetime, progress = get_resumetime(self.bookmarks, string(meta['tmdb_id']))
 			cm = []
 			cm_append = cm.append
-			rootname, title, year = meta_get('rootname'), meta_get('title'), meta_get('year')
+			rootname, title = meta_get('rootname'), meta_get('title')
 			display = rootname if self.include_year_in_title else title
 			tmdb_id, imdb_id = meta_get('tmdb_id'), meta_get('imdb_id')
 			try: tags = [i for i in (imdb_id, string(tmdb_id)) if i]
@@ -84,9 +83,6 @@ class Movies:
 			options_params = build_url({
 				'mode': 'options_menu_choice', 'mediatype': 'movie',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
-			})
-			recommended_params = build_url({
-				'mode': 'build_movie_list', 'action': 'tmdb_movies_recommendations', 'tmdb_id': tmdb_id
 			})
 			cm_append((self.cm_sort['options'], options_str, run_plugin % options_params))
 			if self.open_extras:
@@ -148,7 +144,7 @@ class Movies:
 				videoinfo.setVotes(meta_get('votes'))
 				videoinfo.setWriters(meta_get('writer').split(', '))
 			self.append((url_params, listitem, False))
-		except: pass
+		except Exception as exc: kodi_utils.logger('build_movie_content', 'position=%s: %s' % (position, exc))
 
 class Menu(Movies):
 	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items')}
@@ -210,8 +206,7 @@ class Menu(Movies):
 			except ValueError: page_no = params_get('new_page')
 			if self.action in Menu.personal_dict: var_module, import_function = Menu.personal_dict[self.action]
 			else: var_module, import_function = 'indexers.%s_api' % self.action.split('_')[0], self.action
-			try: function = manual_function_import(var_module, import_function)
-			except: pass
+			function = manual_function_import(var_module, import_function)
 			if self.action in Menu.tmdb_main:
 				data = function(page_no)
 				all_results = data['results']
@@ -298,7 +293,7 @@ class Menu(Movies):
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, worker())
-		except: pass
+		except Exception as exc: kodi_utils.logger('build_movie_list', 'action=%s: %s' % (self.action, exc))
 		if prefetch: return
 		complete_media_directory(
 			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_listing,

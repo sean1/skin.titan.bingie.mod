@@ -8,10 +8,10 @@ from modules.utils import adjust_premiered_date, get_datetime, media_percentage_
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
 string, ls, build_url, default_duration = str, kodi_utils.local_string, kodi_utils.build_url, 3600
 get_art_provider, show_specials = settings.get_art_provider, settings.show_specials
-run_plugin, container_refresh, container_update = 'RunPlugin(%s)', 'Container.Refresh(%s)', 'Container.Update(%s)'
+run_plugin = 'RunPlugin(%s)'
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
-watched_str, unwatched_str, extras_str, options_str = ls(32642), ls(32643), ls(32645), ls(32646)
+extras_str, options_str = ls(32645), ls(32646)
 clearprog_str, season_str, unaired_label = ls(32651), ls(32537), 'cyan'
 
 class BaseSeason:
@@ -172,7 +172,6 @@ class Episodes(BaseSeason):
 				})
 				cm_append((options_str, run_plugin % options_params))
 				cm_append((extras_str, run_plugin % extras_params))
-				clearprog_params, unwatched_params, watched_params = '', '', ''
 				if not unaired:
 					if progress != '0' or resumetime != '0': cm_append((clearprog_str, run_plugin % build_url({
 						'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode',

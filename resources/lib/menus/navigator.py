@@ -285,7 +285,6 @@ class Navigator:
 				try:
 					cm = []
 					cm_append = cm.append
-					contents = eval(i[1])
 					name, icon = i[0], '%s%s' % (icon_path, 'folder.png')
 					display_name = '[B]%s : [/B] %s ' % (short_str.upper(), name)
 					url_params = {'name': name, 'iconImage': 'folder.png', 'external_list_item': 'True'}

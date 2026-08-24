@@ -35,13 +35,13 @@
     <constant name="landscape_width">366</constant>
     <constant name="bingie_no_circular_posx">130</constant>
     <constant name="bingie_no_circular_left_diff">65</constant>
-    <constant name="search_widget_height">417</constant>
-    <constant name="search_widget_thumb_width">297</constant>
-    <constant name="search_key_size">80</constant>
-    <constant name="search_radiokey_width">220</constant>
     <constant name="bingie_menu_width">500</constant>
     <constant name="episodes_thumb_height">266</constant>
     <constant name="episodes_thumb_width">466</constant>
+
+	<include name="HeightWithoutThumb">
+		<height>650</height>
+	</include>
 
     <!-- expressions -->
     <expression name="IsBingieViewsActive">Window.IsActive(Home) | Window.IsActive(1119) | Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1118)</expression>

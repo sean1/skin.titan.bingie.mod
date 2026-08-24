@@ -43,6 +43,7 @@ def load_menu_module(mediatype):
 	kodi_utils.external_browse = lambda: False
 	kodi_utils.add_items = Mock()
 	kodi_utils.end_directory = Mock()
+	kodi_utils.logger = Mock()
 	settings = types.ModuleType('modules.settings')
 	modules = types.ModuleType('modules')
 	modules.__path__ = []
@@ -237,6 +238,7 @@ class MenuCompletionTests(unittest.TestCase):
 					module.nextpage_str, module.item_next
 				)
 				kodi_utils.end_directory.assert_called_once_with(7, None)
+				kodi_utils.logger.assert_called_once_with('build_%s_list' % mediatype, 'action=%s: provider failed' % action)
 
 	def test_movie_and_tv_hub_catalogs_keep_five_media_items_before_next(self):
 		cases = (

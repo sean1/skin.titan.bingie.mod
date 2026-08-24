@@ -199,12 +199,6 @@
 
 	<!-- year mpaa totalepisodes (unwatched) format for seasons -->
 
-	<!-- height for left list without fanart thumb -->
-	<include name="HeightWithoutThumb">
-		<height>650</height>
-	</include>
-	<!-- height for left list with fanart thumb -->
-
 	<include name="View_527_Seasons">
 		<control type="group">
 			<visible>Control.IsVisible(527) + [Container.Content(seasons) | Window.IsActive(1124)]</visible>

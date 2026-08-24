@@ -15,8 +15,7 @@ fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 item_jump = kodi_utils.media_path('item_jump.png')
 item_next = kodi_utils.media_path('item_next.png')
-watched_str, unwatched_str = ls(32642), ls(32643)
-extras_str, options_str, recomm_str = ls(32645), ls(32646), '[B]%s...[/B]' % ls(32503)
+extras_str, options_str = ls(32645), ls(32646)
 random_str, exit_str, browse_str = ls(32611), ls(32650), ls(32652)
 nextpage_str, switchjump_str, jumpto_str = ls(32799), ls(32784), ls(32964)
 PREFETCH_THREADS = 5
@@ -61,7 +60,7 @@ class TVShows:
 		try:
 			result = build_tmdb_detail_shelf_item(position, item, self.params.get('tmdb_id'), 'tvshow', TVSHOW_GENRE_NAMES, poster_empty, fanart_empty, KODI_VERSION)
 			if result: self.append(result)
-		except: pass
+		except Exception as exc: kodi_utils.logger('build_tvshow_shelf_content', 'position=%s: %s' % (position, exc))
 
 	def build_tvshow_content(self, position, tag):
 		try:
@@ -76,7 +75,7 @@ class TVShows:
 			watchedprogress = total_watched / total_aired_eps * 100 if total_watched else 0
 			cm = []
 			cm_append = cm.append
-			rootname, title, year = meta_get('rootname'), meta_get('title'), meta_get('year')
+			rootname, title = meta_get('rootname'), meta_get('title')
 			display = rootname if self.include_year_in_title else title
 			tmdb_id, tvdb_id, imdb_id = meta_get('tmdb_id'), meta_get('tvdb_id'), meta_get('imdb_id')
 			try: tags = [i for i in (imdb_id, string(tmdb_id), string(tvdb_id)) if i not in ('', 'None', None)]
@@ -94,10 +93,6 @@ class TVShows:
 			options_params = build_url({
 				'mode': 'options_menu_choice', 'mediatype': 'tvshow',
 				'tmdb_id': tmdb_id, 'is_widget': self.is_widget
-			})
-			recommended_params = build_url({
-				'mode': 'build_tvshow_list', 'action': 'tmdb_tv_recommendations',
-				'tmdb_id': tmdb_id
 			})
 			cm_append((self.cm_sort['options'], options_str, run_plugin % options_params))
 			if self.open_extras:
@@ -154,7 +149,7 @@ class TVShows:
 				videoinfo.setVotes(meta_get('votes'))
 				videoinfo.setWriters(meta_get('writer').split(', '))
 			self.append((url_params, listitem, False if self.action == 'tmdb_tv_more_like_this' else self.is_folder))
-		except: pass
+		except Exception as exc: kodi_utils.logger('build_tvshow_content', 'position=%s: %s' % (position, exc))
 
 class Menu(TVShows):
 	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'dropped_tvshows': ('caches.dropped_cache', 'get_dropped')}
@@ -195,8 +190,7 @@ class Menu(TVShows):
 			except ValueError: page_no = params_get('new_page')
 			if self.action in Menu.personal_dict: var_module, import_function = Menu.personal_dict[self.action]
 			else: var_module, import_function = 'indexers.%s_api' % self.action.split('_')[0], self.action
-			try: function = manual_function_import(var_module, import_function)
-			except: pass
+			function = manual_function_import(var_module, import_function)
 			if self.action in Menu.tmdb_main:
 				data = function(page_no)
 				all_results = data['results']
@@ -267,7 +261,7 @@ class Menu(TVShows):
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, self.worker())
-		except: pass
+		except Exception as exc: kodi_utils.logger('build_tvshow_list', 'action=%s: %s' % (self.action, exc))
 		if prefetch: return
 		complete_media_directory(
 			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_listing,

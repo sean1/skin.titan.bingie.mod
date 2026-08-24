@@ -300,13 +300,6 @@
 		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630)">$INFO[Container(630).ListItem.Label]</value>
 	</variable>
 
-	<variable name="PovActorFocusedMediaType">
-		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610)">Movie</value>
-		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620)">TV Show</value>
-		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630) + String.IsEqual(Container(630).ListItem.Property(PovCreditType),tvshow)">TV Show</value>
-		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630)">Movie</value>
-	</variable>
-
 	<variable name="PovActorFocusedDetails">
 		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610) + String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),Container(610).ListItem.Property(PovFocusIdentity))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
 		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620) + String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),Container(620).ListItem.Property(PovFocusIdentity))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>

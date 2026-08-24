@@ -351,7 +351,7 @@ class TrailerPreview:
 			label = self._item_label('Label')
 			if not label: return None
 			identity = '|'.join(('actor', media_type, item_id))
-			return identity, '', media_type, item_id, False, False
+			return identity, '', media_type, item_id, False, True
 		media_type = self._item_label('DBType').lower()
 		if media_type not in ('movie', 'tvshow'): return None
 		trailer = self._item_label('Trailer')

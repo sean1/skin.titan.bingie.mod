@@ -367,7 +367,7 @@ class TrailerPreviewTests(unittest.TestCase):
 		}
 		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
 
-		self.assertEqual(self.preview._candidate(), ('actor|movie|789', '', 'movie', '789', False, False))
+		self.assertEqual(self.preview._candidate(), ('actor|movie|789', '', 'movie', '789', False, True))
 		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
 
 	def test_listing_candidate_rejects_invalid_media_before_dependent_reads(self):

@@ -339,7 +339,7 @@ def _credit_listitem(item, resolution, actor_id):
 	listitem.setArt({'thumb': landscape, 'landscape': landscape, 'fanart': backdrop, 'poster': poster, 'icon': poster})
 	properties = {
 		'PovCreditType': media_type, 'PovActorSourceId': str(actor_id), 'landscape': landscape,
-		'rating': '%.1f' % rating if rating else '', 'year_range': year
+		'PovFocusIdentity': 'actor|%s|%s' % (media_type, tmdb_id), 'rating': '%.1f' % rating if rating else '', 'year_range': year
 	}
 	properties.update(card_badge_properties(item, media_type))
 	listitem.setProperties(properties)

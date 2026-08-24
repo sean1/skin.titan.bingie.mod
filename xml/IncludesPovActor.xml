@@ -78,18 +78,18 @@
 					<label>$VAR[PovActorFocusedTitle]</label>
 					<scroll>true</scroll>
 				</control>
-				<control type="label">
+				<control type="textbox">
 					<top>50</top>
 					<width>540</width>
-					<height>34</height>
+					<height>68</height>
 					<font>Reg24</font>
 					<textcolor>d9ffffff</textcolor>
 					<label>$VAR[PovActorFocusedDetails]</label>
 				</control>
 				<control type="textbox">
-					<top>95</top>
+					<top>130</top>
 					<width>540</width>
-					<height>185</height>
+					<height>150</height>
 					<font>Reg24</font>
 					<textcolor>e6ffffff</textcolor>
 					<align>left</align>
@@ -308,9 +308,9 @@
 	</variable>
 
 	<variable name="PovActorFocusedDetails">
-		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610)">$VAR[PovActorFocusedMediaType]$INFO[Container(610).ListItem.Property(year_range), • ]$INFO[Container(610).ListItem.Property(rating), • ]</value>
-		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620)">$VAR[PovActorFocusedMediaType]$INFO[Container(620).ListItem.Property(year_range), • ]$INFO[Container(620).ListItem.Property(rating), • ]</value>
-		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630)">$VAR[PovActorFocusedMediaType]$INFO[Container(630).ListItem.Property(year_range), • ]$INFO[Container(630).ListItem.Property(rating), • ]</value>
+		<value condition="$EXP[PovActorHasCurrentMovies] + Control.HasFocus(610) + String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),Container(610).ListItem.Property(PovFocusIdentity))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
+		<value condition="$EXP[PovActorHasCurrentTVShows] + Control.HasFocus(620) + String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),Container(620).ListItem.Property(PovFocusIdentity))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
+		<value condition="$EXP[PovActorHasCurrentDirected] + Control.HasFocus(630) + String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),Container(630).ListItem.Property(PovFocusIdentity))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
 	</variable>
 
 	<variable name="PovActorFocusedPlot">

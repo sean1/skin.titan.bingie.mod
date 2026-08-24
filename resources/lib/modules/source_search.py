@@ -10,6 +10,40 @@ EXTERNAL_PROVIDERS = (
 CORE_EXTERNAL_PROVIDERS = frozenset(('comet', 'mediafusion', 'torrentio', 'zilean'))
 CORE_CACHED_RESULT_TARGET = 8
 MAX_EXTERNAL_WORKERS = 8
+PROVIDER_OUTCOME_VERSION = 1
+
+
+class ProviderOutcome:
+	VALID_STATUSES = frozenset(('success', 'empty', 'failed', 'partial'))
+
+	def __init__(self, sources=None, status=None):
+		self.sources = list(sources or [])
+		self.status = status or ('success' if self.sources else 'empty')
+		if self.status not in self.VALID_STATUSES: raise ValueError('Invalid provider outcome: %s' % self.status)
+
+	@property
+	def cacheable(self):
+		return self.status in ('success', 'empty')
+
+	def serialize(self):
+		return {'provider_outcome': PROVIDER_OUTCOME_VERSION, 'status': self.status, 'sources': self.sources}
+
+	@classmethod
+	def from_provider(cls, value, instance=None):
+		if isinstance(value, cls): return value
+		if instance is not None:
+			if getattr(instance, 'scrape_failed', False): return cls(value, 'partial' if value else 'failed')
+			if getattr(instance, 'scrape_partial', False): return cls(value, 'partial')
+		return cls(value)
+
+	@classmethod
+	def from_cache(cls, value):
+		if isinstance(value, dict) and value.get('provider_outcome') == PROVIDER_OUTCOME_VERSION:
+			status, sources = value.get('status'), value.get('sources')
+			if status not in ('success', 'empty') or not isinstance(sources, list): return None
+			return cls(sources, status)
+		if isinstance(value, list) and value: return cls(value, 'success')
+		return None
 
 
 def split_external_providers(source_dict):
@@ -25,8 +59,9 @@ def external_worker_count(source_count, debrid_count=0, exhaustive=False):
 
 
 class RequestCoalescer:
-	def __init__(self, grace_seconds=1.0):
+	def __init__(self, grace_seconds=1.0, raise_errors=False):
 		self.grace_seconds = grace_seconds
+		self.raise_errors = raise_errors
 		self._entries = {}
 		self._lock = Lock()
 
@@ -44,12 +79,19 @@ class RequestCoalescer:
 			else:
 				future, owner = entry[0], False
 		if owner:
-			try: result = fetch()
-			except Exception: result = []
-			future.set_result(result)
+			try:
+				result = fetch()
+				future.set_result(result)
+			except Exception as exc:
+				if self.raise_errors: future.set_exception(exc)
+				else:
+					result = []
+					future.set_result(result)
 			with self._lock:
 				entry = self._entries.get(key)
 				if entry and entry[0] is future: entry[1] = monotonic() + self.grace_seconds
-			return result
+			return future.result()
 		try: return future.result(timeout=timeout)
-		except TimeoutError: return []
+		except TimeoutError:
+			if self.raise_errors: raise
+			return []

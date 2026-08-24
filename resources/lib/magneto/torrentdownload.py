@@ -8,6 +8,8 @@ from urllib.parse import quote_plus, unquote_plus
 from fenom import client
 from fenom import source_utils
 
+NO_RESULTS = re.compile(r'\b(?:no results?|nothing)\s+(?:found|returned)\b', re.I)
+
 
 class source:
 	timeout = 5
@@ -53,15 +55,18 @@ class source:
 			return self.sources
 		except:
 			source_utils.scraper_error('TORRENTDOWNLOAD')
+			self.scrape_failed = True
 			return self.sources
 
 	def get_sources(self, url):
 		try:
 			results = client.request(url, timeout=self.timeout)
-			if not results: return
+			if not results: raise ValueError('Empty provider response')
 			rows = client.parseDOM(results, 'tr')
+			if not rows and not NO_RESULTS.search(results): raise ValueError('Invalid provider response')
 		except:
 			source_utils.scraper_error('TORRENTDOWNLOAD')
+			self.scrape_failed = True
 			return
 
 		for row in rows:
@@ -100,6 +105,7 @@ class source:
 													'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
 			except:
 				source_utils.scraper_error('TORRENTDOWNLOAD')
+				self.scrape_partial = True
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
 		self.sources = []
@@ -139,15 +145,18 @@ class source:
 			return self.sources
 		except:
 			source_utils.scraper_error('TORRENTDOWNLOAD')
+			self.scrape_failed = True
 			return self.sources
 
 	def get_sources_packs(self, link):
 		try:
 			results = client.request(link, timeout=self.timeout)
-			if not results: return
+			if not results: raise ValueError('Empty provider response')
 			rows = client.parseDOM(results, 'tr')
+			if not rows and not NO_RESULTS.search(results): raise ValueError('Invalid provider response')
 		except:
 			source_utils.scraper_error('TORRENTDOWNLOAD')
+			self.scrape_failed = True
 			return
 
 		for row in rows:
@@ -197,4 +206,4 @@ class source:
 				self.sources_append(item)
 			except:
 				source_utils.scraper_error('TORRENTDOWNLOAD')
-
+				self.scrape_partial = True

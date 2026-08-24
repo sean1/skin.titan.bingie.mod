@@ -35,10 +35,13 @@ class source:
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
 			results = requests.get(url, timeout=self.timeout)
+			if hasattr(results, 'raise_for_status'): results.raise_for_status()
 			files = results.json()['streams']
+			if not isinstance(files, list): raise ValueError('Invalid streams payload')
 			_INFO = re.compile(r'💾.*')
 		except:
 			source_utils.scraper_error('TORRENTSDB')
+			self.scrape_failed = True
 			return sources
 
 		for file in files:
@@ -58,4 +61,5 @@ class source:
 				sources_append(stremio_utils.build_result('torrentsdb', hash, name, release, quality, info, dsize, seeders, pack_true_size=True))
 			except:
 				source_utils.scraper_error('TORRENTSDB')
+				self.scrape_partial = True
 		return sources

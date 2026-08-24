@@ -90,14 +90,28 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 			'autoplay': 'true', 'autoplay_next': 'true'
 		}))
 		episode_tools.Sources.factory = mock.Mock()
-		watched_cache = types.ModuleType('caches.watched_cache')
-		watched_cache.get_next_episodes = lambda *args: []
-		with mock.patch.dict('sys.modules', {'caches.watched_cache': watched_cache}):
+		smartplay_cache = types.ModuleType('caches.smartplay_cache')
+		smartplay_cache.lookup = lambda *args: None
+		with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}):
 			episode_tools.SmartPlay({'tmdb_id': '123', 'autoplay': 'false'})
 
 		episode_tools.Sources.factory.assert_called_once_with({
 			'mode': 'play_media', 'mediatype': 'episode', 'tmdb_id': '123', 'season': 1, 'episode': 2, 'autoplay': 'false'
 		})
+
+	def test_smart_play_resolves_after_the_anonymous_completed_episode_cursor(self):
+		episode_tools = load_episode_tools()
+		episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
+		episode_tools.nextep_playback_info = mock.Mock(return_value=({}, {'mode': 'play_media'}))
+		episode_tools.Sources.factory = mock.Mock()
+		smartplay_cache = types.ModuleType('caches.smartplay_cache')
+		smartplay_cache.lookup = lambda tmdb_id: (2, 3)
+
+		with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): episode_tools.SmartPlay({'tmdb_id': '123'})
+
+		cursor_meta = episode_tools.nextep_playback_info.call_args.args[0]
+		self.assertEqual((cursor_meta['season'], cursor_meta['episode']), (2, 3))
+		episode_tools.Sources.factory.assert_called_once_with({'mode': 'play_media'})
 
 	def test_queued_next_episode_uses_full_screen_progress(self):
 		sources_module = load_sources_module()
@@ -260,6 +274,8 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		player_module = load_player()
 		player_module.kodi_utils.clear_property = mock.Mock()
 		player_module.ws.erase_bookmark = mock.Mock(return_value=True)
+		smartplay_cache = types.ModuleType('caches.smartplay_cache')
+		smartplay_cache.complete_episode = mock.Mock(return_value=(True, True))
 		player_module.ws.mark_as_watched_unwatched_movie = mock.Mock()
 		player_module.ws.mark_as_watched_unwatched_episode = mock.Mock()
 		for mediatype, season, episode in (('movie', '', ''), ('episode', 2, 3)):
@@ -272,13 +288,45 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 				player.tmdb_id = '101'
 				player.season = season
 				player.episode = episode
+				player.meta = {}
 
-				player.media_watched_marker()
+				with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): player.media_watched_marker()
 
 				self.assertTrue(player.media_marked)
-				player_module.ws.erase_bookmark.assert_called_with(mediatype, '101', season, episode, 'progress')
+				if mediatype == 'movie': player_module.ws.erase_bookmark.assert_called_with(mediatype, '101', season, episode, 'progress')
+				else: smartplay_cache.complete_episode.assert_called_once_with('101', 2, 3)
 		player_module.ws.mark_as_watched_unwatched_movie.assert_not_called()
 		player_module.ws.mark_as_watched_unwatched_episode.assert_not_called()
+
+	def test_completed_random_episode_does_not_advance_linear_smartplay_cursor(self):
+		player_module = load_player()
+		player_module.kodi_utils.clear_property = mock.Mock()
+		player_module.ws.erase_bookmark = mock.Mock(return_value=True)
+		smartplay_cache = types.ModuleType('caches.smartplay_cache')
+		smartplay_cache.complete_episode = mock.Mock()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.media_marked, player.current_point, player.set_watched = False, 95, 90
+		player.mediatype, player.tmdb_id, player.season, player.episode = 'episode', '101', 5, 10
+		player.meta = {'random': 'true'}
+
+		with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): player.media_watched_marker()
+
+		player_module.ws.erase_bookmark.assert_called_once_with('episode', '101', 5, 10, 'progress')
+		smartplay_cache.complete_episode.assert_not_called()
+
+	def test_completed_special_uses_completion_cache_to_clear_progress_without_advancing_cursor(self):
+		player_module = load_player()
+		player_module.kodi_utils.clear_property = mock.Mock()
+		smartplay_cache = types.ModuleType('caches.smartplay_cache')
+		smartplay_cache.complete_episode = mock.Mock(return_value=(False, True))
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		player.media_marked, player.current_point, player.set_watched = False, 95, 90
+		player.mediatype, player.tmdb_id, player.season, player.episode = 'episode', '101', 0, 4
+		player.meta = {}
+
+		with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): player.media_watched_marker()
+
+		smartplay_cache.complete_episode.assert_called_once_with('101', 0, 4)
 
 	def test_credit_marker_controls_popup_timing(self):
 		player_module = load_player()

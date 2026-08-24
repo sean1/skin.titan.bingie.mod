@@ -38,9 +38,11 @@ class source:
 			if 'timeout' in data: self.timeout = int(data['timeout'])
 			results = client.request(url, timeout=self.timeout)
 			files = jsloads(results)['streams']
+			if not isinstance(files, list): raise ValueError('Invalid streams payload')
 			_INFO = re.compile(r'👤.*')
 		except:
 			source_utils.scraper_error('TORRENTIO')
+			self.scrape_failed = True
 			return sources
 
 		for file in files:
@@ -71,4 +73,5 @@ class source:
 				sources_append(stremio_utils.build_result('torrentio', hash, name, release, quality, info, dsize, seeders, pack_true_size=True))
 			except:
 				source_utils.scraper_error('TORRENTIO')
+				self.scrape_partial = True
 		return sources

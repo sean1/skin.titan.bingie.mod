@@ -16,7 +16,7 @@ class source:
 	pack_capable = True
 	hasMovies = True
 	hasEpisodes = True
-	_requests = RequestCoalescer()
+	_requests = RequestCoalescer(raise_errors=True)
 	def __init__(self):
 		self.language = ['en']
 		self.base_link = "https://stremthru.13377001.xyz"
@@ -40,6 +40,7 @@ class source:
 			provider_utils.add_filter_settings(context)
 		except:
 			source_utils.scraper_error('TORZ')
+			self.scrape_failed = True
 			return sources
 
 		for file in files:
@@ -70,6 +71,7 @@ class source:
 				sources_append(provider_utils.build_result('torz', hash, name, name_info, quality, info, dsize, seeders))
 			except:
 				source_utils.scraper_error('TORZ')
+				self.scrape_partial = True
 		return sources
 
 	def _get_files(self, url):
@@ -94,6 +96,7 @@ class source:
 			provider_utils.add_filter_settings(context)
 		except:
 			source_utils.scraper_error('TORZ')
+			self.scrape_failed = True
 			return sources
 
 		for file in files:
@@ -122,4 +125,5 @@ class source:
 				sources_append(provider_utils.build_result('torz', hash, name, name_info, quality, info, dsize, seeders, release))
 			except:
 				source_utils.scraper_error('TORZ')
+				self.scrape_partial = True
 		return sources

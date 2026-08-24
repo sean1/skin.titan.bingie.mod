@@ -62,7 +62,7 @@ class InfoActionTimingTests(unittest.TestCase):
 			self.assertTrue(all(close_index < actions.index(action) for action in targets))
 			target_actions.extend(targets)
 
-		self.assertEqual(len(target_actions), 11)
+		self.assertEqual(len(target_actions), 10)
 		self.assertTrue(all(',00:00,silent)' in action for action in target_actions))
 		self.assertTrue(all(',00:01,' not in action for action in target_actions))
 

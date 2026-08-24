@@ -131,6 +131,7 @@ class Episodes:
 			props['episode_type'] = item_get('episode_type')
 			props['watchedprogress'] = progress
 			props['pov_lite_unaired'] = 'true' if unaired else 'false'
+			if self._episode_label_has_context(): props['pov_lite_episode_label_has_context'] = 'true'
 			props['pov_lite_name'] = '%s - %sx%s' % (title, str_season_zfill2, str_episode_zfill2)
 			props['pov_lite_first_aired'] = premiered or ''
 			props['PovLiteSourceSelect'] = build_url({
@@ -178,6 +179,9 @@ class Episodes:
 			return ''.join([''.join(airdate), title_string.upper(), ''.join(episode_info)])
 		if unaired: ep_name = '[COLOR %s][I]%s[/I][/COLOR]' % (unaired_label, ep_name)
 		return ''.join([title_string.upper(), seas_ep, ep_name])
+
+	def _episode_label_has_context(self):
+		return self.list_type == 'in_progress' and self.display_title in (0, 1)
 
 class Menu(Episodes):
 	def worker(self):

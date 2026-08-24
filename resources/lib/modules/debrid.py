@@ -1,5 +1,6 @@
 import json
-from threading import Thread
+from threading import Event, Lock, Thread
+from time import monotonic
 from debrids import all_debrid_api, real_debrid_api, torbox_api
 from caches.debrid_cache import DebridCache
 from indexers import metadata
@@ -180,7 +181,9 @@ class DebridCheck:
 		try:
 			self.cached_list.extend(i[0] for i in self.cached_hashes if i[1] == self.debrid and i[2] == 'True')
 			self.checked_list.update(i[0] for i in self.cached_hashes if i[1] == self.debrid)
-			unchecked_filter = {h[0] for h in self.cached_hashes if h[1] == self.debrid}
+			# RD's auxiliary services can confirm availability, but an empty response is not an
+			# authoritative negative. Ignore legacy false rows so they cannot suppress a recheck.
+			unchecked_filter = {h[0] for h in self.cached_hashes if h[1] == self.debrid and (self.debrid != 'rd' or h[2] == 'True')}
 			unchecked_hashes = [i for i in self.hash_list if i not in unchecked_filter]
 			if not unchecked_hashes: return self.result()
 			if self.debrid == 'rd':
@@ -196,19 +199,23 @@ class DebridCheck:
 				if is_cached:
 					cached_append(h)
 					process_append((h, 'True'))
-				else: process_append((h, 'False'))
-			if hashes_to_cache: Thread(target=self.cache_write, args=(hashes_to_cache,)).start()
+				elif self.debrid != 'rd': process_append((h, 'False'))
+			# The check already runs in a worker. Commit before returning so a fallback pass can
+			# immediately reuse positives and replace any legacy false row.
+			if hashes_to_cache: self.cache_write(hashes_to_cache)
 		except: pass
 		return self.result()
 
 	def external_check_cache(self, unchecked_hashes):
-		checked_hashes = []
+		checked_hashes, tio_hashes, dmm_hashes = [], [], []
 		threads = (
-			Thread(target=tio_check_cache, args=(self.imdb, self.season, self.episode, checked_hashes)),
-			Thread(target=dmm_check_cache, args=(unchecked_hashes, self.imdb, checked_hashes))
+			Thread(target=lambda: tio_hashes.extend(_tio_results(self.imdb, self.season, self.episode))),
+			Thread(target=lambda: dmm_hashes.extend(_dmm_results(unchecked_hashes, self.imdb)))
 		)
 		for i in threads: i.start()
 		for i in threads: i.join()
+		checked_hashes.extend(tio_hashes)
+		checked_hashes.extend(dmm_hashes)
 		return checked_hashes
 
 import re, random, requests
@@ -216,6 +223,53 @@ from fenom.client import randomagent
 
 session = requests.session()
 session.headers.update({'User-Agent': randomagent(), 'Accept': 'application/json'})
+
+_AUXILIARY_CACHE_SECONDS = 60.0
+_AUXILIARY_CACHE_MAX_ENTRIES = 32
+_auxiliary_cache, _auxiliary_inflight = {}, {}
+_auxiliary_lock = Lock()
+
+def _coalesced_auxiliary_results(key, check):
+	"""Briefly reuse successful identical checks without persisting auxiliary negatives."""
+	now = monotonic()
+	with _auxiliary_lock:
+		for old_key, (created, _results) in tuple(_auxiliary_cache.items()):
+			if now - created > _AUXILIARY_CACHE_SECONDS: _auxiliary_cache.pop(old_key, None)
+		cached = _auxiliary_cache.get(key)
+		if cached: return list(cached[1])
+		waiter = _auxiliary_inflight.get(key)
+		if waiter is None:
+			waiter, owner = Event(), True
+			_auxiliary_inflight[key] = waiter
+		else: owner = False
+	if not owner:
+		waiter.wait(8.0)
+		with _auxiliary_lock:
+			cached = _auxiliary_cache.get(key)
+		return list(cached[1]) if cached else []
+	results = []
+	try:
+		succeeded = check(results)
+		if succeeded:
+			with _auxiliary_lock:
+				_auxiliary_cache[key] = (monotonic(), tuple(dict.fromkeys(results)))
+				while len(_auxiliary_cache) > _AUXILIARY_CACHE_MAX_ENTRIES:
+					oldest_key = min(_auxiliary_cache, key=lambda item: _auxiliary_cache[item][0])
+					_auxiliary_cache.pop(oldest_key, None)
+		return results
+	finally:
+		with _auxiliary_lock:
+			_auxiliary_inflight.pop(key, None)
+			waiter.set()
+
+def _tio_results(imdb, season, episode):
+	key = ('torrentio', imdb, season, episode)
+	return _coalesced_auxiliary_results(key, lambda collector: tio_check_cache(imdb, season, episode, collector))
+
+def _dmm_results(unchecked_hashes, imdb):
+	hashes = tuple(sorted(set(unchecked_hashes)))
+	key = ('dmm', imdb, hashes)
+	return _coalesced_auxiliary_results(key, lambda collector: dmm_check_cache(hashes, imdb, collector))
 
 def tio_check_cache(imdb, season, episode, collector):
 	if str(season).isdigit(): url = 'series/%s:%s:%s.json' % (imdb, season, episode)
@@ -225,9 +279,15 @@ def tio_check_cache(imdb, season, episode, collector):
 	pattern = re.compile(r'\b\w{40}\b')
 	try:
 		results = session.get(url, timeout=7.05)
-		files = results.json()['streams']
+		results.raise_for_status()
+		payload = results.json()
+		files = payload.get('streams') if isinstance(payload, dict) else None
+		if not isinstance(files, list) or not all(isinstance(file, dict) for file in files): raise ValueError('invalid Torrentio response schema')
 		collector.extend(pattern.findall(file['url'])[-1] for file in files if '+' in file['name'] and 'url' in file)
-	except Exception as e: kodi_utils.logger('tio error', str(e))
+		return True
+	except Exception as e:
+		kodi_utils.logger('tio error', str(e))
+		return False
 
 def dmm_check_cache(unchecked_hashes_chunk, imdb, collector): # DMM API Allows max 100 hashes per request.
 	""" do not thread multiple calls, abusing the api will get it turned off
@@ -240,6 +300,12 @@ def dmm_check_cache(unchecked_hashes_chunk, imdb, collector): # DMM API Allows m
 	data = {'dmmProblemKey': dmmProblemKey, 'solution': solution, 'imdbId': imdb, 'hashes': unchecked_hashes_chunk}
 	try:
 		results = session.post(url, json=data, timeout=7.05)
-		files = results.json()['available']
-		collector.extend(file['hash'] for file in files if 'hash' in file)
-	except Exception as e: kodi_utils.logger('dmm error', str(e))
+		results.raise_for_status()
+		payload = results.json()
+		files = payload.get('available') if isinstance(payload, dict) else None
+		if not isinstance(files, list) or not all(isinstance(file, dict) and isinstance(file.get('hash'), str) and len(file['hash']) == 40 for file in files): raise ValueError('invalid DMM response schema')
+		collector.extend(file['hash'] for file in files)
+		return True
+	except Exception as e:
+		kodi_utils.logger('dmm error', str(e))
+		return False

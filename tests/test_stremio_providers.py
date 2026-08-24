@@ -35,6 +35,7 @@ class FakeResponse:
 		self.text = text
 
 	def json(self): return self.payload
+	def raise_for_status(self): return None
 
 
 class FakeRequests:
@@ -103,6 +104,26 @@ class StremioProviderTests(unittest.TestCase):
 		item = provider.sources(self.data, {})[0]
 
 		self.assertEqual(item['seeders'], 0)
+
+	def test_bitmagnet_accepts_a_legitimate_empty_feed(self):
+		module = load_provider('bitmagnet', FakeSourceUtils())
+		module.requests = FakeRequests(FakeResponse(text='<rss><channel></channel></rss>'))
+		provider = module.source()
+
+		self.assertEqual(provider.sources(self.data, {}), [])
+		self.assertFalse(getattr(provider, 'scrape_failed', False))
+
+	def test_bitmagnet_rejects_torznab_errors_and_invalid_xml_envelopes(self):
+		for payload in ('<error code="100" description="failure"/>', '<html><body>Unavailable</body></html>', '<rss></rss>'):
+			with self.subTest(payload=payload):
+				fake_utils = FakeSourceUtils()
+				fake_utils.scraper_error = lambda _provider: None
+				module = load_provider('bitmagnet', fake_utils)
+				module.requests = FakeRequests(FakeResponse(text=payload))
+				provider = module.source()
+
+				self.assertEqual(provider.sources(self.data, {}), [])
+				self.assertTrue(provider.scrape_failed)
 
 
 if __name__ == '__main__':

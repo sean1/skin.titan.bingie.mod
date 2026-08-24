@@ -44,12 +44,14 @@ class source:
 
 			if 'timeout' in data: self.timeout = int(data['timeout'])
 			rjson = client.request(url, timeout=self.timeout)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): return sources
+			if not rjson or any(value in rjson for value in SERVER_ERROR): raise ValueError('Provider request failed')
 			files = jsloads(rjson)
+			if not isinstance(files, list): raise ValueError('Invalid result payload')
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
 			source_utils.scraper_error('PIRATEBAY')
+			self.scrape_failed = True
 			return sources
 
 		for file in files:
@@ -85,6 +87,7 @@ class source:
 							'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
 			except:
 				source_utils.scraper_error('PIRATEBAY')
+				self.scrape_partial = True
 		return sources
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
@@ -125,15 +128,18 @@ class source:
 			return self.sources
 		except:
 			source_utils.scraper_error('PIRATEBAY')
+			self.scrape_failed = True
 			return self.sources
 
 	def get_sources_packs(self, link):
 		try:
 			rjson = client.request(link, timeout=self.timeout)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): return
+			if not rjson or any(value in rjson for value in SERVER_ERROR): raise ValueError('Provider request failed')
 			files = jsloads(rjson)
+			if not isinstance(files, list): raise ValueError('Invalid result payload')
 		except:
 			source_utils.scraper_error('PIRATEBAY')
+			self.scrape_failed = True
 			return
 
 		for file in files:
@@ -179,4 +185,4 @@ class source:
 				self.sources_append(item)
 			except:
 				source_utils.scraper_error('PIRATEBAY')
-
+				self.scrape_partial = True

@@ -265,7 +265,10 @@ def sort_list(sort_key, sort_direction, list_data, ignore_articles):
 	except: return list_data
 
 def paginate_list(item_list, page, limit=20):
-	if not item_list: return item_list, page
+	if not item_list: return [], 1
 	pages = list(chunks(item_list, limit))
 	total_pages = len(pages)
+	try: page = int(page)
+	except (TypeError, ValueError): return [], total_pages
+	if page < 1 or page > total_pages: return [], total_pages
 	return pages[page - 1], total_pages

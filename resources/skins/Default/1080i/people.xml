@@ -446,7 +446,7 @@
 						<width>1170</width>
 						<height>15</height>
 						<onup>2051</onup>
-						<ondown>2052</ondown>
+						<ondown>2053</ondown>
 						<texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
 						<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
 						<texturesliderbarfocus colordiffuse="FFB7B4BB">white.png</texturesliderbarfocus>
@@ -460,125 +460,6 @@
 						<width>16</width>
 						<height>16</height>
 						<visible>Control.HasFocus(2051) + Container(2051).HasNext</visible>
-						<texture>arrow_right.png</texture>
-					</control>
-			</control>
-			<!-- IMDb Videos -->
-			<control type="group">
-				<visible>Integer.IsGreater(Container(2052).NumItems,0)</visible>
-				<height>520</height>
-					<control type="label">
-						<width min="30" max="1160">auto</width>
-						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]Videos[/B] $INFO[Window.Property(tikiskins.person.imdb_videos.number)]</label>
-						<visible>!Control.HasFocus(2052)</visible>
-					</control>
-					<control type="label">
-						<width min="30" max="1160">auto</width>
-						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]Videos[/B]  |  [I]$INFO[Container(2052).ListItem.Property(tikiskins.person.name)][/I]</label>
-						<visible>Control.HasFocus(2052)</visible>
-					</control>
-					<control type="panel" id="2052">
-						<pagecontrol>4052</pagecontrol>
-						<top>45</top>
-						<width>1180</width>
-						<height>360</height>
-						<onup>2051</onup>
-						<ondown>4052</ondown>
-						<viewtype label="">list</viewtype>
-						<scrolltime>200</scrolltime>
-						<orientation>horizontal</orientation>
-						<itemlayout height="360" width="392">
-							<control type="image">
-								<left>6</left>
-								<top>6</top>
-								<height>348</height>
-								<width>380</width>
-								<aspectratio>scale</aspectratio>
-								<texture>$INFO[ListItem.Property(tikiskins.person.thumbnail)]</texture>
-							</control>
-							<control type="image">
-								<left>6</left>
-								<top>280</top>
-								<height>80</height>
-								<width>380</width>
-								<texture colordiffuse="FF302F2F">white.png</texture>
-							</control>
-							<control type="textbox">
-								<left>6</left>
-								<top>280</top>
-								<width>380</width>
-								<height>75</height>
-								<font>font12</font>
-								<align>center</align>
-								<aligny>center</aligny>
-								<textcolor>FFB7B4BB</textcolor>
-								<label>$INFO[ListItem.Property(tikiskins.person.name)]</label>
-							</control>
-						</itemlayout>
-						<focusedlayout height="360" width="392">
-							<control type="group">
-								<animation effect="zoom" start="100" end="102" time="100" tween="sine" easing="inout" center="196,180">Focus</animation>
-								<animation effect="zoom" start="102" end="100" time="100" tween="sine" easing="inout" center="196,180">Unfocus</animation>
-								<control type="image">
-									<width>392</width>
-									<height>360</height>
-									<texture colordiffuse="FFB7B4BB">white.png</texture>
-								</control>
-								<control type="image">
-									<left>6</left>
-									<top>6</top>
-									<height>348</height>
-									<width>380</width>
-									<aspectratio>scale</aspectratio>
-									<texture>$INFO[ListItem.Property(tikiskins.person.thumbnail)]</texture>
-								</control>
-								<control type="image">
-									<left>6</left>
-									<top>280</top>
-									<height>80</height>
-									<width>380</width>
-									<texture colordiffuse="FFB7B4BB">white.png</texture>
-								</control>
-								<control type="textbox">
-									<left>6</left>
-									<top>280</top>
-									<width>380</width>
-									<height>75</height>
-									<font>font12</font>
-									<align>center</align>
-									<aligny>center</aligny>
-									<textcolor>FF302F2F</textcolor>
-									<label>$INFO[ListItem.Property(tikiskins.person.name)]</label>
-								</control>
-							</control>
-						</focusedlayout>
-					</control>
-					<control type="scrollbar" id="4052">
-						<left>5</left>
-						<top>412</top>
-						<width>1165</width>
-						<height>15</height>
-						<onup>2052</onup>
-						<ondown>2053</ondown>
-						<texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
-						<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
-						<texturesliderbarfocus colordiffuse="FFB7B4BB">white.png</texturesliderbarfocus>
-						<showonepage>false</showonepage>
-						<orientation>horizontal</orientation>
-						<visible>Control.IsVisible(2052) + String.IsEqual(Window.Property(tikiskins.person.enable_scrollbars),true)</visible>
-					</control>
-					<control type="image">
-						<top>210</top>
-						<left>1180</left>
-						<width>16</width>
-						<height>16</height>
-						<visible>Control.HasFocus(2052) + Container(2052).HasNext</visible>
 						<texture>arrow_right.png</texture>
 					</control>
 			</control>
@@ -607,7 +488,7 @@
 						<top>45</top>
 						<width>1180</width>
 						<height>720</height>
-						<onup>2052</onup>
+						<onup>2051</onup>
 						<ondown>4053</ondown>
 						<viewtype label="">list</viewtype>
 						<scrolltime>200</scrolltime>

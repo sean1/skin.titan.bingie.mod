@@ -130,6 +130,36 @@ def _request(method, url, provider, cancelled=None, **kwargs):
 	raise ProviderError('request_failed')
 
 
+def _download_binary(url, provider, max_bytes, cancelled=None, **kwargs):
+	response = None
+	_cancelled(cancelled)
+	try:
+		response = _request('GET', url, provider, cancelled, stream=True, **kwargs)
+		_cancelled(cancelled)
+		if not 200 <= response.status_code < 300: raise ProviderError('http_%s' % response.status_code)
+		try: content_length = int(response.headers.get('Content-Length', -1))
+		except (AttributeError, TypeError, ValueError): content_length = -1
+		if content_length > max_bytes: raise ProviderError('invalid_size')
+		content, total = [], 0
+		try:
+			for chunk in response.iter_content(chunk_size=64 * 1024):
+				_cancelled(cancelled)
+				if not chunk: continue
+				if not isinstance(chunk, (bytes, bytearray)): raise ProviderError('read_error')
+				total += len(chunk)
+				if total > max_bytes: raise ProviderError('invalid_size')
+				content.append(bytes(chunk))
+		except (ProviderCancelled, ProviderError): raise
+		except Exception as error: raise ProviderError('read_%s' % type(error).__name__)
+		_cancelled(cancelled)
+		if not content: raise ProviderError('empty_response')
+		return b''.join(content)
+	finally:
+		if response is not None:
+			try: response.close()
+			except Exception: pass
+
+
 def _json_response(response, provider, operation):
 	try:
 		if not response.ok: raise ProviderError('http_%s' % response.status_code)
@@ -248,14 +278,11 @@ class OpenSubtitlesProvider(Provider):
 	def download(self, candidate):
 		if self.download_disabled: return None
 		try:
+			self.login()
 			payload = self.authenticated_json('POST', 'download', 'download', json={'file_id': int(candidate['id'])})
 			link = payload.get('link')
 			if not isinstance(link, str) or not link.startswith('https://'): raise ProviderError('invalid_schema')
-			response = _request('GET', link, self.name, self.cancelled)
-			if not response.ok: raise ProviderError('http_%s' % response.status_code)
-			content = response.content
-			response.close()
-			if not content or len(content) > MAX_SUBTITLE_BYTES: raise ProviderError('invalid_size')
+			content = _download_binary(link, self.name, MAX_SUBTITLE_BYTES, self.cancelled)
 			return {'content': content, 'extension': candidate.get('extension') or 'srt'}
 		except ProviderError as error:
 			if str(error) == 'http_406': self.download_disabled = True
@@ -352,16 +379,12 @@ class SubDLProvider(Provider):
 			locator, archive = '/subtitle/%s' % archive_id, True
 		else: return None
 		try:
-			response = _request('GET', '%s%s' % (self.download_url, locator), self.name, self.cancelled, headers={'X-API-Key': self.config['api_key']})
-			if not response.ok: raise ProviderError('http_%s' % response.status_code)
-			content = response.content
-			response.close()
-			if not content: raise ProviderError('empty_response')
+			max_bytes = MAX_ARCHIVE_BYTES if archive else MAX_SUBTITLE_BYTES
+			content = _download_binary('%s%s' % (self.download_url, locator), self.name, max_bytes, self.cancelled, headers={'X-API-Key': self.config['api_key']})
 			if archive:
 				payload = extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''))
 				if not payload: raise ProviderError('invalid_archive')
 				return payload
-			if len(content) > MAX_SUBTITLE_BYTES: raise ProviderError('invalid_size')
 			return {'content': content, 'extension': candidate.get('extension') or 'srt'}
 		except ProviderError as error:
 			_log('download', 'failed', self.name, str(error))
@@ -472,10 +495,7 @@ class SubSourceProvider(Provider):
 
 	def download(self, candidate):
 		try:
-			response = _request('GET', '%s/subtitles/%s/download' % (self.api_url, candidate['id']), self.name, self.cancelled, headers=self.headers())
-			if not response.ok: raise ProviderError('http_%s' % response.status_code)
-			content = response.content
-			response.close()
+			content = _download_binary('%s/subtitles/%s/download' % (self.api_url, candidate['id']), self.name, MAX_ARCHIVE_BYTES, self.cancelled, headers=self.headers())
 			payload = extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''))
 			if not payload: raise ProviderError('invalid_archive')
 			return payload

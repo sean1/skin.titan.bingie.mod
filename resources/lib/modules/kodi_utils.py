@@ -387,7 +387,7 @@ FIXED_SETTINGS = {
 	'default_all_episodes': '1',
 	'ext_dialog_highlight': 'cyan',
 	'extras.enable_scrollbars': 'false',
-	'extras.enabled_menus': '2050,2051,2052,2053,2054,2055,2056,2057,2058,2059,2060,2061,2062',
+	'extras.enabled_menus': '2050,2051,2052,2053,2054,2055,2057,2058,2059,2060,2061,2062',
 	'extras.exclude_non_acting_roles': 'true',
 	'extras.manage': '[B]Browse...[/B]',
 	'extras.open_action': '0',

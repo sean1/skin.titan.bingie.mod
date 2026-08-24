@@ -141,6 +141,16 @@ class MenuCompletionTests(unittest.TestCase):
 		self.media = load_media_module()
 		self.media._schedule_next_page_prefetch = Mock()
 
+	def test_only_composite_continue_watching_episode_titles_use_single_line_cards(self):
+		module, _kodi_utils = load_episode_module()
+		episodes = module.Episodes.__new__(module.Episodes)
+		for list_type, display_title, expected in (
+			('in_progress', 0, True), ('in_progress', 1, True), ('in_progress', 2, False), ('next_episode_pov', 0, False)
+		):
+			with self.subTest(list_type=list_type, display_title=display_title):
+				episodes.list_type, episodes.display_title = list_type, display_title
+				self.assertEqual(episodes._episode_label_has_context(), expected)
+
 	def complete(self, **overrides):
 		values = {
 			'handle': 7, 'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'exit_list_params': 'plugin://origin', 'category': 'Popular',

@@ -14,12 +14,11 @@ nextep_str, nores_str = ls(32801), ls(32760)
 def SmartPlay(params):
 	tmdb_id = params.get('tmdb_id')
 	if not tmdb_id: return kodi_utils.notification(32574)
-	from caches.watched_cache import get_next_episodes
 	meta_user_info, current_date = settings.metadata_user_info(), get_datetime()
-	watched_info = get_next_episodes(settings.watched_indicators())
-	watched_info = next((i for i in watched_info if i['media_ids']['tmdb'] == str(tmdb_id)), None)
-	if watched_info: season, episode = int(watched_info['season']), int(watched_info['episode'])
-	else: season, episode = 1, 0
+	try:
+		from caches.smartplay_cache import lookup
+		season, episode = lookup(tmdb_id) or (1, 0)
+	except Exception: season, episode = 1, 0
 	meta = tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 	meta.update({'season': season, 'episode': episode})
 	nextep_meta, nextep_params = nextep_playback_info(meta)
@@ -126,7 +125,10 @@ def execute_scrape_nextep(player, meta):
 	if action == 'play': player.request_next_episode()
 
 def execute_nextep(player, meta, nextep_settings):
-	if 'random_continual' in meta: nextep_meta, nextep_params = get_random_episode(meta['tmdb_id'], True)
+	if 'random_continual' in meta:
+		result = get_random_episode(meta['tmdb_id'], True)
+		if not result: return
+		nextep_meta, nextep_params = result
 	else: nextep_meta, nextep_params = nextep_playback_info(meta)
 	if nextep_params == 'error': return kodi_utils.notification(32574)
 	if nextep_params == 'no_next_episode': return

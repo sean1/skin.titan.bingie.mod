@@ -46,6 +46,7 @@ def check_databases():
 	dbcon = database_connect(watched_db) # Watched Status
 	for i in watched_schema: dbcon.execute(i)
 	dbcon.execute("""CREATE TABLE IF NOT EXISTS dropped (db_type TEXT, tmdb_id TEXT, title TEXT, UNIQUE (db_type, tmdb_id))""")
+	dbcon.execute("""CREATE TABLE IF NOT EXISTS smartplay_cursor (tmdb_id INTEGER PRIMARY KEY, season INTEGER NOT NULL CHECK (season > 0), episode INTEGER NOT NULL CHECK (episode > 0))""")
 	# Resume-only policy: completed-title history is never retained.
 	dbcon.execute("""DELETE FROM watched_status""")
 	dbcon.commit()

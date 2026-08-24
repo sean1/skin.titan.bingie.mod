@@ -1105,7 +1105,7 @@
 						<width>1820</width>
 						<height>360</height>
 						<onup>2054</onup>
-						<ondown>2056</ondown>
+						<ondown>2057</ondown>
 						<viewtype label="">list</viewtype>
 						<scrolltime>200</scrolltime>
 						<orientation>horizontal</orientation>
@@ -1189,122 +1189,6 @@
 						</focusedlayout>
 					</control>
 			</control>
-			<!-- IMDb Videos -->
-			<control type="group">
-				<visible>Integer.IsGreater(Container(2056).NumItems,0)</visible>
-				<height>750</height>
-					<control type="label">
-						<width min="30" max="1160">auto</width>
-						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]Videos[/B] $INFO[Window.Property(tikiskins.extras.imdb_videos.number)]</label>
-					</control>
-					<control type="panel" id="2056">
-						<pagecontrol>4056</pagecontrol>
-						<top>45</top>
-						<width>1180</width>
-						<height>360</height>
-						<onup>2055</onup>
-						<ondown>4056</ondown>
-						<viewtype label="">list</viewtype>
-						<scrolltime>200</scrolltime>
-						<orientation>horizontal</orientation>
-						<itemlayout height="360" width="392">
-							<control type="image">
-								<left>6</left>
-								<top>6</top>
-								<height>348</height>
-								<width>380</width>
-								<aspectratio>scale</aspectratio>
-								<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
-							</control>
-							<control type="image">
-								<left>6</left>
-								<top>280</top>
-								<height>80</height>
-								<width>380</width>
-								<texture colordiffuse="FF302F2F">white.png</texture>
-							</control>
-							<control type="label">
-								<left>15</left>
-								<top>305</top>
-								<width>355</width>
-								<height>20</height>
-								<font>font10</font>
-								<align>center</align>
-								<textcolor>FFB7B4BB</textcolor>
-								<label>$INFO[ListItem.Property(tikiskins.extras.name)]</label>
-							</control>
-						</itemlayout>
-						<focusedlayout height="360" width="392">
-							<control type="group">
-								<animation effect="zoom" start="100" end="102" time="100" tween="sine" easing="inout" center="196,180">Focus</animation>
-								<animation effect="zoom" start="102" end="100" time="100" tween="sine" easing="inout" center="196,180">Unfocus</animation>
-								<control type="image">
-									<width>392</width>
-									<height>360</height>
-									<texture colordiffuse="FFB7B4BB">white.png</texture>
-								</control>
-								<control type="image">
-									<left>6</left>
-									<top>6</top>
-									<height>348</height>
-									<width>380</width>
-									<aspectratio>scale</aspectratio>
-									<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
-								</control>
-								<control type="image">
-									<left>6</left>
-									<top>280</top>
-									<height>80</height>
-									<width>380</width>
-									<texture colordiffuse="FFB7B4BB">white.png</texture>
-								</control>
-								<control type="label">
-									<left>15</left>
-									<top>305</top>
-									<width>355</width>
-									<height>20</height>
-									<font>font10</font>
-									<align>center</align>
-									<textcolor>FF302F2F</textcolor>
-									<label>$INFO[ListItem.Property(tikiskins.extras.name)]</label>
-								</control>
-							</control>
-						</focusedlayout>
-					</control>
-					<control type="scrollbar" id="4056">
-						<left>5</left>
-						<top>412</top>
-						<width>1810</width>
-						<height>15</height>
-						<onup>2056</onup>
-						<ondown>2057</ondown>
-						<texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
-						<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
-						<texturesliderbarfocus colordiffuse="FFB7B4BB">white.png</texturesliderbarfocus>
-						<showonepage>false</showonepage>
-						<orientation>horizontal</orientation>
-						<visible>Control.IsVisible(2056) + String.IsEqual(Window.Property(tikiskins.extras.enable_scrollbars),true)</visible>
-					</control>
-					<control type="image">
-						<top>185</top>
-						<left>10</left>
-						<width>25</width>
-						<height>25</height>
-						<visible>[Control.HasFocus(2056) | Control.HasFocus(4056)] + Container(2056).HasPrevious</visible>
-						<texture>arrow_left.png</texture>
-					</control>
-					<control type="image">
-						<top>185</top>
-						<left>1795</left>
-						<width>25</width>
-						<height>25</height>
-						<visible>[Control.HasFocus(2056) | Control.HasFocus(4056)] + Container(2056).HasNext</visible>
-						<texture>arrow_right.png</texture>
-					</control>
-			</control>
 			<!-- TMDb Artwork Posters -->
 			<control type="group">
 				<visible>Integer.IsGreater(Container(2057).NumItems,0)</visible>
@@ -1323,7 +1207,7 @@
 						<top>45</top>
 						<width>1820</width>
 						<height>360</height>
-						<onup>2056</onup>
+						<onup>2055</onup>
 						<ondown>4057</ondown>
 						<viewtype label="">list</viewtype>
 						<scrolltime>200</scrolltime>

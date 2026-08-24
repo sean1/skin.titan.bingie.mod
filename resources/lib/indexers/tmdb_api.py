@@ -27,9 +27,11 @@ session = requests.Session()
 retry = requests.adapters.Retry(total=2, connect=2, read=2, status=1, backoff_factor=0.25, status_forcelist=(429, 502, 503, 504))
 session.mount('https://api.themoviedb.org', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
-def get_tmdb(url):
+def get_tmdb(url, params=None):
 	try:
-		response = session.get(url, headers={'Authorization': 'Bearer %s' % READ_TOKEN}, timeout=timeout)
+		request_kwargs = {'headers': {'Authorization': 'Bearer %s' % READ_TOKEN}, 'timeout': timeout}
+		if params is not None: request_kwargs['params'] = params
+		response = session.get(url, **request_kwargs)
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
 		return result
@@ -38,13 +40,13 @@ def get_tmdb(url):
 
 def tmdb_keyword_id(query):
 	string = 'tmdb_keyword_id_%s' % query
-	url = '%s/search/keyword?query=%s' % (base_url, query)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
+	url = '%s/search/keyword' % base_url
+	return cache_object(get_tmdb, string, [url, {'query': query}], expiration=EXPIRES_1_WEEK)
 
 def tmdb_company_id(query):
 	string = 'tmdb_company_id_%s' % query
-	url = '%s/search/company?query=%s' % (base_url, query)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
+	url = '%s/search/company' % base_url
+	return cache_object(get_tmdb, string, [url, {'query': query}], expiration=EXPIRES_1_WEEK)
 
 def tmdb_media_images(mediatype, tmdb_id):
 	if mediatype == 'movies': mediatype = 'movie'
@@ -84,11 +86,12 @@ def tmdb_movies_in_collection(tmdb_id, _page_no, collection_id=None):
 def tmdb_movies_title_year(title, year=None):
 	if year:
 		string = 'tmdb_movies_title_year_%s_%s' % (title, year)
-		url = '%s/search/movie?language=en-US&query=%s&year=%s' % (base_url, title, year)
+		params = {'language': 'en-US', 'query': title, 'year': year}
 	else:
 		string = 'tmdb_movies_title_year_%s' % title
-		url = '%s/search/movie?language=en-US&query=%s' % (base_url, title)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_MONTH)
+		params = {'language': 'en-US', 'query': title}
+	url = '%s/search/movie' % base_url
+	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_1_MONTH)
 
 def tmdb_movies_trending_day(page_no):
 	string = 'tmdb_movies_trending_day_%s' % page_no
@@ -201,13 +204,15 @@ def tmdb_movies_more_like_this(tmdb_id, _page_no):
 
 def tmdb_movies_search(query, page_no):
 	string = 'tmdb_movies_search_%s_%s' % (query, page_no)
-	url = '%s/search/movie?language=en-US&query=%s&page=%s' % (base_url, query, page_no)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)
+	url = '%s/search/movie' % base_url
+	params = {'language': 'en-US', 'query': query, 'page': page_no}
+	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_4_HOURS)
 
 def tmdb_movies_search_collections(query, page_no):
 	string = 'tmdb_movies_search_collections_%s_%s' % (query, page_no)
-	url = '%s/search/collection?language=en-US&query=%s&page=%s' % (base_url, query, page_no)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_WEEK)
+	url = '%s/search/collection' % base_url
+	params = {'language': 'en-US', 'query': query, 'page': page_no}
+	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_1_WEEK)
 
 def tmdb_tv_discover(query, page_no):
 	string = url = query % page_no
@@ -216,11 +221,12 @@ def tmdb_tv_discover(query, page_no):
 def tmdb_tv_title_year(title, year=None):
 	if year:
 		string = 'tmdb_tv_title_year_%s_%s' % (title, year)
-		url = '%s/search/tv?query=%s&first_air_date_year=%s&language=en-US' % (base_url, title, year)
+		params = {'query': title, 'first_air_date_year': year, 'language': 'en-US'}
 	else:
 		string = 'tmdb_tv_title_year_%s' % title
-		url = '%s/search/tv?query=%s&language=en-US' % (base_url, title)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_1_MONTH)
+		params = {'query': title, 'language': 'en-US'}
+	url = '%s/search/tv' % base_url
+	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_1_MONTH)
 
 def tmdb_tv_trending_day(page_no):
 	string = 'tmdb_tv_trending_day_%s' % page_no
@@ -301,8 +307,9 @@ def tmdb_tv_more_like_this(tmdb_id, _page_no):
 
 def tmdb_tv_search(query, page_no):
 	string = 'tmdb_tv_search_%s_%s' % (query, page_no)
-	url = '%s/search/tv?language=en-US&query=%s&page=%s' % (base_url, query, page_no)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)
+	url = '%s/search/tv' % base_url
+	params = {'language': 'en-US', 'query': query, 'page': page_no}
+	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_4_HOURS)
 
 def tmdb_popular_people(page_no):
 	string = 'tmdb_popular_people_%s' % page_no
@@ -323,8 +330,8 @@ def tmdb_people_actor_info(actor_id):
 
 def tmdb_people_info(query):
 	string = 'tmdb_people_info_%s' % query
-	url = '%s/search/person?language=en-US&query=%s' % (base_url, query)
-	return cache_object(get_tmdb, string, url, expiration=EXPIRES_4_HOURS)['results']
+	url = '%s/search/person' % base_url
+	return cache_object(get_tmdb, string, [url, {'language': 'en-US', 'query': query}], expiration=EXPIRES_4_HOURS)['results']
 
 def tmdb_image_params(language):
 	return ','.join(dict.fromkeys([language, language.split('-')[0], 'en,en-US,null']))

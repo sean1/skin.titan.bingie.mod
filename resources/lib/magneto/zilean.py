@@ -34,9 +34,12 @@ class source:
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
 			results = requests.get(url, timeout=self.timeout)
+			if hasattr(results, 'raise_for_status'): results.raise_for_status()
 			files = results.json()
+			if not isinstance(files, list): raise ValueError('Invalid result payload')
 		except:
 			source_utils.scraper_error('ZILEAN')
+			self.scrape_failed = True
 			return sources
 
 		for file in files:
@@ -51,4 +54,5 @@ class source:
 				sources_append(stremio_utils.build_result('zilean', hash, name, release, quality, info, dsize))
 			except:
 				source_utils.scraper_error('ZILEAN')
+				self.scrape_partial = True
 		return sources

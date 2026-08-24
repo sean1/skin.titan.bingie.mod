@@ -73,7 +73,7 @@ class SubtitleServiceTests(unittest.TestCase):
 
 		result = self.service._client()
 
-		self.service.Subtitles.return_value.configure.assert_called_once_with('tt123', 0, 4, 'poster.jpg', 'video.mkv', '', '', '', 2020)
+		self.service.Subtitles.return_value.configure.assert_called_once_with('tt123', 0, 4, 'poster.jpg', 'video.mkv', '', '', '', 2020, '', '', '', '')
 		self.assertEqual(result, (configured_client, {'imdb_id': 'tt123', 'season': 0, 'episode': 4, 'poster': 'poster.jpg'}))
 
 	def test_download_without_active_playback_adds_no_item_or_notification(self):

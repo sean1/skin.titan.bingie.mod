@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from caches import BaseCache, external_db
+from modules.source_search import ProviderOutcome
 # from modules.kodi_utils import logger
 
 SELECT_RESULTS = """
@@ -38,14 +39,17 @@ class ExternalProvidersCache(BaseCache):
 			current_time = self._get_timestamp(datetime.now())
 			self.dbcur.execute(SELECT_RESULTS, (source, mediatype, tmdb_id, title, year, season, episode, current_time))
 			cache_data = self.dbcur.fetchone()
-			if cache_data: result = self.jsloads(cache_data[0])
+			if cache_data: result = ProviderOutcome.from_cache(self.jsloads(cache_data[0]))
 		except: pass
 		return result
 
 	def set(self, source, mediatype, tmdb_id, title, year, season, episode, results, expire_time):
 		try:
+			outcome = ProviderOutcome.from_provider(results)
+			if not outcome.cacheable: return False
 			expires = self._get_timestamp(datetime.now() + timedelta(hours=expire_time))
-			self.dbcur.execute(INSERT_RESULTS, (source, mediatype, tmdb_id, title, year, season, episode, expires, self.jsdumps(results)))
+			self.dbcur.execute(INSERT_RESULTS, (source, mediatype, tmdb_id, title, year, season, episode, expires, self.jsdumps(outcome.serialize())))
+			return True
 		except: pass
 
 	def delete(self, source, mediatype, tmdb_id, title, season, episode):
@@ -65,4 +69,3 @@ class ExternalProvidersCache(BaseCache):
 			self.dbcur.execute("""VACUUM""")
 			return True
 		except: return False
-

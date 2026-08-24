@@ -3,7 +3,8 @@ from caches import BaseCache, debridcache_db
 # from modules.kodi_utils import logger
 
 GET_MANY = 'SELECT * FROM debrid_data WHERE hash in (%s)'
-SET_MANY = 'INSERT INTO debrid_data VALUES (?, ?, ?, ?)'
+SET_MANY = """INSERT INTO debrid_data VALUES (?, ?, ?, ?) ON CONFLICT(hash, debrid) DO UPDATE SET cached = excluded.cached, expires = excluded.expires
+	WHERE debrid_data.cached != 'True' OR excluded.cached = 'True'"""
 REMOVE_MANY = 'DELETE FROM debrid_data WHERE hash = ? AND debrid = ? AND expires = ?'
 CLEAR = 'DELETE FROM debrid_data'
 CLEAR_DEBRID = 'DELETE FROM debrid_data WHERE debrid = ?'

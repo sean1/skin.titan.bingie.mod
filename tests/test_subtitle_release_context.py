@@ -383,7 +383,7 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 			'poster': 'poster.jpg', 'release_name': 'Show.S01E02.WEB-DL-GROUP', 'release_quality': '1080p', 'release_info': 'HEVC'
 		}
 		player.mediatype, player.season, player.episode = 'episode', 1, 2
-		player.title, player.imdb_id, player.year = 'Show', 'tt123', 2024
+		player.title, player.imdb_id, player.tmdb_id, player.year = 'Show', 'tt123', '456', 2024
 		calls = []
 
 		class Thread:
@@ -396,7 +396,7 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 			player.exec_task('subtitles')
 
 		args = calls[0][1]
-		self.assertEqual(args, ('Show', 'tt123', 1, 2, 'poster.jpg', 'Show.S01E02.WEB-DL-GROUP', '1080p', 'HEVC', 2024))
+		self.assertEqual(args, ('Show', 'tt123', 1, 2, 'poster.jpg', 'Show.S01E02.WEB-DL-GROUP', '1080p', 'HEVC', 2024, '456', 'episode', 'Show'))
 
 
 if __name__ == '__main__':

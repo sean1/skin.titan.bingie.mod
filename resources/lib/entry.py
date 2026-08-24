@@ -801,7 +801,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 	def __enter__(self):
 		initializeDatabases()
 		normalizeMenuData()
-		self._install_keymap()
+		self._initialize_keymap()
 		try: viewsSetWindowProperties()
 		except: pass
 		self.threads = [Thread(target=self._deferred_database_maintenance)]
@@ -828,6 +828,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			except: pass
 			poll_interval = TRAILER_PREVIEW_IDLE_POLL
 			while not _wait_for_service_tick(self, poll_interval):
+				self._sync_keymap()
 				if get_property('pov_lite_pause_services'):
 					self.next_page_prefetch.cancel()
 					self.focused_fanart.pause()
@@ -859,10 +860,16 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			tune()
 		except Exception as exc: logger('BINGIE streaming cache', str(exc))
 
-	def _install_keymap(self):
+	def _initialize_keymap(self):
 		try:
-			from modules.keymap import install
-			if install(): logger('BINGIE keymap', 'Installed long-Play source selection keymap')
+			from modules.keymap import Lifecycle
+			self.keymap_lifecycle = Lifecycle()
+			self._sync_keymap()
+		except Exception as exc: logger('BINGIE keymap', str(exc))
+
+	def _sync_keymap(self):
+		try:
+			if getattr(self, 'keymap_lifecycle', None) and self.keymap_lifecycle.tick(): logger('BINGIE keymap', 'Updated long-Play source selection keymap')
 		except Exception as exc: logger('BINGIE keymap', str(exc))
 
 	def _database_maintenance_ready(self):

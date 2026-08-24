@@ -233,14 +233,29 @@ class SubtitleProviderTests(unittest.TestCase):
 
 	def test_opensubtitles_download_requests_native_file_without_format_conversion(self):
 		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})
+		provider.login = Mock()
 		provider.authenticated_json = Mock(return_value={'link': 'https://download.invalid/subtitle'})
-		response = Mock(ok=True, content=b'subtitle text')
-		response.status_code = 200
 
-		with patch.object(self.providers, '_request', return_value=response): payload = provider.download({'id': '456', 'extension': 'srt'})
+		with patch.object(self.providers, '_download_binary', return_value=b'subtitle text') as download_binary:
+			payload = provider.download({'id': '456', 'extension': 'srt'})
 
+		provider.login.assert_called_once_with()
 		provider.authenticated_json.assert_called_once_with('POST', 'download', 'download', json={'file_id': 456})
+		download_binary.assert_called_once_with('https://download.invalid/subtitle', 'opensubtitles', self.providers.MAX_SUBTITLE_BYTES, None)
 		self.assertEqual(payload, {'content': b'subtitle text', 'extension': 'srt'})
+
+	def test_opensubtitles_context_download_authenticates_configured_user_without_search(self):
+		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test', 'username': 'user', 'password': 'secret'}, {})
+		provider.login = Mock()
+		provider.search = Mock(side_effect=AssertionError('download must not search'))
+		provider.authenticated_json = Mock(return_value={'link': 'https://download.invalid/subtitle'})
+
+		with patch.object(self.providers, '_download_binary', return_value=b'subtitle'):
+			payload = provider.download({'id': '456', 'extension': 'srt'})
+
+		provider.login.assert_called_once_with()
+		provider.search.assert_not_called()
+		self.assertEqual(payload, {'content': b'subtitle', 'extension': 'srt'})
 
 	def test_opensubtitles_quota_rejection_disables_repeated_download_attempts(self):
 		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})

@@ -32,33 +32,23 @@ package_name="$addon_id-$addon_version.zip"
 package_path="$output_dir/$package_name"
 temporary_dir=$(mktemp -d "${TMPDIR:-/tmp}/bingie-lite-package.XXXXXX")
 trap 'rm -rf -- "$temporary_dir"' EXIT HUP INT TERM
+tracked_manifest="$temporary_dir/tracked-files"
+untracked_manifest="$temporary_dir/untracked-files"
+
+git -C "$project_dir" ls-files -z -- . ':(exclude).gitignore' ':(exclude)scripts/**' ':(exclude)tests/**' > "$tracked_manifest"
+git -C "$project_dir" ls-files --others --exclude-standard -z -- . ':(exclude)scripts/**' ':(exclude)tests/**' > "$untracked_manifest"
+if [ -s "$untracked_manifest" ]; then
+	printf '%s\n' 'Untracked package files must be added to Git before building:' >&2
+	tr '\000' '\n' < "$untracked_manifest" >&2
+	exit 1
+fi
 
 mkdir -p "$temporary_dir/$addon_id"
 tar -C "$project_dir" \
-	--exclude='./.git' \
-	--exclude='./.agents' \
-	--exclude='./.codex' \
-	--exclude='./.gitignore' \
-	--exclude='./AGENTS.md' \
-	--exclude='./.idea' \
-	--exclude='./.ruff_cache' \
-	--exclude='./build' \
-	--exclude='./dist' \
-	--exclude='./scripts' \
-	--exclude='./tests' \
-	--exclude='./shortcuts' \
-	--exclude='./playlists' \
-	--exclude='./extras/categories' \
-	--exclude='./extras/media/pumpkin' \
-	--exclude='./extras/media/snow' \
-	--exclude='./extras/skinthemes' \
-	--exclude='./extras/viewthumbs' \
-	--exclude='./extras/widgetplaylists' \
-	--exclude="./$subtitle_credentials_rel" \
-	--exclude='*/__pycache__' \
-	--exclude='*.pyc' \
-	--exclude='*.pyo' \
-	-cf - . | tar -C "$temporary_dir/$addon_id" -xf -
+	--null \
+	--verbatim-files-from \
+	--files-from="$tracked_manifest" \
+	-cf - | tar -C "$temporary_dir/$addon_id" -xf -
 
 if [ -e "$subtitle_credentials" ] || [ -L "$subtitle_credentials" ]; then
 	if [ -L "$subtitle_credentials" ] || [ ! -f "$subtitle_credentials" ]; then

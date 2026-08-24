@@ -31,16 +31,17 @@ def load_keymap(files=None):
 
 
 class KeymapTests(unittest.TestCase):
-	def test_installs_global_longpress_bindings_and_reloads_keymaps(self):
+	def test_installs_custom_info_longpress_bindings_and_reloads_keymaps(self):
 		keymap, kodi_utils, files = load_keymap()
 
 		self.assertTrue(keymap.install())
 
 		contents = files[keymap.KEYMAP_PATH]
-		self.assertIn('<global>', contents)
+		self.assertIn('<window1123>', contents)
+		self.assertNotIn('<global>', contents)
 		self.assertNotIn('<Home>', contents)
 		self.assertNotIn('<Videos>', contents)
-		self.assertIn('managed keymap v3', contents)
+		self.assertIn('managed keymap v4', contents)
 		self.assertEqual(contents.count('mod="longpress"'), 6)
 		self.assertEqual(contents.count(keymap.SOURCE_SELECT_ACTION), 6)
 		self.assertIn('<play_pause mod="longpress">', contents)

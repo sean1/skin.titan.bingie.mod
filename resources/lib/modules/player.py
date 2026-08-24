@@ -472,6 +472,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 		try:
 			if self.current_point >= self.set_watched:
 				kodi_utils.clear_property('pov_lite_total_autoplays')
+				if self.mediatype == 'episode':
+					if any(key in self.meta for key in ('random', 'random_continual')): return ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode, 'progress')
+					from caches.smartplay_cache import complete_episode
+					return complete_episode(self.tmdb_id, self.season, self.episode)[1]
 				return ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode, 'progress')
 			kodi_utils.clear_property('pov_lite_total_autoplays')
 			if self.current_point < self.set_resume: return
@@ -547,7 +551,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 				from indexers.subtitles import Subtitles
 				Thread(target=Subtitles().run, args=(
 					self.title, self.imdb_id, season, episode, poster, self.meta.get('release_name', ''),
-					self.meta.get('release_quality', ''), self.meta.get('release_info', ''), self.year
+					self.meta.get('release_quality', ''), self.meta.get('release_info', ''), self.year, self.tmdb_id, self.mediatype,
+					self.meta.get('tvshowtitle') or self.meta.get('title') or self.title
 				)).start()
 			elif task_name == 'stingers':
 				self.stingers_checked = True

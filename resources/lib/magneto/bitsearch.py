@@ -15,6 +15,8 @@ RE_MAGNET = re.compile(r'href\s*=\s*["\'](magnet:[^"\']+)["\']', re.I)
 RE_SIZE = re.compile(r'<i class="[^"]*fa-download[^"]*"></i>\s*<span>\s*([\d.]+\s*[GKM]B)\s*</span>', re.I)
 RE_SEEDERS = re.compile(r'fa-arrow-up[^"]*"></i>\s*<span[^>]*>\s*(\d+)\s*</span>\s*<span>seeders</span>', re.I)
 
+NO_RESULTS = re.compile(r'\b(?:no results?|nothing)\s+(?:found|returned)\b', re.I)
+
 
 class source:
 	timeout = 7
@@ -65,15 +67,18 @@ class source:
 			return self.sources
 		except:
 			source_utils.scraper_error('BITSEARCH')
+			self.scrape_failed = True
 			return self.sources
 
 	def get_sources(self, url):
 		try:
 			results = client.request(url, timeout=self.timeout)
-			if not results: return
+			if not results: raise ValueError('Empty provider response')
 			rows = client.parseDOM(results, 'div', attrs={'class': target_class})
+			if not rows and not NO_RESULTS.search(results): raise ValueError('Invalid provider response')
 		except:
 			source_utils.scraper_error('BITSEARCH')
+			self.scrape_failed = True
 			return
 
 		for row in rows:
@@ -119,6 +124,7 @@ class source:
 												'quality': quality, 'language': 'en', 'url': url, 'info': info, 'direct': False, 'debridonly': True, 'size': dsize})
 			except:
 				source_utils.scraper_error('BITSEARCH')
+				self.scrape_partial = True
 
 	def sources_packs(self, data, hostDict, search_series=False, total_seasons=None, bypass_filter=False):
 		self.sources = []
@@ -158,15 +164,18 @@ class source:
 			return self.sources
 		except:
 			source_utils.scraper_error('BITSEARCH')
+			self.scrape_failed = True
 			return self.sources
 
 	def get_sources_packs(self, link):
 		try:
 			results = client.request(link, timeout=self.timeout)
-			if not results: return
+			if not results: raise ValueError('Empty provider response')
 			rows = client.parseDOM(results, 'div', attrs={'class': target_class})
+			if not rows and not NO_RESULTS.search(results): raise ValueError('Invalid provider response')
 		except:
 			source_utils.scraper_error('BITSEARCH')
+			self.scrape_failed = True
 			return
 
 		for row in rows:
@@ -222,4 +231,4 @@ class source:
 				self.sources_append(item)
 			except:
 				source_utils.scraper_error('BITSEARCH')
-
+				self.scrape_partial = True

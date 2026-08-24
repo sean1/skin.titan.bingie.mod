@@ -11,7 +11,7 @@ from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCh
 from modules import player, kodi_utils, settings, source_utils
 try: from modules import playback_health
 except Exception: playback_health = None
-from modules.source_search import CORE_CACHED_RESULT_TARGET, external_worker_count, split_external_providers
+from modules.source_search import CORE_CACHED_RESULT_TARGET, ProviderOutcome, external_worker_count, split_external_providers
 from modules.utils import get_datetime, safe_string, string_to_float
 #from modules.kodi_utils import logger
 
@@ -940,13 +940,14 @@ class ExternalSource:
 	def get_movie_source(self, provider, module):
 		epc = ExternalProvidersCache()
 		try:
-			sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '')
-			if sources is None:
+			outcome = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '')
+			if outcome is None:
 				instance = module()
-				sources = instance.sources(self.provider_data(instance), self.hostDict)
-				sources = self.process_sources(provider, sources)
-				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '', sources, self.single_expiry)
+				outcome = ProviderOutcome.from_provider(instance.sources(self.provider_data(instance), self.hostDict), instance)
+				outcome.sources = self.process_sources(provider, outcome.sources)
+				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, '', '', outcome, self.single_expiry)
 		finally: epc.close()
+		sources = outcome.sources
 		if sources:
 			self.sources.extend(sources)
 
@@ -955,8 +956,8 @@ class ExternalSource:
 		else: s_check, e_check = self.season, self.episode
 		epc = ExternalProvidersCache()
 		try:
-			sources = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
-			if sources is None:
+			outcome = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
+			if outcome is None:
 				instance = module()
 				data = self.provider_data(instance)
 				if pack == show_display:
@@ -968,9 +969,11 @@ class ExternalSource:
 				else:
 					expiry_hours = self.single_expiry
 					sources = instance.sources(data, self.hostDict)
-				sources = self.process_sources(provider, sources)
-				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, sources, expiry_hours)
+				outcome = ProviderOutcome.from_provider(sources, instance)
+				outcome.sources = self.process_sources(provider, outcome.sources)
+				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, outcome, expiry_hours)
 		finally: epc.close()
+		sources = outcome.sources
 		if sources:
 			if pack == season_display: sources = [i for i in sources if 'episode_start' not in i or i['episode_start'] <= self.episode <= i['episode_end']]
 			elif pack == show_display: sources = [i for i in sources if i['last_season'] >= self.season]

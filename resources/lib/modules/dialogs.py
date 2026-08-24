@@ -346,14 +346,6 @@ def hydrate_media_info(params):
 			clear_property(POV_INFO_HYDRATION_PROPERTY)
 			clear_property(POV_INFO_PENDING_TMDB_PROPERTY)
 
-def imdb_videos_choice(videos, poster):
-	try: videos = json.loads(videos)
-	except: pass
-	videos.sort(key=lambda x: x['quality_rank'])
-	list_items = [{'line1': i['quality'], 'icon': poster} for i in videos]
-	kwargs = {'items': json.dumps(list_items), 'heading': ls(32241)}
-	return select_dialog([i['url'] for i in videos], **kwargs)
-
 def trailer_choice(mediatype, poster, tmdb_id, trailer_url, all_trailers=None):
 	if settings.get_language() != 'en' and not trailer_url and not all_trailers:
 		from indexers.tmdb_api import tmdb_media_videos
@@ -404,8 +396,9 @@ def random_choice(choice, meta):
 	from modules.episode_tools import get_random_episode
 	from modules.sources import Sources
 	continual = True if choice == 'play_random_continual' else False
-	meta, play_params = get_random_episode(tmdb_id, continual)
-	if not play_params: return notification(32760)
+	result = get_random_episode(tmdb_id, continual)
+	if not result: return notification(32760)
+	meta, play_params = result
 	Sources.factory(play_params)
 
 def playback_choice(content, poster, meta):

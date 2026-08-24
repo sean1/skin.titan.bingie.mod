@@ -134,6 +134,12 @@ class SharedXmlIncludeTests(unittest.TestCase):
 			'$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(card_language)]'
 		])
 
+	def test_continue_watching_episode_card_does_not_repeat_episode_context(self):
+		variables = parse('IncludesVariables.xml')
+		details = named_element(variables, 'variable', 'ThumbListDetails')
+		single_line = next(value for value in details.findall('value') if value.get('condition') == 'String.IsEqual(ListItem.Property(pov_lite_episode_label_has_context),true)')
+		self.assertEqual(single_line.text, '$INFO[ListItem.Title]')
+
 
 if __name__ == '__main__':
 	unittest.main()

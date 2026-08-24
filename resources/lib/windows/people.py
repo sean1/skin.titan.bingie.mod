@@ -1,4 +1,3 @@
-import json
 from threading import Thread
 from windows import BaseDialog
 from indexers.tmdb_api import tmdb_people_info, tmdb_people_full_info, tmdb_image_base
@@ -16,7 +15,7 @@ roles_exclude = ('himself', 'herself', 'self', 'narrator', 'voice (voice)')
 button_ids = (10, 11, 50)
 genres_exclude = (10763, 10764, 10767)
 gender_dict = {0: '', 1: ls(32844), 2: ls(32843), 3: ls(32466)}
-more_from_movies_id, more_from_tvshows_id, imdb_videos_id, more_from_director_id = 2050, 2051, 2052, 2053
+more_from_movies_id, more_from_tvshows_id, more_from_director_id = 2050, 2051, 2053
 
 class People(BaseDialog):
 	def __init__(self, *args, **kwargs):
@@ -28,7 +27,6 @@ class People(BaseDialog):
 		self.set_properties()
 
 	def onInit(self):
-		Thread(target=self.make_imdb_videos).start()
 		Thread(target=self.make_more_from, args=('movie',)).start()
 		Thread(target=self.make_more_from, args=('tvshow',)).start()
 		Thread(target=self.make_more_from, args=('director',)).start()
@@ -61,11 +59,6 @@ class People(BaseDialog):
 			else: mediatype = 'tvshow'
 			params = {'tmdb_id': chosen_var, 'mediatype': mediatype, 'is_widget': 'false'}
 			return dialogs.extras_menu(params)
-		if self.control_id == 2052:
-			params = json.loads(chosen_var)
-			chosen = dialogs.imdb_videos_choice(params['videos'], params['thumb'])
-			if not chosen: return
-			return self.open_window(('windows.videoplayer', 'VideoPlayer'), 'videoplayer.xml', video=chosen)
 
 	def make_person_data(self):
 		if self.kwargs['query']:
@@ -130,25 +123,6 @@ class People(BaseDialog):
 			control.addItems(item_list)
 		except: pass
 
-	def make_imdb_videos(self):
-		def builder():
-			for count, item in enumerate(data, 1):
-				try:
-					listitem = self.make_listitem()
-					listitem.setProperty('tikiskins.person.name', '%01d. %s' % (count, item['title']))
-					listitem.setProperty('tikiskins.person.thumbnail', item['poster'])
-					listitem.setProperty('tikiskins.person.params', json.dumps({'videos': json.dumps(item['videos']), 'thumb': item['poster']}))
-					yield listitem
-				except: pass
-		try:
-			data = []
-			item_list = list(builder())
-			self.setProperty('tikiskins.person.imdb_videos.number', '(x%02d)' % len(item_list))
-			self.item_action_dict[imdb_videos_id] = 'tikiskins.person.params'
-			control = self.getControl(imdb_videos_id)
-			control.addItems(item_list)
-		except: pass
-
 	def make_tmdb_listitems(self, data, mediatype):
 		used_ids = []
 		append = used_ids.append
@@ -195,4 +169,3 @@ class People(BaseDialog):
 		self.setProperty('tikiskins.person.deathday', self.person_deathday)
 		self.setProperty('tikiskins.person.age', str(self.person_age))
 		self.setProperty('tikiskins.person.enable_scrollbars', self.enable_scrollbars)
-

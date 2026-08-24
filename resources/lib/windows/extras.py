@@ -18,7 +18,7 @@ backup_cast_thumbnail = media_path('people.png')
 tmdb_image_base = tmdb_api.tmdb_image_base
 playbrowse_id, trailer_id, keywords_id, images_id, extrainfo_id, genre_id, director_id = 10, 11, 12, 13, 14, 15, 16
 actions_id, cast_id, recommended_id, reviews_id, trivia_id, blunders_id, parentsguide_id = 2049, 2050, 2051, 2052, 2053, 2054, 2055
-videos_id, posters_id, backdrops_id, year_id, genres_id, networks_id, collection_id = 2056, 2057, 2058, 2059, 2060, 2061, 2062
+posters_id, backdrops_id, year_id, genres_id, networks_id, collection_id = 2057, 2058, 2059, 2060, 2061, 2062
 tmdb_list_ids = (recommended_id, year_id, genres_id, networks_id, collection_id)
 imdb_list_ids = (reviews_id, trivia_id, blunders_id, parentsguide_id)
 art_ids = (posters_id, backdrops_id)
@@ -119,10 +119,6 @@ class Extras(BaseDialog):
 			except: return
 			if self.control_id == cast_id:
 				return people.person_data_dialog({'query': chosen_var})
-			elif self.control_id == videos_id:
-				chosen = dialogs.imdb_videos_choice(chosen_var, self.poster)
-				if not chosen: return
-				self.open_window(('windows.videoplayer', 'VideoPlayer'), 'videoplayer.xml', meta=self.meta, video=chosen)
 			elif self.control_id in tmdb_list_ids:
 				function = metadata.movie_meta if self.is_movie else metadata.tvshow_meta
 				meta = function('tmdb_id', chosen_var, settings.metadata_user_info(), get_datetime())

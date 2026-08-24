@@ -37,12 +37,17 @@ class source:
 			# log_utils.log('url = %s' % url)
 			if 'timeout' in data: self.timeout = int(data['timeout'])
 			results = requests.get(url, params=params, timeout=self.timeout)
+			if hasattr(results, 'raise_for_status'): results.raise_for_status()
 			files = ET.fromstring(results.text)
+			if files.tag.rsplit('}', 1)[-1] != 'rss': raise ValueError('invalid Torznab root')
+			channel = next((child for child in files if child.tag.rsplit('}', 1)[-1] == 'channel'), None)
+			if channel is None: raise ValueError('missing Torznab channel')
 		except:
 			source_utils.scraper_error('BITMAGNET')
+			self.scrape_failed = True
 			return sources
 
-		for file in files.iter('item'):
+		for file in channel.iter('item'):
 			try:
 				attr_dict = {'title': file.find('title').text}
 				for attr in file.findall('torznab:attr', {'torznab': 'http://torznab.com/schemas/2015/feed'}):
@@ -63,4 +68,5 @@ class source:
 				sources_append(stremio_utils.build_result('bitmagnet', hash, name, release, quality, info, dsize, seeders))
 			except:
 				source_utils.scraper_error('BITMAGNET')
+				self.scrape_partial = True
 		return sources

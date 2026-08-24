@@ -19,14 +19,16 @@ class RealDebridAPI:
 		self.token = get_setting('rd.token')
 		session.headers.update(self.headers())
 
-	def _request(self, method, path, data=None):
+	def _request(self, method, path, data=None, raw=False):
 		url = base_url + path
-		try: response = session.request(method, url, data=data, timeout=timeout)
+		try:
+			response = session.request(method, url, data=data, timeout=timeout)
+			if response.status_code in (401,) and self.refresh_token() is True:
+				response.request.headers['Authorization'] = 'Bearer %s' % self.token
+				response = session.send(response.request, timeout=timeout)
 		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
-		if response.status_code in (401,) and self.refresh_token() is True:
-			response.request.headers['Authorization'] = 'Bearer %s' % self.token
-			response = session.send(response.request, timeout=timeout)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
+		if raw: return response
 		return response.json() if response.content else response
 
 	def _get(self, path):
@@ -72,15 +74,15 @@ class RealDebridAPI:
 		result = self._get(url)
 		return result
 
+	def _delete(self, path):
+		result = self._request('delete', path, raw=True)
+		return bool(result is not None and result.ok)
+
 	def delete_torrent(self, folder_id):
-		url = 'torrents/delete/%s' % folder_id
-		result = self._request('delete', url)
-		return True if result is not None and result.ok else False
+		return self._delete('torrents/delete/%s' % folder_id)
 
 	def delete_download(self, download_id):
-		url = 'downloads/delete/%s' % download_id
-		result = self._request('delete', url)
-		return True if result is not None and result.ok else False
+		return self._delete('downloads/delete/%s' % download_id)
 
 	def unrestrict_link(self, link):
 		url = 'unrestrict/link'

@@ -4,6 +4,7 @@ import types
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event, Thread
 
 from tests.module_isolation import load_module
 
@@ -172,6 +173,48 @@ class ExternalManagerTests(unittest.TestCase):
 			('torrentio-0', 'alldebrid', 'Uncached alldebrid'), ('torrentio-1', 'alldebrid', 'alldebrid'),
 			('torrentio-0', 'torbox', 'torbox'), ('torrentio-1', 'torbox', 'Uncached torbox')
 		})
+
+	def test_closed_source_sink_rejects_late_provider_results(self):
+		sink = SOURCES.SourceResultSink()
+		self.assertTrue(sink.extend([{'name': 'on-time'}]))
+		sink.close()
+
+		self.assertFalse(sink.extend([{'name': 'late'}]))
+		self.assertEqual(sink.items, [{'name': 'on-time'}])
+
+	def test_running_provider_cannot_publish_after_source_sink_closes(self):
+		sink = SOURCES.SourceResultSink()
+		release = Event()
+		worker = Thread(target=lambda: (release.wait(), sink.extend([{'name': 'late'}])))
+		worker.start()
+		try:
+			sink.close()
+			release.set()
+			worker.join(2.0)
+		finally: release.set()
+
+		self.assertFalse(worker.is_alive())
+		self.assertEqual(sink.items, [])
+
+	def test_full_search_replaces_closed_result_sink(self):
+		source = SOURCES.Sources()
+		old_sink = source.source_sink
+		old_sink.close()
+		source.meta = {}
+		source.scraper_settings = {}
+		source.prescrape = False
+		source.filters_ignored = False
+		source.progress_dialog = types.SimpleNamespace(kill=lambda: None)
+		source.source_select = lambda: 'restarted'
+		old_open_window = SOURCES.open_window
+		SOURCES.open_window = lambda *args, **kwargs: ('perform_full_search', None)
+		try: result = source.display_results([])
+		finally: SOURCES.open_window = old_open_window
+
+		self.assertEqual(result, 'restarted')
+		self.assertIsNot(source.source_sink, old_sink)
+		self.assertIs(source.sources, source.source_sink.items)
+		self.assertTrue(source.source_sink.accepting)
 
 	def test_cached_core_target_skips_fallback(self):
 		FakeDebridCheck.cached = {'%s-%d' % (provider, index) for provider in CORE_EXTERNAL_PROVIDERS for index in range(2)}

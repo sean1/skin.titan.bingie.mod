@@ -20,6 +20,8 @@ fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 PLAYBACK_START_TIMEOUT = 30.0
 PLAYBACK_DURATION_TIMEOUT = 5.0
+PLAYBACK_STOP_TIMEOUT = 5.0
+PLAYBACK_SETTLE_TIME = 0.5
 MINIMUM_DURATION_RATIO = 0.5
 MINIMUM_DURATION_GAP = 600
 ENGLISH_AUDIO_LANGUAGES = ('en', 'eng', 'english')
@@ -165,7 +167,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self._finalize_stream(True)
 		if self.next_episode_requested: return
 		from modules.sources import Sources
-		Sources.nextep_params.clear()
+		if hasattr(Sources, 'clear_nextep'): Sources.clear_nextep()
+		else: Sources.nextep_params.clear()
 		kodi_utils.clear_property('pov_lite_total_autoplays')
 
 	def onPlayBackEnded(self):
@@ -233,9 +236,23 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.playback_event = False
 		return True
 
+	def _stop_and_wait(self, force=False):
+		try:
+			if force or self.isPlaying(): self.stop()
+		except: pass
+		deadline = monotonic() + PLAYBACK_STOP_TIMEOUT
+		while monotonic() < deadline:
+			try: playing = self.isPlaying()
+			except: playing = False
+			try: has_media = kodi_utils.get_visibility('Player.HasMedia')
+			except: has_media = playing
+			if not playing and not has_media: break
+			if kodi_utils.monitor.waitForAbort(0.1): return
+		kodi_utils.monitor.waitForAbort(PLAYBACK_SETTLE_TIME)
+
 	def request_next_episode(self):
 		self.next_episode_requested = True
-		self.stop()
+		self._stop_and_wait(force=True)
 
 	def run(self, url=None, meta=None, progress_media=None):
 		if not url: return False
@@ -278,18 +295,18 @@ class POVPlayer(kodi_utils.xbmc_player):
 			while self.playback_event is None and monotonic() < start_deadline:
 				if kodi_utils.monitor.waitForAbort(0.1): return
 			if self.playback_event is not True:
-				if self.playback_event is None:
+				pending_start = self.playback_event is None
+				if pending_start:
 					self.startup_cancel_requested = True
 					self.ignore_startup_stop, self.startup_playback_started = True, False
-					try: self.stop()
-					except: pass
+				self._stop_and_wait(force=pending_start)
 				self._record_playback_health('startup_fail', latency=self._playback_health_elapsed())
 				kodi_utils.logger('POVPlayer', 'Playback startup failed or timed out')
 				return False
 			if not self._duration_is_plausible():
 				self._record_playback_health('startup_fail', latency=self._playback_health_elapsed())
 				kodi_utils.logger('POVPlayer', 'Playback duration is implausibly short; trying the next source')
-				self.stop()
+				self._stop_and_wait(force=True)
 				return False
 			self._record_playback_health('startup_ok', latency=self._playback_health_elapsed())
 			if callable(progress_media): progress_media()
@@ -317,9 +334,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self.retry_resume_percent = self._current_resume_percent()
 				self.playback_error = True
 				self._finalize_stream(False)
-				try:
-					if self.isPlayingVideo(): self.stop()
-				except: pass
+				self._stop_and_wait()
 			return False
 
 	def check_playback_events(self):
@@ -406,8 +421,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.retry_resume_percent = self._current_resume_percent()
 		self.playback_error = True
 		self._finalize_stream(True)
-		try: self.stop()
-		except: pass
+		self._stop_and_wait(force=True)
 		return True
 
 	def make_listitem(self):

@@ -59,13 +59,13 @@ class TrailerPreviewTests(unittest.TestCase):
 		finished = {key: Event() for key in results}
 		calls = []
 
-		def lookup(identity, media_type, tmdb_id, focused):
+		def lookup(identity, media_type, tmdb_id, focused, result_queue, result_gate):
 			key = identity, focused
 			calls.append(key)
 			started[key].set()
 			try:
 				released[key].wait()
-				if not self.preview.closed: self.preview.lookup_results.put((identity, focused, results[key]))
+				result_gate.publish(result_queue, (identity, focused, results[key]))
 			finally: finished[key].set()
 
 		def cleanup():
@@ -597,6 +597,12 @@ class TrailerPreviewTests(unittest.TestCase):
 			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
 			self._wait(started[key])
 		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
+		self.preview.resolved_trailers['old'] = 'trailer'
+		self.preview.resolved_focused_metadata['old'] = {'genre': 'Drama'}
+		self.preview.focused_metadata_retries['old'] = 10.0
+		self.preview.prepared_trailers['old'] = (0.0, ('url', 'manifest'))
+		self.preview.prepare_results.put((1, 'old', 'trailer', None, None, 0.0))
+		self.preview.prepare_workers[1] = (None, 'old', 'trailer')
 		trailers = types.ModuleType('modules.trailers')
 		trailers.stop_manifest_server = Mock()
 		old_trailers = sys.modules.get('modules.trailers')
@@ -607,7 +613,13 @@ class TrailerPreviewTests(unittest.TestCase):
 			else: sys.modules['modules.trailers'] = old_trailers
 
 		self.assertIsNone(self.preview.lookup_pending)
-		self.assertEqual(set(self.preview.lookup_workers), set(keys[:2]))
+		self.assertEqual(self.preview.lookup_workers, {})
+		self.assertEqual(self.preview.prepare_workers, {})
+		self.assertEqual(self.preview.resolved_trailers, {})
+		self.assertEqual(self.preview.resolved_focused_metadata, {})
+		self.assertEqual(self.preview.focused_metadata_retries, {})
+		self.assertEqual(self.preview.prepared_trailers, {})
+		with self.assertRaises(Empty): self.preview.prepare_results.get_nowait()
 		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
 		self.assertEqual(calls, keys[:2])
 		for key in keys[:2]: released[key].set()

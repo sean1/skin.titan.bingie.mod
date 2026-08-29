@@ -125,6 +125,16 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 
 		self.assertFalse(sources_module.ConfigLoader()._use_full_screen_progress(source))
 
+	def test_next_episode_queue_keeps_only_latest_request(self):
+		sources_module = load_sources_module()
+		sources_module.Sources.clear_nextep()
+		sources_module.Sources.nextep_callback({'episode': 2})
+		sources_module.Sources.nextep_callback({'episode': 3})
+
+		self.assertEqual(sources_module.Sources.nextep_params, [{'episode': 3}])
+		self.assertEqual(sources_module.Sources._pop_nextep(), {'episode': 3})
+		self.assertEqual(sources_module.Sources.nextep_params, [])
+
 	def test_manual_stop_clears_queued_next_episode(self):
 		player_module = load_player()
 		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
@@ -209,6 +219,39 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		player.onAVStarted()
 		self.assertFalse(player.playback_event)
 		self.assertEqual(player.stop.call_count, 2)
+
+	def test_callback_startup_failure_waits_for_teardown(self):
+		player_module = load_player()
+		player_module.kodi_utils.logger = mock.Mock()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		listitem = mock.Mock()
+		player.art_provider = ()
+		player.bookmarkPOV = lambda: 0
+		player.make_listitem = lambda: listitem
+		player.isPlaying = lambda: False
+		player._stop_and_wait = mock.Mock()
+		player._record_playback_health = mock.Mock()
+		player.play = lambda *args: setattr(player, 'playback_event', False)
+
+		result = player.run('https://stream.invalid/movie', {'title': 'Movie', 'year': 2025, 'mediatype': 'movie', 'tmdb_id': '1'})
+
+		self.assertFalse(result)
+		player._stop_and_wait.assert_called_once_with(force=False)
+
+	def test_stop_waits_for_player_release_and_settle(self):
+		player_module = load_player()
+		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
+		states = iter((True, True, False))
+		media_states = iter((True, False))
+		player.isPlaying = lambda: next(states)
+		player.stop = mock.Mock()
+		player_module.kodi_utils.get_visibility = lambda condition: next(media_states)
+		player_module.kodi_utils.monitor.waitForAbort = mock.Mock(return_value=False)
+
+		player._stop_and_wait()
+
+		player.stop.assert_called_once_with()
+		self.assertEqual([call.args[0] for call in player_module.kodi_utils.monitor.waitForAbort.call_args_list], [0.1, 0.5])
 
 	def test_stop_and_end_do_not_request_error_recovery(self):
 		player_module = load_player()
@@ -360,12 +403,12 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		player_module = load_player()
 		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
 		player.next_episode_requested = False
-		player.stop = mock.Mock()
+		player._stop_and_wait = mock.Mock()
 
 		player.request_next_episode()
 
 		self.assertTrue(player.next_episode_requested)
-		player.stop.assert_called_once_with()
+		player._stop_and_wait.assert_called_once_with(force=True)
 
 
 if __name__ == '__main__':

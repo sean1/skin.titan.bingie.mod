@@ -120,7 +120,7 @@ def execute_scrape_nextep(player, meta):
 	Sources.nextep_callback(nextep_params)
 	action = _continue_action(True, nextep_meta)
 	if action == 'cancel':
-		Sources.nextep_params.clear()
+		Sources.clear_nextep()
 		return kodi_utils.notification(32736)
 	if action == 'play': player.request_next_episode()
 
@@ -136,7 +136,7 @@ def execute_nextep(player, meta, nextep_settings):
 	Sources.nextep_callback(nextep_params)
 	action = _control_playback(player, nextep_settings, nextep_meta)
 	if action == 'cancel':
-		Sources.nextep_params.clear()
+		Sources.clear_nextep()
 		kodi_utils.clear_property('pov_lite_total_autoplays')
 		return kodi_utils.notification(32736)
 	if action == 'close':

@@ -1,4 +1,4 @@
-from threading import Thread
+from threading import Lock, Thread
 from datetime import datetime
 from time import monotonic
 from collections import OrderedDict
@@ -54,6 +54,25 @@ DATABASE_MAINTENANCE_DELAY = 60.0
 DATABASE_MAINTENANCE_RETRY = 5.0
 DATABASE_MAINTENANCE_IDLE_SECONDS = 10
 STREAMING_CACHE_RETRY = 2.0
+
+class AsyncResultGate:
+	def __init__(self):
+		self.closed = False
+		self.lock = Lock()
+
+	def publish(self, queue, result):
+		with self.lock:
+			if self.closed: return False
+			queue.put(result)
+			return True
+
+	def close(self, *queues):
+		with self.lock:
+			self.closed = True
+			for queue in queues:
+				while True:
+					try: queue.get_nowait()
+					except Empty: break
 
 class FocusedFanart:
 	def __init__(self):
@@ -177,6 +196,7 @@ class TrailerPreview:
 		self.focused_metadata_retries = OrderedDict()
 		self.lookup_workers = {}
 		self.lookup_results = SimpleQueue()
+		self.result_gate = AsyncResultGate()
 		self.lookup_pending = None
 		self.prepare_workers = {}
 		self.prepare_results = SimpleQueue()
@@ -203,8 +223,16 @@ class TrailerPreview:
 	def close(self):
 		self.closed = True
 		self.lookup_pending = None
-		self._discard_lookup_results()
 		self._invalidate_preparation()
+		self.result_gate.close(self.lookup_results, self.prepare_results)
+		self.lookup_workers.clear()
+		self.prepare_workers.clear()
+		self.resolved_trailers.clear()
+		self.resolved_focused_metadata.clear()
+		self.focused_metadata_retries.clear()
+		self.prepared_trailers.clear()
+		self.identity = ''
+		self.suppressed_identity = ''
 		self.manual_identity = ''
 		self._clear_focused_metadata()
 		clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
@@ -453,16 +481,17 @@ class TrailerPreview:
 		if not focused and (identity, True) in self.lookup_workers:
 			self.lookup_pending = None
 			return
-		worker = Thread(target=self._lookup_media, args=(identity, media_type, tmdb_id, focused), name='BINGIE focused metadata lookup' if focused else 'BINGIE trailer lookup', daemon=True)
+		worker = Thread(target=self._lookup_media, args=(identity, media_type, tmdb_id, focused, self.lookup_results, self.result_gate), name='BINGIE focused metadata lookup' if focused else 'BINGIE trailer lookup', daemon=True)
 		self.lookup_workers[key] = worker
 		self.lookup_pending = None
 		try: worker.start()
 		except Exception as exc:
 			self.lookup_workers.pop(key, None)
 			logger('BINGIE Lite focused metadata lookup' if focused else 'BINGIE Lite trailer lookup', str(exc))
-			self.lookup_results.put((identity, focused, None))
+			self.result_gate.publish(self.lookup_results, (identity, focused, None))
 
-	def _lookup_media(self, identity, media_type, tmdb_id, focused):
+	@staticmethod
+	def _lookup_media(identity, media_type, tmdb_id, focused, result_queue, result_gate):
 		result = None
 		try:
 			if focused:
@@ -474,7 +503,7 @@ class TrailerPreview:
 				videos = tmdb_media_videos(media_type, tmdb_id)
 				if videos is not None: result = select_trailer(videos.get('results')) or ''
 		except Exception as exc: logger('BINGIE Lite focused metadata lookup' if focused else 'BINGIE Lite trailer lookup', str(exc))
-		if not self.closed: self.lookup_results.put((identity, focused, result))
+		result_gate.publish(result_queue, (identity, focused, result))
 
 	def _consume_lookup_results(self):
 		if self.closed:
@@ -491,6 +520,11 @@ class TrailerPreview:
 			try: identity, focused, _ = self.lookup_results.get_nowait()
 			except Empty: break
 			self.lookup_workers.pop((identity, focused), None)
+
+	def _discard_prepare_results(self):
+		while True:
+			try: self.prepare_results.get_nowait()
+			except Empty: break
 
 	def _consume_lookup_result(self, identity, focused, result):
 		if focused:
@@ -583,26 +617,27 @@ class TrailerPreview:
 			prepared, prepared_at = cached
 			self.prepare_pending = None
 			self.prepare_workers[generation] = None, identity, trailer
-			self.prepare_results.put((generation, identity, trailer, prepared, None, prepared_at))
+			self.result_gate.publish(self.prepare_results, (generation, identity, trailer, prepared, None, prepared_at))
 			return
 		if any(job[2] == trailer for job in self.prepare_workers.values()): return
 		if sum(1 for worker, _, _ in self.prepare_workers.values() if worker is not None and worker.is_alive()) >= TRAILER_PREPARE_WORKERS: return
-		worker = Thread(target=self._prepare_preview, args=(generation, identity, trailer), name='BINGIE trailer preparation', daemon=True)
+		worker = Thread(target=self._prepare_preview, args=(generation, identity, trailer, self.prepare_results, self.result_gate), name='BINGIE trailer preparation', daemon=True)
 		self.prepare_workers[generation] = worker, identity, trailer
 		self.prepare_pending = None
 		try: worker.start()
 		except Exception as exc:
 			self.prepare_workers[generation] = None, identity, trailer
-			self.prepare_results.put((generation, identity, trailer, None, exc, monotonic()))
+			self.result_gate.publish(self.prepare_results, (generation, identity, trailer, None, exc, monotonic()))
 
-	def _prepare_preview(self, generation, identity, trailer):
+	@staticmethod
+	def _prepare_preview(generation, identity, trailer, result_queue, result_gate):
 		prepared, error = None, None
 		try:
 			from modules.trailers import prepare_data_isolated
 			prepared = prepare_data_isolated(trailer)
 		except Exception as exc:
 			error = exc
-		if not self.closed: self.prepare_results.put((generation, identity, trailer, prepared, error, monotonic()))
+		result_gate.publish(result_queue, (generation, identity, trailer, prepared, error, monotonic()))
 
 	def _consume_prepare_results(self):
 		current_result = None

@@ -2,7 +2,7 @@ import re
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor as TPE
-from threading import Thread
+from threading import Lock, Thread
 from magneto import sources as magneto_sources
 from windows import open_window, create_window
 from caches.providers_cache import ExternalProvidersCache
@@ -35,22 +35,49 @@ remaining_format, season_str, show_str, nores_str = ls(32676), ls(32537), ls(320
 season_display, show_display = ls(32537), ls(32089)
 pack_check = (season_display, show_display)
 
+class SourceResultSink:
+	def __init__(self):
+		self.items = []
+		self.accepting = True
+		self.lock = Lock()
+
+	def extend(self, items):
+		if not items: return False
+		with self.lock:
+			if not self.accepting: return False
+			self.items.extend(items)
+			return True
+
+	def close(self):
+		with self.lock: self.accepting = False
+
 class Sources:
 	nextep_params = []
+	nextep_lock = Lock()
 
 	@classmethod
 	def factory(cls, params):
 		try: int(params['episode'])
 		except: return cls().source_select(params)
 		cls.nextep_callback(params)
-		while cls.nextep_params:
-			try: cls().source_select(cls.nextep_params.pop())
+		while True:
+			queued = cls._pop_nextep()
+			if queued is None: break
+			try: cls().source_select(queued)
 			except: pass
 
 	@classmethod
 	def nextep_callback(cls, params):
 		if not isinstance(params, dict): return
-		cls.nextep_params.insert(0, params)
+		with cls.nextep_lock: cls.nextep_params[:] = [params]
+
+	@classmethod
+	def _pop_nextep(cls):
+		with cls.nextep_lock: return cls.nextep_params.pop() if cls.nextep_params else None
+
+	@classmethod
+	def clear_nextep(cls):
+		with cls.nextep_lock: cls.nextep_params.clear()
 
 	@classmethod
 	def background_prep(cls, params):
@@ -62,8 +89,9 @@ class Sources:
 		self.params = {}
 		self.clear_properties, self.filters_ignored = True, False
 		self.progress_dialog, self.pov_background_url = None, None
-		self.threads, self.providers, self.sources, self.internal_scraper_names = [], [], [], []
-		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources = [], [], []
+		self.source_sink, self.prescrape_sink = SourceResultSink(), SourceResultSink()
+		self.threads, self.providers, self.sources, self.internal_scraper_names = [], [], self.source_sink.items, []
+		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources = [], [], self.prescrape_sink.items
 		self.remove_scrapers = ['external']# needs to be mutable so leave as list.
 		self.exclude_list = ['library']# needs to be mutable so leave as list.
 		self.internal_resolutions = dict.fromkeys('4K 1080p 720p SD total'.split(), 0)
@@ -97,11 +125,11 @@ class Sources:
 		return results
 
 	def collect_results(self):
-		self.sources.extend(self.prescrape_sources)
+		self.source_sink.extend(self.prescrape_sources)
 		self.scraper_processor.activate_internal(False)
 		if self.providers:
-			threads = ((self.activate_providers, (i[0], i[1], False), i[2]) for i in self.providers)
-			self.threads.extend([Thread(target=i[0], args=i[1], name=i[2]) for i in threads])
+			threads = ((i[0], i[1], False, i[2]) for i in self.providers)
+			self.threads.extend([Thread(target=self._collect_provider, args=(*i[:3], self.meta['search_info'], self.source_sink), name=i[3]) for i in threads])
 			for i in self.threads: i.start()
 		self.scraper_processor.activate_external()
 		if self.external_providers or self.background:
@@ -111,29 +139,35 @@ class Sources:
 					self.threads, self.prescrape_sources, self.progress_dialog, self.disabled_ignored,
 					None if self.ignore_scrape_filters else self.results_processor.filter_staged_results, self.force_full_search
 				)
-				self.activate_providers('external', (ExternalManager, args), False)
+				self._collect_provider('external', (ExternalManager, args), False, self.meta['search_info'], self.source_sink)
 			elif self.providers and self.background: [i.join() for i in self.threads]
 		else: self.scrapers_dialog('internal')
+		if self.external_providers or self.background:
+			self.source_sink.close()
+			self.threads.clear()
+			self.providers.clear()
 		return self.sources
 
 	def collect_prescrape_results(self):
 		self.scraper_processor.activate_internal(True)
 		if not self.prescrape_scrapers: return []
-		threads = ((self.activate_providers, (i[0], i[1], True), i[2]) for i in self.prescrape_scrapers)
-		self.prescrape_threads.extend([Thread(target=i[0], args=i[1], name=i[2]) for i in threads])
+		threads = ((i[0], i[1], True, i[2]) for i in self.prescrape_scrapers)
+		self.prescrape_threads.extend([Thread(target=self._collect_provider, args=(*i[:3], self.meta['search_info'], self.prescrape_sink), name=i[3]) for i in threads])
 		for i in self.prescrape_threads: i.start()
 		self.remove_scrapers.extend(i[2] for i in self.prescrape_scrapers)
-		if self.background: [i.join() for i in self.prescrape_threads]
+		if self.background:
+			[i.join() for i in self.prescrape_threads]
+			self.prescrape_sink.close()
+			self.prescrape_threads.clear()
+			self.prescrape_scrapers.clear()
 		else: self.scrapers_dialog('pre_scrape')
 		return self.prescrape_sources
 
-	def activate_providers(self, module_type, function, prescrape):
+	@staticmethod
+	def _collect_provider(module_type, function, prescrape, search_info, sink):
 		if module_type == 'external': module = function[0](*function[1])
 		else: module = function()
-		sources = module.results(self.meta['search_info'])
-		if not sources: return
-		if prescrape: self.prescrape_sources.extend(sources)
-		else: self.sources.extend(sources)
+		sink.extend(module.results(search_info))
 
 	def scrapers_dialog(self, scrape_type):
 		if scrape_type == 'internal':
@@ -168,6 +202,14 @@ class Sources:
 			sleep(self.sleep_time)
 		if self.progress_dialog.full_screen: self.progress_dialog.kill()
 		else: progressDialogBG.close()
+		if scrape_type == 'internal':
+			self.source_sink.close()
+			self.threads.clear()
+			self.providers.clear()
+		else:
+			self.prescrape_sink.close()
+			self.prescrape_threads.clear()
+			self.prescrape_scrapers.clear()
 
 	def _process_post_results(self):
 		if self.ignore_results_filter and self.orig_results:
@@ -212,7 +254,8 @@ class Sources:
 		if action == 'perform_full_search':
 			self.prescrape, self.clear_properties, self.force_full_search = False, False, True
 			self.params['force_full_search'] = 'true'
-			self.sources, self.threads, self.providers = [], [], []
+			self.source_sink = SourceResultSink()
+			self.sources, self.threads, self.providers = self.source_sink.items, [], []
 			return self.source_select()
 
 	def play_source(self, results):

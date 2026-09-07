@@ -1,4 +1,5 @@
 from datetime import date
+import json
 import types
 import unittest
 from pathlib import Path
@@ -38,6 +39,8 @@ def load_episode_tools():
 	kodi_utils = types.ModuleType('modules.kodi_utils')
 	kodi_utils.local_string = str
 	kodi_utils.build_url = lambda params: 'plugin://test'
+	kodi_utils.get_property = mock.Mock(return_value='')
+	kodi_utils.set_property = mock.Mock()
 	settings = types.ModuleType('modules.settings')
 	settings.date_offset = lambda: 0
 	settings.metadata_user_info = lambda: {}
@@ -60,6 +63,35 @@ def load_episode_tools():
 
 
 class NextEpisodeAutoplayTests(unittest.TestCase):
+	def test_continual_random_history_keeps_only_compact_episode_identity_for_current_show(self):
+		episode_tools = load_episode_tools()
+		episodes = [
+			{'season': 1, 'episode': 1, 'premiered': '2025-01-01', 'title': 'First', 'plot': 'Plot'},
+			{'season': 1, 'episode': 2, 'premiered': '2025-01-01', 'title': 'Second', 'plot': 'Plot'},
+			{'season': 1, 'episode': 3, 'premiered': '2025-01-01', 'title': 'Third', 'plot': 'Plot'},
+		]
+		episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
+		episode_tools.all_episodes_meta = lambda *args: episodes
+		episode_tools.kodi_utils.get_property.return_value = json.dumps({'456': [{'season': 9, 'episode': 9}], '123': [episodes[0], episodes[0], [9, 9], ['invalid']]})
+		with mock.patch.object(episode_tools, 'choice', side_effect=lambda items: items[0]): episode_tools.get_random_episode('123', True)
+
+		stored = json.loads(episode_tools.kodi_utils.set_property.call_args.args[1])
+		self.assertEqual(stored, {'123': [[1, 1], [1, 2]]})
+
+	def test_continual_random_history_resets_after_every_episode_has_played(self):
+		episode_tools = load_episode_tools()
+		episodes = [
+			{'season': 1, 'episode': 1, 'premiered': '2025-01-01', 'title': 'First', 'plot': 'Plot'},
+			{'season': 1, 'episode': 2, 'premiered': '2025-01-01', 'title': 'Second', 'plot': 'Plot'},
+		]
+		episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
+		episode_tools.all_episodes_meta = lambda *args: episodes
+		episode_tools.kodi_utils.get_property.return_value = json.dumps({'123': [[1, 1], [1, 2]]})
+		with mock.patch.object(episode_tools, 'choice', side_effect=lambda items: items[0]): episode_tools.get_random_episode('123', True)
+
+		stored = json.loads(episode_tools.kodi_utils.set_property.call_args.args[1])
+		self.assertEqual(stored, {'123': [[1, 1]]})
+
 	def test_feature_is_enabled_by_default(self):
 		settings = load_kodi_utils().FIXED_SETTINGS
 		self.assertEqual(settings['auto_play_movie'], 'true')

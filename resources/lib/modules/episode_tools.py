@@ -45,15 +45,21 @@ def get_random_episode(tmdb_id, continual=False):
 	episode_history = {}
 	episode_list = []
 	if continual:
+		episode_identities = {(i.get('season'), i.get('episode')) for i in episodes_data}
 		try:
 			episode_history = json.loads(kodi_utils.get_property('pov_lite_random_episode_history'))
-			if tmdb_key in episode_history: episode_list = episode_history[tmdb_key]
+			if tmdb_key in episode_history:
+				for item in episode_history[tmdb_key]:
+					identity = (item.get('season'), item.get('episode')) if isinstance(item, dict) else tuple(item) if isinstance(item, list) and len(item) == 2 else None
+					if identity in episode_identities and identity not in episode_list: episode_list.append(identity)
 		except: pass
-		episodes_data = [i for i in episodes_data if i not in episode_list] or episodes_data
+		available_episodes = [i for i in episodes_data if (i.get('season'), i.get('episode')) not in episode_list]
+		if available_episodes: episodes_data = available_episodes
+		else: episode_list = []
 	chosen_episode = choice(episodes_data)
 	if continual:
-		episode_list.append(chosen_episode)
-		episode_history[tmdb_key] = episode_list
+		episode_list.append((chosen_episode.get('season'), chosen_episode.get('episode')))
+		episode_history = {tmdb_key: episode_list}
 		kodi_utils.set_property('pov_lite_random_episode_history', json.dumps(episode_history))
 	title, season, episode = meta['title'], int(chosen_episode['season']), int(chosen_episode['episode'])
 	query = '%s S%.2dE%.2d' % (title, season, episode)

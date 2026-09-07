@@ -2,6 +2,7 @@ import sys
 import time
 import types
 import unittest
+from unittest import mock
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Event, Thread
@@ -51,7 +52,8 @@ def load_sources_module():
 		),
 		'modules.source_utils': module_stub(
 			pack_enable_check=lambda *args: (False, False), sources_quality_count=lambda sources: {}, get_cache_expiry=lambda *args: (1, 1, 1),
-			get_file_info=lambda *args, **kwargs: ('SD', '')
+			get_file_info=lambda *args, **kwargs: ('SD', ''), clean_title=lambda value: ''.join(character for character in value.lower() if character.isalnum()),
+			check_title=lambda title, release, *args, **kwargs: ''.join(character for character in title.lower() if character.isalnum()) in ''.join(character for character in release.lower() if character.isalnum())
 		),
 		'modules.utils': module_stub(manual_function_import=lambda *args: None, get_datetime=lambda: None, safe_string=str, string_to_float=lambda value, fallback='0': float(value or fallback)),
 	}
@@ -88,6 +90,7 @@ def load_debrid_module():
 
 
 SOURCES = load_sources_module()
+REAL_EXTERNAL_SOURCE = SOURCES.ExternalSource
 
 
 class FakeExternalSource:
@@ -162,6 +165,59 @@ class ExternalManagerTests(unittest.TestCase):
 		providers = [(name, object()) for name in provider_names]
 		meta = {'background': True, 'search_info': {'scrape_timeout': 1}}
 		return SOURCES.ExternalManager(meta, providers, debrid_names, [], [], Progress(), eligibility_filter=eligibility_filter, force_full_search=force_full_search)
+
+	def test_same_title_tv_collision_requires_year(self):
+		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
+		external.require_tv_year = True
+		external.year = '2026'
+		external.data = {'title': 'The Next Generation'}
+		sources = [
+			{'name': 'The.Grand.Tour.2016.S01E01.The.Holy.Trinity.1080p'},
+			{'name': 'The.Grand.Tour.S01E01.2160p'},
+			{'name': 'The.Grand.Tour.S01E01.2026p'},
+			{'name': 'The.Grand.Tour.2026.S01E01.1080p'},
+			{'name': 'The.Grand.Tour.S01E01.The.Next.Generation.720p'},
+		]
+		self.assertEqual(external.filter_ambiguous_tv_sources(sources, 'episode'), sources[3:4])
+
+	def test_same_title_tv_collision_requires_year_for_packs(self):
+		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
+		external.require_tv_year = True
+		external.year = '2026'
+		external.data = {'title': 'The Next Generation'}
+		sources = [{'name': 'The.Grand.Tour.S01.2160p'}, {'name': 'The.Grand.Tour.2026.S01.1080p'}]
+		self.assertEqual(external.filter_ambiguous_tv_sources(sources, SOURCES.season_display), sources[1:])
+
+	def test_unambiguous_tv_title_keeps_yearless_sources(self):
+		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
+		external.require_tv_year = False
+		sources = [{'name': 'Unique.Show.S01E01.1080p'}]
+		self.assertIs(external.filter_ambiguous_tv_sources(sources, 'episode'), sources)
+
+	def test_cached_same_title_tv_sources_are_filtered_before_use(self):
+		outcome = types.SimpleNamespace(sources=[{'name': 'The.Grand.Tour.S01E01.2160p'}, {'name': 'The.Grand.Tour.2026.S01E01.1080p'}])
+
+		class Cache:
+			def get(self, *args): return outcome
+			def close(self): pass
+
+		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
+		external.mediatype, external.tmdb_id, external.title, external.year = 'episode', '329471', 'The Grand Tour', '2026'
+		external.season, external.episode = '1', '1'
+		external.require_tv_year = True
+		with mock.patch.object(SOURCES, 'ExternalProvidersCache', Cache): external.get_episode_source('cached', object, 'episode')
+		self.assertEqual(external.sources, outcome.sources[1:])
+
+	def test_meta_builder_detects_exact_title_tv_collision(self):
+		results = {'results': [
+			{'id': 46952, 'name': 'Le Grand Tour', 'original_name': 'The Grand Tour', 'first_air_date': '2016-11-17'},
+			{'id': 329471, 'name': 'The Grand Tour', 'first_air_date': '2026-01-01'},
+		]}
+		tmdb_api = module_stub(tmdb_tv_title_year=lambda title: results)
+		source = types.SimpleNamespace(mediatype='episode', tmdb_id='329471')
+		with mock.patch.dict(sys.modules, {'indexers.tmdb_api': tmdb_api}):
+			self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'The Grand Tour', '2026'))
+			self.assertFalse(SOURCES.MetaBuilder().require_tv_year(source, 'A Different Show', '2026'))
 
 	def test_multi_debrid_results_keep_provider_specific_cache_labels(self):
 		FakeDebridCheck.cached_by_provider = {'realdebrid': {'torrentio-0'}, 'alldebrid': {'torrentio-1'}, 'torbox': {'torrentio-0'}}

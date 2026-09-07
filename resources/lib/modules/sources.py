@@ -472,6 +472,7 @@ class MetaBuilder:
 			'scrape_timeout': source.timeout, 'mediatype': source.mediatype, 'expiry_times': expiry_times,
 			'tmdb_id': source.tmdb_id, 'imdb_id': meta.get('imdb_id'), 'tvdb_id': meta.get('tvdb_id'),
 			'title': title, 'aliases': aliases, 'year': year, 'ep_name': ep_name,
+			'require_tv_year': self.require_tv_year(source, title, year),
 			'total_seasons': meta.get('total_seasons', ''),
 			'season': source.custom_season or source.season,
 			'episode': source.custom_episode or source.episode,
@@ -481,6 +482,21 @@ class MetaBuilder:
 			'mediatype': source.mediatype, 'season': source.season, 'episode': source.episode
 		})
 		return meta
+
+	def require_tv_year(self, source, title, year):
+		if source.mediatype != 'episode' or not title or not year: return False
+		try:
+			from indexers.tmdb_api import tmdb_tv_title_year
+			requested_title = source_utils.clean_title(title)
+			requested_year = str(year)
+			requested_id = str(source.tmdb_id)
+			results = tmdb_tv_title_year(title).get('results', [])
+			for item in results:
+				candidate_year = (item.get('first_air_date') or '')[:4]
+				candidate_titles = (item.get('name') or '', item.get('original_name') or '')
+				if any(source_utils.clean_title(candidate_title) == requested_title for candidate_title in candidate_titles) and candidate_year and candidate_year != requested_year and str(item.get('id')) != requested_id: return True
+		except: pass
+		return False
 
 	def get_meta(self, source):
 		meta_user_info, current_date = settings.metadata_user_info(), get_datetime()
@@ -952,6 +968,7 @@ class ExternalSource:
 		try:
 			self.mediatype, self.tmdb_id  = info['mediatype'], str(info['tmdb_id'])
 			self.year, aliases = info['year'], info['aliases']
+			self.require_tv_year = info.get('require_tv_year', False)
 			self.season, self.episode = info['season'], info['episode']
 			self.total_seasons = info['total_seasons']
 			self.title, self.orig_title = safe_string(info['title']), info['title']
@@ -1012,15 +1029,24 @@ class ExternalSource:
 				else:
 					expiry_hours = self.single_expiry
 					sources = instance.sources(data, self.hostDict)
-				outcome = ProviderOutcome.from_provider(sources, instance)
+				outcome = ProviderOutcome.from_provider(self.filter_ambiguous_tv_sources(sources, pack), instance)
 				outcome.sources = self.process_sources(provider, outcome.sources)
 				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, outcome, expiry_hours)
 		finally: epc.close()
-		sources = outcome.sources
+		sources = self.filter_ambiguous_tv_sources(outcome.sources, pack)
 		if sources:
 			if pack == season_display: sources = [i for i in sources if 'episode_start' not in i or i['episode_start'] <= self.episode <= i['episode_end']]
 			elif pack == show_display: sources = [i for i in sources if i['last_season'] >= self.season]
 			self.sources.extend(sources)
+
+	def filter_ambiguous_tv_sources(self, sources, pack):
+		if not self.require_tv_year: return sources
+		expected_year = str(self.year)
+		filtered = []
+		for item in sources or []:
+			name = '%s %s' % (item.get('name', ''), item.get('name_info', ''))
+			if re.search(r'(?<![A-Za-z0-9])%s(?![A-Za-z0-9])' % re.escape(expected_year), name): filtered.append(item)
+		return filtered
 
 	def provider_data(self, instance):
 		data = self.data.copy()

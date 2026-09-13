@@ -197,7 +197,7 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual((values['Theme'], values['Count']), ('Any', '1'))
 
 	def test_every_curated_theme_is_available_and_encodes_only_its_keywords(self):
-		self.assertEqual(len(self.refine.THEME_OPTIONS), 24)
+		self.assertEqual(len(self.refine.THEME_OPTIONS), 25)
 		for mediatype in ('movie', 'tvshow'):
 			for label, keywords in self.refine.THEME_OPTIONS[1:]:
 				with self.subTest(mediatype=mediatype, label=label):

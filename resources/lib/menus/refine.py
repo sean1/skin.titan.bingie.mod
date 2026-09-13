@@ -26,7 +26,7 @@ THEME_OPTIONS = (
 	('Vampire | Werewolf', '3133|12564'), ('Slasher | Serial Killer', '12339|10714'), ('Psychological Thriller | Mind Game | Mind Games', '12565|184312|226106'),
 	('Heist | Bank Robbery', '10051|15363'), ('Spy | Espionage | Secret Agent', '470|5265|4289'), ('Organized Crime | Mafia | Gangster', '10291|10391|3149'),
 	('Conspiracy', '10410'), ('Dystopia | Cyberpunk', '4565|12190'), ('Whodunit', '12570'), ('Soldier | Military | Army | Special Forces', '13065|162365|6092|15218'),
-	('Dark Comedy | Satire | Parody', '10123|8201|9755'), ('Workplace Comedy | Workplace Romance | Office Romance', '210605|212796|182325')
+	('Dark Comedy | Satire | Parody', '10123|8201|9755'), ('Stand-Up Comedy', '9716'), ('Workplace Comedy | Workplace Romance | Office Romance', '210605|212796|182325')
 )
 PRESET_FIELDS = ('sort', 'order', 'rating', 'votes', 'max_votes', 'released_only', 'release_window')
 PRESET_RECIPES = {

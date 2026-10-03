@@ -13,6 +13,8 @@ POV_ROUTES = {
 	'subtitle_settings': lambda p: _import('modules.dialogs', 'subtitle_settings_menu')(),
 	'hydrate_media_info': lambda p: _import('modules.dialogs', 'hydrate_media_info')(p),
 	'play_from_info': lambda p: _import('modules.dialogs', 'play_from_info')(p),
+	'my_list_action': lambda p: _import('modules.mylist', 'action')(p),
+	'my_list_from_info': lambda p: _import('modules.mylist', 'from_info')(p),
 	'pov_page_back': lambda p: _import('modules.dialogs', 'pov_page_back')(p),
 	'random_choice': lambda p: _import('modules.dialogs', 'random_choice')(p['mode'], p),
 

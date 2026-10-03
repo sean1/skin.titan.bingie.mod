@@ -36,6 +36,7 @@
 		<include>LandscapeCardCountryFlag</include>
 		<include>LandscapeCardLanguageBadge</include>
 		<include>LandscapeCardYearLabel</include>
+		<include>LandscapeCardComingSoonLabel</include>
 		<control type="group">
 			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Rating)</visible>
 			<right>16</right>
@@ -85,9 +86,25 @@
 		</control>
 	</include>
 
+	<include name="LandscapeCardComingSoonLabel">
+		<control type="label">
+			<visible>String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
+			<left>16</left>
+			<top>46</top>
+			<width>160</width>
+			<height>26</height>
+			<align>left</align>
+			<aligny>center</aligny>
+			<font>Reg20</font>
+			<textcolor>ffffffff</textcolor>
+			<label>Coming soon</label>
+			<scroll>false</scroll>
+		</control>
+	</include>
+
 	<include name="LandscapeCardTopGradient">
 		<control type="image">
-			<visible>$EXP[IsMovieOrTvShowListItem]</visible>
+			<visible>$EXP[IsMovieOrTvShowListItem] | String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
 			<left>8</left>
 			<right>8</right>
 			<top>8</top>

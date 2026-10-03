@@ -70,6 +70,8 @@ def load_menu_module(mediatype):
 	meta_lists = types.ModuleType('modules.meta_lists')
 	meta_lists.movie_genres = {'Drama': ('1',)}
 	meta_lists.tvshow_genres = {'Drama': ('1',)}
+	mylist = types.ModuleType('modules.mylist')
+	mylist.context_item = Mock(return_value=None)
 	media = types.ModuleType('menus.media')
 	media.build_tmdb_detail_shelf_item = Mock()
 	media.card_badge_properties = lambda data, mediatype: {}
@@ -80,7 +82,7 @@ def load_menu_module(mediatype):
 	menus.__path__ = []
 	stubs = {
 		'caches': caches, 'caches.watched_cache': cache, 'indexers': indexers, 'indexers.metadata': metadata, 'menus': menus, 'menus.media': media,
-		'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.meta_lists': meta_lists, 'modules.utils': utils
+		'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.meta_lists': meta_lists, 'modules.utils': utils, 'modules.mylist': mylist
 	}
 	filename = 'movies.py' if mediatype == 'movie' else 'tvshows.py'
 	module = load_module('test_menu_completion_%s' % mediatype, ROOT / 'resources' / 'lib' / 'menus' / filename, stubs)
@@ -129,9 +131,13 @@ def load_episode_module():
 	utils.LIST_WORKERS = 5
 	for name in ('get_next_episode_pointer', 'adjust_premiered_date', 'make_day', 'get_datetime', 'title_key', 'date_difference', 'media_percentage_properties', 'TaskPool'):
 		setattr(utils, name, Mock())
+	menus = types.ModuleType('menus')
+	menus.__path__ = []
+	media = types.ModuleType('menus.media')
+	media.card_coming_soon = lambda *args: False
 	stubs = {
 		'caches': caches, 'caches.watched_cache': cache, 'indexers': indexers, 'indexers.metadata': metadata, 'indexers.trakt_api': trakt,
-		'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.utils': utils
+		'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.utils': utils, 'menus': menus, 'menus.media': media
 	}
 	module = load_module('test_menu_completion_episodes', ROOT / 'resources' / 'lib' / 'menus' / 'episodes.py', stubs)
 	return module, kodi_utils

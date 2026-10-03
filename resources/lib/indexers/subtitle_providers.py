@@ -54,7 +54,31 @@ def _as_float(value):
 
 
 def _as_bool(value):
-	return value if isinstance(value, bool) else None
+	if isinstance(value, bool): return value
+	if isinstance(value, (int, float)) and value in (0, 1): return bool(value)
+	if isinstance(value, str):
+		value = value.strip().lower()
+		if value in ('true', '1', 'yes'): return True
+		if value in ('false', '0', 'no'): return False
+	return None
+
+
+def subtitle_coverage(value):
+	if isinstance(value, dict):
+		flags = [_as_bool(value.get(key)) for key in ('forced', 'isforced', 'isForced', 'foreign_parts_only', 'foreignParts')]
+		names = [value.get(key) for key in ('name', 'filename', 'caption', 'release', 'production_type')]
+		releases = value.get('release_names') or ()
+		names.extend(releases if isinstance(releases, (list, tuple)) else (releases,))
+	else: flags, names = [], [value]
+	if True in flags: return 'partial'
+	for name in names:
+		text = ' '.join(re.findall(r'[a-z0-9]+', str(name or '').lower()))
+		text = re.sub(r'\b(?:non|not) forced\b', 'unforced', text)
+		if re.search(r'\bforced\b|\bforeign (?:parts|dialogue)(?: only)?\b|\bsigns (?:and )?songs\b|\bsongs (?:and )?signs\b|\b(?:signs|songs) only\b', text): return 'partial'
+	if False in flags: return 'full'
+	for name in names:
+		if re.search(r'\b(?:full|complete)[\s._-]+(?:dialogue|subtitles?)\b|\((?:full|complete)\)', str(name or '').lower()): return 'full'
+	return 'unknown'
 
 
 def _read_config(path):
@@ -268,6 +292,7 @@ class OpenSubtitlesProvider(Provider):
 					self.name, subtitle_file.get('file_id'), attributes.get('language'),
 					(attributes.get('release'), subtitle_file.get('file_name')), fps=attributes.get('fps'),
 					season=feature.get('season_number'), episode=feature.get('episode_number'), hearing_impaired=attributes.get('hearing_impaired'), foreign_parts_only=attributes.get('foreign_parts_only'),
+					forced=attributes.get('forced'),
 					machine_translated=attributes.get('machine_translated') or attributes.get('ai_translated'), trusted=attributes.get('from_trusted'),
 					rating=attributes.get('ratings'), downloads=attributes.get('download_count'), hash_match=attributes.get('moviehash_match'),
 					extension=PurePosixPath(str(subtitle_file.get('file_name') or '')).suffix.lower().lstrip('.') or 'srt'
@@ -305,7 +330,7 @@ class SubDLProvider(Provider):
 		for candidate in results:
 			release = next(iter(candidate.get('release_names') or ()), '')
 			release_key = ' '.join(sorted(_release_tokens(release))) or candidate['id']
-			signature = (candidate['lang'], release_key, candidate.get('hearing_impaired'))
+			signature = (candidate['lang'], release_key, candidate.get('hearing_impaired'), subtitle_coverage(candidate))
 			current = merged.get(signature)
 			if current is None:
 				merged[signature] = candidate
@@ -334,6 +359,7 @@ class SubDLProvider(Provider):
 			candidate = _candidate(
 				self.name, 'archive:%s' % archive_id, item.get('lang') or item.get('language'), (item.get('release_name'), item.get('name')),
 				fps=item.get('fps'), season=item.get('season'), episode=item.get('episode'), hearing_impaired=item.get('hi'), full_season=item.get('full_season'),
+				forced=item.get('forced'), foreign_parts_only=item.get('foreign_parts_only', item.get('foreignParts')),
 				match_score=item.get('match_score'), extension='zip'
 			)
 			if candidate: results.append(candidate)
@@ -361,6 +387,8 @@ class SubDLProvider(Provider):
 					self.name, 'file:%s:%s' % (n_id, file_n_id), subtitle_file.get('language') or parent.get('lang'),
 					(subtitle_file.get('release_name'), subtitle_file.get('name'), parent.get('release_name'), parent.get('name')),
 					fps=parent.get('fps'), season=season, episode=episode, hearing_impaired=subtitle_file.get('hi', parent.get('hi')),
+					forced=subtitle_file.get('forced', parent.get('forced')),
+					foreign_parts_only=subtitle_file.get('foreign_parts_only', subtitle_file.get('foreignParts', parent.get('foreign_parts_only', parent.get('foreignParts')))),
 					full_season=parent.get('full_season'),
 					extension=str(subtitle_file.get('format') or PurePosixPath(str(subtitle_file.get('name') or '')).suffix.lstrip('.') or 'srt').lower()
 				)
@@ -382,7 +410,7 @@ class SubDLProvider(Provider):
 			max_bytes = MAX_ARCHIVE_BYTES if archive else MAX_SUBTITLE_BYTES
 			content = _download_binary('%s%s' % (self.download_url, locator), self.name, max_bytes, self.cancelled, headers={'X-API-Key': self.config['api_key']})
 			if archive:
-				payload = extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''))
+				payload = extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''), full_dialogue_only=candidate.get('full_dialogue_only') is True)
 				if not payload: raise ProviderError('invalid_archive')
 				return payload
 			return {'content': content, 'extension': candidate.get('extension') or 'srt'}
@@ -412,7 +440,7 @@ def _safe_archive_name(name):
 	return bool(name) and not path.is_absolute() and '..' not in path.parts and not re.match(r'^[a-zA-Z]:', name)
 
 
-def extract_subtitle_archive(content, season=None, episode=None, release_name=''):
+def extract_subtitle_archive(content, season=None, episode=None, release_name='', full_dialogue_only=False):
 	if not isinstance(content, bytes) or not content or len(content) > MAX_ARCHIVE_BYTES: return None
 	try:
 		with zipfile.ZipFile(io.BytesIO(content)) as archive:
@@ -427,8 +455,10 @@ def extract_subtitle_archive(content, season=None, episode=None, release_name=''
 				matching = [info for info in eligible if _episode_matches(info.filename, season, episode)]
 				if matching: eligible = matching
 				elif len(eligible) != 1: return None
+			if full_dialogue_only: eligible = [info for info in eligible if subtitle_coverage(PurePosixPath(info.filename.replace('\\', '/')).name) != 'partial']
 			if not eligible: return None
 			eligible.sort(key=lambda info: (
+				('full', 'unknown').index(subtitle_coverage(PurePosixPath(info.filename.replace('\\', '/')).name)) if full_dialogue_only else 0,
 				-release_match_score(release_name, (PurePosixPath(info.filename.replace('\\', '/')).name,)),
 				SUPPORTED_EXTENSIONS.index(PurePosixPath(info.filename.replace('\\', '/')).suffix.lower()), -info.file_size, info.filename.lower()
 			))
@@ -481,7 +511,8 @@ class SubSourceProvider(Provider):
 				candidate = _candidate(
 					self.name, item.get('subtitleId'), item.get('language') or provider_language, releases,
 					fps=item.get('framerate'), season=self.media.get('season'), episode=self.media.get('episode'), hearing_impaired=item.get('hearingImpaired'),
-					foreign_parts_only=item.get('foreignParts'), forced=production_type == 'forced', machine_translated=True if 'machine' in production_type or 'ai' in production_type else None,
+					foreign_parts_only=item.get('foreignParts'), forced=item.get('forced', True if production_type == 'forced' else None),
+					machine_translated=True if 'machine' in production_type or 'ai' in production_type else None,
 					rating=self._rating(item.get('rating')), downloads=item.get('downloads'), production_type=item.get('productionType'), release_type=item.get('releaseType')
 				)
 				if candidate: results.append(candidate)
@@ -496,7 +527,7 @@ class SubSourceProvider(Provider):
 	def download(self, candidate):
 		try:
 			content = _download_binary('%s/subtitles/%s/download' % (self.api_url, candidate['id']), self.name, MAX_ARCHIVE_BYTES, self.cancelled, headers=self.headers())
-			payload = extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''))
+			payload = extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''), full_dialogue_only=candidate.get('full_dialogue_only') is True)
 			if not payload: raise ProviderError('invalid_archive')
 			return payload
 		except ProviderError as error:
@@ -555,7 +586,7 @@ def rank_candidates(candidates, media):
 		item['score'] = candidate_score(item, media)
 		item['sync'] = candidate_is_synced(item, media)
 		valid.append(item)
-	return sorted(valid, key=lambda item: (LANGUAGES.index(item['lang']), -item['score'], item['provider'], item['id']))
+	return sorted(valid, key=lambda item: (LANGUAGES.index(item['lang']), ('full', 'unknown', 'partial').index(subtitle_coverage(item)), -item['score'], item['provider'], item['id']))
 
 
 def public_candidate(candidate):

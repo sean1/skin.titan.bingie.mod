@@ -3,6 +3,7 @@ from time import monotonic, monotonic_ns
 from modules import kodi_utils, settings
 from modules.cache import clear_cache
 from modules.utils import get_datetime, safe_string, valid_tmdb_id
+from modules.mylist import context_item, refresh_info_state, refresh_after_info
 # logger = kodi_utils.logger
 
 ls, build_url, media_path, select_dialog = kodi_utils.local_string, kodi_utils.build_url, kodi_utils.media_path, kodi_utils.select_dialog
@@ -14,7 +15,7 @@ POV_INFO_WINDOW_ID = 1123
 POV_INFO_PROPERTIES = (
 	'PovInfoType', 'PovInfoTmdb', 'PovInfoTitle', 'PovInfoLogo', 'PovInfoFanart', 'PovInfoPoster', 'PovInfoPlot', 'PovInfoYear',
 	'PovInfoYearRange', 'PovInfoMpaa', 'PovInfoRuntime', 'PovInfoSeasons', 'PovInfoMatch', 'PovInfoTrailer', 'PovInfoStatus', 'PovInfoHasCast',
-	'PovInfoCollectionId', 'PovInfoCastSnapshot'
+	'PovInfoCollectionId', 'PovInfoCastSnapshot', 'PovInfoMyListSaved', 'PovInfoMyListCommand'
 )
 POV_ACTOR_PROPERTIES = (
 	'PovActorId', 'PovActorName', 'PovActorProfile', 'PovActorBiography', 'PovActorLifespan', 'PovActorBirthplace', 'PovActorBackdrop',
@@ -27,7 +28,7 @@ POV_ACTOR_HYDRATION_PROPERTY = 'PovActorHydrationRequest'
 TRAILER_PREVIEW_PROPERTY = 'BingieTrailerPreview'
 TRAILER_PREVIEW_CANCEL_PROPERTY = 'BingieTrailerPreviewCancel'
 TRAILER_PREVIEW_REQUEST_PROPERTY = 'BingieTrailerPreviewRequest'
-POV_INFO_FOCUS_CONTROLS = (80, 55, 51, 53, 550, 563, 560)
+POV_INFO_FOCUS_CONTROLS = (80, 55, 51, 53, 54, 550, 563, 560)
 POV_ACTOR_FOCUS_CONTROLS = (610, 620, 630, 699)
 POV_CONTAINER_CONTROLS = (550, 563, 560, 610, 620, 630)
 
@@ -42,6 +43,12 @@ def _subtitle_stream_label(stream, count):
 	index = stream.get('index')
 	if isinstance(index, int) and count: label += ' (%s/%s)' % (index + 1, count)
 	return label
+
+def _mark_manual_subtitle_selection():
+	try:
+		from indexers.subtitles import mark_manual_selection
+		return mark_manual_selection()
+	except Exception: return False
 
 def subtitle_settings_menu():
 	players = _subtitle_rpc('Player.GetActivePlayers') or []
@@ -61,12 +68,15 @@ def subtitle_settings_menu():
 	]
 	choice = kodi_utils.dialog.select(localized(24133), options)
 	if choice == 0:
+		_mark_manual_subtitle_selection()
 		_subtitle_rpc('Player.SetSubtitle', {'playerid': player_id, 'subtitle': 'off' if state.get('subtitleenabled') else 'on'})
 	elif choice == 1: execute_builtin('Action(SubtitleDelay)')
 	elif choice == 2 and streams:
 		labels = [_subtitle_stream_label(stream, len(streams)) for stream in streams]
 		selected = kodi_utils.dialog.select(localized(462), labels, preselect=current.get('index', -1))
-		if selected not in (-1, None): _subtitle_rpc('Player.SetSubtitle', {'playerid': player_id, 'subtitle': streams[selected]['index'], 'enable': True})
+		if selected not in (-1, None):
+			_mark_manual_subtitle_selection()
+			_subtitle_rpc('Player.SetSubtitle', {'playerid': player_id, 'subtitle': streams[selected]['index'], 'enable': True})
 	elif choice == 3: execute_builtin('ActivateWindow(subtitlesearch)')
 
 def _reset_info_page_focus(media_type):
@@ -141,6 +151,7 @@ def pov_page_back(params=None):
 			set_property(prop, str(value)) if value else clear_property(prop)
 		if page_type == 'info':
 			tmdb_id = values.get('PovInfoTmdb') or ''
+			refresh_info_state(values.get('PovInfoType'), tmdb_id, values.get('PovInfoTitle'))
 			set_property('PovInfoTmdb', str(tmdb_id)) if tmdb_id else clear_property('PovInfoTmdb')
 		if history: set_property(POV_PAGE_HISTORY_PROPERTY, json.dumps(history, separators=(',', ':')))
 		else: clear_property(POV_PAGE_HISTORY_PROPERTY)
@@ -154,9 +165,11 @@ def pov_page_back(params=None):
 			return
 		if page_type == 'native_info':
 			execute_builtin('PreviousMenu')
+			refresh_after_info()
 			execute_builtin('AlarmClock(PovNativeInfoBack,Action(Info),00:00,silent)')
 			return
 	execute_builtin('PreviousMenu')
+	refresh_after_info()
 
 def get_media_metadata(media_type, tmdb_id):
 	if media_type not in ('movie', 'tvshow') or not valid_tmdb_id(tmdb_id): return None
@@ -254,6 +267,7 @@ def _set_media_info_properties(media_type, tmdb_id, meta):
 	clear_property('PovInfoTmdb')
 	for prop in POV_INFO_PROPERTIES:
 		if prop != 'PovInfoTmdb': set_property(prop, str(values.get(prop) or ''))
+	refresh_info_state(media_type, tmdb_id, title)
 	set_property('PovInfoTmdb', str(tmdb_id))
 
 def _selected_media_snapshot(media_type, tmdb_id):
@@ -264,8 +278,10 @@ def _selected_media_snapshot(media_type, tmdb_id):
 	if selected_id != requested_id: return {}
 	year = label('Year') or label('Property(year)')
 	rating = label('Rating') or label('Property(rating)')
+	title = label('Title') or label('Label')
+	if media_type == 'tvshow' and label('DBTYPE').lower() in ('episode', 'season'): title = label('TVShowTitle') or title
 	return {
-		'PovInfoType': media_type, 'PovInfoTitle': label('Title') or label('Label'), 'PovInfoLogo': label('Art(clearlogo)'),
+		'PovInfoType': media_type, 'PovInfoTitle': title, 'PovInfoLogo': label('Art(clearlogo)'),
 		'PovInfoFanart': label('Art(fanart)') or label('Property(landscape)'), 'PovInfoPoster': label('Art(poster)') or label('Icon'), 'PovInfoPlot': label('Plot'), 'PovInfoYear': year,
 		'PovInfoYearRange': label('Property(year_range)') if media_type == 'tvshow' else year, 'PovInfoMpaa': label('MPAA'),
 		'PovInfoRuntime': label('Duration'), 'PovInfoSeasons': _seasons_label(label('Property(totalseasons)')) if media_type == 'tvshow' else '',
@@ -273,11 +289,12 @@ def _selected_media_snapshot(media_type, tmdb_id):
 		'PovInfoCollectionId': label('Property(PovInfoCollectionId)') if media_type == 'movie' else '', 'PovInfoCastSnapshot': ''
 	}
 
-def _set_pending_media_info_properties(media_type, tmdb_id):
-	values = _selected_media_snapshot(media_type, tmdb_id)
+def _set_pending_media_info_properties(media_type, tmdb_id, selected_snapshot=None):
+	values = _selected_media_snapshot(media_type, tmdb_id) if selected_snapshot is None else selected_snapshot
 	clear_property('PovInfoTmdb')
 	for prop in POV_INFO_PROPERTIES:
 		if prop != 'PovInfoTmdb': set_property(prop, str(values.get(prop) or ''))
+	refresh_info_state(media_type, tmdb_id, values.get('PovInfoTitle'))
 	# Keep provider shelves gated until the complete metadata snapshot is installed.
 	set_property('PovInfoType', media_type)
 	set_property('PovInfoHasCast', 'true')
@@ -303,11 +320,13 @@ def show_media_info(params):
 			if active_native_info: push_native_info_state()
 		_stop_owned_trailer_preview()
 		if active_native_info:
+			selected_snapshot = _selected_media_snapshot(media_type, tmdb_id)
 			execute_builtin('Dialog.Close(movieinformation)')
 			close_deadline = monotonic() + 2.0
 			while kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)') and monotonic() < close_deadline: sleep(50)
 			if kodi_utils.get_visibility('Window.IsActive(DialogVideoInfo.xml)'): return
-		_set_pending_media_info_properties(media_type, tmdb_id)
+		if active_native_info: _set_pending_media_info_properties(media_type, tmdb_id, selected_snapshot)
+		else: _set_pending_media_info_properties(media_type, tmdb_id)
 		hydration_token = '|'.join((transition_token, media_type, str(tmdb_id)))
 		set_property(POV_INFO_HYDRATION_PROPERTY, hydration_token)
 		set_property(POV_INFO_PENDING_TMDB_PROPERTY, str(tmdb_id))
@@ -441,6 +460,8 @@ def options_menu(params, meta=None):
 	smart_play = settings.smart_play_enabled()
 	listing = []
 	append = listing.append
+	saved_action = context_item(content, params['tmdb_id'], title, params.get('tvshow_id'))
+	if saved_action: append(('my_list', saved_action[0], title, poster))
 	if content == 'episode':
 		append(('scrape_from_episode_group', 'Scrape From Episode Group', scraper_options_str, poster))
 	if scrapable:
@@ -465,6 +486,7 @@ def options_menu(params, meta=None):
 	heading = ls(32646).replace('[B]', '').replace('[/B]', '')
 	choice = select_dialog([i[0] for i in listing], items=json.dumps(list_items), heading=heading)
 	if choice in (None, 'save_and_exit'): return
+	if choice == 'my_list': return execute_builtin(saved_action[1])
 	if choice == 'clear_and_rescrape': return clear_and_rescrape(content, meta, season, episode)
 	if choice == 'scrape_with_filters_ignored': return scrape_with_filters_ignored(content, meta, season, episode)
 	if choice == 'scrape_with_custom_values': return scrape_with_custom_values(content, meta, season, episode)

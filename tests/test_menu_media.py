@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, call
 
-from tests.module_isolation import load_module
+from tests.module_isolation import load_module, temporary_modules
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +31,11 @@ class MenuMediaTests(unittest.TestCase):
 		cls.media = load_media_module()
 
 	def setUp(self):
+		mylist = types.ModuleType('modules.mylist')
+		mylist.context_item = Mock(return_value=None)
+		stubs = temporary_modules({'modules': types.ModuleType('modules'), 'modules.mylist': mylist})
+		stubs.__enter__()
+		self.addCleanup(stubs.__exit__, None, None, None)
 		self.listitem = Mock()
 		self.video = Mock()
 		self.listitem.getVideoInfoTag.return_value = self.video

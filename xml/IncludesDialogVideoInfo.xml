@@ -157,6 +157,7 @@
 					<itemgap>2</itemgap>
 					<animation effect="slide" end="0,-382" time="300" tween="cubic" easing="inout" condition="[Control.HasFocus(563) | Control.HasFocus(560)] + Integer.IsGreater(Container(50).NumItems,0)">Conditional</animation>
 					<animation effect="slide" end="0,-272" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(560) + Integer.IsGreater(Container(566).NumItems,0)">Conditional</animation>
+					<animation effect="slide" end="0,75" time="0" condition="Control.IsVisible(56) + Control.IsVisible(90)">Conditional</animation>
 
 					<!-- Control 50 is reserved by Kodi, so this normal panel proxies its cast data through POV. -->
 					<control type="group">
@@ -517,6 +518,20 @@
 									<onclick condition="Control.IsVisible(5050)">AlarmClock(PlayMovie,PlayMedia($ESCINFO[Container(5050).ListItem.FileNameAndPath],noresume),00:00,silent)</onclick>
                             </control>
 
+							<!-- BINGIE episodes carry their parent series TMDB ID. -->
+							<control type="radiobutton" id="56">
+								<visible>String.IsEqual(ListItem.DBTYPE,episode) + String.StartsWith(ListItem.FileNameAndPath,plugin://skin.titan.bingie.lite/) + Integer.IsGreater(ListItem.UniqueID(tmdb),0)</visible>
+								<include>Bingie_InfoDialog_Button_Default_Defs</include>
+								<include content="Bingie_InfoDialog_Button_Texture">
+									<param name="radiotexture" value="dialogs/videoinfo/info/more_episodes.png" />
+								</include>
+								<label>View Series</label>
+								<radioposy>22</radioposy>
+								<radioposx>16</radioposx>
+								<radiowidth>24</radiowidth>
+								<radioheight>24</radioheight>
+								<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=tvshow&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
+							</control>
 
 							<control type="radiobutton" id="55">
 								<visible>String.IsEqual(ListItem.DBTYPE,movie) + !String.IsEmpty(ListItem.UniqueID(tmdb))</visible>
@@ -709,6 +724,7 @@
 		<include>LandscapeCardCountryFlag</include>
 		<include>LandscapeCardLanguageBadge</include>
 		<include>LandscapeCardYearLabel</include>
+		<include>LandscapeCardComingSoonLabel</include>
 		<control type="group">
 			<visible>!String.IsEmpty(ListItem.Property(rating))</visible>
 			<right>16</right>
@@ -742,6 +758,7 @@
 			<property name="year_range">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(year_range)]</property>
 			<property name="card_flag">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(card_flag)]</property>
 			<property name="card_language">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(card_language)]</property>
+			<property name="card_coming_soon">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(card_coming_soon)]</property>
 			<property name="status">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Status]</property>
 			<property name="PovInfoSourceTmdb">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(PovInfoSourceTmdb)]</property>
 			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$VAR[PovInfoActiveType]&amp;tmdb_id=$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
@@ -781,6 +798,7 @@
 			<property name="year">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Year]</property>
 			<property name="card_flag">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(card_flag)]</property>
 			<property name="card_language">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(card_language)]</property>
+			<property name="card_coming_soon">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(card_coming_soon)]</property>
 			<property name="PovInfoSourceTmdb">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovInfoSourceTmdb)]</property>
 			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)])</onclick>
 			<visible>!String.IsEmpty(Container(566).ListItemAbsolute($PARAM[index]).Label)</visible>

@@ -7,13 +7,14 @@ if lib_path not in sys.path: sys.path.insert(0, lib_path)
 
 from indexers.subtitles import SubtitleCancelled, Subtitles, subtitle_context_property, subtitle_languages
 try:
-	from indexers.subtitles import playing_file_fingerprint, stable_media_identity, subtitle_context_max_bytes, subtitle_context_version
+	from indexers.subtitles import playing_file_fingerprint, stable_media_identity, subtitle_context_max_bytes, subtitle_context_version, mark_manual_selection
 except ImportError:
 	# Compatibility for isolated callers that provide the legacy subtitle module surface.
 	import hashlib
 	playing_file_fingerprint = lambda value: hashlib.sha256(str(value or '').encode('utf-8')).hexdigest() if value else ''
 	stable_media_identity = lambda imdb_id='', tmdb_id='', mediatype='', title='', year='', season=None, episode=None: ('imdb:%s' % imdb_id) if imdb_id else (('%s:tmdb:%s' % (mediatype, tmdb_id)) if tmdb_id else '')
 	subtitle_context_max_bytes, subtitle_context_version = 64 * 1024, 2
+	mark_manual_selection = lambda: False
 from modules import kodi_utils
 
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
@@ -165,6 +166,7 @@ def run(sys_obj):
 	handle = int(sys_obj.argv[1])
 	params = kodi_utils.parsed_query(sys_obj.argv[2])
 	try:
+		if params.get('action') in ('search', 'manualsearch', 'download'): mark_manual_selection()
 		if params.get('action') in ('search', 'manualsearch'): _search(handle)
 		elif params.get('action') == 'download': _download(handle, params)
 	except SubtitleCancelled:

@@ -3,6 +3,7 @@ from indexers.metadata import tvshow_meta, art_infodict, movie_show_infodict, ma
 from caches.watched_cache import get_watched_info_tv, get_watched_status_tvshow
 from modules import kodi_utils, settings
 from modules.meta_lists import tvshow_genres
+from modules.mylist import context_item
 from menus.media import build_tmdb_detail_shelf_item, card_badge_properties, complete_media_directory
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate
 from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
@@ -29,6 +30,7 @@ class TVShows:
 		self.action = self.params.get('action')
 		self.exit_list_params = self.params.get('exit_list_params')
 		self.items, self.new_page, self.total_pages = [], {}, None
+		self.saved_titles = {}
 		self.append = self.items.append
 		self.is_detail_shelf = self.action == 'tmdb_tv_more_like_this'
 		self.is_summary_listing = self.is_detail_shelf or bool(self.action and self.action.startswith('tmdb_tv_'))
@@ -65,8 +67,10 @@ class TVShows:
 	def build_tvshow_content(self, position, tag):
 		try:
 			meta = tvshow_meta(self.id_type, tag, self.meta_user_info, self.current_date)
+			if not meta or meta.get('blank_entry', False):
+				self.build_saved_tvshow_fallback(position, tag)
+				return
 			meta_get = meta.get
-			if not meta or meta_get('blank_entry', False): return
 			playcount, overlay, total_watched, total_unwatched = get_watched_status_tvshow(
 				self.watched_info, string(meta['tmdb_id']), meta_get('total_aired_eps')
 			)
@@ -103,6 +107,8 @@ class TVShows:
 			cm_append((self.cm_sort['exit'], exit_str, container_refresh % self.exit_list_params))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]
+			saved_action = context_item('tvshow', tmdb_id, title)
+			if saved_action: cm.append(saved_action)
 			props = {
 				'PovLiteItem': 'true', 'pov_lite_sort_order': string(position), 'unwatchedepisodes': string(total_unwatched),
 				'PovLiteSourceSelect': build_url({'mode': 'smart_play_media', 'tmdb_id': tmdb_id, 'autoplay': 'false'}),
@@ -149,10 +155,19 @@ class TVShows:
 				videoinfo.setVotes(meta_get('votes'))
 				videoinfo.setWriters(meta_get('writer').split(', '))
 			self.append((url_params, listitem, False if self.action == 'tmdb_tv_more_like_this' else self.is_folder))
-		except Exception as exc: kodi_utils.logger('build_tvshow_content', 'position=%s: %s' % (position, exc))
+		except Exception as exc:
+			kodi_utils.logger('build_tvshow_content', 'position=%s: %s' % (position, exc))
+			self.build_saved_tvshow_fallback(position, tag)
+
+	def build_saved_tvshow_fallback(self, position, tag):
+		title = self.saved_titles.get(string(tag))
+		if title: self.build_tvshow_shelf_content(position, {'id': tag, 'name': title})
 
 class Menu(TVShows):
-	personal_dict = {'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'), 'dropped_tvshows': ('caches.dropped_cache', 'get_dropped')}
+	personal_dict = {
+		'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'),
+		'dropped_tvshows': ('caches.dropped_cache', 'get_dropped'), 'my_list_tvshows': ('caches.mylist_cache', 'get_my_list')
+	}
 	tmdb_special_key_dict = {'tmdb_tv_networks': 'network_id', 'tmdb_tv_year': 'year', 'tmdb_tv_decade': 'decade', 'tmdb_tv_language': 'language'}
 	tmdb_main = ('tmdb_tv_trending_day', 'tmdb_tv_trending', 'tmdb_tv_popular', 'tmdb_tv_airing_today', 'tmdb_tv_on_the_air', 'tmdb_tv_top_rated')
 	similar = ('tmdb_tv_similar', 'tmdb_tv_recommendations', 'tmdb_tv_more_like_this')
@@ -200,6 +215,9 @@ class Menu(TVShows):
 				if total_pages > page_no or (limited_listing and len(all_results) > item_limit): self.new_page = {'new_page': string(data['page'] + 1)}
 			elif self.action in Menu.personal_dict:
 				data, total_pages = function(self.watched_info, 'tvshow', page_no)
+				if self.action == 'my_list_tvshows':
+					page_no = max(1, min(page_no, total_pages))
+					self.saved_titles = {string(i['media_id']): i['title'] for i in data}
 				self.list = [i['media_id'] for i in data]
 				if total_pages > 2: self.total_pages = total_pages
 				if total_pages > page_no: self.new_page = {'new_page': string(page_no + 1)}
@@ -261,7 +279,9 @@ class Menu(TVShows):
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, self.worker())
-		except Exception as exc: kodi_utils.logger('build_tvshow_list', 'action=%s: %s' % (self.action, exc))
+		except Exception as exc:
+			kodi_utils.logger('build_tvshow_list', 'action=%s: %s' % (self.action, exc))
+			if self.action == 'my_list_tvshows': kodi_utils.notification('Could not load My List')
 		if prefetch: return
 		complete_media_directory(
 			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_listing,

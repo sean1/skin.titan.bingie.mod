@@ -947,9 +947,10 @@
             <control type="list" id="4444">
                 <posx>110</posx>
 				<posy>303</posy>
-				<animation effect="slide" end="0,112" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
-				<animation effect="slide" end="0,196" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
-				<animation effect="slide" end="0,333" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),myvideos)">Conditional</animation>
+				<animation effect="slide" end="0,70" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
+				<animation effect="slide" end="0,154" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
+				<animation effect="slide" end="0,291" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),myvideos)">Conditional</animation>
+				<animation effect="slide" end="0,349" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),mylist)">Conditional</animation>
                 <visible allowhiddenfocus="true">[Control.HasFocus(900) | Control.HasFocus(4444)] + Integer.IsGreater(Container(4445).NumItems,0)</visible>
                 <width>450</width>
 				<height>739</height>

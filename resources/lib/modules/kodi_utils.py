@@ -460,7 +460,7 @@ FIXED_SETTINGS = {
 	'skip_intro.enable': 'true',
 	'smart_play.enabled': '0',
 	'sort.collection': '0',
-	'sort.progress': '0',
+	'sort.progress': '1',
 	'sort.watched': '0',
 	'sort.watchlist': '0',
 	'stingers.enable': 'true',

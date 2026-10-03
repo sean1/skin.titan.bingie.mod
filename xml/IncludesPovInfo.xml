@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <includes>
+	<variable name="PovInfoMyListLabel">
+		<value condition="String.IsEqual(Window(Home).Property(PovInfoMyListSaved),true)">Remove from My List</value>
+		<value condition="String.IsEqual(Window(Home).Property(PovInfoMyListSaved),false)">Add to My List</value>
+		<value>My List unavailable</value>
+	</variable>
 	<include name="PovInfoPage">
 		<control type="group">
 			<visible>String.IsEmpty(Window(Home).Property(PovInfoTransition))</visible>
@@ -167,6 +172,19 @@
 					<radioheight>24</radioheight>
 					<onclick condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb))">ActivateWindow(1124,return)</onclick>
 					<onclick condition="String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">ActivateWindow(1124,return)</onclick>
+					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+				</control>
+				<control type="radiobutton" id="54">
+					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<include content="Bingie_InfoDialog_Button_Texture">
+						<param name="radiotexture" value="shortcuts/mylist.png" />
+					</include>
+					<label>$VAR[PovInfoMyListLabel]</label>
+					<enable>!String.IsEmpty(Window(Home).Property(PovInfoMyListCommand))</enable>
+					<radioposx>17</radioposx>
+					<radiowidth>22</radiowidth>
+					<radioheight>22</radioheight>
+					<onclick>$INFO[Window(Home).Property(PovInfoMyListCommand)]</onclick>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
 			</control>

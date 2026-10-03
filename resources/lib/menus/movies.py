@@ -3,6 +3,7 @@ from indexers.metadata import movie_meta, art_infodict, movie_show_infodict, tmd
 from caches.watched_cache import get_watched_info_movie, get_watched_status_movie, get_bookmarks, get_resumetime, set_resumetime
 from modules import kodi_utils, settings
 from modules.meta_lists import movie_genres
+from modules.mylist import context_item
 from menus.media import build_tmdb_detail_shelf_item, card_badge_properties, complete_media_directory
 #from modules.utils import manual_function_import, get_datetime, make_thread_list_enumerate, chunks
 from modules.utils import LIST_WORKERS, manual_function_import, get_datetime, media_percentage_properties, valid_tmdb_id, TaskPool
@@ -29,6 +30,7 @@ class Movies:
 		self.action = self.params.get('action')
 		self.exit_list_params = self.params.get('exit_list_params')
 		self.items, self.new_page, self.total_pages = [], {}, None
+		self.saved_titles = {}
 		self.append = self.items.append
 		self.is_detail_shelf = self.action in ('tmdb_movies_more_like_this', 'tmdb_movies_in_collection')
 		self.is_summary_listing = self.is_detail_shelf or bool(self.action and self.action.startswith('tmdb_movies_'))
@@ -61,8 +63,10 @@ class Movies:
 	def build_movie_content(self, position, tag):
 		try:
 			meta = movie_meta(self.id_type, tag, self.meta_user_info, self.current_date)
+			if not meta or meta.get('blank_entry', False):
+				self.build_saved_movie_fallback(position, tag)
+				return
 			meta_get = meta.get
-			if not meta or meta_get('blank_entry', False): return
 			playcount, overlay = get_watched_status_movie(self.watched_info, string(meta['tmdb_id']))
 			meta.update({'playcount': playcount, 'overlay': overlay})
 			resumetime, progress = get_resumetime(self.bookmarks, string(meta['tmdb_id']))
@@ -99,6 +103,8 @@ class Movies:
 			cm_append((self.cm_sort['exit'], exit_str, container_refresh % self.exit_list_params))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]
+			saved_action = context_item('movie', tmdb_id, title)
+			if saved_action: cm.append(saved_action)
 			props = {
 				'PovLiteItem': 'true', 'pov_lite_sort_order': string(position), 'watchedprogress': progress,
 				'PovLiteSourceSelect': build_url({'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': tmdb_id, 'autoplay': 'false'}),
@@ -144,10 +150,19 @@ class Movies:
 				videoinfo.setVotes(meta_get('votes'))
 				videoinfo.setWriters(meta_get('writer').split(', '))
 			self.append((url_params, listitem, False))
-		except Exception as exc: kodi_utils.logger('build_movie_content', 'position=%s: %s' % (position, exc))
+		except Exception as exc:
+			kodi_utils.logger('build_movie_content', 'position=%s: %s' % (position, exc))
+			self.build_saved_movie_fallback(position, tag)
+
+	def build_saved_movie_fallback(self, position, tag):
+		title = self.saved_titles.get(string(tag))
+		if title: self.build_movie_shelf_content(position, {'id': tag, 'title': title})
 
 class Menu(Movies):
-	personal_dict = {'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items')}
+	personal_dict = {
+		'watched_movies': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_movies': ('caches.watched_cache', 'get_in_progress_items'),
+		'my_list_movies': ('caches.mylist_cache', 'get_my_list')
+	}
 	tmdb_special_key_dict = {'tmdb_movies_networks': 'company', 'tmdb_movies_year': 'year', 'tmdb_movies_decade': 'decade', 'tmdb_movies_language': 'language'}
 	tmdb_main = (
 		'tmdb_movies_trending_day', 'tmdb_movies_trending', 'tmdb_movies_popular', 'tmdb_movies_now_playing', 'tmdb_movies_upcoming', 'tmdb_movies_top_rated'
@@ -217,6 +232,9 @@ class Menu(Movies):
 			elif self.action in Menu.personal_dict:
 				watched_info = self.bookmarks if self.action == 'in_progress_movies' else self.watched_info
 				data, total_pages = function(watched_info, 'movie', page_no)
+				if self.action == 'my_list_movies':
+					page_no = max(1, min(page_no, total_pages))
+					self.saved_titles = {string(i['media_id']): i['title'] for i in data}
 				has_limited_results = self.action == 'in_progress_movies' and item_limit > 0 and len(data) > item_limit
 				if self.action == 'in_progress_movies' and item_limit > 0: data = data[:item_limit]
 				self.list = [i['media_id'] for i in data]
@@ -293,7 +311,9 @@ class Menu(Movies):
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, worker())
-		except Exception as exc: kodi_utils.logger('build_movie_list', 'action=%s: %s' % (self.action, exc))
+		except Exception as exc:
+			kodi_utils.logger('build_movie_list', 'action=%s: %s' % (self.action, exc))
+			if self.action == 'my_list_movies': kodi_utils.notification('Could not load My List')
 		if prefetch: return
 		complete_media_directory(
 			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_listing,

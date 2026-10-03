@@ -17,6 +17,13 @@ class Navigator:
 		self.params_get = self.params.get
 		self.list_name = self.params_get('action', 'RootList')
 
+	def my_list(self):
+		self.params['name'] = 'My List'
+		refresh = ku.get_property('BingieMyListRefresh')
+		self._add_item({'mode': 'build_movie_list', 'action': 'my_list_movies', 'name': 'My List - Movies', 'exclude_external': 'true', 'refresh': refresh}, 'lists.png')
+		self._add_item({'mode': 'build_tvshow_list', 'action': 'my_list_tvshows', 'name': 'My List - TV Shows', 'exclude_external': 'true', 'refresh': refresh}, 'lists.png')
+		self._end_directory()
+
 	def video_sources(self):
 		handle, fanart = self.params_get('handle'), self.params_get('fanart')
 		if self.params_get('group') != 'myvideos':

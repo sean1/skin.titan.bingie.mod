@@ -1,3 +1,4 @@
+from datetime import date
 from indexers.metadata import tmdb_image_base
 from modules import kodi_utils
 from modules.utils import media_percentage_properties
@@ -26,14 +27,26 @@ def card_language(data):
 	return ''
 
 
+def card_coming_soon(data, mediatype, current_date=None):
+	date_keys = {'movie': ('release_date', 'premiered'), 'tvshow': ('first_air_date', 'premiered'), 'episode': ('premiered', 'pov_lite_first_aired', 'air_date')}.get(mediatype)
+	if not date_keys: return False
+	value = next((data.get(key) for key in date_keys if data.get(key) not in (None, '')), None)
+	if not isinstance(value, str) or len(value) != 10: return False
+	try:
+		release_date = date.fromisoformat(value)
+		return release_date.isoformat() == value and release_date > (date.today() if current_date is None else current_date)
+	except (TypeError, ValueError): return False
+
+
 def card_badge_properties(data, mediatype):
+	props = {'card_coming_soon': 'true'} if card_coming_soon(data, mediatype) else {}
 	if mediatype == 'movie':
 		language = card_language(data)
-		return {'card_language': language} if language else {}
-	if mediatype == 'tvshow':
+		if language: props['card_language'] = language
+	elif mediatype == 'tvshow':
 		flag = card_flag(data)
-		return {'card_flag': flag} if flag else {}
-	return {}
+		if flag: props['card_flag'] = flag
+	return props
 
 
 def _schedule_next_page_prefetch(url, origin_params):
@@ -54,8 +67,9 @@ def complete_media_directory(handle, mode, action, exit_list_params, category, c
 	kodi_utils.set_category(handle, category)
 	kodi_utils.set_sort_method(handle, content_type)
 	kodi_utils.set_content(handle, content_type)
-	kodi_utils.end_directory(handle, False if is_widget else None)
-	if new_page and not is_widget and not limited_listing: _schedule_next_page_prefetch(kodi_utils.build_url({**new_page, 'prefetch': 'true'}), origin_params)
+	is_my_list = action in ('my_list_movies', 'my_list_tvshows')
+	kodi_utils.end_directory(handle, False if is_widget or is_my_list else None)
+	if new_page and not is_widget and not limited_listing and not is_my_list: _schedule_next_page_prefetch(kodi_utils.build_url({**new_page, 'prefetch': 'true'}), origin_params)
 	kodi_utils.set_view_mode(view_type, content_type, is_widget)
 
 
@@ -87,6 +101,9 @@ def build_tmdb_detail_shelf_item(position, item, source_tmdb_id, mediatype, genr
 	art = {'poster': poster, 'icon': poster, 'fanart': fanart, 'thumb': landscape, 'landscape': landscape}
 	if is_tvshow: art.update({'tvshow.poster': poster, 'tvshow.landscape': landscape})
 	listitem = kodi_utils.make_listitem()
+	from modules.mylist import context_item
+	saved_action = context_item(mediatype, tmdb_id, title)
+	if saved_action: listitem.addContextMenuItems([saved_action])
 	listitem.setLabel(title)
 	listitem.setProperties(props)
 	listitem.setArt(art)

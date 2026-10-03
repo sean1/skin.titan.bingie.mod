@@ -12,13 +12,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def load_subtitles():
+	from tests.test_subtitle_providers import load_providers
 	kodi_utils = types.ModuleType('modules.kodi_utils')
 	kodi_utils.xbmc_player = object
 	kodi_utils.set_property = Mock()
+	kodi_utils.get_property = Mock(return_value='')
+	kodi_utils.player = Mock()
 	modules = types.ModuleType('modules')
 	modules.__path__ = []
 	modules.kodi_utils = kodi_utils
-	return load_module('test_subtitle_context_contract_indexer', ROOT / 'resources/lib/indexers/subtitles.py', {'modules': modules, 'modules.kodi_utils': kodi_utils})
+	indexers = types.ModuleType('indexers')
+	indexers.__path__ = []
+	return load_module('test_subtitle_context_contract_indexer', ROOT / 'resources/lib/indexers/subtitles.py', {
+		'modules': modules, 'modules.kodi_utils': kodi_utils, 'indexers': indexers, 'indexers.subtitle_providers': load_providers()
+	})
 
 
 def load_service(subtitles):
@@ -62,6 +69,42 @@ class SubtitleContextContractTests(unittest.TestCase):
 
 		self.assertEqual(context['poster'], 'https://image.invalid/poster.jpg')
 		self.assertNotIn('secret', json.dumps(context))
+
+	def test_manual_override_fingerprints_current_file_and_keeps_matching_generation(self):
+		playing_file = 'https://stream.invalid/private?token=secret'
+		fingerprint = self.subtitles.playing_file_fingerprint(playing_file)
+		self.subtitles.kodi_utils.player.isPlayingVideo.return_value = True
+		self.subtitles.kodi_utils.player.getPlayingFile.return_value = playing_file
+		self.subtitles.kodi_utils.get_property.return_value = json.dumps({'playing_fingerprint': fingerprint, 'generation': 'current-generation'})
+		self.assertTrue(self.subtitles.mark_manual_selection())
+		property_name, payload = self.subtitles.kodi_utils.set_property.call_args.args
+		self.assertEqual(property_name, self.subtitles.subtitle_manual_override_property)
+		self.assertEqual(json.loads(payload), {'playing_fingerprint': fingerprint, 'generation': 'current-generation'})
+		self.assertNotIn('stream.invalid', payload)
+		self.assertNotIn('secret', payload)
+
+	def test_manual_override_before_context_exists_still_records_current_file(self):
+		self.subtitles.kodi_utils.player.isPlayingVideo.return_value = True
+		self.subtitles.kodi_utils.player.getPlayingFile.return_value = 'video.mkv'
+		self.assertTrue(self.subtitles.mark_manual_selection())
+		self.assertEqual(json.loads(self.subtitles.kodi_utils.set_property.call_args.args[1]), {'playing_fingerprint': self.subtitles.playing_file_fingerprint('video.mkv'), 'generation': ''})
+
+	def test_manual_override_does_not_reuse_stale_or_invalid_context_generation(self):
+		self.subtitles.kodi_utils.player.isPlayingVideo.return_value = True
+		self.subtitles.kodi_utils.player.getPlayingFile.return_value = 'video.mkv'
+		for context in ('broken json', '[]', json.dumps({'playing_fingerprint': self.subtitles.playing_file_fingerprint('other.mkv'), 'generation': 'other-generation'})):
+			with self.subTest(context=context):
+				self.subtitles.kodi_utils.get_property.return_value = context
+				self.assertTrue(self.subtitles.mark_manual_selection())
+				self.assertEqual(json.loads(self.subtitles.kodi_utils.set_property.call_args.args[1])['generation'], '')
+
+	def test_manual_override_without_active_or_identifiable_video_is_ignored(self):
+		for playing, filename in ((False, 'video.mkv'), (True, '')):
+			with self.subTest(playing=playing, filename=filename):
+				self.subtitles.kodi_utils.player.isPlayingVideo.return_value = playing
+				self.subtitles.kodi_utils.player.getPlayingFile.return_value = filename
+				self.assertFalse(self.subtitles.mark_manual_selection())
+		self.subtitles.kodi_utils.set_property.assert_not_called()
 
 	def test_candidate_projection_is_bounded_allowlisted_and_download_complete(self):
 		client = self.subtitles.Subtitles().configure('tt123')

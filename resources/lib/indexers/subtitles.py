@@ -5,11 +5,13 @@ import secrets
 from urllib.parse import urlsplit, urlunsplit
 
 from modules import kodi_utils
+from indexers.subtitle_providers import subtitle_coverage
 
 
 subtitle_file_prefix = 'POVLiteSubs_'
 subtitle_languages = ('eng', 'vie')
 subtitle_context_property = 'pov_lite_subtitle_context'
+subtitle_manual_override_property = 'pov_lite_subtitle_manual_override'
 subtitle_context_version = 2
 subtitle_context_max_bytes = 64 * 1024
 subtitle_context_max_candidates = 100
@@ -47,6 +49,28 @@ def _normalized_text(value):
 def playing_file_fingerprint(playing_file):
 	playing_file = str(playing_file or '')
 	return hashlib.sha256(playing_file.encode('utf-8', 'surrogatepass')).hexdigest() if playing_file else ''
+
+
+def mark_manual_selection():
+	try:
+		if not kodi_utils.player.isPlayingVideo(): return False
+		fingerprint = playing_file_fingerprint(kodi_utils.player.getPlayingFile())
+		if not fingerprint: return False
+		try: context = json.loads(kodi_utils.get_property(subtitle_context_property) or '{}')
+		except Exception: context = {}
+		generation = context.get('generation') if isinstance(context, dict) and context.get('playing_fingerprint') == fingerprint else ''
+		if not isinstance(generation, str): generation = ''
+		kodi_utils.set_property(subtitle_manual_override_property, json.dumps({'playing_fingerprint': fingerprint, 'generation': generation}, separators=(',', ':')))
+		return True
+	except Exception: return False
+
+
+def _manual_selection_matches(playing_file, generation=''):
+	try:
+		override = json.loads(kodi_utils.get_property(subtitle_manual_override_property) or '{}')
+		if not isinstance(override, dict) or not playing_file or override.get('playing_fingerprint') != playing_file_fingerprint(playing_file): return False
+		return not generation or not override.get('generation') or override.get('generation') == generation
+	except Exception: return False
 
 
 def stable_media_identity(imdb_id='', tmdb_id='', mediatype='', title='', year='', season=None, episode=None):
@@ -128,6 +152,7 @@ class Subtitles(kodi_utils.xbmc_player):
 			'quality': quality or '', 'extra_info': extra_info or '', 'year': year or '', 'tmdb_id': tmdb_id or '', 'mediatype': self.mediatype, 'title': self.title
 		}
 		self.provider_manager = None
+		self.automatic, self.automatic_subtitle_index, self.automatic_subtitle_enabled = False, None, None
 		self.media_identity = stable_media_identity(imdb_id, tmdb_id, self.mediatype, self.title, year, season, episode)
 		cache_token = _cache_token(self.media_identity) or 'session_%s' % self.context_generation
 		if season not in (None, ''): self.sub_filename = '%s%s_%s_%s' % (subtitle_file_prefix, cache_token, season, episode)
@@ -139,11 +164,39 @@ class Subtitles(kodi_utils.xbmc_player):
 			if kodi_utils.monitor.abortRequested(): return True
 		except Exception: pass
 		expected_playing_file = getattr(self, 'expected_playing_file', None)
-		if expected_playing_file is None: return False
+		if expected_playing_file is not None:
+			try:
+				if not self.isPlayingVideo() or expected_playing_file and self.getPlayingFile() != expected_playing_file: return True
+			except Exception: return True
+		if getattr(self, 'automatic', False):
+			try:
+				if _manual_selection_matches(self.getPlayingFile(), self.context_generation): return True
+			except Exception: pass
+			state = self._subtitle_state()
+			if state.get('subtitleenabled') is True: self.automatic_subtitle_enabled = True
+			elif state.get('subtitleenabled') is False and self.automatic_subtitle_enabled is True: return True
+			current_index = self._subtitle_index(state)
+			if current_index is not None:
+				if self.automatic_subtitle_index is None: self.automatic_subtitle_index = current_index
+				elif current_index != self.automatic_subtitle_index: return True
+		return False
+
+	@staticmethod
+	def _subtitle_index(state):
+		current = state.get('currentsubtitle')
+		index = current.get('index') if isinstance(current, dict) else None
+		return index if isinstance(index, int) and not isinstance(index, bool) and index >= 0 else None
+
+	def _subtitle_state(self):
 		try:
-			if not self.isPlayingVideo(): return True
-			return bool(expected_playing_file and self.getPlayingFile() != expected_playing_file)
-		except Exception: return True
+			request = {'jsonrpc': '2.0', 'id': 1, 'method': 'Player.GetActivePlayers'}
+			players = json.loads(kodi_utils.execJSONRPC(json.dumps(request))).get('result') or []
+			player = next((item for item in players if item.get('type') == 'video'), None)
+			if not player: return {}
+			request.update({'method': 'Player.GetProperties', 'params': {'playerid': player['playerid'], 'properties': ['subtitles', 'currentsubtitle', 'subtitleenabled']}})
+			state = json.loads(kodi_utils.execJSONRPC(json.dumps(request))).get('result')
+			return state if isinstance(state, dict) else {}
+		except Exception: return {}
 
 	def _manager(self):
 		if self.provider_manager is None:
@@ -222,6 +275,7 @@ class Subtitles(kodi_utils.xbmc_player):
 
 	@staticmethod
 	def _subtitle_stream_language(stream):
+		if isinstance(stream, dict): stream = stream.get('language') or stream.get('name')
 		stream = str(stream or '').strip().lower().replace('_', '-')
 		language = stream.split('-', 1)[0].strip()
 		if language in ('en', 'eng', 'english'): return 'eng'
@@ -232,17 +286,34 @@ class Subtitles(kodi_utils.xbmc_player):
 
 	def _video_file_subs(self):
 		self._ensure_current_playback()
+		state = self._subtitle_state()
+		details = state.get('subtitles') if isinstance(state.get('subtitles'), list) else []
 		try: available_subtitles = self.getAvailableSubtitleStreams()
 		except: available_subtitles = None
-		if available_subtitles is not None:
-			selected = next((index for language in self.languages for index, stream in enumerate(available_subtitles) if self._subtitle_stream_language(stream) == language), None)
+		if details or available_subtitles is not None:
+			streams = {}
+			for position, stream in enumerate(available_subtitles or ()):
+				stream = stream if isinstance(stream, dict) else {'language': stream, 'name': stream}
+				index = stream.get('index', position)
+				if isinstance(index, int) and not isinstance(index, bool) and index >= 0: streams[index] = {**stream, 'index': index}
+			for position, detail in enumerate(details):
+				if not isinstance(detail, dict): continue
+				index = detail.get('index', position)
+				if not isinstance(index, int) or isinstance(index, bool) or index < 0: continue
+				stream = streams.get(index, {'index': index})
+				streams[index] = {**stream, **detail, 'language': detail.get('language') or stream.get('language') or '', 'name': detail.get('name') or stream.get('name') or ''}
+			eligible = [stream for stream in streams.values() if self._subtitle_stream_language(stream) in self.languages and subtitle_coverage(stream) != 'partial']
+			eligible.sort(key=lambda stream: (self.languages.index(self._subtitle_stream_language(stream)), ('full', 'unknown').index(subtitle_coverage(stream)), stream['index']))
+			selected = eligible[0]['index'] if eligible else None
 			if selected is None: return False
 			self._ensure_current_playback()
 			self.setSubtitleStream(selected)
+			# This automatic switch is the final selection, not a manual change to monitor.
+			self.automatic_subtitle_index = None
 		else:
-			try: available_sub_language = self._subtitle_stream_language(self.getSubtitles())
-			except: available_sub_language = ''
-			if available_sub_language not in self.languages: return False
+			try: current_subtitle = self.getSubtitles()
+			except: current_subtitle = ''
+			if self._subtitle_stream_language(current_subtitle) not in self.languages or subtitle_coverage(current_subtitle) == 'partial': return False
 		self._ensure_current_playback()
 		self.showSubtitles(True)
 		kodi_utils.notification(32852, icon=self.poster)
@@ -260,17 +331,19 @@ class Subtitles(kodi_utils.xbmc_player):
 		return True
 
 	def _is_cached_filename(self, filename, language):
-		prefix = '%s_%s.' % (self.sub_filename, language)
+		prefix = '%s_%s_full.' % (self.sub_filename, language)
 		return filename.startswith(prefix) and filename.rsplit('.', 1)[-1].lower() in subtitle_extensions
 
 	def _searched_subs(self):
 		candidates = self.subtitles_search()
 		self._ensure_current_playback()
 		self._set_context(candidates)
-		if not candidates: return self._notify_no_results()
-		for candidate in candidates:
+		eligible = [candidate for candidate in candidates if candidate.get('lang') in self.languages and subtitle_coverage(candidate) != 'partial']
+		eligible.sort(key=lambda candidate: (self.languages.index(candidate['lang']), ('full', 'unknown').index(subtitle_coverage(candidate))))
+		if not eligible: return self._notify_no_results()
+		for candidate in eligible:
 			self._ensure_current_playback()
-			payload = self.download_candidate(candidate)
+			payload = self.download_candidate({**candidate, 'full_dialogue_only': True})
 			if not payload: continue
 			extension = self._safe_extension(payload.get('extension'))
 			if not extension: continue
@@ -292,7 +365,7 @@ class Subtitles(kodi_utils.xbmc_player):
 		return extension if extension in subtitle_extensions else ''
 
 	def _search_filename(self, language, extension='srt'):
-		return '%s_%s.%s' % (self.sub_filename, language, extension)
+		return '%s_%s_full.%s' % (self.sub_filename, language, extension)
 
 	def _set_context(self, subtitles=None):
 		try: playing_file = self.getPlayingFile()
@@ -319,7 +392,12 @@ class Subtitles(kodi_utils.xbmc_player):
 		try:
 			try: self.expected_playing_file = self.getPlayingFile()
 			except Exception: self.expected_playing_file = ''
+			if _manual_selection_matches(self.expected_playing_file): return False
 			self.configure(imdb_id, season, episode, poster, self.expected_playing_file, release_name, quality, extra_info, year, tmdb_id, mediatype, identity_title or query)
+			self.automatic = True
+			state = self._subtitle_state()
+			self.automatic_subtitle_index = self._subtitle_index(state)
+			self.automatic_subtitle_enabled = state.get('subtitleenabled')
 			self._set_context()
 			_wait(2.5, self._cancelled)
 			return self._video_file_subs() or self._downloaded_subs() or self._searched_subs()

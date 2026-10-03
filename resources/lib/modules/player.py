@@ -154,6 +154,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def onPlayBackStarted(self):
 		if getattr(self, 'startup_cancel_requested', False): return
+		kodi_utils.clear_property('pov_lite_subtitle_manual_override')
+		kodi_utils.clear_property('pov_lite_subtitle_context')
 		if self.playback_event is None: self.startup_playback_started = True
 		try: kodi_utils.hide_busy_dialog()
 		except: pass

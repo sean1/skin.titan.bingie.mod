@@ -25,7 +25,11 @@ def load_dialogs():
 	utils.get_datetime = lambda: None
 	utils.safe_string = str
 	utils.valid_tmdb_id = lambda value: bool(value)
-	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.cache': cache, 'modules.utils': utils}
+	mylist = types.ModuleType('modules.mylist')
+	mylist.context_item = lambda *args, **kwargs: None
+	mylist.refresh_info_state = lambda *args, **kwargs: None
+	mylist.refresh_after_info = lambda: None
+	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.cache': cache, 'modules.utils': utils, 'modules.mylist': mylist}
 	path = ROOT / 'resources' / 'lib' / 'modules' / 'dialogs.py'
 	return load_module('test_dialog_navigation_dialogs', path, stubs)
 

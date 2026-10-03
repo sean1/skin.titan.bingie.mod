@@ -2,6 +2,7 @@ from threading import Thread
 from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta, episode_infodict, season_infodict, info_tagger, tmdb_image_base, main_actors, resized_cast
 from caches.watched_cache import get_watched_info_tv, get_watched_status_season, get_bookmarks, get_resumetime, set_resumetime, get_watched_status_episode
 from modules import kodi_utils, settings
+from menus.media import card_coming_soon
 from modules.utils import adjust_premiered_date, get_datetime, media_percentage_properties
 # from modules.kodi_utils import logger
 
@@ -181,6 +182,7 @@ class Episodes(BaseSeason):
 						'tmdb_id': show.tmdb_id, 'season': season, 'episode': episode, 'refresh': 'progress'
 					})))
 				props = {'episode_type': item_get('episode_type'), 'watchedprogress': progress, 'pov_lite_first_aired': premiered or '', 'main_actors': main_actors(cast)}
+				if card_coming_soon({'premiered': premiered}, 'episode', self.current_date): props['card_coming_soon'] = 'true'
 				props.update(media_percentage_properties(item_get('rating'), progress))
 				listitem = kodi_utils.make_listitem()
 				listitem.addContextMenuItems(cm)

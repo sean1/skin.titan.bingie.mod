@@ -92,6 +92,22 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">True</property>
 		</item>
+		<item id="5">
+			<property name="id">$NUMBER[5]</property>
+			<label>My List</label>
+			<label2>My List</label2>
+			<icon>shortcuts/mylist.png</icon>
+			<thumb />
+			<property name="labelID">my-list</property>
+			<property name="defaultID">my-list</property>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.my_list&amp;group=mylist,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.my_list&amp;group=mylist,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=navigator.my_list&amp;group=mylist</property>
+			<property name="submenuVisibility">mylist</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">True</property>
+		</item>
 	</include>
 	<include name="StaticSubmenu">
 		<item id="1">
@@ -192,6 +208,38 @@
 			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
 			<property name="group">movies</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="1">
+			<property name="id">$NUMBER[1]</property>
+			<property name="mainmenuid">5</property>
+			<label>Movies</label>
+			<label2>Movies</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">my-list-movies</property>
+			<property name="defaultID">my-list-movies</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=my_list_movies&amp;group=mylist&amp;name=My+List+-+Movies,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=my_list_movies&amp;group=mylist&amp;name=My+List+-+Movies,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=my_list_movies&amp;group=mylist&amp;name=My+List+-+Movies</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),mylist)</visible>
+			<property name="group">mylist</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property>
+			<property name="mainmenuid">5</property>
+			<label>TV Shows</label>
+			<label2>TV Shows</label2>
+			<icon>DefaultShortcut.png</icon>
+			<thumb />
+			<property name="labelID">my-list-tv-shows</property>
+			<property name="defaultID">my-list-tv-shows</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=my_list_tvshows&amp;group=mylist&amp;name=My+List+-+TV+Shows,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=my_list_tvshows&amp;group=mylist&amp;name=My+List+-+TV+Shows,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=my_list_tvshows&amp;group=mylist&amp;name=My+List+-+TV+Shows</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),mylist)</visible>
+			<property name="group">mylist</property>
 			<property name="isSubmenu">True</property>
 		</item>
 		<item id="1">

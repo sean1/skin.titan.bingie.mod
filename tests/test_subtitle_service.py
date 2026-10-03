@@ -236,6 +236,25 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.logger.assert_called_once()
 		self.service.kodi_utils.notification.assert_not_called()
 
+	def test_manual_service_actions_record_override_before_search_or_download(self):
+		for action in ('search', 'manualsearch', 'download'):
+			with self.subTest(action=action):
+				events = []
+				self.service.mark_manual_selection = Mock(side_effect=lambda: events.append('manual'))
+				self.service._search = Mock(side_effect=lambda handle: events.append('search'))
+				self.service._download = Mock(side_effect=lambda handle, params: events.append('download'))
+				self.service.kodi_utils.parsed_query.return_value = {'action': action}
+				self.service.run(SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '9', '?action=%s' % action]))
+				self.assertEqual(events, ['manual', 'download' if action == 'download' else 'search'])
+				self.service.mark_manual_selection.assert_called_once_with()
+
+	def test_unknown_service_action_does_not_mark_manual_selection(self):
+		self.service.mark_manual_selection = Mock()
+		self.service.kodi_utils.parsed_query.return_value = {'action': 'unknown'}
+		self.service.run(SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '9', '?action=unknown']))
+		self.service.mark_manual_selection.assert_not_called()
+		self.service.kodi_utils.end_directory.assert_called_once_with(9, False)
+
 	def test_run_silently_contains_playback_cancellation(self):
 		self.service.kodi_utils.parsed_query.return_value = {'action': 'download', 'provider': 'subdl', 'candidate': 'parent:file'}
 		self.service._download = Mock(side_effect=self.service.SubtitleCancelled())

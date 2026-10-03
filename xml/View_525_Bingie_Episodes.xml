@@ -69,6 +69,8 @@
                 <height>250</height>
                 <texture>overlays/gradient_episodes.png</texture>
             </control>
+            <include>LandscapeCardTopGradient</include>
+            <include>LandscapeCardComingSoonLabel</include>
             <!-- Episode/Season Sxx:Exx format -->
             <control type="label">
                 <visible>Container(525).Content(episodes)</visible>

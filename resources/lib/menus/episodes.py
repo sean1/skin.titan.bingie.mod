@@ -3,6 +3,7 @@ from indexers.metadata import tvshow_meta, season_episodes_meta, art_infodict, e
 from indexers.trakt_api import trakt_anime_calendar
 from caches.watched_cache import get_resumetime, set_resumetime, get_watched_status_episode, get_watched_info_tv, get_bookmarks, get_next_episodes, get_in_progress_items
 from modules import kodi_utils, settings
+from menus.media import card_coming_soon
 #from modules.utils import jsondate_to_datetime, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, make_thread_list_enumerate
 from modules.utils import LIST_WORKERS, get_next_episode_pointer, adjust_premiered_date, make_day, get_datetime, title_key, date_difference, media_percentage_properties, TaskPool
 # logger = kodi_utils.logger
@@ -134,6 +135,7 @@ class Episodes:
 			if self._episode_label_has_context(): props['pov_lite_episode_label_has_context'] = 'true'
 			props['pov_lite_name'] = '%s - %sx%s' % (title, str_season_zfill2, str_episode_zfill2)
 			props['pov_lite_first_aired'] = premiered or ''
+			if card_coming_soon({'premiered': premiered}, 'episode', self.current_date): props['card_coming_soon'] = 'true'
 			props['PovLiteSourceSelect'] = build_url({
 				'mode': 'play_media', 'mediatype': 'episode', 'tmdb_id': tmdb_id, 'season': season, 'episode': episode, 'autoplay': 'false'
 			})

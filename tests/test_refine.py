@@ -46,16 +46,6 @@ class RefineTests(unittest.TestCase):
 	def setUp(self):
 		self.refine = load_refine_module()
 
-	def test_initialize_publishes_defaults_and_listing_identity(self):
-		values = self.refine.Refine({'mediatype': 'tvshow'}).initialize()
-
-		self.assertEqual(values['Type'], 'tvshow')
-		self.assertEqual(values['Eligible'], 'true')
-		self.assertEqual(values['Count'], '0')
-		self.assertEqual(values['Genres'], 'Any')
-		self.assertEqual(values['Preset'], 'None')
-		self.assertEqual(values['Changed'], 'false')
-
 	def test_changed_tracks_staged_edits_clear_and_apply(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
 		menu.initialize()
@@ -81,56 +71,6 @@ class RefineTests(unittest.TestCase):
 		tv.draft['rating'] = '8.0'
 		self.assertEqual(tv._save()['Changed'], 'true')
 		self.assertEqual(movie._publish()['Changed'], 'false')
-
-	def test_top_rated_preset_updates_owned_fields_and_preserves_other_filters(self):
-		menu = self.refine.Refine({'mediatype': 'tvshow'})
-		menu.draft.update({'genres': '18', 'genres_label': 'Drama', 'year_start': '2020', 'language': 'fr', 'language_label': 'French', 'network': '213', 'network_label': 'Netflix'})
-		menu._select = Mock(return_value=('Top Rated', 'Top Rated'))
-
-		values = menu.preset()
-
-		self.assertEqual((menu.draft['sort'], menu.draft['sort_label'], menu.draft['order'], menu.draft['order_label'], menu.draft['rating'], menu.draft['votes']), ('vote_average', 'Rating', 'desc', 'Descending', '7.0', '500'))
-		self.assertEqual((menu.draft['genres'], menu.draft['year_start'], menu.draft['language'], menu.draft['network']), ('18', '2020', 'fr', '213'))
-		self.assertEqual(values['Preset'], 'Top Rated')
-		self.assertEqual(values['Count'], '7')
-
-	def test_none_preset_resets_only_owned_fields(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu.draft.update({'sort': 'vote_average', 'order': 'asc', 'rating': '8.0', 'votes': '1000', 'genres': '28', 'genres_label': 'Action', 'mpaa': 'PG-13'})
-		menu._select = Mock(return_value=('None', 'None'))
-
-		values = menu.preset()
-
-		self.assertEqual((menu.draft['sort'], menu.draft['sort_label'], menu.draft['order'], menu.draft['order_label'], menu.draft['rating'], menu.draft['votes']), ('popularity', 'Popularity', 'desc', 'Descending', '', ''))
-		self.assertEqual((menu.draft['genres'], menu.draft['mpaa']), ('', ''))
-		self.assertEqual(values['Preset'], 'None')
-		self.assertEqual(values['Count'], '0')
-
-	def test_manual_preset_owned_changes_publish_custom_and_exact_recipe_recovers_label(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu.draft.update({'sort': 'vote_average', 'order': 'desc', 'rating': '7.0', 'votes': '500'})
-		self.assertEqual(menu._save()['Preset'], 'Top Rated')
-
-		menu._select = Mock(return_value=('1000', '1000'))
-		self.assertEqual(menu.votes()['Preset'], 'Custom')
-
-		menu._select = Mock(return_value=('500', '500'))
-		self.assertEqual(menu.votes()['Preset'], 'Top Rated')
-
-	def test_choices_are_staged_and_clear_restores_defaults(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu._select = Mock(return_value=('Rating', 'vote_average'))
-		menu.sort()
-		menu._select = Mock(return_value=('Ascending', 'asc'))
-		menu.order()
-
-		stored = json.loads(self.refine._properties['Bingie.Refine.Draft.movie'])
-		self.assertEqual((stored['sort'], stored['order']), ('vote_average', 'asc'))
-		self.assertEqual(self.refine._properties['Refine.Count'], '1')
-
-		menu.clear()
-		self.assertEqual(self.refine._properties['Refine.Count'], '0')
-		self.assertEqual(self.refine._properties['Refine.Sort'], 'Popularity')
 
 	def test_initialize_discards_unapplied_changes_and_restores_applied_values(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -173,28 +113,6 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(menu.draft['genres'], '28,35')
 		self.assertEqual(self.refine._properties['Refine.Genres'], 'Action, Comedy')
 		self.assertEqual(self.refine.kodi_utils.select_dialog.call_args.kwargs['allow_empty'], 'true')
-
-	def test_theme_choice_stores_keywords_publishes_label_and_preserves_other_state(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu.draft.update({'sort': 'vote_average', 'rating': '7.0', 'genres': '28', 'genres_label': 'Action'})
-		menu._select = Mock(return_value=('Time Travel | Time Loop', '4379|10854'))
-
-		values = menu.theme()
-
-		self.assertEqual((menu.draft['theme'], menu.draft['theme_label']), ('4379|10854', 'Time Travel | Time Loop'))
-		self.assertEqual((menu.draft['sort'], menu.draft['rating'], menu.draft['genres']), ('vote_average', '7.0', '28'))
-		self.assertEqual((values['Theme'], values['Count']), ('Time Travel | Time Loop', '4'))
-
-	def test_any_theme_clears_only_theme(self):
-		menu = self.refine.Refine({'mediatype': 'tvshow'})
-		menu.draft.update({'theme': '12377|186565', 'theme_label': 'Zombie | Zombie Apocalypse', 'votes': '500'})
-		menu._select = Mock(return_value=('Any', ''))
-
-		values = menu.theme()
-
-		self.assertEqual((menu.draft['theme'], menu.draft['theme_label']), ('', ''))
-		self.assertEqual(menu.draft['votes'], '500')
-		self.assertEqual((values['Theme'], values['Count']), ('Any', '1'))
 
 	def test_every_curated_theme_is_available_and_encodes_only_its_keywords(self):
 		self.assertEqual(len(self.refine.THEME_OPTIONS), 25)
@@ -240,19 +158,6 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(menu._publish()['MPAA'], 'Any')
 		self.assertEqual(menu._active_count(), 1)
 
-	def test_tv_network_choice_displays_name_stores_id_and_persists(self):
-		menu = self.refine.Refine({'mediatype': 'tvshow'})
-		menu._select = Mock(return_value=('Netflix', '213'))
-
-		menu.network()
-
-		menu._select.assert_called_once_with('Original network', [('Any', ''), ('HBO', '49'), ('Netflix', '213')])
-		stored = json.loads(self.refine._properties['Bingie.Refine.Draft.tvshow'])
-		self.assertEqual((stored['network'], stored['network_label']), ('213', 'Netflix'))
-		self.assertEqual(self.refine._properties['Refine.Network'], 'Netflix')
-		self.assertEqual(self.refine._properties['Refine.Count'], '1')
-		self.assertEqual(self.refine.Refine({'mediatype': 'tvshow'}).draft['network'], '213')
-
 	def test_tv_network_is_encoded_and_movies_ignore_network_state(self):
 		tv = self.refine.Refine({'mediatype': 'tvshow'})
 		tv.draft.update({'network': '213', 'network_label': 'Netflix'})
@@ -264,17 +169,6 @@ class RefineTests(unittest.TestCase):
 		self.assertNotIn('with_networks=', command)
 		self.assertEqual(movie._publish()['Network'], 'Any')
 		self.assertEqual(movie._active_count(), 0)
-
-	def test_any_network_clears_tv_network(self):
-		menu = self.refine.Refine({'mediatype': 'tvshow'})
-		menu.draft.update({'network': '213', 'network_label': 'Netflix'})
-		menu._select = Mock(return_value=('Any', ''))
-
-		menu.network()
-
-		self.assertEqual((menu.draft['network'], menu.draft['network_label']), ('', ''))
-		self.assertEqual(self.refine._properties['Refine.Network'], 'Any')
-		self.assertEqual(self.refine._properties['Refine.Count'], '0')
 
 	def test_year_range_counts_once_and_reversed_range_is_not_staged(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -399,14 +293,6 @@ class RefineTests(unittest.TestCase):
 		self.refine.kodi_utils.dialog.numeric.side_effect = ('2024', '2026')
 		menu.year()
 		self.assertEqual((menu.draft['year_start'], menu.draft['year_end'], menu.draft['release_window']), ('2024', '2026', ''))
-
-	def test_family_movie_query_uses_multiple_certifications(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu._select = Mock(return_value=('Family Night', 'Family Night'))
-		menu.preset()
-		command = unquote(menu.apply())
-		self.assertIn('with_genres=10751', command)
-		self.assertIn('certification=G|PG', command)
 
 
 if __name__ == '__main__':

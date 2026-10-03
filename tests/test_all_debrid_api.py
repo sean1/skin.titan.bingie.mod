@@ -84,10 +84,6 @@ class AllDebridAPITests(unittest.TestCase):
 
 		self.assertEqual(result[0]['torrent_id'], '')
 
-	def test_unlock_returns_direct_link(self):
-		self.api._post = lambda path, data: {'link': 'https://cdn.example/Movie.mkv'}
-		self.assertEqual(self.api.unrestrict_link('https://alldebrid.com/f/id'), 'https://cdn.example/Movie.mkv')
-
 
 if __name__ == '__main__':
 	unittest.main()

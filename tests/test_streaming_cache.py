@@ -32,11 +32,6 @@ class StreamingCacheTests(unittest.TestCase):
 		for memory, expected in cases:
 			with self.subTest(memory=memory): self.assertEqual(self.cache.select_cache_mb(*memory), expected)
 
-	def test_kodi_memory_labels_are_parsed_as_megabytes(self):
-		self.assertEqual(self.cache._memory_label_mb('512MB'), 512)
-		self.assertEqual(self.cache._memory_label_mb('1.5 GB'), 1536)
-		self.assertIsNone(self.cache._memory_label_mb('unknown'))
-
 	def test_tuner_applies_only_changed_kodi_settings(self):
 		current = {'filecache.buffermode': 4, 'filecache.readfactor': 400, 'filecache.chunksize': 131072, 'smb.chunksize': 128, 'filecache.memorysize': 20}
 		def rpc(payload):

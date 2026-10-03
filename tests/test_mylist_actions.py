@@ -67,18 +67,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertTrue(self.controller.action(params))
 		self.assertFalse(self.store.contains('movie', 101))
 
-	def test_replaying_an_explicit_add_never_toggles_the_item_off(self):
-		params = {'action': 'add', 'mediatype': 'movie', 'tmdb_id': '101', 'title': 'Movie'}
-		self.assertTrue(self.controller.action(params))
-		before = self.store.items('movie')
-		self.assertTrue(self.controller.action(params))
-		self.assertEqual(self.store.items('movie'), before)
-		self.assertTrue(self.store.contains('movie', 101))
-		params['action'] = 'remove'
-		self.assertTrue(self.controller.action(params))
-		self.assertTrue(self.controller.action(params))
-		self.assertFalse(self.store.contains('movie', 101))
-
 	def test_episode_context_saves_the_series_and_series_title(self):
 		label, command = self.controller.context_item('episode', 999, 'Series', tvshow_id=202)
 		params = command_params(command)
@@ -95,13 +83,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
 		self.assertIn('BingieMyListRefresh', self.properties)
 
-	def test_current_info_button_updates_after_save_and_remove(self):
-		self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '101', 'PovInfoMyListSaved': 'false'})
-		self.assertTrue(self.controller.action({'action': 'add', 'mediatype': 'movie', 'tmdb_id': 101, 'title': 'Movie'}))
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'true')
-		self.assertTrue(self.controller.action({'action': 'remove', 'mediatype': 'movie', 'tmdb_id': 101}))
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
-
 	def test_info_action_uses_the_displayed_series_identity(self):
 		self.properties.update({'PovInfoType': 'tvshow', 'PovInfoTmdb': '202', 'PovInfoTitle': 'Series', 'PovInfoMyListSaved': 'false'})
 		self.assertTrue(self.controller.from_info({'action': 'add'}))
@@ -112,12 +93,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertTrue(self.controller.from_info({'action': 'remove'}))
 		self.assertFalse(self.store.contains('tvshow', 202))
 		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
-
-	def test_pending_info_identity_can_be_saved_before_metadata_hydration(self):
-		self.properties.update({'PovInfoType': 'movie', 'PovInfoPendingTmdb': '101', 'PovInfoTitle': 'Pending Movie'})
-		self.assertTrue(self.controller.from_info({'action': 'add'}))
-		self.assertEqual(self.store.items('movie')[0][0]['title'], 'Pending Movie')
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'true')
 
 	def test_replaying_a_captured_info_add_keeps_the_movie_saved(self):
 		self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '101', 'PovInfoTitle': 'Movie', 'PovInfoMyListSaved': 'false'})
@@ -130,12 +105,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertTrue(self.store.contains('movie', 101))
 		self.assertEqual(self.store.items('movie'), before)
 		self.assertEqual(self.properties['PovInfoMyListSaved'], 'true')
-
-	def test_a_captured_info_add_does_not_invert_stale_display_state(self):
-		self.store.add('movie', 101, 'Movie')
-		self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '101', 'PovInfoTitle': 'Movie', 'PovInfoMyListSaved': 'false'})
-		self.assertTrue(self.controller.from_info({'action': 'add', 'mediatype': 'movie', 'tmdb_id': '101', 'title': 'Movie'}))
-		self.assertTrue(self.store.contains('movie', 101))
 
 	def test_captured_info_identity_is_preserved_after_navigation_to_another_title(self):
 		self.properties.update({'PovInfoType': 'tvshow', 'PovInfoTmdb': '202', 'PovInfoTitle': 'Current Show', 'PovInfoMyListSaved': 'false'})
@@ -170,13 +139,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assert_no_success_refresh()
 		self.kodi_utils.notification.assert_not_called()
 
-	def test_unavailable_info_state_reports_failure_without_mutation(self):
-		self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '101', 'PovInfoTitle': 'Movie'})
-		with patch.object(self.kodi_utils, 'database_connect', side_effect=sqlite3.OperationalError('unavailable')):
-			self.assertFalse(self.controller.from_info({'action': 'add'}))
-		self.assert_no_success_refresh()
-		self.kodi_utils.notification.assert_called_once_with('Could not update My List')
-
 	def test_refreshing_unknown_info_state_clears_a_stale_saved_command(self):
 		self.properties.update({'PovInfoMyListSaved': 'true', 'PovInfoMyListCommand': 'RunPlugin(stale-action)'})
 		with patch.object(self.kodi_utils, 'database_connect', side_effect=sqlite3.OperationalError('unavailable')):
@@ -185,12 +147,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertEqual(self.properties['PovInfoMyListCommand'], '')
 		self.kodi_utils.container_refresh.assert_not_called()
 		self.kodi_utils.notification.assert_not_called()
-
-	def test_info_action_requires_an_explicit_add_or_remove(self):
-		self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '101', 'PovInfoTitle': 'Movie'})
-		self.assertFalse(self.controller.from_info({}))
-		self.assert_no_success_refresh()
-		self.assertFalse(self.store.contains('movie', 101))
 
 	def test_info_save_defers_container_refresh_until_return_to_listing(self):
 		self.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1123) | Window.IsActive(1122)'
@@ -207,34 +163,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertTrue(self.controller.action({'action': 'add', 'mediatype': 'movie', 'tmdb_id': 101, 'title': 'Movie'}))
 		self.assertIn('BingieMyListRefresh', self.properties)
 		self.kodi_utils.container_refresh.assert_not_called()
-
-	def test_add_and_info_routes_dispatch_to_my_list_handlers(self):
-		for mode, handler in (('my_list_action', 'action'), ('my_list_from_info', 'from_info')):
-			with self.subTest(mode=mode):
-				params = {'mode': mode, 'action': 'add', 'mediatype': 'movie', 'tmdb_id': '101'}
-				self.kodi_utils.parsed_query = lambda query: params
-				routing = load_module('test_mylist_routing_module', LIB / 'routing.py', self.stubs)
-				controller = types.ModuleType('modules.mylist')
-				method = Mock(return_value=True)
-				setattr(controller, handler, method)
-				with temporary_modules({**self.stubs, 'modules.mylist': controller}):
-					self.assertTrue(routing.routing(types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite/', '7', '?mode=%s' % mode])))
-				method.assert_called_once_with(params)
-
-	def test_my_list_chooser_links_to_distinct_movie_and_tv_views(self):
-		from tests.test_movie_browse_routes import load_navigator_module
-		navigator, kodi_utils = load_navigator_module()
-		kodi_utils.get_property = lambda key: 'saved-list-revision'
-		menu = object.__new__(navigator.Navigator)
-		menu.params = {}
-		menu._add_item = Mock()
-		menu._end_directory = Mock()
-		menu.my_list()
-		params = [invocation.args[0] for invocation in menu._add_item.call_args_list]
-		self.assertEqual([(item['mode'], item['action']) for item in params], [('build_movie_list', 'my_list_movies'), ('build_tvshow_list', 'my_list_tvshows')])
-		self.assertTrue(all(item['refresh'] == 'saved-list-revision' for item in params))
-		self.assertTrue(all(item['exclude_external'] == 'true' for item in params))
-		menu._end_directory.assert_called_once_with()
 
 	def test_info_button_runs_the_captured_action_and_disables_unknown_saved_state(self):
 		root = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()

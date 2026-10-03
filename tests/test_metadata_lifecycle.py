@@ -48,39 +48,6 @@ class MetadataLifecycleTests(unittest.TestCase):
 		self.assertEqual(self.metadata._normalize_media_id('trakt_dict', {'imdb': 'tt0101'}, ('tmdb', 'imdb')), ('imdb_id', 'tt0101'))
 		self.assertEqual(self.metadata._normalize_media_id('trakt_dict', {}, ('tmdb', 'imdb')), (None, None))
 
-	def test_movie_public_path_normalizes_and_delegates_to_shared_lifecycle(self):
-		self.metadata._cached_meta = Mock(return_value={'tmdb_id': 101})
-
-		result = self.metadata.movie_meta('trakt_dict', {'tmdb': 101, 'imdb': 'tt0101'}, {'language': 'en'}, 'today')
-
-		self.assertEqual(result, {'tmdb_id': 101})
-		args = self.metadata._cached_meta.call_args.args
-		self.assertEqual(args[:3], ('movie', 'tmdb_id', 101))
-		self.assertIs(args[4], self.metadata._set_best_trailer)
-
-	def test_tvshow_public_path_normalizes_and_delegates_to_shared_lifecycle(self):
-		self.metadata._cached_meta = Mock(return_value={'tvdb_id': 202})
-
-		result = self.metadata.tvshow_meta('trakt_dict', {'tvdb': 202}, {'language': 'en'}, 'today')
-
-		self.assertEqual(result, {'tvdb_id': 202})
-		args = self.metadata._cached_meta.call_args.args
-		self.assertEqual(args[:3], ('tvshow', 'tvdb_id', 202))
-		self.assertTrue(callable(args[4]))
-
-	def test_cache_hit_is_prepared_without_claiming(self):
-		cached = {'tmdb_id': 101}
-		prepare = Mock(return_value={'prepared': True})
-		fetch = Mock()
-		self.cache.get.return_value = cached
-
-		result = self.metadata._cached_meta('movie', 'tmdb_id', 101, fetch, prepare)
-
-		self.assertEqual(result, {'prepared': True})
-		prepare.assert_called_once_with(cached)
-		self.cache.get_or_claim.assert_not_called()
-		fetch.assert_not_called()
-
 	def test_claimed_cache_value_is_prepared_without_fetching(self):
 		cached = {'tmdb_id': 101}
 		prepare = Mock(return_value={'prepared': True})

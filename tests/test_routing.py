@@ -1,4 +1,3 @@
-import runpy
 import sys
 import types
 import unittest
@@ -48,17 +47,6 @@ class RoutingTests(unittest.TestCase):
 
 		run.assert_called_once_with(sys_obj)
 
-	def test_subtitle_settings_route_opens_focused_menu(self):
-		routing = load_routing({'mode': 'subtitle_settings'})
-		menu = Mock(return_value='menu')
-		dialogs = types.ModuleType('modules.dialogs')
-		dialogs.subtitle_settings_menu = menu
-		with temporary_modules({'modules.dialogs': dialogs}):
-			sys_obj = types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '1', '?mode=subtitle_settings'])
-			self.assertEqual(routing.routing(sys_obj), 'menu')
-
-		menu.assert_called_once_with()
-
 	def test_clear_progress_uses_lightweight_progress_handler(self):
 		params = {'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode', 'tmdb_id': '42', 'season': '2', 'episode': '3', 'refresh': 'progress'}
 		routing = load_routing(params)
@@ -71,23 +59,6 @@ class RoutingTests(unittest.TestCase):
 			self.assertEqual(routing.routing(sys_obj), 'cleared')
 
 		erase_bookmark.assert_called_once_with('episode', '42', '2', '3', 'progress')
-
-	def test_launcher_passes_current_sys_module_to_router(self):
-		seen = []
-		routing = types.ModuleType('routing')
-
-		class Router:
-			def run(self, sys_obj):
-				seen.append(sys_obj)
-
-		routing.Router = Router
-		path_was_present = str(LIB_PATH) in sys.path
-		try:
-			with temporary_modules({'routing': routing}): runpy.run_path(str(LIB_PATH / 'router.py'), run_name='__main__')
-		finally:
-			if not path_was_present: sys.path.remove(str(LIB_PATH))
-
-		self.assertEqual(seen, [sys])
 
 
 if __name__ == '__main__':

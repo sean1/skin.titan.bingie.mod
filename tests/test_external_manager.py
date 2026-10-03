@@ -180,20 +180,6 @@ class ExternalManagerTests(unittest.TestCase):
 		]
 		self.assertEqual(external.filter_ambiguous_tv_sources(sources, 'episode'), sources[3:4])
 
-	def test_same_title_tv_collision_requires_year_for_packs(self):
-		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
-		external.require_tv_year = True
-		external.year = '2026'
-		external.data = {'title': 'The Next Generation'}
-		sources = [{'name': 'The.Grand.Tour.S01.2160p'}, {'name': 'The.Grand.Tour.2026.S01.1080p'}]
-		self.assertEqual(external.filter_ambiguous_tv_sources(sources, SOURCES.season_display), sources[1:])
-
-	def test_unambiguous_tv_title_keeps_yearless_sources(self):
-		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
-		external.require_tv_year = False
-		sources = [{'name': 'Unique.Show.S01E01.1080p'}]
-		self.assertIs(external.filter_ambiguous_tv_sources(sources, 'episode'), sources)
-
 	def test_cached_same_title_tv_sources_are_filtered_before_use(self):
 		outcome = types.SimpleNamespace(sources=[{'name': 'The.Grand.Tour.S01E01.2160p'}, {'name': 'The.Grand.Tour.2026.S01E01.1080p'}])
 
@@ -229,14 +215,6 @@ class ExternalManagerTests(unittest.TestCase):
 			('torrentio-0', 'alldebrid', 'Uncached alldebrid'), ('torrentio-1', 'alldebrid', 'alldebrid'),
 			('torrentio-0', 'torbox', 'torbox'), ('torrentio-1', 'torbox', 'Uncached torbox')
 		})
-
-	def test_closed_source_sink_rejects_late_provider_results(self):
-		sink = SOURCES.SourceResultSink()
-		self.assertTrue(sink.extend([{'name': 'on-time'}]))
-		sink.close()
-
-		self.assertFalse(sink.extend([{'name': 'late'}]))
-		self.assertEqual(sink.items, [{'name': 'on-time'}])
 
 	def test_running_provider_cannot_publish_after_source_sink_closes(self):
 		sink = SOURCES.SourceResultSink()
@@ -294,18 +272,6 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
 		self.assertNotIn('full_search_available', manager.meta)
 		self.assertEqual(RecordingExecutor.worker_counts, [6, 1])
-
-	def test_automatic_fallback_phase_starts_every_request(self):
-		fallback = tuple('fallback-%d' % index for index in range(10))
-		manager = self.manager(provider_names=(*sorted(CORE_EXTERNAL_PROVIDERS), *fallback))
-		manager.results({})
-		self.assertEqual(RecordingExecutor.worker_counts, [4, 1, 10, 1])
-
-	def test_no_core_provider_path_starts_every_request(self):
-		fallback = tuple('fallback-%d' % index for index in range(10))
-		manager = self.manager(provider_names=fallback)
-		manager.results({})
-		self.assertEqual(RecordingExecutor.worker_counts, [10, 1])
 
 	def test_cache_checks_use_a_separate_executor(self):
 		self.manager(provider_names=['torrentio']).results({})

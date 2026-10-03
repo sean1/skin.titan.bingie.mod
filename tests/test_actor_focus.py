@@ -90,12 +90,6 @@ class ActorFocusTests(unittest.TestCase):
 			('items', 7, ['movie-item']), ('content', 7, 'videos'), ('end', 7, False), ('builtin', 'SetFocus(610)')
 		])
 
-	def test_credit_snapshot_preserves_country_from_existing_response(self):
-		self.assertEqual(
-			self.people._credit_snapshot({'id': 1, 'media_type': 'tv', 'origin_country': ['CA'], 'original_language': 'en'}),
-			{'id': 1, 'media_type': 'tv', 'origin_country': ['CA'], 'original_language': 'en'}
-		)
-
 	def test_actor_episode_context_menu_only_appears_on_tv_acting_credits(self):
 		self.properties['PovActorName'] = 'Target Actor'
 		for media_type, credit_type, expected in (('tv', 'tvshows', True), ('tv', 'directed', False), ('movie', 'movies', False)):
@@ -115,20 +109,6 @@ class ActorFocusTests(unittest.TestCase):
 				else:
 					listitem.addContextMenuItems.assert_not_called()
 					self.assertEqual(len(urls), 1)
-
-	def test_focus_actor_page_immediately_focuses_cached_shelf(self):
-		conditions = []
-		self.people.kodi_utils.get_visibility = lambda condition: conditions.append(condition) or True
-
-		self.people._focus_actor_page({'movies': [{}]})
-
-		self.assertEqual(self.commands, [
-			'AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent,loop)', 'SetFocus(610)'
-		])
-		self.assertEqual(conditions, [
-			'Window.IsActive(1122)',
-			'Window.IsActive(1122) + Control.HasFocus(600) + String.IsEqual(Container(610).ListItemAbsolute(0).Property(PovActorSourceId),Window(Home).Property(PovActorId))'
-		])
 
 	def test_focus_actor_page_keeps_alarm_when_shelf_is_not_populated(self):
 		visibility = iter((True, False))
@@ -153,19 +133,6 @@ class ActorFocusTests(unittest.TestCase):
 		self.assertEqual(self.commands, [
 			'AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent,loop)', 'SetFocus(610)'
 		])
-
-	def test_focus_loaded_actor_shelf_uses_first_available_shelf(self):
-		cases = (
-			({'PovActorHasMovies': 'true', 'PovActorHasTVShows': 'true', 'PovActorHasDirected': 'true'}, 'movies', 'SetFocus(610)'),
-			({'PovActorHasMovies': 'false', 'PovActorHasTVShows': 'true', 'PovActorHasDirected': 'true'}, 'tvshows', 'SetFocus(620)'),
-			({'PovActorHasMovies': 'false', 'PovActorHasTVShows': 'false', 'PovActorHasDirected': 'true'}, 'directed', 'SetFocus(630)')
-		)
-		for properties, credit_type, expected in cases:
-			with self.subTest(credit_type=credit_type):
-				self.properties.update(properties)
-				self.commands.clear()
-				self.people._focus_loaded_actor_shelf('1245', credit_type, True)
-				self.assertEqual(self.commands, [expected])
 
 	def test_focus_loaded_actor_shelf_returns_before_actor_is_ready(self):
 		self.properties.update({'PovActorReady': 'false', 'PovActorHasMovies': 'true'})

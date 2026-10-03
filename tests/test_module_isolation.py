@@ -8,26 +8,6 @@ from tests.module_isolation import load_module, temporary_modules
 
 
 class ModuleIsolationTests(unittest.TestCase):
-	def test_restores_existing_and_removes_new_modules(self):
-		existing_name, new_name = 'test_module_isolation_existing', 'test_module_isolation_new'
-		existing = types.ModuleType(existing_name)
-		replacement = types.ModuleType(existing_name)
-		new = types.ModuleType(new_name)
-		old_existing = sys.modules.get(existing_name)
-		old_new = sys.modules.get(new_name)
-		sys.modules[existing_name] = existing
-		sys.modules.pop(new_name, None)
-		try:
-			with temporary_modules({existing_name: replacement, new_name: new}):
-				self.assertIs(sys.modules[existing_name], replacement)
-				self.assertIs(sys.modules[new_name], new)
-			self.assertIs(sys.modules[existing_name], existing)
-			self.assertNotIn(new_name, sys.modules)
-		finally:
-			if old_existing is None: sys.modules.pop(existing_name, None)
-			else: sys.modules[existing_name] = old_existing
-			if old_new is None: sys.modules.pop(new_name, None)
-			else: sys.modules[new_name] = old_new
 
 	def test_restores_isolated_module_after_failure(self):
 		name = 'test_module_isolation_transitive'

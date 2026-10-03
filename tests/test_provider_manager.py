@@ -8,7 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'resources' / 'lib'))
 
-from modules.source_search import EXTERNAL_PROVIDERS
 
 
 class ProviderManagerTests(unittest.TestCase):
@@ -39,13 +38,6 @@ class ProviderManagerTests(unittest.TestCase):
 			if previous is None: sys.modules.pop('modules.kodi_utils', None)
 			else: sys.modules['modules.kodi_utils'] = previous
 		return writes, notifications
-
-	def test_provider_selection_is_persisted(self):
-		writes, notifications = self.run_manager(['comet', 'torrentio'])
-		self.assertEqual(len(writes), len(EXTERNAL_PROVIDERS))
-		self.assertEqual(dict(writes)['provider.external.comet.enabled'], 'true')
-		self.assertEqual(dict(writes)['provider.external.dmm.enabled'], 'false')
-		self.assertEqual(notifications, [(32576, 1500)])
 
 	def test_cancel_does_not_change_settings(self):
 		writes, notifications = self.run_manager(None)

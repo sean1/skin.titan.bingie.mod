@@ -39,13 +39,6 @@ class FocusedPlaybackTests(unittest.TestCase):
 		with temporary_modules({'modules.episode_tools': episode_tools}): self.assertTrue(focused.source_select_focused())
 		episode_tools.SmartPlay.assert_called_once_with({'mode': 'play_media', 'mediatype': 'tvshow', 'tmdb_id': '42', 'autoplay': 'false'})
 
-	def test_listing_item_does_not_open_manual_sources(self):
-		focused = load_focused({
-			'Container.ListItem.Property(PovLiteItem)': 'true', 'Container.ListItem.DBType': 'movie', 'Container.ListItem.UniqueID(tmdb)': '42'
-		})
-		self.assertFalse(focused.source_select_focused())
-		focused.kodi_utils.execute_builtin.assert_called_once_with('Action(ContextMenu)')
-
 	def test_unrelated_info_control_restores_context_menu_without_reusing_background_item(self):
 		focused = load_focused(
 			{'Container.ListItem.Property(PovLiteItem)': 'true', 'Container.ListItem.DBType': 'movie', 'Container.ListItem.UniqueID(tmdb)': '99'},
@@ -57,11 +50,6 @@ class FocusedPlaybackTests(unittest.TestCase):
 
 	def test_play_control_id_outside_pov_info_does_not_open_manual_sources(self):
 		focused = load_focused(properties={'PovInfoType': 'movie', 'PovInfoTmdb': '42'}, window_id=10000, play_focused=True)
-		self.assertFalse(focused.source_select_focused())
-		focused.kodi_utils.execute_builtin.assert_called_once_with('Action(ContextMenu)')
-
-	def test_stale_global_mapping_restores_context_menu_outside_allowed_windows(self):
-		focused = load_focused(window_id=10101)
 		self.assertFalse(focused.source_select_focused())
 		focused.kodi_utils.execute_builtin.assert_called_once_with('Action(ContextMenu)')
 

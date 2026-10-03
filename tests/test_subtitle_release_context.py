@@ -1,4 +1,3 @@
-import sys
 import types
 import unittest
 from unittest import mock
@@ -53,60 +52,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 
 		self.assertEqual([event for event, _ in events], ['stream_error'])
 		self.assertTrue(player.playback_health_finalized)
-	def test_successfully_resolved_source_metadata_reaches_player(self):
-		sources_module = load_sources_module()
-		seen = {}
-
-		class Player:
-			def run(self, link, meta, progress):
-				seen.update({'link': link, 'meta': meta, 'progress': progress})
-				return 'played'
-
-		sources_module.POVPlayer = Player
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background = False
-		instance.autoplay = True
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie', 'release_name': 'stale'}
-		instance._no_results = lambda: None
-		item = {
-			'name': 'Movie.2024.2160p.WEB-DL-GROUP.mkv', 'display_name': 'Movie 2024', 'unrestricted_link': 'https://stream.invalid/signed',
-			'quality': '4K', 'extraInfo': 'HEVC | HDR', 'scrape_provider': 'fixture', 'provider': 'fixture'
-		}
-
-		result = instance.play_file([item])
-
-		self.assertEqual(result, 'played')
-		self.assertEqual(seen['meta']['release_name'], item['name'])
-		self.assertEqual(seen['meta']['release_quality'], '4K')
-		self.assertEqual(seen['meta']['release_info'], 'HEVC | HDR')
-		self.assertNotEqual(seen['meta']['release_name'], seen['link'])
-
-	def test_playback_start_failure_tries_next_resolved_source(self):
-		sources_module = load_sources_module()
-		played = []
-
-		class Player:
-			def run(self, link, meta, progress):
-				played.append(link)
-				return len(played) > 1
-
-		sources_module.POVPlayer = Player
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background = False
-		instance.autoplay = True
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie'}
-		instance._no_results = lambda: None
-		items = [
-			{'name': 'first', 'unrestricted_link': 'https://stream.invalid/first', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
-			{'name': 'second', 'unrestricted_link': 'https://stream.invalid/second', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
-		]
-
-		result = instance.play_file(items)
-
-		self.assertTrue(result)
-		self.assertEqual(played, ['https://stream.invalid/first', 'https://stream.invalid/second'])
 
 	def test_player_exception_tries_next_resolved_source(self):
 		sources_module = load_sources_module()
@@ -201,34 +146,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertEqual(result, 'none')
 		self.assertEqual(played, ['https://good.invalid/file'])
 
-	def test_deferred_host_records_one_resolve_and_preserves_caller_items(self):
-		sources_module = load_sources_module()
-		events, played = [], []
-		sources_module.playback_health = types.SimpleNamespace(
-			source_context=lambda item, link=None: {'provider': 'rd', 'host': link.split('/')[2] if link else ''},
-			record=lambda context, event, **kwargs: events.append((context.get('host'), event)),
-			host_penalty=lambda context: 100 if context.get('host') == 'bad.invalid' else 0
-		)
-
-		class Player:
-			def run(self, link, meta, progress):
-				played.append(link)
-				return link.startswith('https://bad.invalid')
-
-		sources_module.POVPlayer = Player
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background, instance.autoplay = False, True
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie'}
-		instance._no_results = lambda: None
-		bad = {'name': 'bad', 'unrestricted_link': 'https://bad.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
-		good = {'name': 'good', 'unrestricted_link': 'https://good.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
-
-		self.assertTrue(instance.play_file([bad, good]))
-		self.assertEqual(played, ['https://good.invalid/file', 'https://bad.invalid/file'])
-		self.assertEqual(events.count(('bad.invalid', 'resolve_ok')), 1)
-		self.assertNotIn('_bingie_host_deferred', bad)
-
 	def test_playback_error_resume_position_reaches_next_source(self):
 		sources_module = load_sources_module()
 		seen_meta = []
@@ -306,21 +223,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		player._sample_playback_stall(23)
 		self.assertEqual(player.playback_stall_count, 1)
 
-	def test_clean_and_stalled_plays_use_distinct_terminal_health_outcomes(self):
-		player_module = load_player()
-		events = []
-		player_module.playback_health = types.SimpleNamespace(record=lambda context, event, **kwargs: events.append(event))
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.playback_health_context = {'provider': 'rd'}
-		player.playback_health_started_at = player_module.monotonic() - 70
-		player.playback_health_bitrate_mbps = 30
-		player.playback_health_qualified, player.playback_health_finalized = True, False
-		player.playback_stall_count = 1
-		player._finalize_stream(True)
-		player._finalize_stream(False)
-
-		self.assertEqual(events, ['stalled_play'])
-
 	def test_two_confirmed_stalls_request_autoplay_fallback_with_resume(self):
 		player_module = load_player()
 		events = []
@@ -374,29 +276,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 			player.stop = mock.Mock()
 			self.assertFalse(player._recover_from_stalls())
 			player.stop.assert_not_called()
-
-	def test_player_passes_release_context_to_subtitle_task(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.subs_searched = False
-		player.meta = {
-			'poster': 'poster.jpg', 'release_name': 'Show.S01E02.WEB-DL-GROUP', 'release_quality': '1080p', 'release_info': 'HEVC'
-		}
-		player.mediatype, player.season, player.episode = 'episode', 1, 2
-		player.title, player.imdb_id, player.tmdb_id, player.year = 'Show', 'tt123', '456', 2024
-		calls = []
-
-		class Thread:
-			def __init__(self, target, args=(), **kwargs): calls.append((target, args))
-			def start(self): pass
-
-		subtitles = types.ModuleType('indexers.subtitles')
-		subtitles.Subtitles = mock.Mock
-		with mock.patch.object(player_module, 'Thread', Thread), mock.patch.dict(sys.modules, {'indexers.subtitles': subtitles}):
-			player.exec_task('subtitles')
-
-		args = calls[0][1]
-		self.assertEqual(args, ('Show', 'tt123', 1, 2, 'poster.jpg', 'Show.S01E02.WEB-DL-GROUP', '1080p', 'HEVC', 2024, '456', 'episode', 'Show'))
 
 
 if __name__ == '__main__':

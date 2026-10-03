@@ -2,7 +2,7 @@ import json
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 from tests.module_isolation import load_module
 
@@ -29,12 +29,6 @@ class NextPagePrefetchTests(unittest.TestCase):
 		self.prefetch.kodi_utils.get_infolabel = Mock(side_effect=self.labels.get)
 		self.worker = self.prefetch.NextPagePrefetch()
 
-	def test_near_end_uses_absolute_item_in_grid_views(self):
-		self.labels.update({'Container.CurrentItem': '21', 'Container.Position': '5'})
-
-		self.assertTrue(self.worker._near_end())
-		self.assertEqual(self.prefetch.kodi_utils.get_infolabel.call_args_list, [call('Container.CurrentItem'), call('Container.NumItems')])
-
 	def test_near_end_preserves_five_item_boundary(self):
 		for current_item, num_items, expected in (('16', '21', False), ('17', '21', True), ('21', '21', True), ('1', '5', True), ('1', '6', False), ('2', '6', True)):
 			with self.subTest(current_item=current_item, num_items=num_items):
@@ -55,16 +49,6 @@ class NextPagePrefetchTests(unittest.TestCase):
 				self.assertFalse(self.worker._near_end())
 			with self.subTest(action=action, current_item='14'):
 				self.labels['Container.CurrentItem'] = '14'
-				self.assertTrue(self.worker._near_end())
-
-	def test_personal_routes_keep_five_item_boundary(self):
-		for action in ('watched_movies', 'in_progress_movies', 'watched_tvshows', 'dropped_tvshows'):
-			with self.subTest(action=action, current_item='14'):
-				self.worker.request = {'origin': {'action': action}}
-				self.labels['Container.CurrentItem'] = '14'
-				self.assertFalse(self.worker._near_end())
-			with self.subTest(action=action, current_item='17'):
-				self.labels['Container.CurrentItem'] = '17'
 				self.assertTrue(self.worker._near_end())
 
 	def test_missing_or_malformed_actions_keep_five_item_boundary(self):

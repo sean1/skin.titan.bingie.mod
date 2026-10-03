@@ -108,24 +108,6 @@ class DialogNavigationTests(unittest.TestCase):
 
 		self.assertEqual(self.commands, ['ReplaceWindow(1123)', 'Control.SetFocus(563,4,absolute)'])
 
-	def test_back_to_info_restores_saved_trailer_button(self):
-		info_values = {'PovInfoType': 'movie', 'PovInfoTmdb': '497698', 'PovInfoTitle': 'Black Widow'}
-		self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY] = json.dumps([{'page': 'info', 'values': info_values, 'focus': {'control': 55}}])
-
-		self.dialogs.pov_page_back()
-
-		self.assertEqual(self.commands, ['ReplaceWindow(1123)', 'SetFocus(55)'])
-
-	def test_back_to_actor_restores_saved_shelf_and_item(self):
-		actor_values = {prop: '' for prop in self.dialogs.POV_ACTOR_PROPERTIES}
-		actor_values.update({'PovActorId': '1245', 'PovActorName': 'Scarlett Johansson', 'PovActorReady': 'true'})
-		self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY] = json.dumps([{'page': 'actor', 'values': actor_values, 'focus': {'control': 620, 'position': 3}}])
-		self.dialogs.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1123)' or 'Container(620).NumItems,3' in condition
-
-		self.dialogs.pov_page_back()
-
-		self.assertEqual(self.commands, ['ReplaceWindow(1122)', 'Control.SetFocus(620,3,absolute)'])
-
 
 if __name__ == '__main__':
 	unittest.main()

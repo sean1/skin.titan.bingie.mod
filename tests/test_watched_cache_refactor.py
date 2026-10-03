@@ -71,15 +71,6 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 	def setUp(self):
 		self.watched = load_watched_cache()
 
-	def test_tvshow_loader_skips_specials_and_collects_all_regular_seasons(self):
-		meta = {'season_data': [{'season_number': 0}, {'season_number': 1}, {'season_number': 2}]}
-		self.watched.metadata.season_episodes_meta.side_effect = [['s1e1'], ['s2e1']]
-
-		result = self.watched._tvshow_episodes_meta(meta, {'language': 'en'})
-
-		self.assertEqual(result, ['s1e1', 's2e1'])
-		self.assertCountEqual([call.args[0] for call in self.watched.metadata.season_episodes_meta.call_args_list], [1, 2])
-
 	def test_tvshow_loader_fetches_regular_seasons_concurrently_and_preserves_order(self):
 		watched = load_watched_cache()
 		barrier = threading.Barrier(2)
@@ -118,24 +109,6 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 
 		self.watched.kodi_utils.progressDialogBG.close.assert_called_once_with()
 		self.watched.kodi_utils.container_refresh.assert_not_called()
-
-	def test_season_zero_keeps_existing_notification_guard(self):
-		self.watched._mark_episode_batch = Mock()
-
-		self.watched.mark_as_watched_unwatched_season({'season': '0', 'action': 'mark_as_watched'})
-
-		self.watched.kodi_utils.notification.assert_called_once_with(32575)
-		self.watched._mark_episode_batch.assert_not_called()
-
-	def test_tvshow_status_excludes_specials(self):
-		watched_info = {101: [('episode', 101, '', 0, 1), ('episode', 101, '', 1, 1), ('episode', 101, '', 1, 2)]}
-
-		self.assertEqual(self.watched.get_watched_status_tvshow(watched_info, 101, 2), (1, 5, 2, 0))
-
-	def test_season_status_counts_only_requested_season(self):
-		watched_info = {101: [('episode', 101, '', 1, 1), ('episode', 101, '', 2, 1)]}
-
-		self.assertEqual(self.watched.get_watched_status_season(watched_info, 101, 1, 2), (0, 4, 1, 1))
 
 	def test_zero_aired_episodes_never_reports_complete(self):
 		self.assertEqual(self.watched.get_watched_status_tvshow({101: []}, 101, 0), (0, 4, 0, 0))

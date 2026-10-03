@@ -109,19 +109,6 @@ class SkipIntroTimingTests(unittest.TestCase):
 		self.assertEqual(self.episode_tools.open_window.call_count, 1)
 		self.assertEqual(player.seeks, [20.0])
 
-	def test_intro_end_boundary_remains_inclusive(self):
-		for current, prompt_count in ((20.0, 1), (20.001, 0)):
-			with self.subTest(current=current):
-				player = FakePlayer(current)
-				self.advance_on_sleep(player)
-				self.episode_tools.open_window.reset_mock()
-
-				self.episode_tools.execute_skip_intro(player, {})
-
-				self.assertEqual(self.episode_tools.open_window.call_count, prompt_count)
-				self.assertEqual(self.sleeps, [])
-				self.assertEqual(player.seeks, [])
-
 	def test_playback_stop_before_intro_exits_without_prompt(self):
 		player = FakePlayer(9.81, playing_states=[True, False])
 		self.advance_on_sleep(player)

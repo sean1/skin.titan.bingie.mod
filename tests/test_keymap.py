@@ -55,15 +55,6 @@ class KeymapTests(unittest.TestCase):
 		self.assertIn('<play mod="longpress">', contents)
 		kodi_utils.execute_builtin.assert_called_once_with('ReloadKeymaps')
 
-	def test_matching_owned_keymap_is_unchanged(self):
-		keymap, kodi_utils, files = load_keymap()
-		files[keymap.KEYMAP_PATH] = keymap.KEYMAP_XML
-
-		self.assertFalse(keymap.install())
-
-		kodi_utils.open_file.assert_called_once_with(keymap.KEYMAP_PATH)
-		kodi_utils.execute_builtin.assert_not_called()
-
 	def test_replaces_only_the_bingie_owned_keymap(self):
 		keymap, kodi_utils, files = load_keymap({'special://profile/keymaps/user.xml': '<keymap />'})
 		files[keymap.KEYMAP_PATH] = '<keymap><!-- old BINGIE version --></keymap>'

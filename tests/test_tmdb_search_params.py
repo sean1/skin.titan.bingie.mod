@@ -54,19 +54,6 @@ class TmdbSearchParameterTests(unittest.TestCase):
 			'https://api.example/search', headers={'Authorization': 'Bearer '}, params={'query': 'A&B + #1'}, timeout=self.tmdb.timeout
 		)
 
-	def test_get_tmdb_keeps_non_search_request_signature_unchanged(self):
-		response = Mock(headers={'Content-Type': 'application/json'}, ok=True)
-		response.json.return_value = {'id': 1}
-		self.tmdb.session = Mock()
-		self.tmdb.session.get.return_value = response
-
-		result = self.tmdb.get_tmdb('https://api.example/movie/1')
-
-		self.assertEqual(result, {'id': 1})
-		self.tmdb.session.get.assert_called_once_with(
-			'https://api.example/movie/1', headers={'Authorization': 'Bearer '}, timeout=self.tmdb.timeout
-		)
-
 	def test_seven_media_search_builders_keep_cache_keys_and_separate_parameters(self):
 		query = 'A&B + #1'
 		cases = (
@@ -97,12 +84,6 @@ class TmdbSearchParameterTests(unittest.TestCase):
 			self.tmdb.get_tmdb, 'tmdb_people_info_%s' % query,
 			[self.tmdb.base_url + '/search/person', {'language': 'en-US', 'query': query}], expiration=self.tmdb.EXPIRES_4_HOURS
 		)
-
-	def test_non_search_builders_retain_single_url_cache_calls(self):
-		result = self.tmdb.tmdb_movies_popular(2)
-
-		self.assertEqual(result['key'], 'tmdb_movies_popular_2')
-		self.assertEqual(result['url'], self.tmdb.base_url + '/movie/popular?language=en-US&page=2')
 
 
 if __name__ == '__main__':

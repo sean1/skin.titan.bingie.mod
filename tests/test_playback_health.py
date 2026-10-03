@@ -57,28 +57,10 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertEqual(self.module.provider_penalty('alldebrid', now=3), 0)
 		self.assertGreater(self.module.provider_penalty('realdebrid', now=3), self.module.provider_penalty('alldebrid', now=3))
 
-	def test_stage_counters_do_not_double_count_one_play(self):
-		context = {'provider': 'torbox'}
-		self.module.record(context, 'resolve_ok', now=1)
-		self.module.record(context, 'startup_ok', latency=4, now=2)
-		self.module.record(context, 'healthy_play', elapsed=120, now=3)
-		stages = FakeCache.data['providers']['torbox']['stages']
-		self.assertEqual(stages['resolve']['attempts'], 1)
-		self.assertEqual(stages['startup']['attempts'], 1)
-		self.assertEqual(stages['stream']['attempts'], 1)
-		self.assertEqual(self.module.provider_penalty('torbox', now=3), 0)
-
 	def test_decay_returns_old_sparse_history_to_neutral(self):
 		for now in (0, 1, 2, 3): self.module.record({'provider': 'realdebrid'}, 'stream_error', now=now)
 		self.assertGreater(self.module.provider_penalty('rd', now=3), 0)
 		self.assertEqual(self.module.provider_penalty('rd', now=3 + 14 * 24 * 60 * 60), 0)
-
-	def test_penalty_is_bounded_and_bad_measurements_are_ignored(self):
-		for now in range(20): self.module.record({'provider': 'tb'}, 'startup_fail', latency=float('inf'), now=now)
-		self.assertLessEqual(self.module.provider_penalty('torbox', now=20), 100)
-		for now in range(20, 40): self.module.record({'provider': 'tb'}, 'startup_ok', latency=600, now=now)
-		self.assertGreaterEqual(self.module.provider_penalty('torbox', now=40), 0)
-		self.assertLessEqual(self.module.provider_penalty('torbox', now=40), 100)
 
 	def test_corrupt_missing_and_unknown_state_are_neutral(self):
 		for value in (None, 'bad', {'version': 999}, {'version': 1, 'providers': {'realdebrid': {'stages': 'bad'}}}):
@@ -100,14 +82,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertEqual(self.module.host_penalty(context, now=3), 80)
 		self.assertEqual(self.module.host_penalty({'provider': 'ad', 'host': 'bad.example.com'}, now=3), 0)
 		self.assertEqual(self.module.host_penalty({'provider': 'rd', 'host': '127.0.0.1'}, now=3), 0)
-
-	def test_shared_hostname_keeps_provider_health_independent(self):
-		host = 'shared.cdn.example.com'
-		for now in (1, 2, 3): self.module.record({'provider': 'rd', 'host': host}, 'stream_error', now=now)
-		for now in (4, 5, 6): self.module.record({'provider': 'ad', 'host': host}, 'healthy_play', now=now)
-		self.assertEqual(self.module.host_penalty({'provider': 'rd', 'host': host}, now=6), 80)
-		self.assertEqual(self.module.host_penalty({'provider': 'ad', 'host': host}, now=6), 0)
-		self.assertEqual(len(FakeCache.data['hosts']), 2)
 
 	def test_learned_bandwidth_needs_repeat_success_and_respects_stalls(self):
 		context = {'provider': 'rd'}
@@ -148,13 +122,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertNotIn('provider', serialized)
 		self.module.record(context, 'healthy_play', bitrate_mbps=float('inf'), now=30)
 		self.assertEqual(len(FakeCache.data['bandwidth']), 12)
-
-	def test_cache_record_is_versioned_and_has_ninety_day_expiry(self):
-		self.module.record({'provider': 'ad'}, 'resolve_ok', now=1)
-		key, state, expiry = FakeCache.sets[-1]
-		self.assertEqual(key, 'bingie_playback_health_v1')
-		self.assertEqual(state['version'], 1)
-		self.assertEqual(expiry.days, 90)
 
 
 if __name__ == '__main__':

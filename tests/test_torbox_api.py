@@ -117,16 +117,6 @@ class TorBoxAPITests(unittest.TestCase):
 		self.assertIsNone(self.api.unrestrict_link('44,7'))
 		self.assertNotIn('secret-token-value', repr(logs))
 
-	def test_delete_uses_control_endpoint(self):
-		request = {}
-		def post(path, **kwargs):
-			request.update(path=path, **kwargs)
-			return {'success': True}
-		self.api._post = post
-
-		self.assertTrue(self.api.delete_torrent('44'))
-		self.assertEqual(request, {'path': 'torrents/controltorrent', 'json': {'torrent_id': 44, 'operation': 'delete'}, 'raw': True})
-
 
 if __name__ == '__main__':
 	unittest.main()

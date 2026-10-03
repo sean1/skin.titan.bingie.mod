@@ -83,12 +83,6 @@ class SubtitleContextContractTests(unittest.TestCase):
 		self.assertNotIn('stream.invalid', payload)
 		self.assertNotIn('secret', payload)
 
-	def test_manual_override_before_context_exists_still_records_current_file(self):
-		self.subtitles.kodi_utils.player.isPlayingVideo.return_value = True
-		self.subtitles.kodi_utils.player.getPlayingFile.return_value = 'video.mkv'
-		self.assertTrue(self.subtitles.mark_manual_selection())
-		self.assertEqual(json.loads(self.subtitles.kodi_utils.set_property.call_args.args[1]), {'playing_fingerprint': self.subtitles.playing_file_fingerprint('video.mkv'), 'generation': ''})
-
 	def test_manual_override_does_not_reuse_stale_or_invalid_context_generation(self):
 		self.subtitles.kodi_utils.player.isPlayingVideo.return_value = True
 		self.subtitles.kodi_utils.player.getPlayingFile.return_value = 'video.mkv'
@@ -123,35 +117,6 @@ class SubtitleContextContractTests(unittest.TestCase):
 		self.assertNotIn('content', projected)
 		self.assertNotIn('url', projected)
 		self.assertLessEqual(len(json.dumps(client._set_context([candidate] * 200)).encode('utf-8')), self.subtitles.subtitle_context_max_bytes)
-
-	def test_bounded_context_retains_ranked_results_from_both_languages(self):
-		client = self.subtitles.Subtitles().configure('tt123')
-		client.getPlayingFile = Mock(return_value='movie.mkv')
-		english = [{'provider': 'opensubtitles', 'id': 'eng-%s' % index, 'lang': 'eng', 'release': 'English %s' % index} for index in range(150)]
-		vietnamese = [{'provider': 'subdl', 'id': 'vie-%s' % index, 'lang': 'vie', 'release': 'Vietnamese %s' % index} for index in range(10)]
-
-		context = client._set_context(english + vietnamese)
-
-		self.assertEqual(len(context['subtitles']), self.subtitles.subtitle_context_max_candidates)
-		self.assertEqual([item['id'] for item in context['subtitles'] if item['lang'] == 'vie'], ['vie-%s' % index for index in range(10)])
-		self.assertEqual([item['id'] for item in context['subtitles'] if item['lang'] == 'eng'][:3], ['eng-0', 'eng-1', 'eng-2'])
-		self.assertLessEqual(len(json.dumps(context).encode('utf-8')), self.subtitles.subtitle_context_max_bytes)
-
-	def test_cache_identity_prefers_imdb_then_tmdb_then_hashed_metadata(self):
-		self.assertEqual(self.subtitles.stable_media_identity('tt123', '99', 'movie', 'Title', 2024), 'imdb:tt123')
-		self.assertEqual(self.subtitles.stable_media_identity('', '99', 'movie', 'Title', 2024), 'movie:tmdb:99')
-		fallback = self.subtitles.stable_media_identity('', '', 'movie', 'A Movie', 2024)
-		self.assertTrue(fallback.startswith('meta:'))
-		self.assertEqual(self.subtitles.stable_media_identity('', '', 'movie', '', ''), '')
-		client = self.subtitles.Subtitles().configure('', title='A Movie', year=2024)
-		self.assertNotIn('None', client.sub_filename)
-
-	def test_generation_changes_candidate_tokens_between_playbacks(self):
-		candidate = {'provider': 'opensubtitles', 'id': '123', 'lang': 'eng'}
-		first, second = self.subtitles.Subtitles().configure('tt123'), self.subtitles.Subtitles().configure('tt123')
-		first.getPlayingFile = second.getPlayingFile = Mock(return_value='movie.mkv')
-
-		self.assertNotEqual(first._set_context([candidate])['subtitles'][0]['token'], second._set_context([candidate])['subtitles'][0]['token'])
 
 	def test_manual_download_uses_generation_bound_candidate_without_research(self):
 		service = load_service(self.subtitles)

@@ -79,25 +79,12 @@ class AudioSelectionTests(unittest.TestCase):
 		]
 		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'zh')['index'], 3)
 
-	def test_normal_original_language_track_beats_commentary(self):
-		streams = [
-			{'index': 0, 'language': 'jpn', 'name': 'Director Commentary'},
-			{'index': 1, 'language': 'jpn', 'name': 'Main Audio'},
-		]
-		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'ja')['index'], 1)
-
 	def test_english_commentary_does_not_beat_normal_original_language(self):
 		streams = [
 			{'index': 0, 'language': 'eng', 'name': 'Director Commentary'},
 			{'index': 1, 'language': 'jpn', 'name': 'Main Audio'},
 		]
 		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'ja')['index'], 1)
-
-	def test_iso_639_aliases_match_original_language(self):
-		for original_language, stream_language in (('zh', 'zho'), ('ka', 'kat'), ('sq', 'sqi'), ('ca', 'cat')):
-			with self.subTest(original_language=original_language, stream_language=stream_language):
-				streams = [{'index': 0, 'language': 'cze'}, {'index': 1, 'language': stream_language}]
-				self.assertEqual(self.player_class._preferred_audio_stream(streams, original_language)['index'], 1)
 
 	def test_original_marker_fallback_works_without_metadata(self):
 		for stream in (

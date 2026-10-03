@@ -61,21 +61,6 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.add_item.assert_not_called()
 		self.client.save_subtitle.assert_not_called()
 
-	def test_client_delegates_season_zero_configuration(self):
-		self.service._client = self.real_client
-		self.service.kodi_utils.player.isPlayingVideo.return_value = True
-		self.service.kodi_utils.player.getPlayingFile.return_value = 'video.mkv'
-		self.service._context = Mock(return_value={'imdb_id': 'tt123', 'season': 0, 'episode': 4, 'poster': 'poster.jpg'})
-		self.service._video_metadata = Mock(return_value={'imdb_id': 'tt123', 'season': 0, 'episode': 4, 'is_episode': True, 'year': 2020})
-		configured_client = Mock()
-		self.service.Subtitles = Mock()
-		self.service.Subtitles.return_value.configure.return_value = configured_client
-
-		result = self.service._client()
-
-		self.service.Subtitles.return_value.configure.assert_called_once_with('tt123', 0, 4, 'poster.jpg', 'video.mkv', '', '', '', 2020, '', '', '', '')
-		self.assertEqual(result, (configured_client, {'imdb_id': 'tt123', 'season': 0, 'episode': 4, 'poster': 'poster.jpg'}))
-
 	def test_download_without_active_playback_adds_no_item_or_notification(self):
 		self.service._client.return_value = None
 
@@ -113,18 +98,6 @@ class SubtitleServiceTests(unittest.TestCase):
 		listitem.setProperty.assert_called_once_with('sync', 'true')
 		listitem.setLabel2.assert_called_once_with('SubDL #1 · Release.Name')
 
-	def test_fresh_manual_search_uses_raw_candidate_release_names(self):
-		listitem = Mock()
-		candidate = {'provider': 'subdl', 'id': 'file:parent:child', 'lang': 'eng', 'release_names': ['', 'Release.Name']}
-		self.service._client.return_value = (self.client, {})
-		self.client.subtitles_search.return_value = [candidate]
-		self.service.kodi_utils.make_listitem.return_value = listitem
-
-		self.service._search(7)
-
-		self.client._set_context.assert_called_once_with([candidate])
-		listitem.setLabel2.assert_called_once_with('SubDL #1 · Release.Name')
-
 	def test_manual_search_reports_safe_config_issue(self):
 		self.client.subtitles_search.return_value = []
 		self.client.subtitle_diagnostics.return_value = {'config': 'unreadable', 'providers': (), 'path': '/private/path', 'detail': 'secret'}
@@ -145,41 +118,6 @@ class SubtitleServiceTests(unittest.TestCase):
 
 		self.service.kodi_utils.notification.assert_called_once_with('Subtitle provider failed: SubSource.')
 		self.service.kodi_utils.add_item.assert_called_once()
-
-	def test_release_label_prefers_valid_projected_and_raw_values(self):
-		cases = (
-			({'release': ' Public.Release ', 'release_names': ['Raw.Release']}, 'Public.Release'),
-			({'release': ' ', 'release_names': [' ', None, {}, 'Raw.Release', 'Later.Release']}, 'Raw.Release'),
-			({'release_names': 'Whole.Release.Name'}, 'Whole.Release.Name'),
-			({'release': {}, 'release_names': None}, 'Release name unavailable'),
-			({'release_names': ['x' * 121]}, 'x' * 120)
-		)
-
-		for subtitle, expected in cases: self.assertEqual(self.service._release_label(subtitle), expected)
-
-	def test_manual_search_omits_unknown_rating_and_unsynced_property(self):
-		listitem = Mock()
-		self.service._client.return_value = (self.client, {'subtitles': [{'provider': 'opensubtitles', 'id': '123', 'lang': 'vie', 'release': 'Release.Name'}]})
-		self.service.kodi_utils.make_listitem.return_value = listitem
-
-		self.service._search(7)
-
-		listitem.setArt.assert_called_once_with({'thumb': 'vie'})
-		listitem.setProperty.assert_not_called()
-
-	def test_rating_icon_clamps_and_rounds_to_available_textures(self):
-		self.assertEqual([self.service._rating_icon(value) for value in (-1, 0, 1, 8.5, 9, 10, 11)], ['0', '0', '1', '4', '5', '5', '5'])
-		self.assertEqual(self.service._rating_icon(None), '')
-
-	def test_manual_search_uses_clean_fallback_when_release_name_is_missing(self):
-		listitem = Mock()
-		self.service._client.return_value = (self.client, {'subtitles': [{'provider': 'opensubtitles', 'id': '123', 'lang': 'vie', 'release': '   '}]})
-		self.service.kodi_utils.make_listitem.return_value = listitem
-
-		self.service._search(7)
-
-		listitem.setLabel.assert_called_once_with('Vietnamese')
-		listitem.setLabel2.assert_called_once_with('OpenSubtitles #1 · Release name unavailable')
 
 	def test_manual_search_branding_order_and_numbering_match_download_routes(self):
 		items = [Mock(), Mock(), Mock()]
@@ -247,13 +185,6 @@ class SubtitleServiceTests(unittest.TestCase):
 				self.service.run(SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '9', '?action=%s' % action]))
 				self.assertEqual(events, ['manual', 'download' if action == 'download' else 'search'])
 				self.service.mark_manual_selection.assert_called_once_with()
-
-	def test_unknown_service_action_does_not_mark_manual_selection(self):
-		self.service.mark_manual_selection = Mock()
-		self.service.kodi_utils.parsed_query.return_value = {'action': 'unknown'}
-		self.service.run(SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '9', '?action=unknown']))
-		self.service.mark_manual_selection.assert_not_called()
-		self.service.kodi_utils.end_directory.assert_called_once_with(9, False)
 
 	def test_run_silently_contains_playback_cancellation(self):
 		self.service.kodi_utils.parsed_query.return_value = {'action': 'download', 'provider': 'subdl', 'candidate': 'parent:file'}

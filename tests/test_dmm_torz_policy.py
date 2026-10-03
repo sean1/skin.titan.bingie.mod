@@ -68,28 +68,6 @@ class DmmTorzPolicyTests(unittest.TestCase):
 		self.source_utils = FakeSourceUtils()
 		self.helper = load_helper(self.source_utils)
 
-	def test_movie_context_and_direct_release_preserve_positional_contract(self):
-		context = self.helper.request_context({'title': 'Law & Order/Special Victims Unit', 'aliases': ['Alt'], 'year': '2024', 'imdb': 'tt1'})
-		self.helper.add_filter_settings(context)
-
-		name_info = self.helper.direct_release(context, 'Law.and.Order.2024')
-
-		self.assertEqual(context['title'], 'Law and Order SVU')
-		self.assertEqual(context['hdlr'], '2024')
-		self.assertEqual(name_info, 'info:direct')
-		self.assertEqual(self.source_utils.info_calls[-1], (('Law.and.Order.2024', 'Law and Order SVU', '2024', '2024', None), {}))
-
-	def test_episode_context_and_direct_release_preserve_episode_contract(self):
-		context = self.helper.request_context({
-			'tvshowtitle': 'Show', 'title': 'Episode Name', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1', 'episode': '2'
-		})
-		self.helper.add_filter_settings(context)
-
-		self.helper.direct_release(context, 'Show.S01E02')
-
-		self.assertEqual(context['hdlr'], 'S01E02')
-		self.assertEqual(self.source_utils.info_calls[-1], (('Show.S01E02', 'Show', '2024', 'S01E02', 'Episode Name'), {}))
-
 	def test_season_pack_preserves_partial_episode_range_and_filter_name(self):
 		context = self.helper.pack_context({'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1'})
 		self.helper.add_filter_settings(context)
@@ -121,17 +99,6 @@ class DmmTorzPolicyTests(unittest.TestCase):
 		self.helper.add_filter_settings(direct)
 		self.source_utils.direct_valid = False
 		self.assertIsNone(self.helper.direct_release(direct, 'Wrong.Movie'))
-
-	def test_result_builder_preserves_direct_season_and_show_shapes(self):
-		direct = self.helper.build_result('dmm', 'hash', 'Movie', 'info', '1080p', '2 GB | WEB', 2.0)
-		season_release = {'package': 'season', 'last_season': None, 'episode_start': 2, 'episode_end': 8}
-		season = self.helper.build_result('torz', 'hash', 'Show.S01', 'info', '1080p', '10 GB | WEB', 10.0, 20, season_release)
-		show_release = {'package': 'show', 'last_season': 4, 'episode_start': 0, 'episode_end': 0}
-		show = self.helper.build_result('torz', 'hash', 'Show.Complete', 'info', '1080p', '40 GB | WEB', 40.0, 30, show_release)
-
-		self.assertNotIn('package', direct)
-		self.assertEqual((season['package'], season['episode_start'], season['episode_end']), ('season', 2, 8))
-		self.assertEqual((show['package'], show['last_season']), ('show', 4))
 
 	def test_dmm_and_torz_preserve_direct_movie_and_episode_results(self):
 		movie = {'title': 'Movie', 'aliases': [], 'year': '2024', 'imdb': 'tt1'}

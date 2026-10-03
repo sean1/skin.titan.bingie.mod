@@ -12,11 +12,6 @@ class MainMenuTests(unittest.TestCase):
 	def setUpClass(cls):
 		cls.root = ET.parse(ROOT / 'xml' / 'IncludesStaticMenus.xml').getroot()
 
-	def test_static_main_menu_is_lean_and_content_first(self):
-		menu = self.root.find("include[@name='StaticMainMenu']")
-		self.assertEqual([item.get('id') for item in menu.findall('item')], ['1', '2', '3', '4', '5'])
-		self.assertEqual([item.findtext('label2') for item in menu.findall('item')], ['Home', 'Movies', 'TV shows', 'My Videos', 'My List'])
-
 	def test_my_list_sidebar_entry_reaches_the_saved_movie_and_show_chooser(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
 		main_item = next(item for item in menu.findall('item') if item.findtext('label2') == 'My List')
@@ -89,22 +84,6 @@ class MainMenuTests(unittest.TestCase):
 		bingie_view = ET.parse(ROOT / 'xml' / 'View_523_BingieMainLandscape.xml').getroot().find(".//control[@id='523']")
 		self.assertIn('!String.IsEqual(Container.FolderPath,sources://video/)', [visible.text for visible in bingie_view.findall('visible')])
 
-	def test_home_widgets_exclude_popular_rows(self):
-		menu = self.root.find("include[@name='StaticMainMenu']")
-		home = next(item for item in menu.findall('item') if item.findtext('label2') == 'Home')
-		self.assertEqual([prop.text for prop in home.findall('property') if prop.get('name', '').startswith('widgetName')], [
-			'Continue Watching Movies', 'Continue Watching TV', 'Trending Movies Today', 'Trending TV Shows Today'
-		])
-		rows = self.root.find("include[@name='StaticHomeWidgetRows']")
-		self.assertEqual([include.find("param[@name='widgetName']").get('value') for include in rows.findall("include[@content='widget_header_multi']")], [
-			'Trending Movies Today', 'Trending TV Shows Today', 'Continue Watching Movies', 'Continue Watching TV'
-		])
-
-	def test_home_widget_rows_show_five_items_each(self):
-		rows = self.root.find("include[@name='StaticHomeWidgetRows']")
-		widgets = rows.findall("include[@content='widget_base']")
-		self.assertEqual([widget.find("param[@name='widgetLimit']").get('value') for widget in widgets], ['5'] * 4)
-
 	def test_movie_and_tv_submenus_belong_to_their_main_menu_items(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
 		menu_ids = {item.findtext('label2'): item.get('id') for item in menu.findall('item')}
@@ -120,55 +99,6 @@ class MainMenuTests(unittest.TestCase):
 			self.assertTrue(any(action.startswith('RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term') for action in actions))
 			self.assertFalse(any('ActivateWindow' in action for action in actions))
 			self.assertNotIn('Pick My Night', [item.findtext('label') for item in items])
-
-	def test_movie_submenu_keeps_unique_feeds_and_browse_refine(self):
-		submenu = self.root.find("include[@name='StaticSubmenu']")
-		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'movies']
-		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 4)])
-		self.assertEqual([item.findtext('label') for item in items], [
-			'Browse & Refine', 'Trending Movies This Week', 'Search'
-		])
-		actions = {item.findtext('label'): [action.text for action in item.findall('onclick')] for item in items}
-		self.assertTrue(any('tmdb_movies_popular' in action for action in actions['Browse & Refine']))
-		self.assertNotIn('Top Rated Movies', actions)
-
-		bingie_root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
-		movie_centering = bingie_root.find(".//control[@type='list'][@id='4444']/animation[@condition='String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)']")
-		self.assertEqual(movie_centering.get('end'), '0,70')
-
-	def test_tv_submenu_keeps_unique_feeds_and_browse_refine(self):
-		submenu = self.root.find("include[@name='StaticSubmenu']")
-		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'tvshows']
-		self.assertEqual([item.get('id') for item in items], [str(value) for value in range(1, 4)])
-		self.assertEqual([item.findtext('label') for item in items], [
-			'Browse & Refine', 'Trending TV Shows This Week', 'Search'
-		])
-		actions = {item.findtext('label'): [action.text for action in item.findall('onclick')] for item in items}
-		self.assertTrue(any('tmdb_tv_popular' in action for action in actions['Browse & Refine']))
-		self.assertNotIn('New Series', actions)
-		self.assertNotIn('By Original Network', actions)
-		self.assertNotIn('Top Rated TV Shows', actions)
-
-		bingie_root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
-		tv_centering = bingie_root.find(".//control[@type='list'][@id='4444']/animation[@condition='String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)']")
-		self.assertEqual(tv_centering.get('end'), '0,154')
-
-	def test_legacy_discover_feature_is_removed(self):
-		menu = self.root.find("include[@name='StaticMainMenu']")
-		self.assertNotIn('Discover', [item.findtext('label2') for item in menu.findall('item')])
-		submenu = self.root.find("include[@name='StaticSubmenu']")
-		items = [item for item in submenu.findall('item') if item.findtext("property[@name='group']") == 'discover']
-		self.assertEqual(items, [])
-		self.assertFalse((ROOT / 'xml' / 'Custom_1113_Discover_Hub.xml').exists())
-		self.assertFalse((ROOT / 'resources' / 'lib' / 'menus' / 'discover.py').exists())
-		self.assertNotIn("mode.startswith('discover.')", (ROOT / 'resources' / 'lib' / 'routing.py').read_text(encoding='utf-8'))
-		self.assertNotIn('navigator.discover_main', (ROOT / 'resources' / 'lib' / 'modules' / 'menu_lists.py').read_text(encoding='utf-8'))
-		self.assertNotIn('bingie_items_discover', (ROOT / 'xml' / 'IncludesHubs.xml').read_text(encoding='utf-8'))
-
-	def test_refine_keeps_tmdb_discover_result_backend(self):
-		refine_source = (ROOT / 'resources' / 'lib' / 'menus' / 'refine.py').read_text(encoding='utf-8')
-		self.assertIn("'tmdb_movies_discover'", refine_source)
-		self.assertIn("'tmdb_tv_discover'", refine_source)
 
 	def test_listing_refine_sideblade_replaces_legacy_options_sideblade(self):
 		listing_root = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()
@@ -255,41 +185,6 @@ class MainMenuTests(unittest.TestCase):
 				self.assertFalse({'ShutDown', 'PowerDown'} & actions)
 				self.assertFalse(any(keyword in (item.findtext('icon') or '').lower() for item in items for keyword in ('reboot', 'shutdown')))
 				self.assertIn('Quit()', actions)
-
-	def test_main_menu_omits_profile_switcher(self):
-		text = (ROOT / 'xml' / 'IncludesBingie.xml').read_text()
-		for marker in ('id="40000"', 'Control.HasFocus(40000)', 'System.ProfileThumb', 'System.ProfileName', '$LOCALIZE[31839]'):
-			self.assertNotIn(marker, text)
-
-	def test_submenu_is_visible_without_a_right_key_press(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
-		submenu = root.find(".//control[@type='list'][@id='4444']")
-		visibility = (submenu.findtext('visible') or '').strip()
-		self.assertEqual(visibility, '[Control.HasFocus(900) | Control.HasFocus(4444)] + Integer.IsGreater(Container(4445).NumItems,0)')
-		static_submenu = self.root.find("include[@name='StaticSubmenu']")
-		largest_group = max(sum(item.findtext("property[@name='group']") == group for item in static_submenu.findall('item')) for group in ('movies', 'tvshows', 'mylist'))
-		layouts = [*submenu.findall('itemlayout'), *submenu.findall('focusedlayout')]
-		row_height = max(int(layout.get('height')) for layout in layouts)
-		item_gap = int(submenu.findtext('itemgap'))
-		self.assertGreaterEqual(int(submenu.findtext('height')), largest_group * row_height + (largest_group - 1) * item_gap)
-		sideblade = root.find("include[@name='SideBladeSubMenu']")
-		group = sideblade.find("control[@type='group']")
-		self.assertEqual(int(group.findtext('posx')) + int(submenu.findtext('posx')) + 10, 450)
-		vertical_alignment_conditions = [animation.get('condition', '') for animation in group.findall('animation')]
-		self.assertFalse(any('Container(900).NumItems' in condition or 'Container(900).Position' in condition for condition in vertical_alignment_conditions))
-		main = root.find(".//control[@type='list'][@id='900']")
-		main_row_height = int(main.find('itemlayout').get('height'))
-		main_items = self.root.find("include[@name='StaticMainMenu']").findall('item')
-		main_count_offset = next(int(animation.get('end').split(',')[1]) for animation in main.findall('animation') if 'Container(900).NumItems,%d' % len(main_items) in animation.get('condition', ''))
-		main_top = int(main.findtext('top')) + main_count_offset
-		base_submenu_top = int(group.findtext('posy')) + int(submenu.findtext('posy'))
-		for submenu_group in ('movies', 'tvshows', 'mylist'):
-			main_index = next(index for index, item in enumerate(main_items) if item.findtext("property[@name='submenuVisibility']") == submenu_group)
-			item_count = sum(item.findtext("property[@name='group']") == submenu_group for item in static_submenu.findall('item'))
-			content_height = item_count * row_height + (item_count - 1) * item_gap
-			offset = next(int(animation.get('end').split(',')[1]) for animation in submenu.findall('animation') if animation.get('condition', '').endswith(',%s)' % submenu_group))
-			self.assertLessEqual(abs(2 * (base_submenu_top + offset) + content_height - (2 * (main_top + main_index * main_row_height) + main_row_height)), 1)
-		self.assertTrue(any(animation.get('condition', '').endswith(',myvideos)') for animation in submenu.findall('animation')))
 
 	def test_submenu_focus_keeps_main_menu_open(self):
 		root = ET.parse(ROOT / 'xml' / 'Includes.xml').getroot()

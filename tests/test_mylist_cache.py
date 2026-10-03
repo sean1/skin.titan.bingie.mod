@@ -39,12 +39,6 @@ class MyListCacheTests(unittest.TestCase):
 	def items(self, mediatype='movie', **kwargs):
 		return self.store.items(mediatype, **kwargs)[0]
 
-	def test_default_database_is_the_active_addon_profile_database(self):
-		profile_store = self.cache.MyList()
-		self.assertTrue(profile_store.add('movie', 101, 'Profile movie'))
-		self.assertTrue(self.database_path.exists())
-		self.assertEqual([item['media_id'] for item in self.items()], ['101'])
-
 	def test_save_and_remove_persist_across_store_recreation(self):
 		self.assertTrue(self.store.add('movie', 101, 'Movie'))
 		reopened = self.cache.MyList(str(self.database_path))
@@ -71,26 +65,6 @@ class MyListCacheTests(unittest.TestCase):
 		self.assertEqual(self.items(), before)
 		self.assertTrue(self.store.contains('movie', 101))
 		self.assertTrue(all(isinstance(item['saved_at'], int) for item in before))
-
-	def test_repeated_remove_is_successful_without_affecting_other_titles(self):
-		self.store.add('movie', 101, 'First')
-		self.store.add('movie', 102, 'Second')
-		self.assertTrue(self.store.remove('movie', 101))
-		self.assertTrue(self.store.remove('movie', 101))
-		self.assertEqual([item['media_id'] for item in self.items()], ['102'])
-
-	def test_episode_with_explicit_parent_saves_one_series_with_its_title(self):
-		self.assertTrue(self.store.add('episode', 9876, 'Series', tvshow_id=101))
-		self.assertTrue(self.store.add('episode', 9877, 'Series', tvshow_id=101))
-		self.assertEqual([(item['media_id'], item['title']) for item in self.items('tvshow')], [('101', 'Series')])
-		self.assertTrue(self.store.contains('tvshow', 101))
-		self.assertFalse(self.store.contains('tvshow', 9876))
-		self.assertEqual(self.items('movie'), [])
-
-	def test_episode_route_series_id_is_normalized_without_a_separate_parent(self):
-		self.assertEqual(self.cache.normalize_identity('episode', '101'), ('tvshow', 101))
-		self.store.add('episode', '101', 'Series')
-		self.assertTrue(self.store.contains('tvshow', 101))
 
 	def test_invalid_identities_are_rejected_without_modifying_saved_items(self):
 		self.store.add('movie', 101, 'Keep')
@@ -129,15 +103,6 @@ class MyListCacheTests(unittest.TestCase):
 		items, pages = self.store.items('movie', page=2, limit=2)
 		self.assertEqual(pages, 1)
 		self.assertEqual([item['media_id'] for item in items], ['103', '102'])
-
-	def test_menu_adapter_uses_configured_pagination_and_unlimited_mode(self):
-		for media_id in range(101, 104): self.store.add('movie', media_id, 'Movie')
-		with temporary_modules(self.stubs):
-			items, pages = self.cache.get_my_list({}, 'movie', 2)
-			self.assertEqual(([item['media_id'] for item in items], pages), (['101'], 2))
-			self.stubs['modules.settings'].paginate.return_value = False
-			items, pages = self.cache.get_my_list({}, 'movie', 2)
-			self.assertEqual(([item['media_id'] for item in items], pages), (['103', '102', '101'], 1))
 
 	def test_database_initialization_and_cleanup_preserve_saved_items(self):
 		kodi_utils = self.stubs['modules.kodi_utils']

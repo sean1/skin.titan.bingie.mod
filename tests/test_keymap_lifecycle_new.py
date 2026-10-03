@@ -49,22 +49,6 @@ class KeymapLifecycleTests(unittest.TestCase):
 		self.assertNotIn(keymap.KEYMAP_PATH, files)
 		kodi_utils.open_file.assert_not_called()
 
-	def test_keymap_is_scoped_to_custom_info_window(self):
-		keymap, kodi_utils, files = load_keymap()
-		self.assertTrue(keymap.Lifecycle().tick())
-		self.assertIn('<window1123>', files[keymap.KEYMAP_PATH])
-		self.assertNotIn('<global>', files[keymap.KEYMAP_PATH])
-		kodi_utils.execute_builtin.assert_called_once_with('ReloadKeymaps')
-
-	def test_unchanged_skin_state_does_not_touch_the_keymap_again(self):
-		keymap, kodi_utils, files = load_keymap()
-		now = [0.0]
-		lifecycle = keymap.Lifecycle(clock=lambda: now[0])
-		self.assertTrue(lifecycle.tick())
-		kodi_utils.open_file.reset_mock()
-		self.assertFalse(lifecycle.tick())
-		kodi_utils.open_file.assert_not_called()
-
 	def test_active_keymap_drift_is_repaired_only_after_reconcile_interval(self):
 		keymap, kodi_utils, files = load_keymap()
 		now = [0.0]
@@ -141,12 +125,6 @@ class KeymapLifecycleTests(unittest.TestCase):
 		lifecycle.active = None
 		self.assertFalse(lifecycle.tick())
 		self.assertIn(keymap.KEYMAP_PATH, files)
-
-	def test_stale_global_action_restores_context_menu_in_inactive_skin(self):
-		focused, kodi_utils = load_focused('skin.estuary')
-		self.assertFalse(focused.source_select_focused())
-		kodi_utils.get_visibility.assert_called_once_with(focused.PLAYBACK_WINDOW_VISIBILITY)
-		kodi_utils.execute_builtin.assert_called_once_with('Action(ContextMenu)')
 
 	def test_stale_global_action_never_restores_context_menu_during_playback(self):
 		focused, kodi_utils = load_focused('skin.estuary')

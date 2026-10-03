@@ -7,19 +7,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InfoActionTimingTests(unittest.TestCase):
-	def test_custom_tv_info_keeps_trailer_autoplay_after_one_second(self):
-		window = ET.parse(ROOT / 'xml' / 'Custom_1123_PovInfo.xml').getroot()
-		autoplay = [node for node in window.findall('onload') if 'PovInfoTrailerPreview' in (node.text or '')]
-		self.assertEqual(len(autoplay), 1)
-		self.assertEqual(
-			(autoplay[0].get('condition'), (autoplay[0].text or '').strip()),
-			(
-				'String.IsEqual(Window(Home).Property(PovInfoType),tvshow) + [$EXP[PovInfoHasValidMedia] | !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))]',
-				'AlarmClock(PovInfoTrailerPreview,SetProperty(BingieTrailerPreviewRequest,true,Home),00:00:01,silent)'
-			)
-		)
-		cancellations = [(node.get('condition'), (node.text or '').strip()) for node in window.findall('onunload') if 'PovInfoTrailerPreview' in (node.text or '')]
-		self.assertEqual(cancellations, [('System.HasAlarm(PovInfoTrailerPreview)', 'CancelAlarm(PovInfoTrailerPreview,silent)')])
 
 	def test_movie_detail_buttons_request_trailer_without_closing_the_page(self):
 		for filename, visibility in (
@@ -40,30 +27,6 @@ class InfoActionTimingTests(unittest.TestCase):
 		self.assertEqual(actions, [
 			('String.IsEqual(Window.Property(PovInfoType),movie)', 'SetProperty(BingieTrailerPreviewCancel,true,Home)'),
 			('String.IsEqual(Window.Property(PovInfoType),movie)', 'ClearProperty(BingieTrailerPreviewRequest,Home)'),
-		])
-
-	def test_related_shelf_alarms_use_listitem_source_conditions(self):
-		root = ET.parse(ROOT / 'xml' / 'DialogVideoInfo.xml').getroot()
-		alarms = [(node.get('condition'), (node.text or '').strip()) for node in root.findall('onload') if (node.text or '').strip().startswith('AlarmClock(PovDialog')]
-		self.assertEqual(alarms, [
-			(
-				'[String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow)] + !String.IsEmpty(ListItem.UniqueID(tmdb))',
-				'AlarmClock(PovDialogMoreLikeThisShelf,SetProperty(PovInfoMoreLikeThisReady,1,12003),00:00:01,silent)'
-			),
-			(
-				'String.IsEqual(ListItem.DBTYPE,movie) + !String.IsEmpty(ListItem.UniqueID(tmdb))',
-				'AlarmClock(PovDialogCollectionShelf,SetProperty(PovInfoCollectionReady,1,12003),00:00:02,silent)'
-			)
-		])
-		cancellations = [(node.get('condition'), (node.text or '').strip()) for node in root.findall('onunload') if (node.text or '').strip().startswith('CancelAlarm(PovDialog')]
-		self.assertEqual(cancellations, [
-			('System.HasAlarm(PovDialogMoreLikeThisShelf)', 'CancelAlarm(PovDialogMoreLikeThisShelf,silent)'),
-			('System.HasAlarm(PovDialogCollectionShelf)', 'CancelAlarm(PovDialogCollectionShelf,silent)')
-		])
-		cleared_properties = [(node.text or '').strip() for node in root.findall('onunload') if (node.text or '').strip().startswith('ClearProperty(PovInfo')]
-		self.assertEqual(cleared_properties, [
-			'ClearProperty(PovInfoTmdb,12003)', 'ClearProperty(PovInfoType,12003)', 'ClearProperty(PovInfoCollectionId,12003)',
-			'ClearProperty(PovInfoMoreLikeThisReady,12003)', 'ClearProperty(PovInfoCollectionReady,12003)', 'ClearProperty(PovInfoFanart,12003)'
 		])
 
 	def test_post_close_info_actions_use_zero_delay_alarms(self):

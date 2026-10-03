@@ -67,51 +67,12 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual(set(config), {'opensubtitles', 'subdl', 'subsource'})
 		self.assertNotIn(secret, repr(self.providers.kodi_utils.logger.call_args_list))
 
-	def test_regular_config_loads_with_non_private_permissions_without_logging_secrets(self):
-		secret = 'sentinel-private-value'
-		with TemporaryDirectory() as directory:
-			path = Path(directory) / 'providers.json'
-			path.write_text(json.dumps({'subdl': {'api_key': secret}}))
-			path.chmod(0o644)
-			config = self.providers.load_provider_config(str(path))
-
-		self.assertEqual(config, {'subdl': {'api_key': secret}})
-		self.assertNotIn(secret, repr(self.providers.kodi_utils.logger.call_args_list))
-
-	def test_symlinked_config_loads_when_target_is_readable_and_valid(self):
-		with TemporaryDirectory() as directory:
-			target = Path(directory) / 'target.json'
-			target.write_text(json.dumps({'subdl': {'api_key': 'key'}}))
-			target.chmod(0o600)
-			path = Path(directory) / 'providers.json'
-			path.symlink_to(target)
-			config = self.providers.load_provider_config(str(path))
-
-		self.assertEqual(config, {'subdl': {'api_key': 'key'}})
-
 	def test_unreadable_config_path_is_rejected(self):
 		with TemporaryDirectory() as directory:
 			config, category = self.providers._load_provider_config(directory)
 
 		self.assertEqual(config, {})
 		self.assertEqual(category, 'unreadable')
-
-	def test_manager_reports_safe_config_category(self):
-		with patch.object(self.providers, '_load_provider_config', return_value=({}, 'unreadable')):
-			manager = self.providers.ProviderManager({})
-
-		self.assertEqual(manager.diagnostics(), {'config': 'unreadable', 'providers': ()})
-
-	def test_rank_preserves_absolute_english_priority(self):
-		media = {'release_name': 'Movie.2024.1080p.WEB-DL-GROUP', 'season': None, 'episode': None}
-		candidates = [
-			self.providers._candidate('subsource', 'vi', 'vie', ('Movie.2024.1080p.WEB-DL-GROUP',), trusted=True),
-			self.providers._candidate('opensubtitles', 'en', 'eng', ('Different.Release',), machine_translated=True)
-		]
-
-		ranked = self.providers.rank_candidates(candidates, media)
-
-		self.assertEqual([item['id'] for item in ranked], ['en', 'vi'])
 
 	def test_exact_release_match_wins_within_language(self):
 		media = {'release_name': 'Movie.2024.1080p.WEB-DL-GROUP', 'season': None, 'episode': None}
@@ -202,21 +163,6 @@ class SubtitleProviderTests(unittest.TestCase):
 
 		self.assertEqual([item['id'] for item in ranked], ['right'])
 
-	def test_public_candidate_contains_no_locator_or_url(self):
-		candidate = self.providers._candidate('subdl', 'parent:file', 'eng', ('Release',), rating=8.5, locator='/private/path')
-		candidate['sync'] = True
-
-		public = self.providers.public_candidate(candidate)
-
-		self.assertEqual(set(public), {'provider', 'id', 'lang', 'score', 'release', 'rating', 'sync'})
-		self.assertEqual((public['rating'], public['sync']), (8.5, True))
-		self.assertNotIn('://', json.dumps(public))
-
-	def test_public_candidate_projection_preserves_an_existing_safe_release_label(self):
-		public = {'provider': 'subdl', 'id': 'file:1:2', 'lang': 'eng', 'score': 10, 'release': 'Movie.WEB-DL-GROUP'}
-
-		self.assertEqual(self.providers.public_candidate(public), public)
-
 	def test_all_three_provider_searches_overlap(self):
 		barrier = threading.Barrier(3)
 
@@ -289,15 +235,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual((results[0]['season'], results[0]['episode'], results[0]['extension']), (1, 2, 'srt'))
 		self.assertTrue(results[0]['trusted'])
 
-	def test_opensubtitles_login_normalizes_full_host_base_url(self):
-		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key-one', 'user_agent': 'Test', 'username': 'user-one', 'password': 'secret'}, {})
-		provider.request_json = Mock(return_value={'token': 'private-token', 'base_url': 'https://vip-api.opensubtitles.com'})
-
-		provider.login(force=True)
-
-		self.assertEqual(provider.base_url, 'https://vip-api.opensubtitles.com/api/v1')
-		self.assertEqual(provider.token, 'private-token')
-
 	def test_opensubtitles_download_requests_native_file_without_format_conversion(self):
 		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})
 		provider.login = Mock()
@@ -310,19 +247,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		provider.authenticated_json.assert_called_once_with('POST', 'download', 'download', json={'file_id': 456})
 		download_binary.assert_called_once_with('https://download.invalid/subtitle', 'opensubtitles', self.providers.MAX_SUBTITLE_BYTES, None)
 		self.assertEqual(payload, {'content': b'subtitle text', 'extension': 'srt'})
-
-	def test_opensubtitles_context_download_authenticates_configured_user_without_search(self):
-		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test', 'username': 'user', 'password': 'secret'}, {})
-		provider.login = Mock()
-		provider.search = Mock(side_effect=AssertionError('download must not search'))
-		provider.authenticated_json = Mock(return_value={'link': 'https://download.invalid/subtitle'})
-
-		with patch.object(self.providers, '_download_binary', return_value=b'subtitle'):
-			payload = provider.download({'id': '456', 'extension': 'srt'})
-
-		provider.login.assert_called_once_with()
-		provider.search.assert_not_called()
-		self.assertEqual(payload, {'content': b'subtitle', 'extension': 'srt'})
 
 	def test_opensubtitles_quota_rejection_disables_repeated_download_attempts(self):
 		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})

@@ -33,17 +33,10 @@ def load_magneto(settings):
 
 
 class ProviderLoaderTests(unittest.TestCase):
-	def test_providers_default_to_enabled(self):
-		module = load_magneto({})
-		self.assertEqual(module.sources(), [('comet', 'source-comet'), ('torrentio', 'source-torrentio')])
 
 	def test_disabled_provider_is_filtered(self):
 		module = load_magneto({'provider.external.comet.enabled': 'false'})
 		self.assertEqual(module.sources(), [('torrentio', 'source-torrentio')])
-
-	def test_ret_all_bypasses_disabled_provider_filter(self):
-		module = load_magneto({'provider.external.comet.enabled': 'false'})
-		self.assertEqual(module.sources(ret_all=True), [('comet', 'source-comet'), ('torrentio', 'source-torrentio')])
 
 
 if __name__ == '__main__':

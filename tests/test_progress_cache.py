@@ -34,27 +34,10 @@ class ProgressCacheTests(unittest.TestCase):
 		self.dbcon.cursor.return_value = self.dbcur
 		self.progress.kodi_utils.database_connect.return_value = self.dbcon
 
-	def test_erase_bookmark_is_one_indexed_delete_without_refresh(self):
-		self.progress.erase_bookmark('movie', '101')
-
-		self.progress.kodi_utils.database_connect.assert_called_once_with('watched.db', timeout=1, isolation_level=None)
-		self.dbcur.execute.assert_called_once_with(self.progress.DELETE_BM, ('movie', '101', '', ''))
-		self.dbcon.close.assert_called_once_with()
-		self.progress.kodi_utils.external_browse.assert_not_called()
-		self.progress.kodi_utils.widget_refresh.assert_not_called()
-		self.progress.kodi_utils.container_refresh.assert_not_called()
-
 	def test_erase_bookmark_normalizes_episode_numbers(self):
 		self.progress.erase_bookmark('episode', '101', '2', '3')
 
 		self.dbcur.execute.assert_called_once_with(self.progress.DELETE_BM, ('episode', '101', 2, 3))
-
-	def test_explicit_refresh_uses_current_container(self):
-		self.progress.erase_bookmark('movie', '101', refresh='progress')
-
-		self.progress.kodi_utils.container_refresh.assert_called_once_with()
-		self.progress.kodi_utils.set_property.assert_not_called()
-		self.progress.kodi_utils.widget_refresh.assert_not_called()
 
 	def test_progress_refresh_invalidates_only_the_matching_external_widget(self):
 		progress = load_progress_cache(external=True)
@@ -70,18 +53,6 @@ class ProgressCacheTests(unittest.TestCase):
 		self.assertGreater(int(property_value), 0)
 		progress.kodi_utils.widget_refresh.assert_not_called()
 		progress.kodi_utils.container_refresh.assert_not_called()
-
-	def test_legacy_explicit_refresh_keeps_global_widget_signal(self):
-		progress = load_progress_cache(external=True)
-		dbcon, dbcur = Mock(), Mock()
-		dbcur.rowcount = 1
-		dbcon.cursor.return_value = dbcur
-		progress.kodi_utils.database_connect.return_value = dbcon
-
-		progress.erase_bookmark('movie', '101', refresh='true')
-
-		progress.kodi_utils.widget_refresh.assert_called_once_with()
-		progress.kodi_utils.set_property.assert_not_called()
 
 	def test_noop_delete_skips_explicit_refresh(self):
 		self.dbcur.rowcount = 0

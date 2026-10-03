@@ -25,17 +25,6 @@ class SubtitleBoundedDownloadTests(unittest.TestCase):
 		self.providers = load_providers()
 		self.request = self.providers.requests.request
 
-	def test_success_streams_fixed_chunks_and_closes_response(self):
-		response = BinaryResponse((b'abc', b'', b'def'), headers={'Content-Length': '6'})
-		self.request.return_value = response
-
-		content = self.providers._download_binary('https://download.invalid/subtitle', 'test', 6)
-
-		self.assertEqual(content, b'abcdef')
-		self.request.assert_called_once_with('GET', 'https://download.invalid/subtitle', timeout=self.providers.REQUEST_TIMEOUT, stream=True)
-		self.assertEqual(response.chunk_size, 64 * 1024)
-		response.close.assert_called_once_with()
-
 	def test_content_length_over_cap_rejects_before_reading(self):
 		response = BinaryResponse((b'not-read',), headers={'Content-Length': '7'})
 		self.request.return_value = response

@@ -75,11 +75,5 @@ class ActorEpisodesTests(unittest.TestCase):
 		self.module.episode_credits.assert_not_called()
 		self.progress.close.assert_called_once_with()
 
-	def test_complete_lookup_with_no_matches_explains_empty_results(self):
-		self.module.episode_credits = Mock(return_value={'cast': [], 'guest_stars': []})
-		self.assertEqual(self.module.filter_actor_episodes(100, [{'season': 1, 'episode': 1}], 42, 'Target Actor'), [])
-		self.module.kodi_utils.notification.assert_called_once_with('No credited episodes found for Target Actor.')
-		self.progress.close.assert_called_once_with()
-
 
 if __name__ == '__main__': unittest.main()

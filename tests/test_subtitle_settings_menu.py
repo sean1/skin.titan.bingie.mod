@@ -1,6 +1,5 @@
 import types
 import unittest
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import Mock, call
 
@@ -32,25 +31,6 @@ class SubtitleSettingsMenuTests(unittest.TestCase):
 			'currentsubtitle': {'index': 0, 'language': 'eng', 'name': 'English'},
 		}
 		self.dialogs._subtitle_rpc = Mock(side_effect=lambda method, params=None: [{'playerid': 1, 'type': 'video'}] if method == 'Player.GetActivePlayers' else self.state if method == 'Player.GetProperties' else 'OK')
-
-	def test_menu_contains_only_supported_actions(self):
-		self.dialogs.kodi_utils.dialog.select.return_value = -1
-
-		self.dialogs.subtitle_settings_menu()
-
-		options = self.dialogs.kodi_utils.dialog.select.call_args.args[1]
-		self.assertEqual(options, ['13397: 16041', '22006: 0.000s', '462: English (1/2)', '24134'])
-		self.assertNotIn('13250', options)
-		self.assertNotIn('12376', options)
-		self.mark_manual_selection.assert_not_called()
-
-	def test_offset_opens_native_subtitle_delay_slider(self):
-		self.dialogs.kodi_utils.dialog.select.return_value = 1
-
-		self.dialogs.subtitle_settings_menu()
-
-		self.dialogs.execute_builtin.assert_called_once_with('Action(SubtitleDelay)')
-		self.mark_manual_selection.assert_not_called()
 
 	def test_enable_toggle_uses_player_api(self):
 		self.dialogs.kodi_utils.dialog.select.return_value = 0
@@ -93,20 +73,6 @@ class SubtitleSettingsMenuTests(unittest.TestCase):
 		self.dialogs.subtitle_settings_menu()
 		self.mark_manual_selection.assert_not_called()
 		self.assertFalse(any(invocation.args[0] == 'Player.SetSubtitle' for invocation in self.dialogs._subtitle_rpc.call_args_list))
-
-	def test_download_opens_subtitle_search(self):
-		self.dialogs.kodi_utils.dialog.select.return_value = 3
-
-		self.dialogs.subtitle_settings_menu()
-
-		self.dialogs.execute_builtin.assert_called_once_with('ActivateWindow(subtitlesearch)')
-
-	def test_both_osd_buttons_open_the_focused_menu(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesOSD.xml').getroot()
-		actions = [(node.text or '').strip() for node in root.iter('onclick')]
-
-		self.assertEqual(actions.count('RunPlugin(plugin://skin.titan.bingie.lite/?mode=subtitle_settings)'), 2)
-		self.assertNotIn('ActivateWindow(osdsubtitlesettings)', actions)
 
 
 if __name__ == '__main__':

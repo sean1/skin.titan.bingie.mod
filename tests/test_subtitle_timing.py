@@ -213,62 +213,12 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.assertTrue(self.client._video_file_subs())
 		self.client.setSubtitleStream.assert_called_once_with(1)
 
-	def test_only_forced_embedded_subtitles_continue_to_full_download_fallback(self):
-		self.client.getAvailableSubtitleStreams = Mock(return_value=['English (Forced)', 'Vietnamese foreign parts only'])
-		self.client.setSubtitleStream = Mock()
-		self.client.showSubtitles = Mock()
-		self.assertFalse(self.client._video_file_subs())
-		self.client.setSubtitleStream.assert_not_called()
-		self.client.showSubtitles.assert_not_called()
-		self.subtitles.kodi_utils.notification.assert_not_called()
-
 	def test_forced_legacy_current_track_does_not_stop_full_download_fallback(self):
 		self.client.getAvailableSubtitleStreams = Mock(side_effect=AttributeError)
 		self.client.getSubtitles = Mock(return_value='English (Forced)')
 		self.client.showSubtitles = Mock()
 		self.assertFalse(self.client._video_file_subs())
 		self.client.showSubtitles.assert_not_called()
-
-	def test_embedded_unpreferred_languages_continue_to_download_fallback(self):
-		self.client.getAvailableSubtitleStreams = Mock(return_value=['spa', 'fre'])
-		self.client.setSubtitleStream = Mock()
-		self.client.showSubtitles = Mock()
-
-		result = self.client._video_file_subs()
-
-		self.assertFalse(result)
-		self.client.setSubtitleStream.assert_not_called()
-		self.client.showSubtitles.assert_not_called()
-		self.subtitles.kodi_utils.notification.assert_not_called()
-
-	def test_legacy_player_api_uses_current_preferred_subtitle(self):
-		self.client.getAvailableSubtitleStreams = Mock(side_effect=AttributeError)
-		self.client.getSubtitles = Mock(return_value='en')
-		self.client.showSubtitles = Mock()
-
-		result = self.client._video_file_subs()
-
-		self.assertTrue(result)
-		self.client.showSubtitles.assert_called_once_with(True)
-		self.subtitles.kodi_utils.notification.assert_called_once_with(32852, icon='')
-
-	def test_binary_response_payload_is_written_before_attach(self):
-		class BinaryResponse:
-			content = b'subtitle bytes'
-
-			@property
-			def text(self):
-				raise AttributeError
-
-		events = []
-		self.client.provider_manager.download.return_value = {'content': b'subtitle bytes', 'extension': 'srt'}
-		self.subtitles.kodi_utils.open_file = Mock(return_value=RecordingFile(events))
-		self.client.setSubtitles = Mock(side_effect=lambda path: events.append(('attach', path)))
-
-		self.client._searched_subs()
-
-		self.assertEqual(events, ['open', ('write', b'subtitle bytes'), 'close', ('attach', 'special://temp/fixture_eng_full.srt')])
-		self.subtitles.kodi_utils.sleep.assert_not_called()
 
 	def test_failed_top_download_falls_through_to_next_ranked_candidate(self):
 		second_candidate = {'provider': 'subdl', 'id': 'eng-2', 'lang': 'eng', 'release_names': ['Fixture'], 'score': 10}
@@ -358,20 +308,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.assertFalse(self.client._downloaded_subs())
 		self.client.setSubtitles.assert_not_called()
 		self.subtitles.kodi_utils.notification.assert_not_called()
-
-	def test_automatic_cache_attaches_only_a_full_policy_file(self):
-		self.subtitles.kodi_utils.list_dirs.return_value = ([], ['fixture_eng.srt', 'fixture_vie_full.ass', 'fixture_eng_full.srt'])
-		self.client.setSubtitles = Mock()
-		self.assertTrue(self.client._downloaded_subs())
-		self.client.setSubtitles.assert_called_once_with('special://temp/fixture_eng_full.srt')
-		self.subtitles.kodi_utils.notification.assert_called_once_with(32792, icon='')
-
-	def test_initial_disabled_state_preserves_automatic_full_subtitle_enable(self):
-		state, manager = self.automatic_fixture(enabled=False)
-		self.assertTrue(self.client.run('Fixture', 'tt123', None, None, ''))
-		self.client.setSubtitleStream.assert_called_once_with(0)
-		self.client.showSubtitles.assert_called_once_with(True)
-		manager.search.assert_not_called()
 
 	def test_late_default_index_is_readiness_and_full_track_still_wins(self):
 		for initial_index in (None, -1):

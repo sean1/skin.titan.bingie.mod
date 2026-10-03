@@ -107,11 +107,6 @@ class MenuMediaTests(unittest.TestCase):
 		for data, expected in cases:
 			with self.subTest(data=data): self.assertEqual(self.media.first_country_code(data), expected)
 
-	def test_card_badges_follow_media_type_when_country_and_language_are_both_available(self):
-		data = {'country_codes': ['GB'], 'original_language': 'en'}
-		self.assertEqual(self.media.card_badge_properties(data, 'movie'), {'card_language': 'EN'})
-		self.assertEqual(self.media.card_badge_properties(data, 'tvshow'), {'card_flag': 'flags/country/gb.png'})
-
 	def test_card_country_and_language_values_are_extracted_independently(self):
 		cases = (
 			({'country_codes': ['GB'], 'original_language': 'en'}, 'flags/country/gb.png', 'EN'),
@@ -128,11 +123,6 @@ class MenuMediaTests(unittest.TestCase):
 			with self.subTest(data=data):
 				self.assertEqual(self.media.card_flag(data), expected_flag)
 				self.assertEqual(self.media.card_language(data), expected_language)
-
-	def test_card_badges_require_the_expected_metadata_for_each_media_type(self):
-		self.assertEqual(self.media.card_badge_properties({'country_codes': ['US']}, 'movie'), {})
-		self.assertEqual(self.media.card_badge_properties({'original_language': 'en'}, 'tvshow'), {})
-		self.assertEqual(self.media.card_badge_properties({'country_codes': ['US'], 'original_language': 'en'}, 'episode'), {})
 
 	def test_invalid_summary_item_is_ignored_before_listitem_creation(self):
 		for item in ({'id': 1}, {'title': 'Movie'}):

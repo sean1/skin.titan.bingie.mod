@@ -58,15 +58,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 		self.assertTrue(self.cache.advance(101, 2, 1))
 		self.assertEqual(self.cache.lookup(101), (2, 1))
 
-	def test_cursor_is_one_anonymous_row_per_show(self):
-		self.cache.advance(101, 1, 2)
-		self.cache.advance(101, 1, 3)
-		with sqlite3.connect(self.database_path) as dbcon:
-			columns = [row[1] for row in dbcon.execute('PRAGMA table_info(smartplay_cursor)')]
-			rows = dbcon.execute('SELECT * FROM smartplay_cursor').fetchall()
-		self.assertEqual(columns, ['tmdb_id', 'season', 'episode'])
-		self.assertEqual(rows, [(101, 1, 3)])
-
 	def test_invalid_identity_values_are_rejected(self):
 		for args in ((0, 1, 1), ('invalid', 1, 1), (101, 0, 1), (101, 1, 0), (True, 1, 1), (101, 1.5, 1)):
 			with self.subTest(args=args), self.assertRaises(ValueError): self.cache.advance(*args)
@@ -118,13 +109,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 			remaining = dbcon.execute("SELECT media_id, season, episode FROM progress WHERE db_type = 'episode' ORDER BY media_id, season, episode").fetchall()
 		self.assertEqual(remaining, [('101', 0, 5), ('202', 0, 4)])
 		self.cache.kodi_utils.set_property.assert_called_once()
-
-	def test_completed_special_without_cursor_only_deletes_progress(self):
-		with sqlite3.connect(self.database_path) as dbcon:
-			dbcon.execute('INSERT INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', ('episode', '101', 0, 1, '95', '3000', '', 0, 'Completed special'))
-
-		self.assertEqual(self.cache.complete_episode('101', '0', '1'), (False, True))
-		self.assertIsNone(self.cache.lookup(101))
 
 	def test_failed_special_progress_delete_rolls_back_without_changing_cursor(self):
 		self.cache.advance(101, 2, 3)

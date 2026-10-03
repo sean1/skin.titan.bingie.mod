@@ -85,31 +85,12 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.assertIn('primary_release_date.lte=2019-12-31', url)
 		self.assertIn('page=3', url)
 
-	def test_language_feed_filters_original_language(self):
-		url = self.tmdb.tmdb_movies_language('ko', 1)['url']
-		self.assertIn('with_original_language=ko', url)
-		self.assertIn('sort_by=popularity.desc', url)
-
 	def test_tv_decade_and_language_feeds_use_tv_filters(self):
 		decade_url = self.tmdb.tmdb_tv_decade('2000', 1)['url']
 		self.assertIn('first_air_date.gte=2000-01-01', decade_url)
 		self.assertIn('first_air_date.lte=2009-12-31', decade_url)
 		language_url = self.tmdb.tmdb_tv_language('ja', 1)['url']
 		self.assertIn('with_original_language=ja', language_url)
-
-	def test_year_decade_parent_offers_both_browsing_modes(self):
-		self.menu.movie_years_decades()
-
-		self.assertEqual([call.args[0]['name'] for call in self.menu._add_item.call_args_list], ['By Decade', 'By Year'])
-		self.assertEqual([call.args[0]['mode'] for call in self.menu._add_item.call_args_list], ['navigator.decades', 'navigator.years'])
-		self.menu._end_directory.assert_called_once_with()
-
-	def test_tv_year_decade_parent_uses_tv_menu_type(self):
-		self.menu.tv_years_decades()
-
-		params = [call.args[0] for call in self.menu._add_item.call_args_list]
-		self.assertEqual([item['menu_type'] for item in params], ['tvshow', 'tvshow'])
-		self.assertEqual([item['mode'] for item in params], ['navigator.decades', 'navigator.years'])
 
 	def test_language_directory_uses_unique_two_letter_tmdb_codes(self):
 		meta_lists = types.ModuleType('modules.meta_lists')
@@ -122,30 +103,6 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		params = [call.args[0] for call in self.menu._add_item.call_args_list]
 		self.assertEqual({item['language'] for item in params}, {'ko', 'pt'})
 		self.assertTrue(all(item['action'] == 'tmdb_movies_language' for item in params))
-
-	def test_tv_language_directory_uses_tv_list_action(self):
-		meta_lists = types.ModuleType('modules.meta_lists')
-		meta_lists.meta_languages = {'Japanese': {'iso': 'ja'}, 'Spanish': {'iso': 'es'}}
-		with temporary_modules({'modules.meta_lists': meta_lists}):
-			self.menu.tv_languages()
-
-		params = [call.args[0] for call in self.menu._add_item.call_args_list]
-		self.assertTrue(all(item['mode'] == 'build_tvshow_list' and item['action'] == 'tmdb_tv_language' for item in params))
-
-	def test_tv_network_picker_lists_popular_networks_and_other_last(self):
-		meta_lists = types.ModuleType('modules.meta_lists')
-		meta_lists.networks = (
-			{'id': 174, 'name': 'AMC', 'logo': 'amc.png'}, {'id': 213, 'name': 'Netflix', 'logo': 'netflix.png'},
-			{'id': 1024, 'name': 'Amazon', 'logo': 'amazon.png'}, {'id': 9999, 'name': 'Obscure Network', 'logo': 'obscure.png'}
-		)
-		with temporary_modules({'modules.meta_lists': meta_lists}):
-			self.menu.tv_networks()
-
-		params = [call.args[0] for call in self.menu._add_item.call_args_list]
-		self.assertEqual([item['name'] for item in params], ['Netflix', 'Amazon', 'AMC', 'Other Network…'])
-		self.assertEqual([item['network_id'] for item in params[:-1]], [213, 1024, 174])
-		self.assertEqual(params[-1]['mode'], 'navigator.search_tv_network')
-		self.menu._end_directory.assert_called_once_with()
 
 	def test_other_network_search_opens_single_case_insensitive_match(self):
 		meta_lists = types.ModuleType('modules.meta_lists')

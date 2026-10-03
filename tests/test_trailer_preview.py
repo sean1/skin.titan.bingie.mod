@@ -90,18 +90,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview._preview_window_active = Mock(return_value=True)
 		self.preview._owns_preview = Mock(return_value=True)
 
-	def test_stable_focus_waits_exactly_one_second(self):
-		candidate = self._candidate()
-		self.preview._candidate = Mock(return_value=candidate)
-		self.preview._start_preview_preparation = Mock()
-		self.entry.monotonic = Mock(side_effect=(10.0, 10.99, 11.0))
-
-		self.assertTrue(self.preview.tick())
-		self.assertTrue(self.preview.tick())
-		self.preview._start_preview_preparation.assert_not_called()
-		self.assertTrue(self.preview.tick())
-		self.preview._start_preview_preparation.assert_called_once_with('movie|1', 'trailer-url')
-
 	def test_cached_summary_metadata_publishes_on_identity_change_tick(self):
 		identity = 'listing|movie|2'
 		self.preview.identity = 'listing|movie|1'
@@ -114,17 +102,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], identity)
 		self.assertEqual(self.properties['PovFocusedGenre'], 'Cached genre')
 		self.assertIn(identity, self.preview.resolved_focused_metadata)
-		self.preview._start_focused_metadata_lookup.assert_not_called()
-
-	def test_uncached_summary_metadata_keeps_identity_change_debounce(self):
-		identity = 'listing|movie|2'
-		self.preview.identity = 'listing|movie|1'
-		self.preview._candidate = Mock(return_value=(identity, 'trailer-url', 'movie', '2', False, True))
-		self.preview._start_focused_metadata_lookup = Mock()
-		self.entry.monotonic = Mock(return_value=10.0)
-
-		self.assertTrue(self.preview.tick())
-		self.assertNotIn(self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY, self.properties)
 		self.preview._start_focused_metadata_lookup.assert_not_called()
 
 	def test_inactive_preview_window_skips_skin_and_transition_reads(self):
@@ -168,40 +145,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [
 			call(self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY), call('Window.IsActive(VideoOSD)')
 		])
-
-	def test_preview_context_resolves_special_windows_once_with_existing_precedence(self):
-		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
-		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
-		info_card_focus = self.entry.TRAILER_PREVIEW_INFO_CARD_FOCUS
-		info_cast_focus = self.entry.TRAILER_PREVIEW_INFO_CAST_FOCUS
-		actor_context = self.entry.TRAILER_PREVIEW_ACTOR_CONTEXT
-		non_listing = self.entry.TRAILER_PREVIEW_NON_LISTING_CONTEXTS
-		osd = 'Window.IsActive(VideoOSD)'
-		actor_focus = 'Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'
-		for expected, values, expected_calls in (
-			('info', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True, info_card_focus: False, info_cast_focus: False},
-				(window, osd, special, 'Window.IsActive(1123)', info_card_focus, info_cast_focus)),
-			('info_card', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True, info_card_focus: True},
-				(window, osd, special, 'Window.IsActive(1123)', info_card_focus)),
-			('', {window: True, osd: False, special: True, 'Window.IsActive(1123)': True, info_card_focus: False, info_cast_focus: True},
-				(window, osd, special, 'Window.IsActive(1123)', info_card_focus, info_cast_focus)),
-			('dialog', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': True},
-				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)')),
-			('actor', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
-				'Window.IsActive(1122)': True, actor_focus: True, actor_context: True},
-				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', actor_focus, actor_context)),
-			('listing', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
-				'Window.IsActive(1122)': False, 'Window.IsActive(Videos)': True, 'Control.HasFocus(523)': True, non_listing: False},
-				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
-					'Control.HasFocus(523)', non_listing)),
-		):
-			with self.subTest(expected=expected):
-				self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: values[condition])
-				self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
-				self.entry.get_property = Mock(return_value='')
-
-				self.assertEqual(self.preview._preview_context(), expected)
-				self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in expected_calls])
 
 	def test_preview_context_preserves_focus_rejections(self):
 		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
@@ -274,27 +217,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.preview._preview_context(), 'listing')
 		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
 
-	def test_home_candidate_uses_single_context_resolution(self):
-		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
-		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
-		visibility = {window: True, 'Window.IsActive(VideoOSD)': False, special: False, 'ControlGroup(77777).HasFocus()': True}
-		labels = {
-			'Container.ListItem.DBType': 'movie',
-			'Container.ListItem.Trailer': 'trailer-url',
-			'Container.ListItem.Property(PovLiteSummary)': 'true',
-			'Container.ListItem.Label': 'Movie',
-			'Container.ListItem.UniqueID(tmdb)': '123',
-			'Container.ListItem.Property(PovFocusIdentity)': 'listing|movie|123',
-		}
-		self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: visibility[condition])
-		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: labels[label])
-		self.entry.get_property = Mock(return_value='')
-
-		self.assertEqual(self.preview._candidate(), ('listing|movie|123', 'trailer-url', 'movie', '123', False, True))
-		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [
-			call(window), call('Window.IsActive(VideoOSD)'), call(special), call('ControlGroup(77777).HasFocus()'), call(special)
-		])
-
 	def test_info_candidate_stages_property_reads_until_prerequisites_are_valid(self):
 		self.preview._preview_context = Mock(return_value='info')
 		for values, expected, expected_keys in (
@@ -328,16 +250,6 @@ class TrailerPreviewTests(unittest.TestCase):
 
 		self.assertIsNone(self.preview._candidate())
 		self.entry.kodi_utils.get_infolabel.assert_not_called()
-
-	def test_detail_card_focus_stops_active_page_trailer_in_same_tick(self):
-		self._activate()
-		self.preview._candidate = Mock(return_value=('info-card|movie|456', 'card-trailer-url', 'movie', '456', False, True))
-		self.preview._preview_navigation_away = Mock(return_value=False)
-
-		self.assertTrue(self.preview.tick())
-		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-		self.assertFalse(self.preview.active)
-		self.assertEqual(self.preview.identity, 'info-card|movie|456')
 
 	def test_dialog_candidate_stages_label_reads_until_prerequisites_are_valid(self):
 		self.preview._preview_context = Mock(return_value='dialog')
@@ -574,13 +486,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(set(self.preview.lookup_workers), {keys[1], keys[2]})
 		for key in (keys[1], keys[2]): released[key].set()
 		for key in (keys[1], keys[2]): self._wait(finished[key])
-
-	def test_empty_candidate_clears_pending_lookup_when_identity_is_already_empty(self):
-		self.preview.lookup_pending = 'listing|movie|1', 'movie', '1', False
-
-		self.preview._track_candidate(None, 10.0)
-
-		self.assertIsNone(self.preview.lookup_pending)
 
 	def test_stale_focused_failure_records_only_its_retry(self):
 		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)

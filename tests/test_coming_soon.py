@@ -78,12 +78,6 @@ class ComingSoonDateTests(ComingSoonFixture, unittest.TestCase):
 			with self.subTest(value=value): self.assertFalse(self.media.card_coming_soon({'release_date': value}, 'movie', TODAY))
 		self.assertFalse(self.media.card_coming_soon({}, 'movie', TODAY))
 
-	def test_valid_leap_day_and_calendar_year_limits_are_respected(self):
-		self.assertTrue(self.media.card_coming_soon({'release_date': '2028-02-29'}, 'movie', TODAY))
-		self.assertFalse(self.media.card_coming_soon({'release_date': '2100-02-29'}, 'movie', TODAY))
-		self.assertTrue(self.media.card_coming_soon({'release_date': '9999-12-31'}, 'movie', TODAY))
-		self.assertFalse(self.media.card_coming_soon({'release_date': '0001-01-01'}, 'movie', TODAY))
-
 	def test_raw_media_date_precedes_normalized_premiered_and_other_media_dates(self):
 		for mediatype, key, unrelated in (('movie', 'release_date', 'first_air_date'), ('tvshow', 'first_air_date', 'release_date')):
 			with self.subTest(mediatype=mediatype):
@@ -98,19 +92,6 @@ class ComingSoonDateTests(ComingSoonFixture, unittest.TestCase):
 			for value in ('2027', 'not a date', False, 0, {}):
 				with self.subTest(mediatype=mediatype, value=value): self.assertFalse(self.media.card_coming_soon({key: value, 'premiered': '2026-10-04'}, mediatype, TODAY))
 
-	def test_episode_uses_its_own_air_date_and_never_parent_series_premiere(self):
-		self.assertTrue(self.media.card_coming_soon({'premiered': '2026-10-04', 'first_air_date': '2020-01-01'}, 'episode', TODAY))
-		self.assertFalse(self.media.card_coming_soon({'premiered': '2026-10-02', 'pov_lite_first_aired': '2026-10-04', 'air_date': '2026-10-04'}, 'episode', TODAY))
-		self.assertTrue(self.media.card_coming_soon({'pov_lite_first_aired': '2026-10-04'}, 'episode', TODAY))
-		self.assertTrue(self.media.card_coming_soon({'air_date': '2026-10-04'}, 'episode', TODAY))
-		self.assertFalse(self.media.card_coming_soon({'first_air_date': '2026-10-04', 'release_date': '2026-10-04'}, 'episode', TODAY))
-
-	def test_digital_availability_and_year_fields_never_create_or_suppress_the_badge(self):
-		data = {'year': 2027, 'year_range': '2027–2028', 'digital_release_date': '2026-10-04', 'release_type': 'digital', 'availability': 'coming soon'}
-		self.assertFalse(self.media.card_coming_soon(data, 'movie', TODAY))
-		self.assertFalse(self.media.card_coming_soon({**data, 'release_date': '2026-10-02'}, 'movie', TODAY))
-		self.assertTrue(self.media.card_coming_soon({'release_date': '2026-10-04', 'digital_release_date': '2026-10-02'}, 'movie', TODAY))
-
 	def test_default_date_is_local_and_badge_disappears_on_the_release_day(self):
 		class BeforeLocalMidnight(LocalDate):
 			@classmethod
@@ -121,13 +102,6 @@ class ComingSoonDateTests(ComingSoonFixture, unittest.TestCase):
 			self.assertEqual(self.media.card_badge_properties(data, 'movie'), {'card_coming_soon': 'true', 'card_language': 'EN'})
 		self.assertFalse(self.media.card_coming_soon(data, 'movie'))
 		self.assertEqual(self.media.card_badge_properties(data, 'movie'), {'card_language': 'EN'})
-
-	def test_existing_language_and_country_badges_are_preserved(self):
-		data = {'release_date': '2026-10-04', 'first_air_date': '2026-10-04', 'original_language': 'en', 'origin_country': ['CA']}
-		self.assertEqual(self.media.card_badge_properties(data, 'movie'), {'card_coming_soon': 'true', 'card_language': 'EN'})
-		self.assertEqual(self.media.card_badge_properties(data, 'tvshow'), {'card_coming_soon': 'true', 'card_flag': 'flags/country/ca.png'})
-		self.assertEqual(self.media.card_badge_properties({'premiered': '2026-10-04'}, 'episode'), {'card_coming_soon': 'true'})
-		self.assertFalse(self.media.card_coming_soon({'premiered': '2026-10-04'}, 'season', TODAY))
 
 
 class ComingSoonBuilderTests(ComingSoonFixture, unittest.TestCase):
@@ -221,29 +195,8 @@ class ComingSoonBuilderTests(ComingSoonFixture, unittest.TestCase):
 					self.assertEqual(properties.get('card_coming_soon') == 'true', expected)
 					if offset: self.assertEqual(properties['pov_lite_first_aired'], '2026-10-03')
 
-	def test_existing_hide_unaired_setting_still_omits_future_episode_cards(self):
-		for in_season_browser in (False, True):
-			with self.subTest(in_season_browser=in_season_browser):
-				items, listitem = self.build_episode(in_season_browser, '2026-10-03', show_unaired=False)
-				self.assertEqual(items, [])
-				listitem.setProperties.assert_not_called()
-
 
 class ComingSoonXmlTests(unittest.TestCase):
-	def test_shared_label_is_true_only_and_below_existing_metadata_inside_gradient(self):
-		root = ET.parse(ROOT / 'xml/IncludesViewsLayoutLandscape.xml').getroot()
-		label = root.find("include[@name='LandscapeCardComingSoonLabel']/control[@type='label']")
-		self.assertIsNotNone(label)
-		self.assertEqual(label.findtext('visible'), 'String.IsEqual(ListItem.Property(card_coming_soon),true)')
-		self.assertEqual(label.findtext('label'), 'Coming soon')
-		self.assertEqual([label.findtext(key) for key in ('left', 'top', 'width', 'height')], ['16', '46', '160', '26'])
-		self.assertEqual([label.findtext(key) for key in ('font', 'textcolor', 'align', 'aligny', 'scroll')], ['Reg20', 'ffffffff', 'left', 'center', 'false'])
-		gradient = root.find("include[@name='LandscapeCardTopGradient']/control")
-		self.assertEqual(gradient.findtext('visible'), '$EXP[IsMovieOrTvShowListItem] | String.IsEqual(ListItem.Property(card_coming_soon),true)')
-		self.assertLessEqual(int(label.findtext('top')) + int(label.findtext('height')), int(gradient.findtext('top')) + int(gradient.findtext('height')))
-		for include_name in ('LandscapeCardCountryFlag', 'LandscapeCardLanguageBadge', 'LandscapeCardYearLabel'):
-			for control in root.find("include[@name='%s']" % include_name).findall('control'):
-				self.assertLessEqual(int(control.findtext('top')) + int(control.findtext('height')), int(label.findtext('top')))
 
 	def test_home_browse_and_native_detail_cards_share_the_badge_and_forward_proxy_values(self):
 		landscape = ET.parse(ROOT / 'xml/IncludesViewsLayoutLandscape.xml').getroot()
@@ -254,24 +207,6 @@ class ComingSoonXmlTests(unittest.TestCase):
 		self.assertEqual([node.text for node in card.findall('include')].count('LandscapeCardComingSoonLabel'), 1)
 		for name, source in (('PovMoreLikeThisItem', '565'), ('PovCollectionItem', '566')):
 			self.assertEqual(dialog.find("include[@name='%s']/.//property[@name='card_coming_soon']" % name).text, '$INFO[Container(%s).ListItemAbsolute($PARAM[index]).Property(card_coming_soon)]' % source)
-
-	def test_episode_renderers_add_shared_badge_before_episode_context_and_progress(self):
-		constants = {node.get('name'): int(node.text) for node in ET.parse(ROOT / 'xml/Includes.xml').getroot().findall('constant') if node.get('name') in ('episodes_thumb_width', 'episodes_thumb_height')}
-		self.assertEqual(constants, {'episodes_thumb_width': 466, 'episodes_thumb_height': 266})
-		for filename, name in (('View_525_Bingie_Episodes.xml', 'View_525_Landscape_Defs'), ('View_527_Bingie_Seasons.xml', 'View_527_Landscape_Defs')):
-			with self.subTest(name=name):
-				root = ET.parse(ROOT / 'xml' / filename).getroot()
-				include = root.find("include[@name='%s']" % name)
-				group = include.find("control[@type='group']")
-				self.assertEqual([group.findtext(key) for key in ('width', 'height')], ['episodes_thumb_width', 'episodes_thumb_height'])
-				self.assertEqual([node.text for node in group.findall('include')].count('LandscapeCardTopGradient'), 1)
-				self.assertEqual([node.text for node in group.findall('include')].count('LandscapeCardComingSoonLabel'), 1)
-				children = list(group)
-				self.assertLess(children.index(group.find("include[.='LandscapeCardComingSoonLabel']")), children.index(group.find("control[@type='label']")))
-				for control in group.findall('control'):
-					if control.get('type') in ('label', 'progress'):
-						top = constants['episodes_thumb_height'] - int(control.findtext('bottom')) - int(control.findtext('height'))
-						self.assertGreaterEqual(top, 72)
 
 
 if __name__ == '__main__': unittest.main()

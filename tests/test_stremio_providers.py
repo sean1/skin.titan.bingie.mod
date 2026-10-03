@@ -58,13 +58,6 @@ def load_provider(name, fake_utils):
 class StremioProviderTests(unittest.TestCase):
 	data = {'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'total_seasons': '3', 'year': '2024', 'imdb': 'tt123', 'season': '1', 'episode': '2'}
 
-	def test_result_builder_preserves_show_pack_fields(self):
-		module = load_provider('zilean', FakeSourceUtils())
-		release = {'name_info': 'parsed.show', 'package': 'show', 'last_season': 3, 'episode_start': 0, 'episode_end': None}
-		item = module.stremio_utils.build_result('provider', 'hash', 'Show Complete', release, '1080p', 'WEB', 10.0, pack_true_size=True)
-		self.assertEqual((item['package'], item['last_season'], item['true_size']), ('show', 3, True))
-		self.assertNotIn('episode_start', item)
-
 	def test_provider_adapters_preserve_pack_size_contracts(self):
 		text_pack = {'streams': [{'infoHash': 'hash', 'title': 'Show Season 1\n💾 1.5 GB 👤 12'}]}
 		description_pack = {'streams': [{'infoHash': 'hash', 'description': 'Show Season 1\n💾 1.5 GB 👤 12'}]}

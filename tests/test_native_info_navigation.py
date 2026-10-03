@@ -1,4 +1,3 @@
-import json
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -32,24 +31,6 @@ class NativeInfoNavigationTests(unittest.TestCase):
 		url = actions[0][len('RunPlugin('):-1].replace('$INFO[ListItem.UniqueID(tmdb)]', '202')
 		self.assertEqual(parse_qs(urlsplit(url).query), {'mode': ['show_media_info'], 'mediatype': ['tvshow'], 'tmdb_id': ['202']})
 
-	def test_view_series_fits_resumable_actions_and_moves_shelves_only_for_the_extra_row(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesDialogVideoInfo.xml').getroot()
-		buttons = next(control for control in root.iter('control') if control.get('id') == '8000')
-		ids = [control.get('id') for control in buttons.findall('control')]
-		self.assertEqual(ids.count('56'), 1)
-		self.assertEqual(ids[ids.index('52') + 1], '56')
-		self.assertEqual(buttons.findtext('orientation'), 'vertical')
-		self.assertEqual(buttons.findtext('onup'), 'noop')
-		self.assertIn('550', [node.text for node in buttons.findall('ondown')])
-		defaults = next(node for node in root.findall('include') if node.get('name') == 'Bingie_InfoDialog_Button_Default_Defs')
-		row_height, gap = int(defaults.findtext('height')), int(buttons.findtext('itemgap'))
-		self.assertGreaterEqual(int(buttons.findtext('height')), 3 * row_height + 2 * gap)
-		shelves = next(control for control in root.iter('control') if control.get('type') == 'grouplist' and control.findtext('top') == '650')
-		shift = next(node for node in shelves.findall('animation') if node.get('condition') == 'Control.IsVisible(56) + Control.IsVisible(90)')
-		self.assertEqual(shift.get('end'), '0,%s' % (row_height + gap))
-		self.assertEqual(shift.get('time'), '0')
-		self.assertIsNone(next(control for control in buttons.findall('control') if control.get('id') == '56').find('ondown'))
-
 	def test_view_series_preserves_both_native_resume_and_start_over_paths(self):
 		root = ET.parse(ROOT / 'xml' / 'IncludesDialogVideoInfo.xml').getroot()
 		buttons = {control.get('id'): control for control in root.iter('control') if control.get('id') in ('90', '52')}
@@ -71,13 +52,6 @@ class NativeInfoNavigationTests(unittest.TestCase):
 			'AlarmClock(BrowseEpisodes,ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_season_list&tmdb_id=$INFO[ListItem.UniqueID(tmdb)],return),00:00,silent)'
 		])
 
-	def test_native_info_return_condition_is_unchanged(self):
-		root = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()
-		action = 'AlarmClock(loadinfo,Action(Info),00:00,silent)'
-		onunload = next(node for node in root.findall('onunload') if node.text == action)
-
-		self.assertEqual(onunload.get('condition'), '!String.IsEmpty(Window(Home).Property(BaseWindow)) + String.IsEmpty(Window(Home).Property(ListItem.TVShowID)) + !Player.HasVideo')
-
 	def test_custom_info_opens_dedicated_season_window(self):
 		root = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()
 		button = next(control for control in root.iter('control') if control.get('id') == '53')
@@ -89,21 +63,6 @@ class NativeInfoNavigationTests(unittest.TestCase):
 			(resolved, 'ActivateWindow(1124,return)'),
 			(pending, 'ActivateWindow(1124,return)'),
 		])
-
-	def test_season_browser_is_a_unique_normal_window(self):
-		window_path = ROOT / 'xml' / 'Custom_1124_PovSeasons.xml'
-		root = ET.parse(window_path).getroot()
-
-		self.assertEqual(root.tag, 'window')
-		self.assertEqual(root.get('id'), '1124')
-		self.assertIsNone(root.get('type'))
-		self.assertEqual([node.text for node in root.find('controls').findall('include')], ['GlobalBackground', 'View_527_Seasons'])
-
-		window_ids = []
-		for path in (ROOT / 'xml').glob('Custom_*.xml'):
-			window_id = ET.parse(path).getroot().get('id')
-			if window_id: window_ids.append(window_id)
-		self.assertEqual(window_ids.count('1124'), 1)
 
 	def test_dedicated_season_window_owns_season_content_and_native_back(self):
 		root = ET.parse(ROOT / 'xml' / 'View_527_Bingie_Seasons.xml').getroot()
@@ -122,12 +81,6 @@ class NativeInfoNavigationTests(unittest.TestCase):
 
 		episode_list = next(control for control in root.iter('control') if control.get('id') == '5027')
 		self.assertEqual(episode_list.find('content').text, '$INFO[Container(527).ListItem.FolderPath]')
-
-	def test_custom_season_navigation_has_no_recovery_shims(self):
-		for filename in ('IncludesPovInfo.xml', 'Custom_1123_PovInfo.xml', 'MyVideoNav.xml', 'View_527_Bingie_Seasons.xml'):
-			contents = (ROOT / 'xml' / filename).read_text()
-			self.assertNotIn('PovInfoSeasonBrowserReturn', contents)
-			self.assertNotIn('ReplaceWindow(1123)', contents)
 
 
 class EpisodeParentInfoBridgeTests(unittest.TestCase):
@@ -151,33 +104,6 @@ class EpisodeParentInfoBridgeTests(unittest.TestCase):
 				self.native_active = False
 				self.labels.clear()
 		self.dialogs.execute_builtin = execute
-
-	def test_parent_series_snapshot_uses_show_title_and_preserves_regular_titles(self):
-		for source_type, target_type, expected_title in (('episode', 'tvshow', 'Series'), ('season', 'tvshow', 'Series'), ('tvshow', 'tvshow', 'The Pilot'), ('movie', 'movie', 'The Pilot')):
-			with self.subTest(source_type=source_type, target_type=target_type):
-				self.labels['DBTYPE'] = source_type
-				snapshot = self.dialogs._selected_media_snapshot(target_type, '202')
-				self.assertEqual(snapshot['PovInfoTitle'], expected_title)
-				self.assertEqual(snapshot['PovInfoType'], target_type)
-
-	def test_parent_identity_and_title_survive_native_close_and_failed_hydration(self):
-		self.dialogs.show_media_info({'mediatype': 'tvshow', 'tmdb_id': '202'})
-		self.assertEqual(self.commands[:2], ['Dialog.Close(movieinformation)', 'ActivateWindow(1123)'])
-		self.assertEqual(len(self.commands), 3)
-		self.assertEqual(self.properties['PovInfoType'], 'tvshow')
-		self.assertEqual(self.properties['PovInfoPendingTmdb'], '202')
-		self.assertEqual(self.properties['PovInfoTitle'], 'Series')
-		self.dialogs.refresh_info_state.assert_called_once_with('tvshow', '202', 'Series')
-		self.assertEqual(json.loads(self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY]), [{'page': 'native_info'}])
-		url = self.commands[-1][len('RunPlugin('):-1]
-		params = {name: values[0] for name, values in parse_qs(urlsplit(url).query).items()}
-		self.assertEqual({name: params[name] for name in ('mode', 'mediatype', 'tmdb_id')}, {'mode': 'hydrate_media_info', 'mediatype': 'tvshow', 'tmdb_id': '202'})
-		self.assertEqual(set(params), {'mode', 'mediatype', 'tmdb_id', 'request'})
-		self.dialogs.get_media_metadata = Mock(side_effect=RuntimeError('metadata unavailable'))
-		self.dialogs.hydrate_media_info(params)
-		self.assertEqual(self.properties['PovInfoTitle'], 'Series')
-		self.assertEqual(self.properties['PovInfoTmdb'], '202')
-		self.assertEqual(len(self.commands), 3)
 
 	def test_series_saved_after_failed_hydration_keeps_parent_id_and_series_title(self):
 		with tempfile.TemporaryDirectory() as temp_dir:

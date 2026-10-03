@@ -128,6 +128,19 @@
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=play_from_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)])</onclick>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
+				<control type="radiobutton" id="55">
+					<visible>String.IsEqual(Window(Home).Property(PovInfoType),movie)</visible>
+					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<include content="Bingie_InfoDialog_Button_Texture">
+						<param name="radiotexture" value="dialogs/videoinfo/info/play2.png" />
+					</include>
+					<label>$LOCALIZE[20410]</label>
+					<radioposx>17</radioposx>
+					<radiowidth>22</radiowidth>
+					<radioheight>22</radioheight>
+					<onclick>SetProperty(BingieTrailerPreviewRequest,true,Home)</onclick>
+					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+				</control>
 				<control type="radiobutton" id="51">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>

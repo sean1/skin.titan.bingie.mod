@@ -354,6 +354,7 @@ class TrailerPreview:
 			identity = '|'.join(('info', media_type, item_id))
 			return identity, trailer, media_type, item_id, True, False
 		if context == 'info_card':
+			if get_property('PovInfoType').strip().lower() == 'movie': return None
 			media_type = self._item_label('Property(DBTYPE)').lower()
 			if media_type not in ('movie', 'tvshow'): return None
 			item_id = self._item_label('Property(tmdb_id)')
@@ -370,7 +371,7 @@ class TrailerPreview:
 			if not item_id: return None
 			trailer = kodi_utils.get_infolabel('ListItem.Trailer').strip()
 			identity = '|'.join(('info', media_type, item_id))
-			return identity, trailer, media_type, item_id, False, False
+			return identity, trailer, media_type, item_id, media_type == 'movie', False
 		if context == 'actor':
 			media_type = self._item_label('Property(PovCreditType)').lower() or self._item_label('Property(mediatype)').lower() or self._item_label('DBType').lower()
 			if media_type not in ('movie', 'tvshow'): return None

@@ -311,6 +311,7 @@ class TrailerPreviewTests(unittest.TestCase):
 
 	def test_detail_card_candidate_uses_its_own_trailer(self):
 		self.preview._preview_context = Mock(return_value='info_card')
+		self.properties['PovInfoType'] = 'tvshow'
 		values = {
 			'Container.ListItem.Property(DBTYPE)': 'movie', 'Container.ListItem.Property(tmdb_id)': '456',
 			'Container.ListItem.Label': 'Related movie', 'Container.ListItem.Property(trailer)': 'card-trailer-url'
@@ -319,6 +320,14 @@ class TrailerPreviewTests(unittest.TestCase):
 
 		self.assertEqual(self.preview._candidate(), ('info-card|movie|456', 'card-trailer-url', 'movie', '456', False, True))
 		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
+
+	def test_movie_detail_shelf_focus_does_not_offer_an_autoplay_candidate(self):
+		self.preview._preview_context = Mock(return_value='info_card')
+		self.properties['PovInfoType'] = 'movie'
+		self.entry.kodi_utils.get_infolabel = Mock()
+
+		self.assertIsNone(self.preview._candidate())
+		self.entry.kodi_utils.get_infolabel.assert_not_called()
 
 	def test_detail_card_focus_stops_active_page_trailer_in_same_tick(self):
 		self._activate()
@@ -336,12 +345,35 @@ class TrailerPreviewTests(unittest.TestCase):
 			(('episode',), None, ('Window.Property(PovInfoType)',)),
 			(('tvshow', ''), None, ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)')),
 			(('tvshow', '456', 'trailer-url'), ('info|tvshow|456', 'trailer-url', 'tvshow', '456', False, False), ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)', 'ListItem.Trailer')),
+			(('movie', '123', 'trailer-url'), ('info|movie|123', 'trailer-url', 'movie', '123', True, False), ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)', 'ListItem.Trailer')),
 		):
 			with self.subTest(values=values):
 				self.entry.kodi_utils.get_infolabel = Mock(side_effect=values)
 
 				self.assertEqual(self.preview._candidate(), expected)
 				self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in expected_labels])
+
+	def test_movie_detail_waits_for_explicit_trailer_request(self):
+		for context in ('info', 'dialog'):
+			with self.subTest(context=context):
+				self.properties.clear()
+				self.preview = self._new_preview()
+				self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '123', 'PovInfoTrailer': 'trailer-url'})
+				labels = {'Window.Property(PovInfoType)': 'movie', 'Window.Property(PovInfoTmdb)': '123', 'ListItem.Trailer': 'trailer-url'}
+				self.entry.kodi_utils.get_infolabel = lambda label: labels.get(label, '')
+				self.preview._preview_context = Mock(return_value=context)
+				self.preview._start_preview_preparation = Mock()
+				self.entry.monotonic = Mock(return_value=10.0)
+
+				self.preview.tick()
+				self.entry.monotonic.return_value = 20.0
+				self.preview.tick()
+				self.preview._start_preview_preparation.assert_not_called()
+				self.properties[self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY] = 'true'
+				self.preview.tick()
+
+				self.preview._start_preview_preparation.assert_called_once_with('info|movie|123', 'trailer-url')
+				self.assertNotIn(self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY, self.properties)
 
 	def test_actor_candidate_skips_id_and_label_reads_after_rejection(self):
 		self.preview._preview_context = Mock(return_value='actor')

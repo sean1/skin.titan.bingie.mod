@@ -104,6 +104,14 @@ class DialogNavigationTests(unittest.TestCase):
 
 		self.assertEqual(self.commands, ['ReplaceWindow(1123)', 'Control.SetFocus(563,4,absolute)'])
 
+	def test_back_to_info_restores_saved_trailer_button(self):
+		info_values = {'PovInfoType': 'movie', 'PovInfoTmdb': '497698', 'PovInfoTitle': 'Black Widow'}
+		self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY] = json.dumps([{'page': 'info', 'values': info_values, 'focus': {'control': 55}}])
+
+		self.dialogs.pov_page_back()
+
+		self.assertEqual(self.commands, ['ReplaceWindow(1123)', 'SetFocus(55)'])
+
 	def test_back_to_actor_restores_saved_shelf_and_item(self):
 		actor_values = {prop: '' for prop in self.dialogs.POV_ACTOR_PROPERTIES}
 		actor_values.update({'PovActorId': '1245', 'PovActorName': 'Scarlett Johansson', 'PovActorReady': 'true'})

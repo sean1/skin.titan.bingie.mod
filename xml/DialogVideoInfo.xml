@@ -22,6 +22,8 @@
     <onload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID))">ClearProperty(ListItem.TVShowID,Home)</onload>
     <onload condition="!String.IsEmpty(Window(Home).Property(BaseWindow))">ClearProperty(BaseWindow,Home)</onload>
     <onunload condition="!String.IsEmpty(Window(Home).Property(ListItem.TVShowID)) + String.IsEmpty(Window(Home).Property(KeepTVShowID))">ClearProperty(ListItem.TVShowID,Home)</onunload>
+	<onunload condition="String.IsEqual(Window.Property(PovInfoType),movie)">SetProperty(BingieTrailerPreviewCancel,true,Home)</onunload>
+	<onunload condition="String.IsEqual(Window.Property(PovInfoType),movie)">ClearProperty(BingieTrailerPreviewRequest,Home)</onunload>
 	<onunload condition="!String.IsEmpty(Window.Property(AdditionalInfo))">ClearProperty(AdditionalInfo)</onunload>
 	<onunload
 		condition="Window.IsActive(1122) + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent,loop)</onunload>

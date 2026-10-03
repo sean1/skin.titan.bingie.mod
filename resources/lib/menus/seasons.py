@@ -39,7 +39,7 @@ class BaseSeason:
 		kodi_utils.set_category(__handle__, self.params.get('show_title'))
 		kodi_utils.set_sort_method(__handle__, content_type)
 		kodi_utils.set_content(__handle__, content_type)
-		kodi_utils.end_directory(__handle__, False if is_widget else None)
+		kodi_utils.end_directory(__handle__, False if is_widget or self.params.get('actor_id') else None)
 		kodi_utils.set_view_mode(view_type, content_type, is_widget)
 
 	def build_season_list(self, params):
@@ -136,6 +136,9 @@ class Episodes(BaseSeason):
 			episodes_data = all_episodes_meta(show.meta, self.meta_user_info, Thread)
 			if not show_specials(): episodes_data = [i for i in episodes_data if i['season'] != 0]
 		else: episodes_data = season_episodes_meta(params['season'], show.meta, self.meta_user_info)
+		if params.get('actor_id'):
+			from menus.actor_episodes import filter_actor_episodes
+			episodes_data = filter_actor_episodes(show.tmdb_id, episodes_data, params['actor_id'], params.get('actor_name') or 'this actor')
 		for item in episodes_data:
 			try:
 				cm = []
@@ -202,7 +205,7 @@ class Episodes(BaseSeason):
 					videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
 				self.append((url_params, listitem, False))
 			except: pass
-		self.params['show_title'] = show.title
+		self.params['show_title'] = '%s — Episodes featuring %s' % (show.title, params.get('actor_name') or 'this actor') if params.get('actor_id') else show.title
 		return self.items
 
 class MetaParser:

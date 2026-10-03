@@ -92,11 +92,11 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		stored = json.loads(episode_tools.kodi_utils.set_property.call_args.args[1])
 		self.assertEqual(stored, {'123': [[1, 1]]})
 
-	def test_feature_is_enabled_by_default(self):
-		settings = load_kodi_utils().FIXED_SETTINGS
-		self.assertEqual(settings['auto_play_movie'], 'true')
-		self.assertEqual(settings['auto_play_episode'], 'true')
-		self.assertEqual(settings['autoplay_next_episode'], 'true')
+	def test_initial_play_is_manual_with_next_episode_autoplay_enabled(self):
+		settings = load_settings(load_kodi_utils().FIXED_SETTINGS)
+		self.assertFalse(settings.auto_play('movie'))
+		self.assertFalse(settings.auto_play('episode'))
+		self.assertTrue(settings.autoplay_next_episode())
 
 	def test_feature_does_not_require_initial_episode_autoplay(self):
 		settings = load_settings({'auto_play_episode': 'false', 'autoplay_next_episode': 'true'})
@@ -112,24 +112,25 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		self.assertEqual(params['autoplay_next'], 'true')
 		self.assertEqual((params['season'], params['episode']), (1, 2))
 
-	def test_explicit_manual_smart_play_removes_next_episode_autoplay(self):
-		episode_tools = load_episode_tools()
-		episode_tools.settings.metadata_user_info = lambda: {}
-		episode_tools.settings.watched_indicators = lambda: 'trakt'
-		episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
-		episode_tools.nextep_playback_info = mock.Mock(return_value=({}, {
-			'mode': 'play_media', 'mediatype': 'episode', 'tmdb_id': '123', 'season': 1, 'episode': 2,
-			'autoplay': 'true', 'autoplay_next': 'true'
-		}))
-		episode_tools.Sources.factory = mock.Mock()
-		smartplay_cache = types.ModuleType('caches.smartplay_cache')
-		smartplay_cache.lookup = lambda *args: None
-		with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}):
-			episode_tools.SmartPlay({'tmdb_id': '123', 'autoplay': 'false'})
+	def test_smart_play_uses_manual_sources_unless_autoplay_is_explicit(self):
+		for autoplay in (None, 'false', 'true'):
+			with self.subTest(autoplay=autoplay):
+				episode_tools = load_episode_tools()
+				episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
+				episode_tools.nextep_playback_info = mock.Mock(return_value=({}, {
+					'mode': 'play_media', 'mediatype': 'episode', 'tmdb_id': '123', 'season': 1, 'episode': 2,
+					'autoplay': 'true', 'autoplay_next': 'true'
+				}))
+				episode_tools.Sources.factory = mock.Mock()
+				smartplay_cache = types.ModuleType('caches.smartplay_cache')
+				smartplay_cache.lookup = lambda *args: None
+				params = {'tmdb_id': '123'}
+				if autoplay is not None: params['autoplay'] = autoplay
+				with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): episode_tools.SmartPlay(params)
 
-		episode_tools.Sources.factory.assert_called_once_with({
-			'mode': 'play_media', 'mediatype': 'episode', 'tmdb_id': '123', 'season': 1, 'episode': 2, 'autoplay': 'false'
-		})
+				expected = {'mode': 'play_media', 'mediatype': 'episode', 'tmdb_id': '123', 'season': 1, 'episode': 2, 'autoplay': 'false'}
+				if autoplay == 'true': expected.update({'autoplay': 'true', 'autoplay_next': 'true'})
+				episode_tools.Sources.factory.assert_called_once_with(expected)
 
 	def test_smart_play_resolves_after_the_anonymous_completed_episode_cursor(self):
 		episode_tools = load_episode_tools()
@@ -143,7 +144,7 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 
 		cursor_meta = episode_tools.nextep_playback_info.call_args.args[0]
 		self.assertEqual((cursor_meta['season'], cursor_meta['episode']), (2, 3))
-		episode_tools.Sources.factory.assert_called_once_with({'mode': 'play_media'})
+		episode_tools.Sources.factory.assert_called_once_with({'mode': 'play_media', 'autoplay': 'false'})
 
 	def test_queued_next_episode_uses_full_screen_progress(self):
 		sources_module = load_sources_module()

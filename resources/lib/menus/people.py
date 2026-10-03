@@ -322,7 +322,7 @@ def build_media_cast(params):
 	kodi_utils.end_directory(handle, cacheToDisc=False)
 	_signal_info_shelves(media_type, tmdb_id)
 
-def _credit_listitem(item, resolution, actor_id):
+def _credit_listitem(item, resolution, actor_id, credit_type=None):
 	media_type = 'tvshow' if item.get('media_type') == 'tv' else 'movie'
 	name_key = 'name' if media_type == 'tvshow' else 'title'
 	date = item.get('first_air_date') if media_type == 'tvshow' else item.get('release_date')
@@ -357,6 +357,10 @@ def _credit_listitem(item, resolution, actor_id):
 		video_info.setRating(rating)
 		if media_type == 'tvshow': video_info.setTvShowTitle(title)
 	url = build_url({'mode': 'show_media_info', 'mediatype': media_type, 'tmdb_id': tmdb_id})
+	if media_type == 'tvshow' and credit_type == 'tvshows':
+		actor_name = kodi_utils.get_property('PovActorName') or 'this actor'
+		episodes_url = build_url({'mode': 'build_episode_list', 'tmdb_id': tmdb_id, 'season': 'all', 'actor_id': actor_id, 'actor_name': actor_name})
+		listitem.addContextMenuItems([('Open show', 'RunPlugin(%s)' % url), ('Episodes featuring %s' % actor_name, 'ActivateWindow(Videos,%s,return)' % episodes_url)])
 	listitem.setPath(url)
 	return url, listitem, False
 
@@ -367,7 +371,7 @@ def build_person_credits(params):
 		if not actor_id or credit_type not in actor_credit_types: raise ValueError('Invalid actor credit request')
 		credits = _load_actor_credits(actor_id, credit_type)
 		resolution = settings.get_resolution()
-		items = [_credit_listitem(item, resolution, actor_id) for item in credits]
+		items = [_credit_listitem(item, resolution, actor_id, credit_type) for item in credits]
 	except Exception as exc:
 		kodi_utils.logger('build_person_credits', str(exc))
 		items = []

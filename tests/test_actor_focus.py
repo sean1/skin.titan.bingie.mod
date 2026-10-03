@@ -1,6 +1,7 @@
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from tests.module_isolation import load_module
 
@@ -79,7 +80,9 @@ class ActorFocusTests(unittest.TestCase):
 		self.people.kodi_utils.execute_builtin = lambda command: events.append(('builtin', command))
 		self.people.settings.get_resolution = lambda: {'poster': 'w342', 'fanart': 'w1280'}
 		self.people._load_actor_credits = lambda actor_id, credit_type: [{'id': 1}]
-		self.people._credit_listitem = lambda item, resolution, actor_id: 'movie-item'
+		original_credit_listitem = self.people._credit_listitem
+		self.addCleanup(setattr, self.people, '_credit_listitem', original_credit_listitem)
+		self.people._credit_listitem = lambda item, resolution, actor_id, credit_type: 'movie-item'
 
 		self.people.build_person_credits({'actor_id': '1245', 'credit_type': 'movies'})
 
@@ -92,6 +95,26 @@ class ActorFocusTests(unittest.TestCase):
 			self.people._credit_snapshot({'id': 1, 'media_type': 'tv', 'origin_country': ['CA'], 'original_language': 'en'}),
 			{'id': 1, 'media_type': 'tv', 'origin_country': ['CA'], 'original_language': 'en'}
 		)
+
+	def test_actor_episode_context_menu_only_appears_on_tv_acting_credits(self):
+		self.properties['PovActorName'] = 'Target Actor'
+		for media_type, credit_type, expected in (('tv', 'tvshows', True), ('tv', 'directed', False), ('movie', 'movies', False)):
+			with self.subTest(media_type=media_type, credit_type=credit_type):
+				listitem = Mock()
+				urls = []
+				def build_url(params):
+					urls.append(params)
+					return 'plugin://test/%s' % params['mode']
+				with patch.object(self.people, 'make_listitem', return_value=listitem), patch.object(self.people, 'build_url', side_effect=build_url):
+					url, _, folder = self.people._credit_listitem({'id': 123, 'media_type': media_type, 'backdrop_path': '/art.jpg'}, {'fanart': 'w1280', 'poster': 'w342'}, '1245', credit_type)
+				self.assertEqual(url, 'plugin://test/show_media_info')
+				self.assertFalse(folder)
+				if expected:
+					listitem.addContextMenuItems.assert_called_once_with([('Open show', 'RunPlugin(plugin://test/show_media_info)'), ('Episodes featuring Target Actor', 'ActivateWindow(Videos,plugin://test/build_episode_list,return)')])
+					self.assertEqual(urls[1], {'mode': 'build_episode_list', 'tmdb_id': 123, 'season': 'all', 'actor_id': '1245', 'actor_name': 'Target Actor'})
+				else:
+					listitem.addContextMenuItems.assert_not_called()
+					self.assertEqual(len(urls), 1)
 
 	def test_focus_actor_page_immediately_focuses_cached_shelf(self):
 		conditions = []

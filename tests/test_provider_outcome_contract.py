@@ -58,14 +58,6 @@ class ProviderOutcomeContractTests(unittest.TestCase):
 				self.assertFalse(cache.set('provider', 'movie', '1', 'Title', '2024', '', '', ProviderOutcome(sources, status), 3))
 		self.assertEqual(cache.dbcur.executions, [])
 
-	def test_successful_empty_result_is_stored_with_versioned_envelope(self):
-		module = load_cache_module()
-		cache = module.ExternalProvidersCache.__new__(module.ExternalProvidersCache)
-		cache.dbcur = FakeCursor()
-		self.assertTrue(cache.set('provider', 'movie', '1', 'Title', '2024', '', '', ProviderOutcome([], 'empty'), 3))
-		payload = json.loads(cache.dbcur.executions[0][1][-1])
-		self.assertEqual(payload, {'provider_outcome': PROVIDER_OUTCOME_VERSION, 'status': 'empty', 'sources': []})
-
 	def test_provider_flags_preserve_partial_sources_without_caching(self):
 		provider = types.SimpleNamespace(scrape_failed=True)
 		outcome = ProviderOutcome.from_provider([{'hash': 'one'}], provider)

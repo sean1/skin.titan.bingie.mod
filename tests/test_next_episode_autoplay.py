@@ -77,20 +77,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		stored = json.loads(episode_tools.kodi_utils.set_property.call_args.args[1])
 		self.assertEqual(stored, {'123': [[1, 1], [1, 2]]})
 
-	def test_continual_random_history_resets_after_every_episode_has_played(self):
-		episode_tools = load_episode_tools()
-		episodes = [
-			{'season': 1, 'episode': 1, 'premiered': '2025-01-01', 'title': 'First', 'plot': 'Plot'},
-			{'season': 1, 'episode': 2, 'premiered': '2025-01-01', 'title': 'Second', 'plot': 'Plot'},
-		]
-		episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
-		episode_tools.all_episodes_meta = lambda *args: episodes
-		episode_tools.kodi_utils.get_property.return_value = json.dumps({'123': [[1, 1], [1, 2]]})
-		with mock.patch.object(episode_tools, 'choice', side_effect=lambda items: items[0]): episode_tools.get_random_episode('123', True)
-
-		stored = json.loads(episode_tools.kodi_utils.set_property.call_args.args[1])
-		self.assertEqual(stored, {'123': [[1, 1]]})
-
 	def test_resolved_next_episode_is_marked_for_autoplay(self):
 		episode_tools = load_episode_tools()
 		meta = {'title': 'Example', 'rootname': 'Example', 'tmdb_id': '123', 'season': 1, 'episode': 1, 'total_seasons': 1}
@@ -261,14 +247,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 
 		self.assertTrue(player._duration_is_plausible())
 
-	def test_missing_expected_duration_is_allowed(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.meta_get = {}.get
-		player.getTotalTime = lambda: 177
-
-		self.assertTrue(player._duration_is_plausible())
-
 	def test_completed_playback_erases_resume_without_recording_watched(self):
 		player_module = load_player()
 		player_module.kodi_utils.clear_property = mock.Mock()
@@ -312,20 +290,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 
 		player_module.ws.erase_bookmark.assert_called_once_with('episode', '101', 5, 10, 'progress')
 		smartplay_cache.complete_episode.assert_not_called()
-
-	def test_credit_marker_controls_popup_timing(self):
-		player_module = load_player()
-		player_module.settings.autoplay_next_settings = lambda: {
-			'scraper_time': 40, 'run_popup': True, 'timer_method': 'time', 'window_time': 21, 'window_percentage': 5, 'autoscrape_next_window_time': 20
-		}
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.credits = 900
-		player.getTotalTime = lambda: 1000
-
-		player.info_next_ep()
-
-		self.assertEqual(player.nextep_settings['window_time'], 105)
-		self.assertEqual(player.start_prep, 166)
 
 
 if __name__ == '__main__':

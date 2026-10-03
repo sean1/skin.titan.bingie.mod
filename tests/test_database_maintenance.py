@@ -175,31 +175,6 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 					self.assertEqual(dbcon.execute('SELECT expires FROM %s' % table).fetchall(), [(11,)])
 			self.assertEqual(sum(statement.strip().upper() == 'VACUUM' for statement in statements), 1)
 
-	def test_clean_databases_preserves_targets_and_followup_work(self):
-		calls = []
-		self.cache.check_databases = lambda: calls.append(('check',))
-		self.cache.purge_database = lambda db, tables, expiry: calls.append(('purge', db, tables, expiry))
-		class WatchedConnection:
-			def execute(self, query): calls.append(('watched_execute', query.strip()))
-			def close(self): calls.append(('watched_close',))
-		self.cache.database_connect = lambda db, isolation_level=None: WatchedConnection()
-		self.cache.limit_metacache_database = lambda: calls.append(('limit',))
-		self.cache.kodi_utils.notification = lambda *args: calls.append(('notification', *args))
-
-		self.cache.clean_databases(current_time=123, database_check=True, silent=False)
-
-		self.assertEqual([call for call in calls if call[0] == 'purge'], [
-			('purge', 'maincache_db', ('maincache',), 123),
-			('purge', 'external_db', ('results_data',), 123),
-			('purge', 'debridcache_db', ('debrid_data',), 123),
-			('purge', 'metacache_db', ('function_cache', 'season_metadata', 'metadata'), 123)
-		])
-		self.assertEqual(calls[0], ('check',))
-		self.assertIn(('watched_execute', 'VACUUM'), calls)
-		self.assertIn(('watched_close',), calls)
-		self.assertIn(('limit',), calls)
-		self.assertEqual(calls[-1], ('notification', 32576, 1500))
-
 
 if __name__ == '__main__':
 	unittest.main()

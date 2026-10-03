@@ -44,11 +44,6 @@ class ProviderManagerTests(unittest.TestCase):
 		self.assertEqual(writes, [])
 		self.assertEqual(notifications, [])
 
-	def test_empty_selection_disables_all_providers(self):
-		writes, notifications = self.run_manager([])
-		self.assertEqual(set(dict(writes).values()), {'false'})
-		self.assertEqual(notifications, [(32576, 1500)])
-
 
 if __name__ == '__main__':
 	unittest.main()

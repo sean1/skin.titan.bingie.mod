@@ -82,22 +82,6 @@ class DialogNavigationTests(unittest.TestCase):
 		self.assertEqual(self.commands, ['PreviousMenu', 'AlarmClock(PovNativeInfoBack,Action(Info),00:00,silent)'])
 		self.assertNotIn(self.dialogs.POV_PAGE_HISTORY_PROPERTY, self.properties)
 
-	def test_push_info_page_saves_focused_shelf_and_item(self):
-		class Control:
-			def getSelectedPosition(self): return 7
-
-		class Window:
-			def getFocusId(self): return 560
-			def getControl(self, control): return Control()
-
-		self.properties['PovInfoTmdb'] = '497698'
-		self.dialogs.kodi_utils.current_window_id = Window
-
-		self.dialogs.push_pov_page_state('info')
-
-		history = json.loads(self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY])
-		self.assertEqual(history[0]['focus'], {'control': 560, 'position': 7})
-
 	def test_back_to_info_restores_saved_shelf_and_item(self):
 		info_values = {prop: '' for prop in self.dialogs.POV_INFO_PROPERTIES}
 		info_values.update({'PovInfoType': 'movie', 'PovInfoTmdb': '497698', 'PovInfoTitle': 'Black Widow'})

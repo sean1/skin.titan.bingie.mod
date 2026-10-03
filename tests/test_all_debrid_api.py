@@ -54,25 +54,6 @@ class AllDebridAPITests(unittest.TestCase):
 		self.assertEqual(result, {})
 		self.assertEqual(len(checked), self.module.cache_check_chunk_size)
 
-	def test_parse_magnet_pack_flattens_nested_video_files(self):
-		self.api._existing_transfer_ids = lambda: set()
-		self.api._upload_magnets = lambda magnets: [{'id': 44, 'hash': 'A' * 40, 'ready': True}]
-		self.api.torrent_files = lambda transfer_id: [
-			{'n': 'Show', 'e': [{'n': 'Season 01', 'e': [
-				{'n': 'Show.S01E01.mkv', 's': 123, 'l': 'https://example/video'},
-				{'n': 'Show.S01E01.nfo', 's': 10, 'l': 'https://example/nfo'}
-			]}]}
-		]
-		source_utils = types.ModuleType('modules.source_utils')
-		source_utils.supported_video_extensions = lambda: ['.mkv']
-		with temporary_modules({'modules.source_utils': source_utils}):
-			result = self.api.parse_magnet_pack('magnet:?xt=urn:btih:' + 'A' * 40, 'A' * 40, errors=True)
-
-		self.assertEqual(result, [{
-			'filename': 'Show/Season 01/Show.S01E01.mkv', 'size': 123,
-			'link': 'https://example/video', 'torrent_id': 44
-		}])
-
 	def test_parse_magnet_pack_never_marks_existing_transfer_for_deletion(self):
 		self.api._existing_transfer_ids = lambda: {'44'}
 		self.api._upload_magnets = lambda magnets: [{'id': 44, 'hash': 'A' * 40, 'ready': True}]

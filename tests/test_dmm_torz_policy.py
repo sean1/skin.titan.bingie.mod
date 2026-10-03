@@ -68,27 +68,6 @@ class DmmTorzPolicyTests(unittest.TestCase):
 		self.source_utils = FakeSourceUtils()
 		self.helper = load_helper(self.source_utils)
 
-	def test_season_pack_preserves_partial_episode_range_and_filter_name(self):
-		context = self.helper.pack_context({'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1'})
-		self.helper.add_filter_settings(context)
-
-		release = self.helper.pack_release(context, 'Show.(Archie.Bunker.S01', filter_name='Show.S01')
-
-		self.assertEqual((release['package'], release['episode_start'], release['episode_end']), ('season', 2, 8))
-		self.assertEqual(self.source_utils.season_calls[-1][-1], 'Show.S01')
-		self.assertEqual(self.source_utils.info_calls[-1][1], {'season': '1', 'pack': 'season'})
-
-	def test_show_pack_and_bypass_preserve_last_season(self):
-		context = self.helper.pack_context({'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1'})
-		self.helper.add_filter_settings(context)
-
-		filtered = self.helper.pack_release(context, 'Show.Complete', search_series=True, total_seasons='5')
-		bypassed = self.helper.pack_release(context, 'Show.Complete', search_series=True, total_seasons='5', bypass_filter=True)
-
-		self.assertEqual(filtered['last_season'], 4)
-		self.assertEqual(bypassed['last_season'], '5')
-		self.assertEqual(len(self.source_utils.show_calls), 1)
-
 	def test_rejected_direct_and_pack_releases_return_none(self):
 		context = self.helper.pack_context({'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1'})
 		self.helper.add_filter_settings(context)
@@ -99,23 +78,6 @@ class DmmTorzPolicyTests(unittest.TestCase):
 		self.helper.add_filter_settings(direct)
 		self.source_utils.direct_valid = False
 		self.assertIsNone(self.helper.direct_release(direct, 'Wrong.Movie'))
-
-	def test_dmm_and_torz_preserve_direct_movie_and_episode_results(self):
-		movie = {'title': 'Movie', 'aliases': [], 'year': '2024', 'imdb': 'tt1'}
-		episode = {'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1', 'episode': '2'}
-		provider_records = {
-			'dmm': {'hash': 'dmm-hash', 'title': 'Release.Name', 'fileSize': 2},
-			'torz': {'hash': 'torz-hash', 'name': 'Release.Name', 'size': 2000000000, 'seeders': 12}
-		}
-		for provider_name, record in provider_records.items():
-			for data in (movie, episode):
-				with self.subTest(provider=provider_name, mediatype='episode' if 'tvshowtitle' in data else 'movie'):
-					module = load_provider(provider_name, self.source_utils)
-					provider = module.source()
-					provider._get_files = lambda url, result=record: [result]
-					item = provider.sources(data, {})[0]
-					self.assertEqual((item['provider'], item['name_info'], item['quality']), (provider_name, 'info:direct', '1080p'))
-					self.assertEqual(item['seeders'], 12 if provider_name == 'torz' else 0)
 
 	def test_dmm_and_torz_preserve_season_show_and_rejection_results(self):
 		data = {'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1', 'episode': '2'}

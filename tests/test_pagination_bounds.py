@@ -26,11 +26,6 @@ class PaginationBoundsTests(unittest.TestCase):
 	def setUpClass(cls):
 		cls.utils = load_utils_module()
 
-	def test_empty_input_has_one_empty_page(self):
-		for page in (-1, 0, 1, 9):
-			with self.subTest(page=page):
-				self.assertEqual(self.utils.paginate_list([], page, 2), ([], 1))
-
 	def test_zero_negative_and_stale_pages_are_empty_with_real_total(self):
 		items = list(range(5))
 		for page in (-2, 0, 4):

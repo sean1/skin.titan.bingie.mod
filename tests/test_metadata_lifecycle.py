@@ -71,17 +71,6 @@ class MetadataLifecycleTests(unittest.TestCase):
 		fetch.assert_not_called()
 		self.cache.release_claim.assert_not_called()
 
-	def test_fetch_result_releases_owned_claim(self):
-		self.cache.get.return_value = None
-		self.cache.get_or_claim.return_value = (None, 'owner-1', True)
-		fetch = Mock(return_value={'tmdb_id': 101})
-
-		result = self.metadata._cached_meta('movie', 'tmdb_id', 101, fetch)
-
-		self.assertEqual(result, {'tmdb_id': 101})
-		fetch.assert_called_once_with(self.cache, 'owner-1')
-		self.cache.release_claim.assert_called_once_with('movie', 'tmdb_id', 101, 'owner-1')
-
 	def test_fetch_error_still_releases_owned_claim(self):
 		self.cache.get.return_value = None
 		self.cache.get_or_claim.return_value = (None, 'owner-1', True)

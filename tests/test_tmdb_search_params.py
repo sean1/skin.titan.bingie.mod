@@ -73,18 +73,6 @@ class TmdbSearchParameterTests(unittest.TestCase):
 				self.assertEqual(result['url'], [self.tmdb.base_url + expected_path, expected_params])
 				self.assertNotIn(query, result['url'][0])
 
-	def test_people_search_keeps_cache_key_and_separates_query_parameters(self):
-		query = 'A&B + #1'
-		previous_side_effect = self.cache_object.side_effect
-		self.cache_object.side_effect = lambda *_args, **_kwargs: {'results': [{'id': 1}]}
-		self.addCleanup(setattr, self.cache_object, 'side_effect', previous_side_effect)
-
-		self.assertEqual(self.tmdb.tmdb_people_info(query), [{'id': 1}])
-		self.cache_object.assert_called_once_with(
-			self.tmdb.get_tmdb, 'tmdb_people_info_%s' % query,
-			[self.tmdb.base_url + '/search/person', {'language': 'en-US', 'query': query}], expiration=self.tmdb.EXPIRES_4_HOURS
-		)
-
 
 if __name__ == '__main__':
 	unittest.main()

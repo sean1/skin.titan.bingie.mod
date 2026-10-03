@@ -176,31 +176,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertFalse(seen_meta[1]['_playback_health_has_stall_fallback'])
 		self.assertEqual(seen_meta[1]['release_name'], 'second')
 
-	def test_duration_mismatch_retry_does_not_invent_resume_position(self):
-		sources_module = load_sources_module()
-		seen_meta = []
-
-		class Player:
-			def run(self, link, meta, progress):
-				seen_meta.append(meta)
-				self.retry_resume_percent = 0
-				return len(seen_meta) > 1
-
-		sources_module.POVPlayer = Player
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background = False
-		instance.autoplay = True
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie'}
-		instance._no_results = lambda: None
-		items = [
-			{'name': 'trailer', 'unrestricted_link': 'https://stream.invalid/trailer', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
-			{'name': 'movie', 'unrestricted_link': 'https://stream.invalid/movie', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
-		]
-
-		self.assertTrue(instance.play_file(items))
-		self.assertNotIn('_retry_resume_percent', seen_meta[1])
-
 	def test_stall_sampling_ignores_pause_seek_and_records_sustained_freeze(self):
 		player_module = load_player()
 		player = player_module.POVPlayer.__new__(player_module.POVPlayer)

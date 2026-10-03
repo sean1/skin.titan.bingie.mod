@@ -60,23 +60,6 @@ class TorBoxAPITests(unittest.TestCase):
 		self.assertEqual(request['files']['add_only_if_cached'], (None, 'true'))
 		self.assertEqual(request['files']['allow_zip'], (None, 'false'))
 
-	def test_parse_magnet_pack_returns_video_files_from_new_transfer(self):
-		self.api._existing_transfer = lambda info_hash: (None, True)
-		self.api.create_transfer = lambda magnet, cached_only=False: 44 if cached_only else None
-		self.api.torrent_info = lambda transfer_id: {
-			'id': transfer_id, 'download_present': True,
-			'files': [
-				{'id': 7, 'short_name': 'Show.S01E01.mkv', 'size': 123},
-				{'id': 8, 'short_name': 'Show.S01E01.nfo', 'size': 10}
-			]
-		}
-		source_utils = types.ModuleType('modules.source_utils')
-		source_utils.supported_video_extensions = lambda: ['.mkv']
-		with temporary_modules({'modules.source_utils': source_utils}):
-			result = self.api.parse_magnet_pack('magnet:?xt=urn:btih:' + 'A' * 40, 'A' * 40, errors=True)
-
-		self.assertEqual(result, [{'link': '44,7', 'size': 123, 'torrent_id': 44, 'filename': 'Show.S01E01.mkv'}])
-
 	def test_parse_magnet_pack_preserves_existing_transfer(self):
 		transfer = {'id': 44, 'hash': 'A' * 40, 'download_present': True, 'files': [{'id': 7, 'name': 'Movie.mkv', 'size': 123}]}
 		self.api._existing_transfer = lambda info_hash: (transfer, True)

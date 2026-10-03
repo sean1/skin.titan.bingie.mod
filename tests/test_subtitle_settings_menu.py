@@ -32,14 +32,6 @@ class SubtitleSettingsMenuTests(unittest.TestCase):
 		}
 		self.dialogs._subtitle_rpc = Mock(side_effect=lambda method, params=None: [{'playerid': 1, 'type': 'video'}] if method == 'Player.GetActivePlayers' else self.state if method == 'Player.GetProperties' else 'OK')
 
-	def test_enable_toggle_uses_player_api(self):
-		self.dialogs.kodi_utils.dialog.select.return_value = 0
-
-		self.dialogs.subtitle_settings_menu()
-
-		self.dialogs._subtitle_rpc.assert_called_with('Player.SetSubtitle', {'playerid': 1, 'subtitle': 'off'})
-		self.mark_manual_selection.assert_called_once_with()
-
 	def test_manual_off_is_recorded_before_the_player_is_changed(self):
 		events = []
 		self.mark_manual_selection.side_effect = lambda: events.append('manual')

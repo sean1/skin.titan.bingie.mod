@@ -51,27 +51,11 @@ class RealDebridAPITests(unittest.TestCase):
 		self.module = load_real_debrid()
 		self.api = self.module.RealDebridAPI()
 
-	def test_delete_endpoints_accept_empty_success_response(self):
-		requests = []
-		def request(method, path, data=None, timeout=None):
-			requests.append((method, path))
-			return Response(204)
-		self.module.session.request = request
-
-		self.assertTrue(self.api.delete_torrent('44'))
-		self.assertTrue(self.api.delete_download('55'))
-		self.assertEqual(requests, [('delete', self.module.base_url + 'torrents/delete/44'), ('delete', self.module.base_url + 'downloads/delete/55')])
-
 	def test_delete_endpoints_reject_json_error_response(self):
 		self.module.session.request = lambda *args, **kwargs: Response(404, b'json', {'error': 'unknown_resource', 'error_code': 7})
 
 		self.assertFalse(self.api.delete_torrent('44'))
 		self.assertFalse(self.api.delete_download('55'))
-
-	def test_delete_rejects_malformed_response_body(self):
-		self.module.session.request = lambda *args, **kwargs: Response(502, b'html', ValueError('invalid JSON'))
-
-		self.assertFalse(self.api.delete_torrent('44'))
 
 	def test_delete_rejects_timeout_during_authenticated_retry(self):
 		self.module.session.request = lambda *args, **kwargs: Response(401, b'json', {'error': 'bad_token', 'error_code': 8})

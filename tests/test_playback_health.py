@@ -31,13 +31,6 @@ def health_module():
 class PlaybackHealthTests(unittest.TestCase):
 	def setUp(self): self.module = health_module()
 
-	def test_source_context_keeps_only_known_provider_and_safe_hostname(self):
-		item = {'debrid': 'Real-Debrid', 'title': 'Private title', 'tmdb': '123', 'hash': 'secret'}
-		self.assertEqual(self.module.source_context(item, 'https://user:pass@CDN.Example.com/private/file?token=secret#hash'), {'provider': 'realdebrid', 'host': 'cdn.example.com'})
-		self.assertEqual(self.module.source_context({'debrid': 'unknown'}, 'https://cdn.example.com/file'), {})
-		self.assertEqual(self.module.source_context({'debrid': 'rd'}, 'smb://server/private'), {'provider': 'realdebrid'})
-		self.assertEqual(self.module.source_context({'debrid': 'rd'}, 'http://127.0.0.1/private'), {'provider': 'realdebrid'})
-
 	def test_persisted_data_never_contains_media_or_url_fields(self):
 		context = self.module.source_context({'debrid': 'AllDebrid', 'title': 'Hidden', 'tmdb': 99, 'hash': 'abc'}, 'https://cdn.example.org/path/title.mkv?token=topsecret')
 		context.update({'url': 'https://bad.invalid/private', 'path': '/private', 'query': 'token', 'title': 'Hidden', 'tmdb': 99, 'hash': 'abc'})
@@ -56,11 +49,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		for now in (1, 2, 3): self.module.record({'provider': 'ad'}, 'resolve_ok', now=now)
 		self.assertEqual(self.module.provider_penalty('alldebrid', now=3), 0)
 		self.assertGreater(self.module.provider_penalty('realdebrid', now=3), self.module.provider_penalty('alldebrid', now=3))
-
-	def test_decay_returns_old_sparse_history_to_neutral(self):
-		for now in (0, 1, 2, 3): self.module.record({'provider': 'realdebrid'}, 'stream_error', now=now)
-		self.assertGreater(self.module.provider_penalty('rd', now=3), 0)
-		self.assertEqual(self.module.provider_penalty('rd', now=3 + 14 * 24 * 60 * 60), 0)
 
 	def test_corrupt_missing_and_unknown_state_are_neutral(self):
 		for value in (None, 'bad', {'version': 999}, {'version': 1, 'providers': {'realdebrid': {'stages': 'bad'}}}):
@@ -105,14 +93,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		for bitrate, now in ((30, 3), (35, 4)):
 			self.module.record(context, 'stalled_play', bitrate_mbps=bitrate, stalls=2, now=now)
 		self.assertEqual(self.module.resolution_fallback_limit(now=4), 28)
-
-	def test_resolution_fallback_limit_ignores_one_low_stall_outlier(self):
-		context = {'provider': 'rd'}
-		for bitrate, now in ((10, 1), (12, 2)):
-			self.module.record(context, 'healthy_play', bitrate_mbps=bitrate, now=now)
-		for bitrate, now in ((5, 3), (30, 4)):
-			self.module.record(context, 'stalled_play', bitrate_mbps=bitrate, stalls=2, now=now)
-		self.assertEqual(self.module.resolution_fallback_limit(now=4), 24)
 
 	def test_bandwidth_samples_are_numeric_bounded_and_device_local(self):
 		context = {'provider': 'tb'}

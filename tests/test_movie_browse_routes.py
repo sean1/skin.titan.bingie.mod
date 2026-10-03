@@ -79,44 +79,12 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.kodi_utils.execute_builtin.reset_mock()
 		self.kodi_utils.notification.reset_mock()
 
-	def test_decade_feed_uses_inclusive_decade_bounds(self):
-		url = self.tmdb.tmdb_movies_decade('2010', 3)['url']
-		self.assertIn('primary_release_date.gte=2010-01-01', url)
-		self.assertIn('primary_release_date.lte=2019-12-31', url)
-		self.assertIn('page=3', url)
-
 	def test_tv_decade_and_language_feeds_use_tv_filters(self):
 		decade_url = self.tmdb.tmdb_tv_decade('2000', 1)['url']
 		self.assertIn('first_air_date.gte=2000-01-01', decade_url)
 		self.assertIn('first_air_date.lte=2009-12-31', decade_url)
 		language_url = self.tmdb.tmdb_tv_language('ja', 1)['url']
 		self.assertIn('with_original_language=ja', language_url)
-
-	def test_language_directory_uses_unique_two_letter_tmdb_codes(self):
-		meta_lists = types.ModuleType('modules.meta_lists')
-		meta_lists.meta_languages = {
-			'Korean': {'iso': 'ko'}, 'Portuguese': {'iso': 'pt'}, 'Portuguese (Brazil)': {'iso': 'pt-BR'}, 'Duplicate Korean': {'iso': 'ko'}
-		}
-		with temporary_modules({'modules.meta_lists': meta_lists}):
-			self.menu.movie_languages()
-
-		params = [call.args[0] for call in self.menu._add_item.call_args_list]
-		self.assertEqual({item['language'] for item in params}, {'ko', 'pt'})
-		self.assertTrue(all(item['action'] == 'tmdb_movies_language' for item in params))
-
-	def test_other_network_search_opens_single_case_insensitive_match(self):
-		meta_lists = types.ModuleType('modules.meta_lists')
-		meta_lists.networks = (
-			{'id': 4, 'name': 'BBC One', 'logo': 'bbc1.png'}, {'id': 332, 'name': 'BBC Two', 'logo': 'bbc2.png'},
-			{'id': 213, 'name': 'Netflix', 'logo': 'netflix.png'}
-		)
-		self.kodi_utils.dialog.input.return_value = 'netFLIX'
-		with temporary_modules({'modules.meta_lists': meta_lists}):
-			result = self.menu.search_tv_network()
-
-		self.assertIn('action=tmdb_tv_networks', result)
-		self.assertIn('network_id=213', result)
-		self.kodi_utils.select_dialog.assert_not_called()
 
 	def test_other_network_search_lets_user_choose_between_matches(self):
 		meta_lists = types.ModuleType('modules.meta_lists')

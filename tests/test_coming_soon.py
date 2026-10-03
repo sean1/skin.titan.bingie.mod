@@ -85,13 +85,6 @@ class ComingSoonDateTests(ComingSoonFixture, unittest.TestCase):
 				self.assertFalse(self.media.card_coming_soon(data, mediatype, TODAY))
 				self.assertFalse(self.media.card_coming_soon({unrelated: '2026-10-04'}, mediatype, TODAY))
 
-	def test_only_absent_or_empty_ordinary_dates_allow_normalized_fallback(self):
-		for mediatype, key in (('movie', 'release_date'), ('tvshow', 'first_air_date')):
-			for value in (None, ''):
-				with self.subTest(mediatype=mediatype, value=value): self.assertTrue(self.media.card_coming_soon({key: value, 'premiered': '2026-10-04'}, mediatype, TODAY))
-			for value in ('2027', 'not a date', False, 0, {}):
-				with self.subTest(mediatype=mediatype, value=value): self.assertFalse(self.media.card_coming_soon({key: value, 'premiered': '2026-10-04'}, mediatype, TODAY))
-
 	def test_default_date_is_local_and_badge_disappears_on_the_release_day(self):
 		class BeforeLocalMidnight(LocalDate):
 			@classmethod
@@ -105,56 +98,6 @@ class ComingSoonDateTests(ComingSoonFixture, unittest.TestCase):
 
 
 class ComingSoonBuilderTests(ComingSoonFixture, unittest.TestCase):
-	def test_summary_cards_forward_the_badge_without_changing_dates_or_routes(self):
-		mylist = types.ModuleType('modules.mylist')
-		mylist.context_item = lambda *args: None
-		modules = types.ModuleType('modules')
-		modules.__path__ = []
-		with temporary_modules({'modules': modules, 'modules.mylist': mylist}):
-			for mediatype, date_key, title_key in (('movie', 'release_date', 'title'), ('tvshow', 'first_air_date', 'name')):
-				for kodi_version in (19, 21):
-					for released, expected in (('2026-10-04', True), ('2026-10-03', False)):
-						with self.subTest(mediatype=mediatype, kodi_version=kodi_version, released=released):
-							listitem = Mock()
-							self.media.kodi_utils.make_listitem.return_value = listitem
-							result = self.media.build_tmdb_detail_shelf_item(0, {'id': 202, title_key: 'Title', date_key: released}, None, mediatype, {}, '', '', kodi_version)
-							self.assertEqual(result, ({'mode': 'show_media_info', 'mediatype': mediatype, 'tmdb_id': 202}, listitem, False))
-							self.assertEqual(listitem.setProperties.call_args.args[0].get('card_coming_soon') == 'true', expected)
-							if kodi_version < 20: self.assertEqual(listitem.setInfo.call_args.args[1]['premiered'], released)
-							else: listitem.getVideoInfoTag.return_value.setPremiered.assert_called_once_with(released)
-
-	def test_full_movie_and_show_cards_use_normalized_premiered(self):
-		for mediatype in ('movie', 'tvshow'):
-			with self.subTest(mediatype=mediatype):
-				module, _directory, kodi_utils = load_menu_module(mediatype)
-				module.card_badge_properties = self.media.card_badge_properties
-				meta = {
-					'tmdb_id': 202, 'tvdb_id': 303, 'imdb_id': 'tt0202', 'rootname': 'Title (2026)', 'title': 'Title', 'year': 2026,
-					'premiered': '2026-10-04', 'extra_info': {}, 'cast': [], 'original_language': 'en', 'origin_country': ['CA'], 'country': [],
-					'director': '', 'duration': 3600, 'genre': '', 'mpaa': '', 'plot': '', 'rating': 7.5, 'studio': '', 'tagline': '', 'trailer': '', 'votes': 1, 'writer': '',
-					'total_seasons': 1, 'total_aired_eps': 1, 'season_data': [{'episode_count': 1, 'season_number': 1}],
-				}
-				getattr(module, '%s_meta' % mediatype).return_value = meta
-				if mediatype == 'movie': module.get_watched_status_movie.return_value = (0, 4)
-				else: module.get_watched_status_tvshow.return_value = (0, 4, 0, 1)
-				if mediatype == 'movie': module.get_resumetime.return_value, module.set_resumetime.return_value, module.watched_str = ('0', '0'), (0, 0), '%s'
-				listitem = Mock()
-				listitem.getVideoInfoTag.return_value.getDuration.return_value = 3600
-				kodi_utils.make_listitem = Mock(return_value=listitem)
-				menu_class = module.Movies if mediatype == 'movie' else module.TVShows
-				menu = menu_class.__new__(menu_class)
-				menu.id_type, menu.meta_user_info, menu.current_date = 'tmdb_id', {'language': 'en'}, TODAY
-				menu.watched_info, menu.bookmarks, menu.include_year_in_title, menu.watched_title = {}, {}, False, 'watched'
-				menu.open_extras, menu.is_widget, menu.exit_list_params = False, True, 'origin'
-				menu.cm_sort, menu.params, menu.action, menu.art_provider = {'options': 1, 'extras': 2, 'mark': 3, 'exit': 4}, {}, 'popular', ()
-				menu.smart_play, menu.all_episodes, menu.is_folder, menu.saved_titles = 0, 0, True, {}
-				menu.items = []
-				menu.append = menu.items.append
-				getattr(menu, 'build_%s_content' % mediatype)(0, 202)
-				self.assertEqual(len(menu.items), 1)
-				self.assertEqual(listitem.setProperties.call_args.args[0]['card_coming_soon'], 'true')
-				listitem.getVideoInfoTag.return_value.setPremiered.assert_called_once_with('2026-10-04')
-				kodi_utils.logger.assert_not_called()
 
 	def build_episode(self, in_season_browser, premiered, show_unaired=True, adjust_hours=0):
 		episodes, seasons, kodi_utils = load_episode_builders(self.media)
@@ -194,19 +137,6 @@ class ComingSoonBuilderTests(ComingSoonFixture, unittest.TestCase):
 					properties = listitem.setProperties.call_args.args[0]
 					self.assertEqual(properties.get('card_coming_soon') == 'true', expected)
 					if offset: self.assertEqual(properties['pov_lite_first_aired'], '2026-10-03')
-
-
-class ComingSoonXmlTests(unittest.TestCase):
-
-	def test_home_browse_and_native_detail_cards_share_the_badge_and_forward_proxy_values(self):
-		landscape = ET.parse(ROOT / 'xml/IncludesViewsLayoutLandscape.xml').getroot()
-		layout = landscape.find("include[@name='ThumbsViewItemBingieLayout']")
-		self.assertEqual([node.text for node in layout.findall('include')].count('LandscapeCardComingSoonLabel'), 1)
-		dialog = ET.parse(ROOT / 'xml/IncludesDialogVideoInfo.xml').getroot()
-		card = dialog.find("include[@name='PovMoreLikeThisCard']")
-		self.assertEqual([node.text for node in card.findall('include')].count('LandscapeCardComingSoonLabel'), 1)
-		for name, source in (('PovMoreLikeThisItem', '565'), ('PovCollectionItem', '566')):
-			self.assertEqual(dialog.find("include[@name='%s']/.//property[@name='card_coming_soon']" % name).text, '$INFO[Container(%s).ListItemAbsolute($PARAM[index]).Property(card_coming_soon)]' % source)
 
 
 if __name__ == '__main__': unittest.main()

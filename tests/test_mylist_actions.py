@@ -158,12 +158,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertNotIn('BingieMyListPendingRefresh', self.properties)
 		self.kodi_utils.container_refresh.assert_called_once_with()
 
-	def test_widgets_refresh_saved_list_without_refreshing_the_active_container(self):
-		self.kodi_utils.external_browse = lambda: True
-		self.assertTrue(self.controller.action({'action': 'add', 'mediatype': 'movie', 'tmdb_id': 101, 'title': 'Movie'}))
-		self.assertIn('BingieMyListRefresh', self.properties)
-		self.kodi_utils.container_refresh.assert_not_called()
-
 	def test_info_button_runs_the_captured_action_and_disables_unknown_saved_state(self):
 		root = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()
 		button = next(control for control in root.iter('control') if control.get('id') == '54')

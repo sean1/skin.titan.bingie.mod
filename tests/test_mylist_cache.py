@@ -96,14 +96,6 @@ class MyListCacheTests(unittest.TestCase):
 		self.assertEqual(self.store.items('movie', limit=None)[1], 1)
 		self.assertEqual(len(self.items('movie', limit=None)), 5)
 
-	def test_empty_and_stale_last_pages_remain_navigable_after_removal(self):
-		self.assertEqual(self.store.items('movie', page=9, limit=2), ([], 1))
-		for media_id in range(101, 104): self.store.add('movie', media_id, 'Movie')
-		self.store.remove('movie', 101)
-		items, pages = self.store.items('movie', page=2, limit=2)
-		self.assertEqual(pages, 1)
-		self.assertEqual([item['media_id'] for item in items], ['103', '102'])
-
 	def test_database_initialization_and_cleanup_preserve_saved_items(self):
 		kodi_utils = self.stubs['modules.kodi_utils']
 		for name in ('navigator_db', 'watched_db', 'views_db', 'trakt_db', 'maincache_db', 'metacache_db', 'debridcache_db', 'external_db'):

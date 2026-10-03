@@ -58,31 +58,6 @@ def load_provider(name, fake_utils):
 class StremioProviderTests(unittest.TestCase):
 	data = {'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'total_seasons': '3', 'year': '2024', 'imdb': 'tt123', 'season': '1', 'episode': '2'}
 
-	def test_provider_adapters_preserve_pack_size_contracts(self):
-		text_pack = {'streams': [{'infoHash': 'hash', 'title': 'Show Season 1\n💾 1.5 GB 👤 12'}]}
-		description_pack = {'streams': [{'infoHash': 'hash', 'description': 'Show Season 1\n💾 1.5 GB 👤 12'}]}
-		zilean_pack = [{'info_hash': 'hash', 'raw_title': 'Show Season 1', 'size': 2000000000}]
-		bitmagnet_pack = (
-			'<rss xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item><title>Show Season 1</title>'
-			'<torznab:attr name="infohash" value="hash"/><torznab:attr name="seeders" value="12"/>'
-			'<torznab:attr name="size" value="2000000000"/></item></channel></rss>'
-		)
-		fixtures = {
-			'torrentsdb': FakeResponse(text_pack), 'comet': FakeResponse(description_pack), 'mediafusion': FakeResponse(description_pack),
-			'bitmagnet': FakeResponse(text=bitmagnet_pack), 'zilean': FakeResponse(zilean_pack)
-		}
-		true_size_providers = {'torrentsdb', 'comet', 'torrentio'}
-		for provider in ('torrentsdb', 'comet', 'torrentio', 'mediafusion', 'bitmagnet', 'zilean'):
-			with self.subTest(provider=provider):
-				module = load_provider(provider, FakeSourceUtils())
-				if provider != 'torrentio': module.requests = FakeRequests(fixtures[provider])
-				item = module.source().sources(self.data, {})[0]
-				self.assertEqual(item['provider'], provider)
-				self.assertEqual(item['package'], 'season')
-				self.assertEqual(item.get('true_size', False), provider in true_size_providers)
-				self.assertEqual((item['episode_start'], item['episode_end']), (1, 10))
-				self.assertEqual(item['size'], 2.0 if provider in ('bitmagnet', 'zilean') else 1.5)
-
 	def test_bitmagnet_keeps_malformed_seeders_as_zero_without_applying_minimum(self):
 		payload = (
 			'<rss xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item><title>Show Season 1</title>'

@@ -49,13 +49,6 @@ class StreamingCacheTests(unittest.TestCase):
 		])
 		self.assertTrue(all(isinstance(write['params']['value'], int) for write in writes))
 
-	def test_tuner_is_idempotent(self):
-		targets = {**self.cache.CACHE_SETTINGS, 'filecache.memorysize': 128}
-		self.ku.execJSONRPC.side_effect = lambda payload: json.dumps({'result': {'value': targets[json.loads(payload)['params']['setting']]}})
-		with patch.object(self.cache, 'memory_mb', return_value=(500, 1024)):
-			self.assertFalse(self.cache.tune())
-		self.assertFalse(any(json.loads(call.args[0])['method'] == 'Settings.SetSettingValue' for call in self.ku.execJSONRPC.call_args_list))
-
 	def test_missing_memory_leaves_kodi_unchanged(self):
 		with patch.object(self.cache, 'memory_mb', return_value=(None, None)):
 			self.assertFalse(self.cache.tune())

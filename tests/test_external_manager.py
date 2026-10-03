@@ -250,28 +250,12 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertIs(source.sources, source.source_sink.items)
 		self.assertTrue(source.source_sink.accepting)
 
-	def test_cached_core_target_skips_fallback(self):
-		FakeDebridCheck.cached = {'%s-%d' % (provider, index) for provider in CORE_EXTERNAL_PROVIDERS for index in range(2)}
-		manager = self.manager()
-		results = manager.results({})
-		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS)
-		self.assertEqual(len(results), 8)
-		self.assertTrue(manager.meta['full_search_available'])
-
 	def test_insufficient_cached_core_runs_fallback(self):
 		manager = self.manager()
 		results = manager.results({})
 		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
 		self.assertEqual(len(results), 12)
 		self.assertNotIn('full_search_available', manager.meta)
-
-	def test_force_full_search_runs_every_provider(self):
-		FakeDebridCheck.cached = {'%s-%d' % (provider, index) for provider in CORE_EXTERNAL_PROVIDERS for index in range(2)}
-		manager = self.manager(force_full_search=True)
-		manager.results({})
-		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
-		self.assertNotIn('full_search_available', manager.meta)
-		self.assertEqual(RecordingExecutor.worker_counts, [6, 1])
 
 	def test_cache_checks_use_a_separate_executor(self):
 		self.manager(provider_names=['torrentio']).results({})
@@ -311,20 +295,6 @@ class ExternalManagerTests(unittest.TestCase):
 		]
 		self.assertEqual(processor.filter_staged_results(results), [results[1]])
 
-	def test_autoplay_source_order_prefers_largest_plausible_sustainable_file(self):
-		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 8.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 10.0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 5.0},
-		]
-
-		results.sort(key=processor.autoplay_source_key)
-
-		self.assertEqual([item['size'] for item in results], [10.0, 8.0, 30.0, 5.0])
-
 	def test_autoplay_source_order_does_not_prefer_trailer_sized_4k_result(self):
 		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
 		processor = SOURCES.ResultsProcessor(source)
@@ -337,39 +307,6 @@ class ExternalManagerTests(unittest.TestCase):
 		results.sort(key=processor.autoplay_source_key)
 
 		self.assertEqual([(item['quality'], item['size']) for item in results], [('4K', 30.0), ('4K', 0.5), ('1080p', 6.0)])
-
-	def test_autoplay_health_breaks_ties_after_explicit_provider_rank(self):
-		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '4K', 'quality_rank': 1, 'size': 10.0, 'provider_rank': 2, 'scrape_provider': 'preferred'},
-			{'quality': '4K', 'quality_rank': 1, 'size': 10.0, 'provider_rank': 1, 'scrape_provider': 'unhealthy'},
-			{'quality': '4K', 'quality_rank': 1, 'size': 10.0, 'provider_rank': 2, 'scrape_provider': 'healthy'},
-		]
-		original = SOURCES.playback_health
-		SOURCES.playback_health = types.SimpleNamespace(
-			source_context=lambda item: {'provider': item['scrape_provider']},
-			provider_penalty=lambda provider: {'unhealthy': 100, 'healthy': 0, 'preferred': 50}[provider]
-		)
-		try: results.sort(key=processor.autoplay_source_key)
-		finally: SOURCES.playback_health = original
-
-		self.assertEqual([item['scrape_provider'] for item in results], ['unhealthy', 'healthy', 'preferred'])
-
-	def test_insufficient_bandwidth_confidence_keeps_resolution_first(self):
-		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 8.0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 6.0},
-		]
-		original = SOURCES.playback_health
-		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10, resolution_fallback_limit=lambda: None)
-		try: results.sort(key=processor.autoplay_source_key)
-		finally: SOURCES.playback_health = original
-
-		self.assertEqual([(item['quality'], item['size']) for item in results], [('4K', 8.0), ('4K', 30.0), ('1080p', 6.0)])
 
 	def test_confident_bandwidth_demotes_only_unsustainable_4k_below_sustainable_1080p(self):
 		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')

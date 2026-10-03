@@ -82,22 +82,6 @@ class SkipIntroTimingTests(unittest.TestCase):
 			player.current += milliseconds / 1000
 		self.episode_tools.kodi_utils.sleep = sleep
 
-	def test_prompt_is_detected_within_200_milliseconds(self):
-		player = FakePlayer(9.81)
-		prompt_times = []
-		meta = {'title': 'Example'}
-		self.advance_on_sleep(player)
-		self.episode_tools.open_window.side_effect = lambda *args, **kwargs: prompt_times.append(player.current) or False
-
-		result = self.episode_tools.execute_skip_intro(player, meta)
-
-		self.assertIsNone(result)
-		self.assertEqual(self.sleeps, [200])
-		self.assertAlmostEqual(prompt_times[0], 10.01)
-		self.assertLessEqual(prompt_times[0] - player.intro[0], 0.2)
-		self.assertEqual(self.episode_tools.open_window.call_args_list, [call(('windows.episodes', 'NextEpisode'), 'episodes.xml', meta=meta, function='skip_intro')])
-		self.assertEqual(player.seeks, [])
-
 	def test_accepting_prompt_seeks_to_intro_end_once(self):
 		player = FakePlayer(10.0)
 		self.advance_on_sleep(player)

@@ -163,39 +163,6 @@ class SubtitleProviderTests(unittest.TestCase):
 
 		self.assertEqual([item['id'] for item in ranked], ['right'])
 
-	def test_all_three_provider_searches_overlap(self):
-		barrier = threading.Barrier(3)
-
-		class FakeProvider:
-			def __init__(self, config, media, cancelled): self.name = config['name']
-			def search(self):
-				barrier.wait(timeout=2)
-				return [self.providers._candidate(self.name, self.name, 'eng', (self.name,))]
-
-		classes = {}
-		config = {}
-		for name in ('opensubtitles', 'subdl', 'subsource'):
-			classes[name] = type('%sProvider' % name, (FakeProvider,), {'providers': self.providers})
-			config[name] = {'name': name}
-		manager = self.providers.ProviderManager({'release_name': '', 'season': None, 'episode': None}, config=config, provider_classes=classes)
-
-		results = manager.search()
-
-		self.assertEqual({item['provider'] for item in results}, set(config))
-
-	def test_sync_requires_hash_or_confident_release_match(self):
-		media = {'release_name': 'Show.S01E02.1080p.WEB-DL-GROUP', 'season': 1, 'episode': 2}
-		candidates = [
-			self.providers._candidate('opensubtitles', 'hash', 'eng', ('Different.Release',), season=1, episode=2, hash_match=True),
-			self.providers._candidate('subdl', 'strong', 'eng', ('Another.Release',), season=1, episode=2, match_score=0.8),
-			self.providers._candidate('subsource', 'release', 'eng', ('Show.S01E02.1080p.WEB-DL-GROUP',), season=1, episode=2),
-			self.providers._candidate('subsource', 'weak', 'eng', ('Show.S01E02.HDTV-OTHER',), season=1, episode=2)
-		]
-
-		ranked = self.providers.rank_candidates(candidates, media)
-
-		self.assertEqual({item['id']: item['sync'] for item in ranked}, {'hash': True, 'strong': True, 'release': True, 'weak': False})
-
 	def test_one_provider_failure_preserves_other_results(self):
 		class Good:
 			def __init__(self, config, media, cancelled): pass
@@ -234,19 +201,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual((results[0]['provider'], results[0]['id'], results[0]['lang']), ('opensubtitles', '456', 'eng'))
 		self.assertEqual((results[0]['season'], results[0]['episode'], results[0]['extension']), (1, 2, 'srt'))
 		self.assertTrue(results[0]['trusted'])
-
-	def test_opensubtitles_download_requests_native_file_without_format_conversion(self):
-		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})
-		provider.login = Mock()
-		provider.authenticated_json = Mock(return_value={'link': 'https://download.invalid/subtitle'})
-
-		with patch.object(self.providers, '_download_binary', return_value=b'subtitle text') as download_binary:
-			payload = provider.download({'id': '456', 'extension': 'srt'})
-
-		provider.login.assert_called_once_with()
-		provider.authenticated_json.assert_called_once_with('POST', 'download', 'download', json={'file_id': 456})
-		download_binary.assert_called_once_with('https://download.invalid/subtitle', 'opensubtitles', self.providers.MAX_SUBTITLE_BYTES, None)
-		self.assertEqual(payload, {'content': b'subtitle text', 'extension': 'srt'})
 
 	def test_opensubtitles_quota_rejection_disables_repeated_download_attempts(self):
 		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})

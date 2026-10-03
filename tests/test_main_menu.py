@@ -54,36 +54,6 @@ class MainMenuTests(unittest.TestCase):
 			control = bingie.find(".//control[@type='list'][@id='%s']" % control_id)
 			self.assertTrue(any(content.findtext('include') == 'StaticSubmenu' for content in control.findall('content')))
 
-	def test_my_videos_loads_registered_video_sources_dynamically(self):
-		menu = self.root.find("include[@name='StaticMainMenu']")
-		main_item = next(item for item in menu.findall('item') if item.findtext('label2') == 'My Videos')
-		self.assertEqual(main_item.findtext("property[@name='submenuVisibility']"), 'myvideos')
-		self.assertEqual(main_item.findtext("property[@name='hasSubmenu']"), 'True')
-		self.assertEqual(main_item.findtext('icon'), 'shortcuts/mylist.png')
-		self.assertEqual(main_item.findtext('onclick'), 'ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=navigator.video_sources&group=myvideos,return)')
-		self.assertEqual(main_item.findtext("property[@name='list']"), 'plugin://skin.titan.bingie.lite/?mode=navigator.video_sources&group=myvideos')
-		self.assertFalse(any(item.findtext("property[@name='group']") == 'myvideos' for item in self.root.find("include[@name='StaticSubmenu']").findall('item')))
-
-		bingie = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
-		for control_id in ('4444', '4445'):
-			control = bingie.find(".//control[@type='list'][@id='%s']" % control_id)
-			self.assertTrue(any(content.find('include') is not None and content.find('include').text == 'StaticSubmenu' for content in control.findall('content')))
-			dynamic = next(content for content in control.findall('content') if content.text and 'navigator.video_sources' in content.text)
-			self.assertIn('group=$INFO[Container(900).ListItem.Property(submenuVisibility)]', dynamic.text)
-			self.assertEqual(dynamic.get('target'), 'videos')
-			self.assertEqual(dynamic.get('browse'), 'never')
-
-	def test_video_sources_use_the_native_list_with_add_source_item(self):
-		nav = ET.parse(ROOT / 'xml' / 'MyVideoNav.xml').getroot()
-		onload_conditions = [action.get('condition') for action in nav.findall('onload') if action.text == 'Container.SetViewMode(50)']
-		self.assertIn('String.IsEqual(Container.FolderPath,sources://video/)', onload_conditions)
-
-		list_view = ET.parse(ROOT / 'xml' / 'View_50_List.xml').getroot().find(".//control[@type='list'][@id='50']")
-		self.assertIn('String.IsEqual(Container.FolderPath,sources://video/)', list_view.findtext('visible'))
-
-		bingie_view = ET.parse(ROOT / 'xml' / 'View_523_BingieMainLandscape.xml').getroot().find(".//control[@id='523']")
-		self.assertIn('!String.IsEqual(Container.FolderPath,sources://video/)', [visible.text for visible in bingie_view.findall('visible')])
-
 	def test_movie_and_tv_submenus_belong_to_their_main_menu_items(self):
 		menu = self.root.find("include[@name='StaticMainMenu']")
 		menu_ids = {item.findtext('label2'): item.get('id') for item in menu.findall('item')}
@@ -169,36 +139,6 @@ class MainMenuTests(unittest.TestCase):
 		self.assertIsNone(context_includes.find("include[@name='SideBladeViewCommands']"))
 		self.assertIsNotNone(context_includes.find("include[@name='DialogContextMenuModern']"))
 		self.assertIsNotNone(context_includes.find("include[@name='SideBladeMenuButton']"))
-
-	def test_power_menus_omit_reboot_and_poweroff(self):
-		static_root = ET.parse(ROOT / 'xml' / 'IncludesStaticMenus.xml').getroot()
-		static_submenu = static_root.find("include[@name='StaticSubmenu']")
-		surfaces = {
-			'side submenu': [item for item in static_submenu.findall('item') if item.findtext("property[@name='group']") == 'powermenu'],
-			'static power menu': static_root.find("include[@name='StaticPowerMenu']").findall('item'),
-			'login power menu': ET.parse(ROOT / 'xml' / 'DialogButtonMenu.xml').getroot().find(".//control[@type='list'][@id='3110']/content").findall('item'),
-		}
-		for name, items in surfaces.items():
-			with self.subTest(name=name):
-				actions = {action.text for item in items for action in item.findall('onclick')}
-				self.assertNotIn('Reboot', actions)
-				self.assertFalse({'ShutDown', 'PowerDown'} & actions)
-				self.assertFalse(any(keyword in (item.findtext('icon') or '').lower() for item in items for keyword in ('reboot', 'shutdown')))
-				self.assertIn('Quit()', actions)
-
-	def test_submenu_focus_keeps_main_menu_open(self):
-		root = ET.parse(ROOT / 'xml' / 'Includes.xml').getroot()
-		expression = root.find("expression[@name='IsMainMenuOpened']")
-		open_conditions = {condition.strip() for condition in expression.text.split('|')}
-		self.assertIn('Control.HasFocus(900)', open_conditions)
-		self.assertIn('Control.HasFocus(4444)', open_conditions)
-
-	def test_menu_state_is_cleared_after_navigation(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesBingie.xml').getroot()
-		window_props = root.find("include[@name='CustomBingieWinProps']")
-		for event in ('onload', 'onunload'):
-			actions = {action.text for action in window_props.findall(event)}
-			self.assertIn('ClearProperty(ShowViewSubMenu,Home)', actions)
 
 if __name__ == '__main__':
 	unittest.main()

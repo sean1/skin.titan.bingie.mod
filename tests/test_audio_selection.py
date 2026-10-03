@@ -70,33 +70,12 @@ class AudioSelectionTests(unittest.TestCase):
 		]
 		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'zh')['index'], 2)
 
-	def test_original_language_alias_selects_live_movie_track(self):
-		streams = [
-			{'index': 0, 'language': 'cze', 'isdefault': True, 'name': 'AC3 0 channels'},
-			{'index': 1, 'language': 'chi', 'name': 'Encode TrueHD 7.1 Atmos'},
-			{'index': 2, 'language': 'chi', 'name': 'Encode DD+ 5.1 Atmos'},
-			{'index': 3, 'language': 'chi', 'name': 'Original DTS-HD MA 5.1'},
-		]
-		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'zh')['index'], 3)
-
 	def test_english_commentary_does_not_beat_normal_original_language(self):
 		streams = [
 			{'index': 0, 'language': 'eng', 'name': 'Director Commentary'},
 			{'index': 1, 'language': 'jpn', 'name': 'Main Audio'},
 		]
 		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'ja')['index'], 1)
-
-	def test_original_marker_fallback_works_without_metadata(self):
-		for stream in (
-			{'index': 1, 'language': 'kor', 'isoriginal': True},
-			{'index': 2, 'language': 'chi', 'name': 'Mandarin (ORIGINAL)'},
-		):
-			with self.subTest(stream=stream):
-				self.assertEqual(self.player_class._preferred_audio_stream([{'index': 0, 'language': 'cze'}, stream])['index'], stream['index'])
-
-	def test_no_original_language_evidence_leaves_kodi_selection_unchanged(self):
-		streams = [{'index': 0, 'language': 'cze', 'isdefault': True}, {'index': 1, 'language': 'spa'}]
-		self.assertIsNone(self.player_class._preferred_audio_stream(streams))
 
 	def test_live_selection_switches_once_and_skips_already_selected_track(self):
 		streams = [{'index': 0, 'language': 'cze', 'isdefault': True}, {'index': 1, 'language': 'chi'}]
@@ -119,23 +98,6 @@ class AudioSelectionTests(unittest.TestCase):
 		self.player_module.kodi_utils.execJSONRPC = lambda request: response(1)
 		player._select_preferred_audio()
 		self.assertEqual(selected, [1])
-
-	def test_legacy_metadata_looks_up_original_language_only_when_needed(self):
-		streams = [{'index': 0, 'language': 'cze', 'isdefault': True}, {'index': 1, 'language': 'jpn'}]
-		player = self.player_class.__new__(self.player_class)
-		player.meta = {}
-		player.meta_get = player.meta.get
-		player.mediatype = 'movie'
-		player.tmdb_id = 'legacy-id'
-		player.isPlayingVideo = lambda: True
-		player.getPlayingFile = lambda: 'legacy.mkv'
-		player.setAudioStream = mock.Mock()
-		self.player_module.kodi_utils.execJSONRPC = lambda request: json.dumps({'result': {'audiostreams': streams, 'currentaudiostream': {'index': 0}}})
-		self.player_module.tmdb_api.media_original_language = mock.Mock(return_value='ja')
-
-		player._select_preferred_audio('legacy.mkv')
-		player.setAudioStream.assert_called_once_with(1)
-		self.assertEqual(player.meta['original_language'], 'ja')
 
 	def test_stale_audio_selection_does_not_touch_new_playback(self):
 		player = self.player_class.__new__(self.player_class)

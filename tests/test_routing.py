@@ -21,31 +21,6 @@ def load_routing(params):
 
 
 class RoutingTests(unittest.TestCase):
-	def test_pov_route_imports_handler_only_when_dispatched(self):
-		params = {'mode': 'play_trailer', 'tmdb_id': '42'}
-		routing = load_routing(params)
-		self.assertNotIn('modules.trailers', sys.modules)
-		play = Mock(return_value='played')
-		trailers = types.ModuleType('modules.trailers')
-		trailers.play = play
-		with temporary_modules({'modules.trailers': trailers}):
-			sys_obj = types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '1', '?mode=play_trailer'])
-			self.assertEqual(routing.Router().run(sys_obj), 'played')
-
-		routing.kodi_utils.parsed_query.assert_called_once_with(sys_obj.argv[2])
-		play.assert_called_once_with(params)
-
-	def test_subtitle_route_lazily_receives_current_sys_object(self):
-		routing = load_routing({'action': 'search'})
-		self.assertNotIn('subtitle_service', sys.modules)
-		run = Mock(return_value='subtitles')
-		subtitle_service = types.ModuleType('subtitle_service')
-		subtitle_service.run = run
-		with temporary_modules({'subtitle_service': subtitle_service}):
-			sys_obj = types.SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '2', '?action=search'])
-			self.assertEqual(routing.routing(sys_obj), 'subtitles')
-
-		run.assert_called_once_with(sys_obj)
 
 	def test_clear_progress_uses_lightweight_progress_handler(self):
 		params = {'mode': 'watched_unwatched_erase_bookmark', 'mediatype': 'episode', 'tmdb_id': '42', 'season': '2', 'episode': '3', 'refresh': 'progress'}

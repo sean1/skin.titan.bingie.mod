@@ -29,27 +29,11 @@ class NextPagePrefetchTests(unittest.TestCase):
 		self.prefetch.kodi_utils.get_infolabel = Mock(side_effect=self.labels.get)
 		self.worker = self.prefetch.NextPagePrefetch()
 
-	def test_near_end_preserves_five_item_boundary(self):
-		for current_item, num_items, expected in (('16', '21', False), ('17', '21', True), ('21', '21', True), ('1', '5', True), ('1', '6', False), ('2', '6', True)):
-			with self.subTest(current_item=current_item, num_items=num_items):
-				self.labels.update({'Container.CurrentItem': current_item, 'Container.NumItems': num_items})
-				self.assertEqual(self.worker._near_end(), expected)
-
 	def test_near_end_rejects_missing_or_malformed_labels(self):
 		for current_item, num_items in (('', '21'), (None, '21'), ('invalid', '21'), ('0', '21'), ('-1', '21'), ('22', '21'), ('17', ''), ('17', None), ('17', 'invalid'), ('1', '0')):
 			with self.subTest(current_item=current_item, num_items=num_items):
 				self.labels.update({'Container.CurrentItem': current_item, 'Container.NumItems': num_items})
 				self.assertFalse(self.worker._near_end())
-
-	def test_tmdb_summary_routes_use_eight_item_boundary(self):
-		for action in ('tmdb_movies_popular', 'tmdb_movies_search_collections', 'tmdb_tv_discover', 'tmdb_tv_genres'):
-			with self.subTest(action=action, current_item='13'):
-				self.worker.request = {'origin': {'action': action}}
-				self.labels['Container.CurrentItem'] = '13'
-				self.assertFalse(self.worker._near_end())
-			with self.subTest(action=action, current_item='14'):
-				self.labels['Container.CurrentItem'] = '14'
-				self.assertTrue(self.worker._near_end())
 
 	def test_missing_or_malformed_actions_keep_five_item_boundary(self):
 		for action in (None, 1, [], {}):

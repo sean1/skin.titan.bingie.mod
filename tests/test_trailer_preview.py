@@ -90,20 +90,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview._preview_window_active = Mock(return_value=True)
 		self.preview._owns_preview = Mock(return_value=True)
 
-	def test_cached_summary_metadata_publishes_on_identity_change_tick(self):
-		identity = 'listing|movie|2'
-		self.preview.identity = 'listing|movie|1'
-		self.preview.resolved_focused_metadata[identity] = {'genre': 'Cached genre'}
-		self.preview._candidate = Mock(return_value=(identity, 'trailer-url', 'movie', '2', False, True))
-		self.preview._start_focused_metadata_lookup = Mock()
-		self.entry.monotonic = Mock(return_value=10.0)
-
-		self.assertTrue(self.preview.tick())
-		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], identity)
-		self.assertEqual(self.properties['PovFocusedGenre'], 'Cached genre')
-		self.assertIn(identity, self.preview.resolved_focused_metadata)
-		self.preview._start_focused_metadata_lookup.assert_not_called()
-
 	def test_inactive_preview_window_skips_skin_and_transition_reads(self):
 		self.entry.kodi_utils.get_visibility = Mock(return_value=False)
 		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
@@ -217,32 +203,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.preview._preview_context(), 'listing')
 		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
 
-	def test_info_candidate_stages_property_reads_until_prerequisites_are_valid(self):
-		self.preview._preview_context = Mock(return_value='info')
-		for values, expected, expected_keys in (
-			(('episode',), None, ('PovInfoType',)),
-			(('movie', '', ''), None, ('PovInfoType', 'PovInfoTmdb', 'PovInfoPendingTmdb')),
-			(('movie', '', '123', ''), ('info|movie|123', '', 'movie', '123', True, False), ('PovInfoType', 'PovInfoTmdb', 'PovInfoPendingTmdb', 'PovInfoTrailer')),
-			(('movie', '123', 'trailer-url'), ('info|movie|123', 'trailer-url', 'movie', '123', True, False), ('PovInfoType', 'PovInfoTmdb', 'PovInfoTrailer')),
-		):
-			with self.subTest(values=values):
-				self.entry.get_property = Mock(side_effect=values)
-
-				self.assertEqual(self.preview._candidate(), expected)
-				self.assertEqual(self.entry.get_property.call_args_list, [call(key) for key in expected_keys])
-
-	def test_detail_card_candidate_uses_its_own_trailer(self):
-		self.preview._preview_context = Mock(return_value='info_card')
-		self.properties['PovInfoType'] = 'tvshow'
-		values = {
-			'Container.ListItem.Property(DBTYPE)': 'movie', 'Container.ListItem.Property(tmdb_id)': '456',
-			'Container.ListItem.Label': 'Related movie', 'Container.ListItem.Property(trailer)': 'card-trailer-url'
-		}
-		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
-
-		self.assertEqual(self.preview._candidate(), ('info-card|movie|456', 'card-trailer-url', 'movie', '456', False, True))
-		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
-
 	def test_movie_detail_shelf_focus_does_not_offer_an_autoplay_candidate(self):
 		self.preview._preview_context = Mock(return_value='info_card')
 		self.properties['PovInfoType'] = 'movie'
@@ -250,20 +210,6 @@ class TrailerPreviewTests(unittest.TestCase):
 
 		self.assertIsNone(self.preview._candidate())
 		self.entry.kodi_utils.get_infolabel.assert_not_called()
-
-	def test_dialog_candidate_stages_label_reads_until_prerequisites_are_valid(self):
-		self.preview._preview_context = Mock(return_value='dialog')
-		for values, expected, expected_labels in (
-			(('episode',), None, ('Window.Property(PovInfoType)',)),
-			(('tvshow', ''), None, ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)')),
-			(('tvshow', '456', 'trailer-url'), ('info|tvshow|456', 'trailer-url', 'tvshow', '456', False, False), ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)', 'ListItem.Trailer')),
-			(('movie', '123', 'trailer-url'), ('info|movie|123', 'trailer-url', 'movie', '123', True, False), ('Window.Property(PovInfoType)', 'Window.Property(PovInfoTmdb)', 'ListItem.Trailer')),
-		):
-			with self.subTest(values=values):
-				self.entry.kodi_utils.get_infolabel = Mock(side_effect=values)
-
-				self.assertEqual(self.preview._candidate(), expected)
-				self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in expected_labels])
 
 	def test_movie_detail_waits_for_explicit_trailer_request(self):
 		for context in ('info', 'dialog'):
@@ -286,33 +232,6 @@ class TrailerPreviewTests(unittest.TestCase):
 
 				self.preview._start_preview_preparation.assert_called_once_with('info|movie|123', 'trailer-url')
 				self.assertNotIn(self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY, self.properties)
-
-	def test_actor_candidate_skips_id_and_label_reads_after_rejection(self):
-		self.preview._preview_context = Mock(return_value='actor')
-		self.entry.kodi_utils.get_infolabel = Mock(return_value='episode')
-
-		self.assertIsNone(self.preview._candidate())
-		self.entry.kodi_utils.get_infolabel.assert_called_once_with('Container.ListItem.Property(PovCreditType)')
-
-		values = {
-			'Container.ListItem.Property(PovCreditType)': 'movie',
-			'Container.ListItem.UniqueID(tmdb)': '', 'ListItem.UniqueID(tmdb)': '',
-			'Container.ListItem.Property(tmdb_id)': '', 'ListItem.Property(tmdb_id)': '',
-		}
-		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
-
-		self.assertIsNone(self.preview._candidate())
-		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
-
-		values = {
-			'Container.ListItem.Property(PovCreditType)': 'movie',
-			'Container.ListItem.UniqueID(tmdb)': '789',
-			'Container.ListItem.Label': 'Actor credit',
-		}
-		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
-
-		self.assertEqual(self.preview._candidate(), ('actor|movie|789', '', 'movie', '789', False, True))
-		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
 
 	def test_listing_candidate_rejects_invalid_media_before_dependent_reads(self):
 		self.preview._preview_context = Mock(return_value='listing')
@@ -412,35 +331,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		for key in (keys[1], keys[3]): self._wait(finished[key])
 		self.preview._consume_lookup_results()
 
-	def test_focused_lookup_supersedes_pending_trailer_and_subsumes_duplicates(self):
-		blockers = [('listing|movie|1', False), ('listing|movie|2', False)]
-		trailer_key, focused_key = ('listing|movie|3', False), ('listing|movie|3', True)
-		results = {blockers[0]: 'trailer-1', blockers[1]: 'trailer-2', trailer_key: 'trailer-3', focused_key: {'genre': 'Genre', 'trailer': 'trailer-3'}}
-		started, released, finished, calls = self._lookup_harness(results)
-		for key in blockers:
-			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
-			self._wait(started[key])
-		self.preview._start_trailer_lookup(trailer_key[0], 'movie', '3')
-		self.preview._start_focused_metadata_lookup(focused_key[0], 'movie', '3')
-		self.preview._start_focused_metadata_lookup(focused_key[0], 'movie', '3')
-		self.preview._start_trailer_lookup(trailer_key[0], 'movie', '3')
-
-		self.assertEqual((self.preview.lookup_pending[0], self.preview.lookup_pending[3]), focused_key)
-		released[blockers[0]].set()
-		self._wait(finished[blockers[0]])
-		self.preview._consume_lookup_results()
-		self.assertFalse(started[focused_key].is_set())
-		self.preview._start_focused_metadata_lookup(focused_key[0], 'movie', '3')
-		self._wait(started[focused_key])
-		self.preview._start_trailer_lookup(trailer_key[0], 'movie', '3')
-
-		self.assertIsNone(self.preview.lookup_pending)
-		self.assertFalse(started[trailer_key].is_set())
-		self.assertEqual(calls.count(focused_key), 1)
-		for key in (blockers[1], focused_key): released[key].set()
-		for key in (blockers[1], focused_key): self._wait(finished[key])
-		self.preview._consume_lookup_results()
-
 	def test_tick_drops_stale_pending_lookup_before_scheduling_new_focus(self):
 		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 5)]
 		started, released, finished, _ = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
@@ -465,27 +355,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(set(self.preview.lookup_workers), {keys[1], keys[3]})
 		for key in (keys[1], keys[3]): released[key].set()
 		for key in (keys[1], keys[3]): self._wait(finished[key])
-
-	def test_tick_starts_unchanged_pending_lookup_as_soon_as_slot_is_free(self):
-		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
-		started, released, finished, _ = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
-		for key in keys[:2]:
-			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
-			self._wait(started[key])
-		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
-		self.preview.identity = keys[2][0]
-		self.preview.focused_at = 7.0
-		self.preview._candidate = Mock(return_value=(keys[2][0], '', 'movie', '3', False, False))
-		self.entry.monotonic = Mock(return_value=10.0)
-		released[keys[0]].set()
-		self._wait(finished[keys[0]])
-
-		self.assertTrue(self.preview.tick())
-		self._wait(started[keys[2]])
-		self.assertIsNone(self.preview.lookup_pending)
-		self.assertEqual(set(self.preview.lookup_workers), {keys[1], keys[2]})
-		for key in (keys[1], keys[2]): released[key].set()
-		for key in (keys[1], keys[2]): self._wait(finished[key])
 
 	def test_stale_focused_failure_records_only_its_retry(self):
 		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)

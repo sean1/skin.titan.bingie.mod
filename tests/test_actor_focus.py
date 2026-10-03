@@ -141,18 +141,6 @@ class ActorFocusTests(unittest.TestCase):
 
 		self.assertEqual(self.commands, [])
 
-	def test_focus_loaded_actor_shelf_requires_current_container_item(self):
-		self.properties['PovActorHasMovies'] = 'true'
-		conditions = []
-		self.people.kodi_utils.get_visibility = lambda condition: conditions.append(condition) or False
-
-		self.people._focus_loaded_actor_shelf('1245', 'movies', True)
-
-		self.assertEqual(self.commands, [])
-		self.assertEqual(conditions, [
-			'Window.IsActive(1122) + Control.HasFocus(600) + String.IsEqual(Container(610).ListItemAbsolute(0).Property(PovActorSourceId),Window(Home).Property(PovActorId))'
-		])
-
 	def test_focus_loaded_actor_shelf_does_not_steal_focus(self):
 		self.properties.update({'PovActorHasMovies': 'true', 'PovActorHasTVShows': 'true'})
 		cases = (

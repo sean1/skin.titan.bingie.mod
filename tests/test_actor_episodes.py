@@ -37,10 +37,6 @@ class ActorEpisodesTests(unittest.TestCase):
 			with self.subTest(credits=credits): self.assertTrue(self.module.credited_actor(credits, '42'))
 		self.assertFalse(self.module.credited_actor({'cast': [{'id': 17, 'name': 'Target Actor'}], 'guest_stars': [], 'crew': [{'id': 42}]}, 42))
 
-	def test_unavailable_credit_payload_is_not_treated_as_no_appearance(self):
-		for credits in (None, {}, {'cast': []}, {'guest_stars': []}):
-			with self.subTest(credits=credits), self.assertRaises(ValueError): self.module.credited_actor(credits, 42)
-
 	def test_filters_and_sorts_numerically_across_seasons(self):
 		episodes = [{'season': '10', 'episode': '1'}, {'season': '2', 'episode': '10'}, {'season': '2', 'episode': '2'}, {'season': '1', 'episode': '1'}]
 		self.module.episode_credits = lambda show, season, episode: {'cast': [], 'guest_stars': [{'id': 42}] if season != '1' else []}

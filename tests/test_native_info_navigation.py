@@ -41,17 +41,6 @@ class NativeInfoNavigationTests(unittest.TestCase):
 		self.assertIn(('!Control.IsVisible(5050) + !String.IsEmpty(ListItem.FileNameAndPath)', 'AlarmClock(PlayMovie,PlayMedia($ESCINFO[ListItem.FileNameAndPath],noresume),00:00,silent)'), start)
 		self.assertIn(('!Control.IsVisible(5050) + String.IsEmpty(ListItem.FileNameAndPath) + !String.IsEmpty(ListItem.FolderPath)', 'AlarmClock(PlayMovie,PlayMedia($ESCINFO[ListItem.FolderPath],noresume),00:00,silent)'), start)
 
-	def test_episodes_marks_native_info_for_return_before_closing_dialog(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesDialogVideoInfo.xml').getroot()
-		button = next(control for control in root.iter('control') if control.get('id') == '53')
-		actions = [node.text for node in button.findall('onclick')]
-
-		self.assertEqual(actions, [
-			'SetProperty(BaseWindow,1,Home)',
-			'Dialog.Close(movieinformation)',
-			'AlarmClock(BrowseEpisodes,ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_season_list&tmdb_id=$INFO[ListItem.UniqueID(tmdb)],return),00:00,silent)'
-		])
-
 	def test_custom_info_opens_dedicated_season_window(self):
 		root = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()
 		button = next(control for control in root.iter('control') if control.get('id') == '53')

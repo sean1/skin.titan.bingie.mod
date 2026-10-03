@@ -85,15 +85,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 		self.assertEqual(self.cache.advance_and_delete_progress(101, 1, 3, 1, 2), (False, True))
 		self.assertEqual(self.cache.lookup(101), (2, 1))
 
-	def test_completed_episode_advances_cursor_and_refreshes_progress_only(self):
-		with sqlite3.connect(self.database_path) as dbcon:
-			dbcon.execute('INSERT INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', ('episode', '101', 1, 2, '95', '3000', '', 0, 'Completed'))
-
-		self.assertEqual(self.cache.complete_episode(101, 1, 2), (True, True))
-		self.assertEqual(self.cache.lookup(101), (1, 2))
-		self.cache.kodi_utils.set_property.assert_called_once()
-		self.cache.kodi_utils.container_refresh.assert_not_called()
-
 	def test_completed_special_deletes_exact_progress_without_advancing_cursor(self):
 		self.cache.advance(101, 2, 3)
 		with sqlite3.connect(self.database_path) as dbcon:

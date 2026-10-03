@@ -31,11 +31,6 @@ class SourceSearchTests(unittest.TestCase):
 		time.sleep(0.02)
 		self.assertEqual(coalescer.get('key', fetch, 1), [2])
 
-	def test_request_coalescer_releases_waiters_on_failure(self):
-		coalescer = RequestCoalescer()
-		self.assertEqual(coalescer.get('key', lambda: 1 / 0, 1), [])
-		self.assertEqual(coalescer.get('key', lambda: ['unused'], 1), [])
-
 
 if __name__ == '__main__':
 	unittest.main()

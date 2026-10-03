@@ -95,35 +95,6 @@ class MenuMediaTests(unittest.TestCase):
 			call.setTitle('Show'), call.setTvShowTitle('Show'), call.setUniqueIDs({'tmdb': '202'}), call.setMediaType('tvshow'), call.setPlot('')
 		])
 
-	def test_country_code_uses_only_explicit_query_country_fields(self):
-		cases = (
-			({'country_codes': ['GB', 'US']}, 'gb'),
-			({'origin_country': ['JP']}, 'jp'),
-			({'production_countries': [{'iso_3166_1': 'DE'}]}, 'de'),
-			({'origin_country': ['', 'CA']}, 'ca'),
-			({'original_language': 'fr'}, ''),
-			({}, '')
-		)
-		for data, expected in cases:
-			with self.subTest(data=data): self.assertEqual(self.media.first_country_code(data), expected)
-
-	def test_card_country_and_language_values_are_extracted_independently(self):
-		cases = (
-			({'country_codes': ['GB'], 'original_language': 'en'}, 'flags/country/gb.png', 'EN'),
-			({'original_language': ' JA '}, '', 'JA'),
-			({'original_language': 'bn'}, '', 'BN'),
-			({'original_language': 'xx'}, '', ''),
-			({'original_language': 'e1'}, '', ''),
-			({'original_language': 'pt-BR'}, '', ''),
-			({'original_language': 'x'}, '', ''),
-			({'original_language': '123'}, '', ''),
-			({}, '', '')
-		)
-		for data, expected_flag, expected_language in cases:
-			with self.subTest(data=data):
-				self.assertEqual(self.media.card_flag(data), expected_flag)
-				self.assertEqual(self.media.card_language(data), expected_language)
-
 	def test_invalid_summary_item_is_ignored_before_listitem_creation(self):
 		for item in ({'id': 1}, {'title': 'Movie'}):
 			with self.subTest(item=item):

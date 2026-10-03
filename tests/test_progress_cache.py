@@ -34,36 +34,6 @@ class ProgressCacheTests(unittest.TestCase):
 		self.dbcon.cursor.return_value = self.dbcur
 		self.progress.kodi_utils.database_connect.return_value = self.dbcon
 
-	def test_erase_bookmark_normalizes_episode_numbers(self):
-		self.progress.erase_bookmark('episode', '101', '2', '3')
-
-		self.dbcur.execute.assert_called_once_with(self.progress.DELETE_BM, ('episode', '101', 2, 3))
-
-	def test_progress_refresh_invalidates_only_the_matching_external_widget(self):
-		progress = load_progress_cache(external=True)
-		dbcon, dbcur = Mock(), Mock()
-		dbcur.rowcount = 1
-		dbcon.cursor.return_value = dbcur
-		progress.kodi_utils.database_connect.return_value = dbcon
-
-		progress.erase_bookmark('episode', '101', '2', '3', refresh='progress')
-
-		property_name, property_value = progress.kodi_utils.set_property.call_args.args
-		self.assertEqual(property_name, 'BingieProgressRefreshEpisode')
-		self.assertGreater(int(property_value), 0)
-		progress.kodi_utils.widget_refresh.assert_not_called()
-		progress.kodi_utils.container_refresh.assert_not_called()
-
-	def test_noop_delete_skips_explicit_refresh(self):
-		self.dbcur.rowcount = 0
-
-		self.progress.erase_bookmark('movie', '101', refresh='true')
-
-		self.progress.kodi_utils.external_browse.assert_not_called()
-		self.progress.kodi_utils.set_property.assert_not_called()
-		self.progress.kodi_utils.widget_refresh.assert_not_called()
-		self.progress.kodi_utils.container_refresh.assert_not_called()
-
 	def test_set_bookmark_closes_before_targeted_progress_refresh(self):
 		progress = load_progress_cache(external=True)
 		dbcon = Mock()

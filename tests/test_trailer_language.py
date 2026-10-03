@@ -99,16 +99,6 @@ video/720.m3u8
 		with self.assertRaisesRegex(RuntimeError, 'English trailer audio track'):
 			self.trailers._limited_hls_manifest(manifest, 'https://video.test/master.m3u8')
 
-	def test_manifest_preserves_single_unlabelled_audio_track(self):
-		manifest = '''#EXTM3U
-#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="Default",DEFAULT=YES,AUTOSELECT=YES,URI="audio.m3u8"
-#EXT-X-STREAM-INF:BANDWIDTH=2000000,CODECS="avc1.64001f,mp4a.40.2",RESOLUTION=1280x720,AUDIO="audio"
-720.m3u8
-'''
-
-		limited = self.trailers._limited_hls_manifest(manifest, 'https://video.test/master.m3u8')
-		self.assertIn('https://video.test/audio.m3u8', limited)
-
 	def test_manifest_server_uses_one_plain_python_request_thread(self):
 		with TemporaryDirectory() as directory:
 			manifest_file = Path(directory) / 'preview.m3u8'

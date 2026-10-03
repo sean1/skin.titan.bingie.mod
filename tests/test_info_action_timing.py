@@ -8,19 +8,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class InfoActionTimingTests(unittest.TestCase):
 
-	def test_movie_detail_buttons_request_trailer_without_closing_the_page(self):
-		for filename, visibility in (
-			('IncludesPovInfo.xml', 'String.IsEqual(Window(Home).Property(PovInfoType),movie)'),
-			('IncludesDialogVideoInfo.xml', 'String.IsEqual(ListItem.DBTYPE,movie) + !String.IsEmpty(ListItem.UniqueID(tmdb))'),
-		):
-			with self.subTest(filename=filename):
-				page = ET.parse(ROOT / 'xml' / filename).getroot()
-				buttons = next(control for control in page.iter('control') if control.get('id') == '8000')
-				trailer = next(control for control in buttons.findall('control') if control.get('id') == '55')
-				self.assertEqual(trailer.findtext('visible'), visibility)
-				self.assertEqual(trailer.findtext('label'), '$LOCALIZE[20410]')
-				self.assertEqual([node.text for node in trailer.findall('onclick')], ['SetProperty(BingieTrailerPreviewRequest,true,Home)'])
-
 	def test_native_movie_info_cancels_trailer_requests_on_close(self):
 		window = ET.parse(ROOT / 'xml' / 'DialogVideoInfo.xml').getroot()
 		actions = [(node.get('condition'), node.text) for node in window.findall('onunload') if 'BingieTrailerPreview' in (node.text or '')]

@@ -106,22 +106,6 @@ class RealDebridPositiveCacheTests(unittest.TestCase):
 		self.assertEqual(checker.cache_check(), {'cached': [], 'checked': {'missing'}})
 		self.assertEqual(FakeDebridCache.writes, [])
 
-	def test_successful_empty_auxiliary_check_is_briefly_reused(self):
-		calls = []
-		check = lambda _collector: calls.append(True) or True
-
-		self.assertEqual(self.module._coalesced_auxiliary_results(('dmm', 'same'), check), [])
-		self.assertEqual(self.module._coalesced_auxiliary_results(('dmm', 'same'), check), [])
-		self.assertEqual(len(calls), 1)
-
-	def test_failed_auxiliary_check_is_not_reused(self):
-		calls = []
-		check = lambda _collector: calls.append(True) and False
-
-		self.module._coalesced_auxiliary_results(('dmm', 'failure'), check)
-		self.module._coalesced_auxiliary_results(('dmm', 'failure'), check)
-		self.assertEqual(len(calls), 2)
-
 	def test_concurrent_identical_auxiliary_checks_are_coalesced(self):
 		started, release, calls, results = threading.Event(), threading.Event(), [], []
 

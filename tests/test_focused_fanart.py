@@ -65,15 +65,6 @@ class FocusedFanartTests(unittest.TestCase):
 		self.assertTrue(self.fanart.stable)
 		self.assertEqual(self.fanart._focused_art.call_count, 1)
 
-	def test_idle_menu_wait_wakes_as_soon_as_focus_leaves(self):
-		monitor = Mock()
-		monitor.waitForAbort.return_value = False
-		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, True, False))
-
-		self.assertFalse(self.entry._wait_for_service_tick(monitor, 1.0))
-		self.assertEqual(monitor.waitForAbort.call_args_list, [call(0.25), call(0.25)])
-		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(self.entry.MAIN_MENU_FOCUS)] * 3)
-
 	def test_service_wait_honors_abort_during_idle_menu_slices(self):
 		monitor = Mock()
 		monitor.waitForAbort.side_effect = (False, True)

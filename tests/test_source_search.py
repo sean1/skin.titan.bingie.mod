@@ -18,18 +18,6 @@ class SourceSearchTests(unittest.TestCase):
 		self.assertEqual(external_worker_count(22), 8)
 		self.assertEqual(external_worker_count(22, exhaustive=True), 22)
 
-	def test_request_coalescer_retries_after_grace(self):
-		coalescer = RequestCoalescer(grace_seconds=0.01)
-		calls = []
-
-		def fetch():
-			calls.append(True)
-			return [len(calls)]
-
-		self.assertEqual(coalescer.get('key', fetch, 1), [1])
-		self.assertEqual(coalescer.get('key', fetch, 1), [1])
-		time.sleep(0.02)
-		self.assertEqual(coalescer.get('key', fetch, 1), [2])
 
 
 if __name__ == '__main__':

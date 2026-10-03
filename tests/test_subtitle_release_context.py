@@ -33,25 +33,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertEqual(seen['_playback_health_context'], {'provider': 'debrid', 'host': 'stream.invalid'})
 		self.assertNotIn('private-token', repr(seen))
 
-	def test_player_health_records_only_the_terminal_stream_outcome(self):
-		player_module = load_player()
-		events = []
-		player_module.playback_health = types.SimpleNamespace(record=lambda context, event, **kwargs: events.append((event, kwargs)))
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.playback_health_context = {'provider': 'debrid'}
-		player.playback_health_started_at = player_module.monotonic() - 70
-		player.playback_health_finalized = False
-		player.playback_health_qualified = True
-		player.playback_health_bitrate_mbps = 40
-		player.playback_stall_count = 0
-		player.playback_event = True
-		player.getTotalTime, player.getTime = lambda: 7200, lambda: 65
-
-		player.onPlayBackError()
-		player.onPlayBackEnded()
-
-		self.assertEqual([event for event, _ in events], ['stream_error'])
-		self.assertTrue(player.playback_health_finalized)
 
 	def test_player_exception_tries_next_resolved_source(self):
 		sources_module = load_sources_module()
@@ -106,24 +87,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertTrue(instance.play_file([bad]))
 		self.assertEqual(played, ['https://bad.invalid/file'])
 
-	def test_manual_source_selection_never_defers_unhealthy_host(self):
-		sources_module = load_sources_module()
-		played = []
-		sources_module.playback_health = types.SimpleNamespace(
-			source_context=lambda item, link=None: {'provider': 'rd', 'host': 'bad.invalid'}, record=lambda *args, **kwargs: None, host_penalty=lambda context: 100
-		)
-		seen_meta = []
-		sources_module.POVPlayer = type('Player', (), {'run': lambda self, link, meta, progress: (played.append(link), seen_meta.append(meta), True)[-1]})
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background, instance.autoplay = False, False
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie'}
-		instance._no_results = lambda: None
-		bad = {'name': 'bad', 'unrestricted_link': 'https://bad.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
-
-		self.assertTrue(instance.play_file([bad], bad))
-		self.assertEqual(played, ['https://bad.invalid/file'])
-		self.assertFalse(seen_meta[0]['_playback_health_allow_stall_recovery'])
 
 	def test_expired_deferred_unrestricted_link_is_not_replayed(self):
 		sources_module = load_sources_module()

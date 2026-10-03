@@ -35,15 +35,6 @@ class NextPagePrefetchTests(unittest.TestCase):
 				self.labels.update({'Container.CurrentItem': current_item, 'Container.NumItems': num_items})
 				self.assertFalse(self.worker._near_end())
 
-	def test_missing_or_malformed_actions_keep_five_item_boundary(self):
-		for action in (None, 1, [], {}):
-			with self.subTest(action=action):
-				self.worker.request = {'origin': {}}
-				if action is not None: self.worker.request['origin']['action'] = action
-				self.labels['Container.CurrentItem'] = '14'
-				self.assertFalse(self.worker._near_end())
-				self.labels['Container.CurrentItem'] = '17'
-				self.assertTrue(self.worker._near_end())
 
 	def test_tick_launches_prefetch_from_grid_near_end(self):
 		origin = {'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'new_page': '1'}

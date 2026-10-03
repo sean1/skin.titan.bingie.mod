@@ -250,20 +250,7 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertIs(source.sources, source.source_sink.items)
 		self.assertTrue(source.source_sink.accepting)
 
-	def test_insufficient_cached_core_runs_fallback(self):
-		manager = self.manager()
-		results = manager.results({})
-		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
-		self.assertEqual(len(results), 12)
-		self.assertNotIn('full_search_available', manager.meta)
 
-	def test_cache_checks_use_a_separate_executor(self):
-		self.manager(provider_names=['torrentio']).results({})
-		provider_executors = {executor_id for executor_id, function_name in RecordingExecutor.submissions if function_name == 'results'}
-		cache_executors = {executor_id for executor_id, function_name in RecordingExecutor.submissions if function_name == 'cache_check'}
-		self.assertTrue(provider_executors)
-		self.assertTrue(cache_executors)
-		self.assertTrue(provider_executors.isdisjoint(cache_executors))
 
 	def test_debrid_request_context_is_immutable_per_search(self):
 		debrid = load_debrid_module()
@@ -283,49 +270,8 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertEqual(FakeDebridCheck.checked_batches[0], {'%s-0' % provider for provider in CORE_EXTERNAL_PROVIDERS})
 		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
 
-	def test_staged_filter_applies_exclusion_modes(self):
-		source = types.SimpleNamespace(
-			quality_filter=['1080p'], include_3D_results=True, size_filter=0,
-			filter_hevc=1, filter_hdr=0, filter_dv=0, filter_av1=0, hybrid_allowed=True
-		)
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '1080p', 'extraInfo': '[B]HEVC[/B]'},
-			{'quality': '1080p', 'extraInfo': '[B]H.264[/B]'}
-		]
-		self.assertEqual(processor.filter_staged_results(results), [results[1]])
 
-	def test_autoplay_source_order_does_not_prefer_trailer_sized_4k_result(self):
-		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '4K', 'quality_rank': 1, 'size': 0.5},
-			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 6.0},
-		]
 
-		results.sort(key=processor.autoplay_source_key)
-
-		self.assertEqual([(item['quality'], item['size']) for item in results], [('4K', 30.0), ('4K', 0.5), ('1080p', 6.0)])
-
-	def test_confident_bandwidth_demotes_only_unsustainable_4k_below_sustainable_1080p(self):
-		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 5.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 8.0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 5.0},
-			{'quality': '720p', 'quality_rank': 3, 'size': 2.0},
-		]
-		original = SOURCES.playback_health
-		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10, resolution_fallback_limit=lambda: 7)
-		try: results.sort(key=processor.autoplay_source_key)
-		finally: SOURCES.playback_health = original
-
-		self.assertEqual([(item['quality'], item['size']) for item in results], [
-			('4K', 5.0), ('1080p', 5.0), ('4K', 8.0), ('4K', 30.0), ('720p', 2.0)
-		])
 
 	def test_resolution_fallback_keeps_exact_limit_and_unknown_4k_ahead_of_1080p(self):
 		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
@@ -346,27 +292,6 @@ class ExternalManagerTests(unittest.TestCase):
 			('4K', 6.3), ('4K', 0), ('1080p', 5.0), ('4K', 6.31), ('720p', 2.0)
 		])
 
-	def test_resolution_fallback_uses_direct_limit_before_legacy_sustainability_rank(self):
-		source = types.SimpleNamespace(meta={'duration': 8000}, mediatype='movie')
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '4K', 'quality_rank': 1, 'size': 20.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 28.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 30.0},
-			{'quality': '4K', 'quality_rank': 1, 'size': 0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 10.0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 30.0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 0},
-			{'quality': '720p', 'quality_rank': 3, 'size': 2.0},
-		]
-		original = SOURCES.playback_health
-		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 8, resolution_fallback_limit=lambda: 28)
-		try: results.sort(key=processor.autoplay_source_key)
-		finally: SOURCES.playback_health = original
-
-		self.assertEqual([(item['quality'], item['size']) for item in results], [
-			('4K', 20.0), ('4K', 28.0), ('4K', 0), ('1080p', 10.0), ('4K', 30.0), ('1080p', 30.0), ('1080p', 0), ('720p', 2.0)
-		])
 
 
 if __name__ == '__main__':

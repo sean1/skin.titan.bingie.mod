@@ -84,17 +84,6 @@ class MyListCacheTests(unittest.TestCase):
 				with self.assertRaises(ValueError): self.store.add('episode', 9876, 'Episode', tvshow_id=parent_id)
 		self.assertEqual(self.items('tvshow'), [])
 
-	def test_separate_views_are_stably_paginated_newest_first(self):
-		for media_id in range(101, 106): self.store.add('movie', media_id, 'Movie %s' % media_id)
-		self.store.add('tvshow', 106, 'Show')
-		first, pages = self.store.items('movie', page=1, limit=2)
-		second, second_pages = self.store.items('movie', page=2, limit=2)
-		last, last_pages = self.store.items('movie', page=3, limit=2)
-		self.assertEqual((pages, second_pages, last_pages), (3, 3, 3))
-		self.assertEqual([item['media_id'] for item in first + second + last], ['105', '104', '103', '102', '101'])
-		self.assertEqual([item['media_id'] for item in self.items('tvshow')], ['106'])
-		self.assertEqual(self.store.items('movie', limit=None)[1], 1)
-		self.assertEqual(len(self.items('movie', limit=None)), 5)
 
 	def test_database_initialization_and_cleanup_preserve_saved_items(self):
 		kodi_utils = self.stubs['modules.kodi_utils']

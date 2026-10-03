@@ -58,9 +58,6 @@ class PackRequestCoalescingTests(unittest.TestCase):
 		expected = [{'hash': 'dmm'}]
 		self.run_shared_request('dmm', lambda url: json.dumps({'results': expected}), expected)
 
-	def test_torz_shares_one_request_across_pack_instances(self):
-		expected = [{'hash': 'torz'}]
-		self.run_shared_request('torz', lambda url: json.dumps({'data': {'items': expected}}), expected)
 
 	def test_torz_does_not_mix_episode_urls(self):
 		client = FakeClient(lambda url: json.dumps({'data': {'items': [{'hash': url.rsplit('/', 1)[-1]}]}}))

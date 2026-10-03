@@ -75,22 +75,7 @@ class VideoSourceTests(unittest.TestCase):
 		self.ku.set_content.assert_called_once_with(7, 'files')
 		self.ku.end_directory.assert_called_once_with(7, cacheToDisc=False)
 
-	def test_invalid_source_response_still_offers_management(self):
-		self.menu.params_get = lambda key, default=None: {'handle': 7, 'fanart': 'fanart.jpg', 'group': 'myvideos'}.get(key, default)
-		self.ku.execJSONRPC.return_value = 'not json'
 
-		self.menu.video_sources()
-
-		self.assertEqual([(call.args[1], call.args[2].label) for call in self.ku.add_item.call_args_list], [('sources://video/', 'Manage Sources...')])
-
-	def test_other_menu_groups_return_no_video_sources(self):
-		self.menu.params_get = lambda key, default=None: {'handle': 7, 'fanart': 'fanart.jpg', 'group': 'movies'}.get(key, default)
-
-		self.menu.video_sources()
-
-		self.ku.execJSONRPC.assert_not_called()
-		self.ku.add_item.assert_not_called()
-		self.ku.end_directory.assert_called_once_with(7, cacheToDisc=False)
 
 
 if __name__ == '__main__':

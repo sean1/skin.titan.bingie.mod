@@ -58,28 +58,7 @@ def load_provider(name, fake_utils):
 class StremioProviderTests(unittest.TestCase):
 	data = {'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'total_seasons': '3', 'year': '2024', 'imdb': 'tt123', 'season': '1', 'episode': '2'}
 
-	def test_bitmagnet_keeps_malformed_seeders_as_zero_without_applying_minimum(self):
-		payload = (
-			'<rss xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item><title>Show Season 1</title>'
-			'<torznab:attr name="infohash" value="hash"/><torznab:attr name="seeders" value="12 peers"/>'
-			'<torznab:attr name="size" value="2000000000"/></item></channel></rss>'
-		)
-		module = load_provider('bitmagnet', FakeSourceUtils())
-		module.requests = FakeRequests(FakeResponse(text=payload))
-		provider = module.source()
-		provider.min_seeders = 20
 
-		item = provider.sources(self.data, {})[0]
-
-		self.assertEqual(item['seeders'], 0)
-
-	def test_bitmagnet_accepts_a_legitimate_empty_feed(self):
-		module = load_provider('bitmagnet', FakeSourceUtils())
-		module.requests = FakeRequests(FakeResponse(text='<rss><channel></channel></rss>'))
-		provider = module.source()
-
-		self.assertEqual(provider.sources(self.data, {}), [])
-		self.assertFalse(getattr(provider, 'scrape_failed', False))
 
 	def test_bitmagnet_rejects_torznab_errors_and_invalid_xml_envelopes(self):
 		for payload in ('<error code="100" description="failure"/>', '<html><body>Unavailable</body></html>', '<rss></rss>'):

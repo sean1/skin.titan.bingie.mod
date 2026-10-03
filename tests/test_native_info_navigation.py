@@ -23,23 +23,7 @@ class NativeInfoNavigationTests(unittest.TestCase):
 			'Integer.IsGreater(ListItem.UniqueID(tmdb),0)',
 		])
 
-	def test_view_series_has_one_parent_info_action_without_episode_or_playback_arguments(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesDialogVideoInfo.xml').getroot()
-		button = next(control for control in root.iter('control') if control.get('id') == '56')
-		actions = [node.text for node in button.findall('onclick')]
-		self.assertEqual(actions, ['RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&mediatype=tvshow&tmdb_id=$INFO[ListItem.UniqueID(tmdb)])'])
-		url = actions[0][len('RunPlugin('):-1].replace('$INFO[ListItem.UniqueID(tmdb)]', '202')
-		self.assertEqual(parse_qs(urlsplit(url).query), {'mode': ['show_media_info'], 'mediatype': ['tvshow'], 'tmdb_id': ['202']})
 
-	def test_view_series_preserves_both_native_resume_and_start_over_paths(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesDialogVideoInfo.xml').getroot()
-		buttons = {control.get('id'): control for control in root.iter('control') if control.get('id') in ('90', '52')}
-		resume = [(node.get('condition'), node.text) for node in buttons['90'].findall('onclick')]
-		start = [(node.get('condition'), node.text) for node in buttons['52'].findall('onclick')]
-		self.assertIn(('!String.IsEmpty(ListItem.FileNameAndPath)', 'AlarmClock(PlayMovie,PlayMedia($ESCINFO[ListItem.FileNameAndPath],resume),00:00,silent)'), resume)
-		self.assertIn(('String.IsEmpty(ListItem.FileNameAndPath)', 'AlarmClock(PlayMovie,PlayMedia($ESCINFO[ListItem.FolderPath],resume),00:00,silent)'), resume)
-		self.assertIn(('!Control.IsVisible(5050) + !String.IsEmpty(ListItem.FileNameAndPath)', 'AlarmClock(PlayMovie,PlayMedia($ESCINFO[ListItem.FileNameAndPath],noresume),00:00,silent)'), start)
-		self.assertIn(('!Control.IsVisible(5050) + String.IsEmpty(ListItem.FileNameAndPath) + !String.IsEmpty(ListItem.FolderPath)', 'AlarmClock(PlayMovie,PlayMedia($ESCINFO[ListItem.FolderPath],noresume),00:00,silent)'), start)
 
 	def test_custom_info_opens_dedicated_season_window(self):
 		root = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()

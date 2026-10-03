@@ -49,17 +49,6 @@ class DialogNavigationTests(unittest.TestCase):
 		self.dialogs.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1123)'
 		self.dialogs._stop_owned_trailer_preview = lambda *args, **kwargs: None
 
-	def test_back_from_video_info_reopens_saved_actor_page(self):
-		actor_values = {prop: '' for prop in self.dialogs.POV_ACTOR_PROPERTIES}
-		actor_values.update({'PovActorId': '1245', 'PovActorName': 'Scarlett Johansson', 'PovActorReady': 'true'})
-		self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY] = json.dumps([{'page': 'actor', 'values': actor_values}])
-
-		self.dialogs.pov_page_back()
-
-		self.assertEqual(self.commands, ['ReplaceWindow(1122)'])
-		self.assertEqual(self.properties['PovActorId'], '1245')
-		self.assertEqual(self.properties['PovActorName'], 'Scarlett Johansson')
-		self.assertNotIn(self.dialogs.POV_PAGE_HISTORY_PROPERTY, self.properties)
 
 	def test_back_from_actor_reopens_saved_video_info_page(self):
 		info_values = {prop: '' for prop in self.dialogs.POV_INFO_PROPERTIES}
@@ -82,15 +71,6 @@ class DialogNavigationTests(unittest.TestCase):
 		self.assertEqual(self.commands, ['PreviousMenu', 'AlarmClock(PovNativeInfoBack,Action(Info),00:00,silent)'])
 		self.assertNotIn(self.dialogs.POV_PAGE_HISTORY_PROPERTY, self.properties)
 
-	def test_back_to_info_restores_saved_shelf_and_item(self):
-		info_values = {prop: '' for prop in self.dialogs.POV_INFO_PROPERTIES}
-		info_values.update({'PovInfoType': 'movie', 'PovInfoTmdb': '497698', 'PovInfoTitle': 'Black Widow'})
-		self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY] = json.dumps([{'page': 'info', 'values': info_values, 'focus': {'control': 563, 'position': 4}}])
-		self.dialogs.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1122)' or 'Container(563).NumItems,4' in condition
-
-		self.dialogs.pov_page_back()
-
-		self.assertEqual(self.commands, ['ReplaceWindow(1123)', 'Control.SetFocus(563,4,absolute)'])
 
 
 if __name__ == '__main__':

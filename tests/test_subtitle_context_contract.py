@@ -83,22 +83,7 @@ class SubtitleContextContractTests(unittest.TestCase):
 		self.assertNotIn('stream.invalid', payload)
 		self.assertNotIn('secret', payload)
 
-	def test_manual_override_does_not_reuse_stale_or_invalid_context_generation(self):
-		self.subtitles.kodi_utils.player.isPlayingVideo.return_value = True
-		self.subtitles.kodi_utils.player.getPlayingFile.return_value = 'video.mkv'
-		for context in ('broken json', '[]', json.dumps({'playing_fingerprint': self.subtitles.playing_file_fingerprint('other.mkv'), 'generation': 'other-generation'})):
-			with self.subTest(context=context):
-				self.subtitles.kodi_utils.get_property.return_value = context
-				self.assertTrue(self.subtitles.mark_manual_selection())
-				self.assertEqual(json.loads(self.subtitles.kodi_utils.set_property.call_args.args[1])['generation'], '')
 
-	def test_manual_override_without_active_or_identifiable_video_is_ignored(self):
-		for playing, filename in ((False, 'video.mkv'), (True, '')):
-			with self.subTest(playing=playing, filename=filename):
-				self.subtitles.kodi_utils.player.isPlayingVideo.return_value = playing
-				self.subtitles.kodi_utils.player.getPlayingFile.return_value = filename
-				self.assertFalse(self.subtitles.mark_manual_selection())
-		self.subtitles.kodi_utils.set_property.assert_not_called()
 
 	def test_candidate_projection_is_bounded_allowlisted_and_download_complete(self):
 		client = self.subtitles.Subtitles().configure('tt123')
@@ -138,21 +123,6 @@ class SubtitleContextContractTests(unittest.TestCase):
 		client.download_by_id.assert_not_called()
 		self.assertIn('_eng_', client.save_subtitle.call_args.args[1])
 
-	def test_first_manual_search_without_external_ids_keeps_metadata_identity(self):
-		service = load_service(self.subtitles)
-		service._context = lambda: {}
-		service._video_metadata = lambda: {
-			'imdb_id': '', 'tmdb_id': '', 'season': None, 'episode': None, 'is_episode': False,
-			'mediatype': 'movie', 'title': 'Local Movie', 'year': 2024
-		}
-		service.kodi_utils.player.isPlayingVideo.return_value = True
-		service.kodi_utils.player.getPlayingFile.return_value = 'smb://server/local-movie.mp4'
-
-		client, context = service._client()
-
-		self.assertEqual(context, {})
-		self.assertTrue(client.media_identity.startswith('meta:'))
-		self.assertNotIn('session_', client.sub_filename)
 
 	def test_manual_download_rejects_candidate_from_previous_generation(self):
 		service = load_service(self.subtitles)

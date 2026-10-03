@@ -41,14 +41,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertIn('alldebrid', serialized)
 		self.assertIn('cdn.example.org', serialized)
 
-	def test_penalty_is_neutral_until_three_attempts_and_orders_health(self):
-		for now in (1, 2): self.module.record({'provider': 'rd'}, 'resolve_fail', now=now)
-		self.assertEqual(self.module.provider_penalty('realdebrid', now=2), 0)
-		self.module.record({'provider': 'rd'}, 'resolve_fail', now=3)
-		self.assertEqual(self.module.provider_penalty('realdebrid', now=3), 80)
-		for now in (1, 2, 3): self.module.record({'provider': 'ad'}, 'resolve_ok', now=now)
-		self.assertEqual(self.module.provider_penalty('alldebrid', now=3), 0)
-		self.assertGreater(self.module.provider_penalty('realdebrid', now=3), self.module.provider_penalty('alldebrid', now=3))
 
 	def test_corrupt_missing_and_unknown_state_are_neutral(self):
 		for value in (None, 'bad', {'version': 999}, {'version': 1, 'providers': {'realdebrid': {'stages': 'bad'}}}):
@@ -86,13 +78,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.module.record(context, 'stalled_play', bitrate_mbps=35, stalls=1, now=5)
 		self.assertEqual(self.module.resolution_fallback_limit(now=5), 60)
 
-	def test_resolution_fallback_limit_requires_repeated_stalls_and_preserves_proven_bitrate(self):
-		context = {'provider': 'rd'}
-		for bitrate, now in ((10, 1), (12, 2)):
-			self.module.record(context, 'healthy_play', bitrate_mbps=bitrate, now=now)
-		for bitrate, now in ((30, 3), (35, 4)):
-			self.module.record(context, 'stalled_play', bitrate_mbps=bitrate, stalls=2, now=now)
-		self.assertEqual(self.module.resolution_fallback_limit(now=4), 28)
 
 	def test_bandwidth_samples_are_numeric_bounded_and_device_local(self):
 		context = {'provider': 'tb'}

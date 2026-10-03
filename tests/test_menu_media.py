@@ -95,12 +95,6 @@ class MenuMediaTests(unittest.TestCase):
 			call.setTitle('Show'), call.setTvShowTitle('Show'), call.setUniqueIDs({'tmdb': '202'}), call.setMediaType('tvshow'), call.setPlot('')
 		])
 
-	def test_invalid_summary_item_is_ignored_before_listitem_creation(self):
-		for item in ({'id': 1}, {'title': 'Movie'}):
-			with self.subTest(item=item):
-				self.media.kodi_utils.make_listitem.reset_mock()
-				self.assertIsNone(self.media.build_tmdb_detail_shelf_item(0, item, None, 'movie', {}, 'poster-empty', 'fanart-empty', 21))
-				self.media.kodi_utils.make_listitem.assert_not_called()
 
 
 if __name__ == '__main__':

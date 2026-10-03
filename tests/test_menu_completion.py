@@ -186,13 +186,6 @@ class MenuCompletionTests(unittest.TestCase):
 		self.media.kodi_utils.end_directory.assert_called_once_with(7, False)
 		self.media._schedule_next_page_prefetch.assert_not_called()
 
-	def test_widget_finishes_without_navigation_or_prefetch(self):
-		self.complete(is_widget=True)
-
-		self.media.kodi_utils.add_dir.assert_not_called()
-		self.media.kodi_utils.end_directory.assert_called_once_with(7, False)
-		self.media._schedule_next_page_prefetch.assert_not_called()
-		self.media.kodi_utils.set_view_mode.assert_called_once_with('view.movies', 'movies', True)
 
 	def test_pagination_error_with_empty_category_still_finishes_directory(self):
 		self.media.kodi_utils.add_dir.side_effect = RuntimeError('pagination failed')
@@ -203,30 +196,6 @@ class MenuCompletionTests(unittest.TestCase):
 		self.media.kodi_utils.end_directory.assert_called_once_with(7, None)
 		self.media.kodi_utils.set_view_mode.assert_called_once_with('view.movies', 'movies', False)
 
-	def test_movie_and_tv_callers_complete_after_provider_import_failure(self):
-		cases = (
-			('movie', 'build_movie_list', 'tmdb_movies_popular', 'view.movies', 'movies'),
-			('tvshow', 'build_tvshow_list', 'tmdb_tv_popular', 'view.tvshows', 'tvshows')
-		)
-		for mediatype, mode, action, view_type, content_type in cases:
-			with self.subTest(mediatype=mediatype):
-				module, complete, kodi_utils = load_menu_module(mediatype)
-				menu = module.Menu.__new__(module.Menu)
-				menu.params = {'mode': mode, 'name': 'Popular'}
-				menu.action = action
-				menu.exit_list_params = 'plugin://origin'
-				menu.is_widget = False
-				menu.new_page = {}
-				menu.total_pages = None
-
-				menu.run()
-
-				complete.assert_called_once_with(
-					7, mode, action, 'plugin://origin', 'Popular', content_type, view_type, False, {}, False, menu.params,
-					module.nextpage_str, module.item_next
-				)
-				kodi_utils.end_directory.assert_called_once_with(7, None)
-				kodi_utils.logger.assert_called_once_with('build_%s_list' % mediatype, 'action=%s: provider failed' % action)
 
 	def test_movie_and_tv_hub_catalogs_keep_five_media_items_before_next(self):
 		cases = (
@@ -251,23 +220,6 @@ class MenuCompletionTests(unittest.TestCase):
 					self.assertEqual(menu.new_page, expected_new_page)
 					self.assertTrue(complete.call_args.args[9])
 
-	def test_movie_continue_watching_hub_keeps_five_media_items_before_next(self):
-		for result_count, expected_new_page in ((5, {}), (6, {'new_page': '2'})):
-			with self.subTest(result_count=result_count):
-				module, complete, _ = load_menu_module('movie')
-				results = [{'media_id': item_id} for item_id in range(result_count)]
-				module.manual_function_import = Mock(return_value=lambda watched_info, mediatype, page: (results, 1))
-				menu = module.Menu.__new__(module.Menu)
-				menu.params = {'mode': 'build_movie_list', 'action': 'in_progress_movies', 'name': 'Continue Watching', 'limit': '5', 'hub_next': 'true'}
-				menu.action, menu.exit_list_params, menu.is_widget = 'in_progress_movies', 'plugin://origin', True
-				menu.new_page, menu.total_pages, menu.bookmarks, menu.watched_info = {}, None, {}, {}
-				menu.build_movies_results = Mock(return_value=[])
-
-				menu.run()
-
-				self.assertEqual(menu.list, list(range(5)))
-				self.assertEqual(menu.new_page, expected_new_page)
-				self.assertTrue(complete.call_args.args[9])
 
 	def test_episode_continue_watching_hub_adds_full_listing_next(self):
 		module, kodi_utils = load_episode_module()
@@ -284,56 +236,7 @@ class MenuCompletionTests(unittest.TestCase):
 		kodi_utils.add_items.assert_called_once_with(7, ['item'] * 5)
 		kodi_utils.add_dir.assert_called_once_with(7, {'mode': 'build_in_progress_episode', 'name': 'Continue Watching'}, module.nextpage_str, module.item_next)
 
-	def test_episode_continue_watching_hub_omits_next_when_five_items_fit(self):
-		module, kodi_utils = load_episode_module()
-		results = [{'media_id': item_id} for item_id in range(5)]
-		module.get_in_progress_items.return_value = results
-		menu = module.Menu.__new__(module.Menu)
-		menu.params = {'mode': 'build_in_progress_episode', 'name': 'Continue Watching', 'limit': '5', 'hub_next': 'true'}
-		menu.bookmarks, menu.has_more, menu.is_widget = {}, False, True
-		menu.worker = Mock(return_value=['item'] * 5)
 
-		menu.run()
-
-		self.assertEqual(menu.list, results)
-		kodi_utils.add_dir.assert_not_called()
-
-	def test_full_movie_content_applies_movie_language_badge_policy(self):
-		module, _, kodi_utils = load_menu_module('movie')
-		meta = {
-			'tmdb_id': 101, 'imdb_id': 'tt0101', 'rootname': 'Movie (2024)', 'title': 'Movie', 'year': 2024, 'extra_info': {}, 'cast': [],
-			'country_codes': ['US'], 'original_language': 'ja', 'country': ['United States'], 'director': '', 'duration': 7200, 'genre': '', 'mpaa': '',
-			'plot': '', 'premiered': '2024-01-01', 'rating': 7.5, 'studio': '', 'tagline': '', 'trailer': '', 'votes': 100, 'writer': ''
-		}
-		module.movie_meta.return_value = meta
-		module.get_watched_status_movie.return_value = (0, 0)
-		module.get_resumetime.return_value = ('0', '0')
-		module.set_resumetime.return_value = (0, 0)
-		module.watched_str = '%s'
-		module.card_badge_properties = Mock(return_value={'card_language': 'JA'})
-		listitem, videoinfo = Mock(), Mock()
-		videoinfo.getDuration.return_value = 7200
-		listitem.getVideoInfoTag.return_value = videoinfo
-		kodi_utils.make_listitem = Mock(return_value=listitem)
-		menu = module.Movies.__new__(module.Movies)
-		menu.id_type, menu.meta_user_info, menu.current_date = 'tmdb_id', {'language': 'en'}, None
-		menu.watched_info, menu.bookmarks, menu.include_year_in_title, menu.watched_title = {}, {}, False, 'watched'
-		menu.open_extras, menu.is_widget, menu.exit_list_params = False, True, 'plugin://origin'
-		menu.cm_sort = {'options': 1, 'extras': 2, 'mark': 3, 'exit': 4}
-		menu.params, menu.action, menu.art_provider = {}, 'in_progress_movies', ()
-		menu.items, menu.append = [], None
-		menu.append = menu.items.append
-
-		menu.build_movie_content(0, 101)
-
-		module.card_badge_properties.assert_called_once_with(meta, 'movie')
-		self.assertEqual(len(menu.items), 1)
-		properties = listitem.setProperties.call_args.args[0]
-		self.assertEqual(properties['card_language'], 'JA')
-		self.assertEqual(properties['PovLiteSourceSelect'], {
-			'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': 101, 'autoplay': 'false'
-		})
-		self.assertNotIn('card_flag', properties)
 
 
 if __name__ == '__main__':

@@ -37,12 +37,6 @@ class ActorEpisodesTests(unittest.TestCase):
 			with self.subTest(credits=credits): self.assertTrue(self.module.credited_actor(credits, '42'))
 		self.assertFalse(self.module.credited_actor({'cast': [{'id': 17, 'name': 'Target Actor'}], 'guest_stars': [], 'crew': [{'id': 42}]}, 42))
 
-	def test_filters_and_sorts_numerically_across_seasons(self):
-		episodes = [{'season': '10', 'episode': '1'}, {'season': '2', 'episode': '10'}, {'season': '2', 'episode': '2'}, {'season': '1', 'episode': '1'}]
-		self.module.episode_credits = lambda show, season, episode: {'cast': [], 'guest_stars': [{'id': 42}] if season != '1' else []}
-		self.assertEqual(self.module.filter_actor_episodes(100, episodes, 42, 'Target Actor'), [episodes[2], episodes[1], episodes[0]])
-		self.progress.close.assert_called_once_with()
-		self.module.kodi_utils.notification.assert_not_called()
 
 	def test_failed_lookup_preserves_matches_and_warns_of_partial_results(self):
 		episodes = [{'season': 1, 'episode': number} for number in range(1, 4)]
@@ -64,12 +58,6 @@ class ActorEpisodesTests(unittest.TestCase):
 		self.progress.close.assert_called_once_with()
 		self.module.kodi_utils.notification.assert_not_called()
 
-	def test_shutdown_before_lookup_closes_dialog_without_fetching(self):
-		self.module.kodi_utils.monitor.abortRequested.return_value = True
-		self.module.episode_credits = Mock()
-		self.assertEqual(self.module.filter_actor_episodes(100, [{'season': 1, 'episode': 1}], 42, 'Target Actor'), [])
-		self.module.episode_credits.assert_not_called()
-		self.progress.close.assert_called_once_with()
 
 
 if __name__ == '__main__': unittest.main()

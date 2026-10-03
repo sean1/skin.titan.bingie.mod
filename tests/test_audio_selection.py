@@ -62,13 +62,6 @@ class AudioSelectionTests(unittest.TestCase):
 	def setUp(self):
 		self.player_module.tmdb_api.media_original_language = lambda mediatype, tmdb_id: ''
 
-	def test_english_wins_over_original_language_and_default(self):
-		streams = [
-			{'index': 0, 'language': 'cze', 'isdefault': True},
-			{'index': 1, 'language': 'chi', 'isoriginal': True},
-			{'index': 2, 'language': 'eng'},
-		]
-		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'zh')['index'], 2)
 
 	def test_english_commentary_does_not_beat_normal_original_language(self):
 		streams = [

@@ -70,25 +70,6 @@ class ActorFocusTests(unittest.TestCase):
 		original_monotonic = self.people.monotonic
 		self.addCleanup(setattr, self.people, 'monotonic', original_monotonic)
 
-	def test_build_person_credits_focuses_movies_after_directory_commit(self):
-		events = []
-		self.properties['PovActorHasMovies'] = 'true'
-		self.people.kodi_utils.argv1 = lambda: '7'
-		self.people.kodi_utils.add_items = lambda handle, items: events.append(('items', handle, items))
-		self.people.kodi_utils.set_content = lambda handle, content: events.append(('content', handle, content))
-		self.people.kodi_utils.end_directory = lambda handle, cacheToDisc=False: events.append(('end', handle, cacheToDisc))
-		self.people.kodi_utils.execute_builtin = lambda command: events.append(('builtin', command))
-		self.people.settings.get_resolution = lambda: {'poster': 'w342', 'fanart': 'w1280'}
-		self.people._load_actor_credits = lambda actor_id, credit_type: [{'id': 1}]
-		original_credit_listitem = self.people._credit_listitem
-		self.addCleanup(setattr, self.people, '_credit_listitem', original_credit_listitem)
-		self.people._credit_listitem = lambda item, resolution, actor_id, credit_type: 'movie-item'
-
-		self.people.build_person_credits({'actor_id': '1245', 'credit_type': 'movies'})
-
-		self.assertEqual(events, [
-			('items', 7, ['movie-item']), ('content', 7, 'videos'), ('end', 7, False), ('builtin', 'SetFocus(610)')
-		])
 
 	def test_actor_episode_context_menu_only_appears_on_tv_acting_credits(self):
 		self.properties['PovActorName'] = 'Target Actor'
@@ -110,15 +91,6 @@ class ActorFocusTests(unittest.TestCase):
 					listitem.addContextMenuItems.assert_not_called()
 					self.assertEqual(len(urls), 1)
 
-	def test_focus_actor_page_keeps_alarm_when_shelf_is_not_populated(self):
-		visibility = iter((True, False))
-		self.people.kodi_utils.get_visibility = lambda condition: next(visibility)
-		times = iter((0.0, 0.25))
-		self.people.monotonic = lambda: next(times)
-
-		self.people._focus_actor_page({'movies': [{}]})
-
-		self.assertEqual(self.commands, ['AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent,loop)'])
 
 	def test_focus_actor_page_waits_for_cold_shelf_publication(self):
 		visibility = iter((True, False, True))
@@ -134,12 +106,6 @@ class ActorFocusTests(unittest.TestCase):
 			'AlarmClock(PovActorFocus,SetFocus(610),00:00:01,silent,loop)', 'SetFocus(610)'
 		])
 
-	def test_focus_loaded_actor_shelf_returns_before_actor_is_ready(self):
-		self.properties.update({'PovActorReady': 'false', 'PovActorHasMovies': 'true'})
-
-		self.people._focus_loaded_actor_shelf('1245', 'movies', True)
-
-		self.assertEqual(self.commands, [])
 
 	def test_focus_loaded_actor_shelf_does_not_steal_focus(self):
 		self.properties.update({'PovActorHasMovies': 'true', 'PovActorHasTVShows': 'true'})

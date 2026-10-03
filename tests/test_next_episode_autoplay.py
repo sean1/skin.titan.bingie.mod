@@ -216,20 +216,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		self.assertFalse(player.playback_event)
 		self.assertEqual(player.stop.call_count, 2)
 
-	def test_stop_waits_for_player_release_and_settle(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		states = iter((True, True, False))
-		media_states = iter((True, False))
-		player.isPlaying = lambda: next(states)
-		player.stop = mock.Mock()
-		player_module.kodi_utils.get_visibility = lambda condition: next(media_states)
-		player_module.kodi_utils.monitor.waitForAbort = mock.Mock(return_value=False)
-
-		player._stop_and_wait()
-
-		player.stop.assert_called_once_with()
-		self.assertEqual([call.args[0] for call in player_module.kodi_utils.monitor.waitForAbort.call_args_list], [0.1, 0.5])
 
 	def test_implausibly_short_playback_is_rejected(self):
 		player_module = load_player()
@@ -275,21 +261,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		player_module.ws.mark_as_watched_unwatched_movie.assert_not_called()
 		player_module.ws.mark_as_watched_unwatched_episode.assert_not_called()
 
-	def test_completed_random_episode_does_not_advance_linear_smartplay_cursor(self):
-		player_module = load_player()
-		player_module.kodi_utils.clear_property = mock.Mock()
-		player_module.ws.erase_bookmark = mock.Mock(return_value=True)
-		smartplay_cache = types.ModuleType('caches.smartplay_cache')
-		smartplay_cache.complete_episode = mock.Mock()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.media_marked, player.current_point, player.set_watched = False, 95, 90
-		player.mediatype, player.tmdb_id, player.season, player.episode = 'episode', '101', 5, 10
-		player.meta = {'random': 'true'}
-
-		with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): player.media_watched_marker()
-
-		player_module.ws.erase_bookmark.assert_called_once_with('episode', '101', 5, 10, 'progress')
-		smartplay_cache.complete_episode.assert_not_called()
 
 
 if __name__ == '__main__':

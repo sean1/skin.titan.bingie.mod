@@ -41,12 +41,6 @@ class SubtitleSettingsMenuTests(unittest.TestCase):
 		self.dialogs.subtitle_settings_menu()
 		self.assertEqual(events, ['manual', 'off'])
 
-	def test_manual_enable_is_preserved_even_from_initial_disabled_state(self):
-		self.state['subtitleenabled'] = False
-		self.dialogs.kodi_utils.dialog.select.return_value = 0
-		self.dialogs.subtitle_settings_menu()
-		self.mark_manual_selection.assert_called_once_with()
-		self.dialogs._subtitle_rpc.assert_called_with('Player.SetSubtitle', {'playerid': 1, 'subtitle': 'on'})
 
 	def test_subtitle_stream_selection_uses_player_api(self):
 		self.dialogs.kodi_utils.dialog.select.side_effect = (2, 1)

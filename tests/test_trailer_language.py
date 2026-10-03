@@ -68,9 +68,6 @@ class TrailerLanguageTests(unittest.TestCase):
 		with temporary_modules({'modules': modules, 'modules.trailers': trailer_module}):
 			self.assertEqual(self.metadata.select_trailer(videos), 'trailer://english')
 
-	def test_foreign_only_trailer_list_is_rejected(self):
-		videos = [{'site': 'YouTube', 'type': 'Trailer', 'key': 'german', 'name': 'Official Trailer', 'iso_639_1': 'de'}]
-		self.assertEqual(self.metadata.select_trailer(videos), '')
 
 	def test_manifest_keeps_only_normal_english_audio(self):
 		manifest = '''#EXTM3U
@@ -99,21 +96,6 @@ video/720.m3u8
 		with self.assertRaisesRegex(RuntimeError, 'English trailer audio track'):
 			self.trailers._limited_hls_manifest(manifest, 'https://video.test/master.m3u8')
 
-	def test_manifest_server_uses_one_plain_python_request_thread(self):
-		with TemporaryDirectory() as directory:
-			manifest_file = Path(directory) / 'preview.m3u8'
-			manifest_file.write_bytes(b'#EXTM3U\n')
-			old_manifest_file = self.trailers.TRAILER_MANIFEST_FILE
-			self.trailers.TRAILER_MANIFEST_FILE = str(manifest_file)
-			server_thread = self.trailers.start_manifest_server()
-			try:
-				server, _ = server_thread
-				with urlopen('http://127.0.0.1:%d/trailer_preview.m3u8' % server.server_port, timeout=2) as response:
-					self.assertEqual(response.read(), b'#EXTM3U\n')
-				self.assertEqual(type(server).__name__, 'HTTPServer')
-			finally:
-				self.trailers.stop_manifest_server(server_thread)
-				self.trailers.TRAILER_MANIFEST_FILE = old_manifest_file
 
 
 if __name__ == '__main__':

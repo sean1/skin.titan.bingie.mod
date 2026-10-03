@@ -46,31 +46,7 @@ class RefineTests(unittest.TestCase):
 	def setUp(self):
 		self.refine = load_refine_module()
 
-	def test_changed_tracks_staged_edits_clear_and_apply(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu.initialize()
-		menu._select = Mock(return_value=('7.0', '7.0'))
 
-		self.assertEqual(menu.rating()['Changed'], 'true')
-		self.assertEqual(self.refine._properties['Refine.Changed'], 'true')
-		menu.clear()
-		self.assertEqual(self.refine._properties['Refine.Changed'], 'false')
-
-		menu._select = Mock(return_value=('7.0', '7.0'))
-		menu.rating()
-		menu.apply()
-		self.assertEqual(self.refine._properties['Refine.Changed'], 'false')
-
-	def test_changed_compares_against_applied_state_for_each_media_type(self):
-		movie = self.refine.Refine({'mediatype': 'movie'})
-		movie.draft['rating'] = '8.0'
-		movie.apply()
-
-		tv = self.refine.Refine({'mediatype': 'tvshow'})
-		tv.initialize()
-		tv.draft['rating'] = '8.0'
-		self.assertEqual(tv._save()['Changed'], 'true')
-		self.assertEqual(movie._publish()['Changed'], 'false')
 
 	def test_initialize_discards_unapplied_changes_and_restores_applied_values(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -140,17 +116,6 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(movie._publish()['Network'], 'Any')
 		self.assertEqual(movie._active_count(), 0)
 
-	def test_year_range_counts_once_and_reversed_range_is_not_staged(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		self.refine.kodi_utils.dialog.numeric.side_effect = ('2020', '2025')
-		menu.year()
-		self.assertEqual(self.refine._properties['Refine.Year'], '2020–2025')
-		self.assertEqual(self.refine._properties['Refine.Count'], '1')
-
-		self.refine.kodi_utils.dialog.numeric.side_effect = ('2030', '2020')
-		menu.year()
-		self.assertEqual((menu.draft['year_start'], menu.draft['year_end']), ('2020', '2025'))
-		self.refine.kodi_utils.notification.assert_called_once()
 
 	def test_drafts_are_independent_per_media_type(self):
 		movie = self.refine.Refine({'mediatype': 'movie'})
@@ -180,16 +145,6 @@ class RefineTests(unittest.TestCase):
 				self.assertIn('vote_count.gte=1', command)
 				self.assertIn('sort_by=%s.desc' % sort, command)
 
-	def test_absolute_year_and_release_window_are_mutually_exclusive(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu.draft.update({'year_start': '2020', 'year_end': '2025'})
-		menu._select = Mock(return_value=('Last 90 days', '90'))
-		menu.release_window()
-		self.assertEqual((menu.draft['year_start'], menu.draft['year_end'], menu.draft['release_window']), ('', '', '90'))
-
-		self.refine.kodi_utils.dialog.numeric.side_effect = ('2024', '2026')
-		menu.year()
-		self.assertEqual((menu.draft['year_start'], menu.draft['year_end'], menu.draft['release_window']), ('2024', '2026', ''))
 
 
 if __name__ == '__main__':

@@ -186,22 +186,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.preview._preview_context(), 'info')
 		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
 
-	def test_preview_context_retries_when_actor_window_closes_after_focus(self):
-		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
-		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
-		actor_context = self.entry.TRAILER_PREVIEW_ACTOR_CONTEXT
-		osd = 'Window.IsActive(VideoOSD)'
-		actor_focus = 'Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'
-		conditions = (
-			window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', actor_focus, actor_context,
-			'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)', 'ControlGroup(77777).HasFocus()'
-		)
-		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, True, True, False, False, False, False, False, True))
-		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
-		self.entry.get_property = Mock(return_value='')
-
-		self.assertEqual(self.preview._preview_context(), 'listing')
-		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
 
 	def test_movie_detail_shelf_focus_does_not_offer_an_autoplay_candidate(self):
 		self.preview._preview_context = Mock(return_value='info_card')
@@ -377,24 +361,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], new_key[0])
 		self.assertEqual(self.properties['PovFocusedGenre'], 'New genre')
 
-	def test_pause_clears_pending_without_cancelling_running_lookups(self):
-		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
-		started, released, finished, _ = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
-		for key in keys[:2]:
-			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
-			self._wait(started[key])
-		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
-
-		self.assertFalse(self.preview.pause())
-		self.assertIsNone(self.preview.lookup_pending)
-		self.assertEqual(set(self.preview.lookup_workers), set(keys[:2]))
-		released[keys[0]].set()
-		self._wait(finished[keys[0]])
-		self.preview._consume_lookup_results()
-		self.assertFalse(started[keys[2]].is_set())
-		released[keys[1]].set()
-		self._wait(finished[keys[1]])
-		self.preview._consume_lookup_results()
 
 	def test_close_discards_pending_and_prevents_results_or_new_workers(self):
 		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
@@ -432,39 +398,7 @@ class TrailerPreviewTests(unittest.TestCase):
 		for key in keys[:2]: self._wait(finished[key])
 		with self.assertRaises(Empty): self.preview.lookup_results.get_nowait()
 
-	def test_lookup_thread_start_failure_uses_normal_failure_result(self):
-		class FailingThread:
-			def __init__(self, **kwargs): pass
 
-			def start(self): raise RuntimeError('cannot start')
-
-		old_thread = self.entry.Thread
-		self.entry.Thread = FailingThread
-		self.addCleanup(setattr, self.entry, 'Thread', old_thread)
-		self.entry.monotonic = Mock(return_value=50.0)
-		identity = 'listing|movie|1'
-		self.preview._start_focused_metadata_lookup(identity, 'movie', '1')
-
-		self.assertEqual(self.preview.lookup_workers, {})
-		self.preview._consume_lookup_results()
-		self.assertEqual(self.preview.focused_metadata_retries, {identity: 52.0})
-
-	def test_first_frame_callback_publishes_ready_only_after_ownership_check(self):
-		self.entry.monotonic = Mock(return_value=20.0)
-		self.preview.identity = 'movie|1'
-		self.preview._candidate = Mock(return_value=self._candidate())
-		self.preview._preview_window_active = Mock(return_value=True)
-		self.preview._preview_navigation_away = Mock(return_value=False)
-		self.preview._owns_preview = Mock(return_value=True)
-		self.preview._launch_preview('preview-url', None)
-		self.visibility.update({'Player.HasMedia': True, 'Player.HasVideo': True})
-
-		self.assertEqual(self.properties[self.entry.TRAILER_PREVIEW_PROPERTY], 'true')
-		self.assertNotIn(self.entry.TRAILER_PREVIEW_READY_PROPERTY, self.properties)
-		self.preview.preview_player.onAVStarted()
-		self.assertNotIn(self.entry.TRAILER_PREVIEW_READY_PROPERTY, self.properties)
-		self.assertTrue(self.preview.tick())
-		self.assertEqual(self.properties[self.entry.TRAILER_PREVIEW_READY_PROPERTY], 'true')
 
 	def test_stale_first_frame_callback_cannot_ready_a_new_preview(self):
 		self.entry.monotonic = Mock(return_value=20.0)

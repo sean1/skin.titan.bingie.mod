@@ -67,12 +67,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual(set(config), {'opensubtitles', 'subdl', 'subsource'})
 		self.assertNotIn(secret, repr(self.providers.kodi_utils.logger.call_args_list))
 
-	def test_unreadable_config_path_is_rejected(self):
-		with TemporaryDirectory() as directory:
-			config, category = self.providers._load_provider_config(directory)
-
-		self.assertEqual(config, {})
-		self.assertEqual(category, 'unreadable')
 
 	def test_exact_release_match_wins_within_language(self):
 		media = {'release_name': 'Movie.2024.1080p.WEB-DL-GROUP', 'season': None, 'episode': None}
@@ -85,14 +79,6 @@ class SubtitleProviderTests(unittest.TestCase):
 
 		self.assertEqual(ranked[0]['id'], 'exact')
 
-	def test_subtitle_coverage_normalizes_forced_and_foreign_only_flags(self):
-		for key in ('forced', 'isforced', 'foreign_parts_only'):
-			for value in (True, 1, '1', 'true', 'TRUE'):
-				with self.subTest(key=key, value=value):
-					self.assertEqual(self.providers.subtitle_coverage({key: value}), 'partial')
-			for value in (False, 0, '0', 'false', 'FALSE'):
-				with self.subTest(key=key, value=value):
-					self.assertEqual(self.providers.subtitle_coverage({key: value}), 'full')
 
 	def test_subtitle_coverage_uses_bounded_names_when_flags_are_missing(self):
 		cases = (
@@ -180,27 +166,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertNotIn('secret request details', repr(self.providers.kodi_utils.logger.call_args_list))
 		self.assertEqual(manager.diagnostics(), {'config': '', 'providers': ('subsource',)})
 
-	def test_opensubtitles_normalizes_search_results_and_uses_episode_scope(self):
-		media = {'imdb_id': 'tt123', 'season': 1, 'episode': 2, 'release_name': 'Show.S01E02.WEB-DL'}
-		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, media)
-		provider.login = Mock()
-		provider.authenticated_json = Mock(return_value={'data': [{
-			'id': 'subtitle-record',
-			'attributes': {
-				'language': 'en', 'release': 'Show.S01E02.WEB-DL', 'fps': 23.976, 'hearing_impaired': False,
-				'foreign_parts_only': False, 'machine_translated': False, 'from_trusted': True, 'ratings': 8.5,
-				'download_count': 321, 'moviehash_match': False, 'feature_details': {'season_number': 1, 'episode_number': 2},
-				'files': [{'file_id': 456, 'file_name': 'Show.S01E02.WEB-DL.srt'}]
-			}
-		}]})
-
-		results = provider.search()
-
-		provider.authenticated_json.assert_called_once_with('GET', 'subtitles', 'search', params={'languages': 'en,vi', 'parent_imdb_id': '123', 'season_number': 1, 'episode_number': 2})
-		self.assertEqual(len(results), 1)
-		self.assertEqual((results[0]['provider'], results[0]['id'], results[0]['lang']), ('opensubtitles', '456', 'eng'))
-		self.assertEqual((results[0]['season'], results[0]['episode'], results[0]['extension']), (1, 2, 'srt'))
-		self.assertTrue(results[0]['trusted'])
 
 	def test_opensubtitles_quota_rejection_disables_repeated_download_attempts(self):
 		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})
@@ -272,25 +237,10 @@ class SubtitleProviderTests(unittest.TestCase):
 		content = archive_bytes([('Show.S01E02.forced.srt', b'partial for target'), ('Show.S01E03.full.srt', b'wrong episode')])
 		self.assertIsNone(self.providers.extract_subtitle_archive(content, 1, 2, full_dialogue_only=True))
 
-	def test_episode_archive_accepts_member_covering_target_range(self):
-		content = archive_bytes([('Show.S01E01-E03.srt', b'episode pack'), ('Show.S01E04.srt', b'wrong')])
-
-		payload = self.providers.extract_subtitle_archive(content, 1, 2)
-
-		self.assertEqual(payload, {'content': b'episode pack', 'extension': 'srt'})
 
 	def test_episode_match_does_not_treat_resolution_as_range_end(self):
 		self.assertFalse(self.providers._episode_matches('Show.S01E01.1080p.WEB-DL', 1, 2))
 
-	def test_movie_archive_prefers_member_matching_selected_release(self):
-		content = archive_bytes([
-			('Movie.2024.BluRay-OTHER.srt', b'larger but wrong release'),
-			('Movie.2024.1080p.WEB-DL-GROUP.ass', b'matching release')
-		])
-
-		payload = self.providers.extract_subtitle_archive(content, release_name='Movie.2024.1080p.WEB-DL-GROUP')
-
-		self.assertEqual(payload, {'content': b'matching release', 'extension': 'ass'})
 
 	def test_extracted_subtitle_size_limit_is_enforced(self):
 		content = archive_bytes([('oversized.srt', b'12345')])

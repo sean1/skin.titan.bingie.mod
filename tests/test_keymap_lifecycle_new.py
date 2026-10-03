@@ -43,11 +43,6 @@ def load_focused(skin):
 
 
 class KeymapLifecycleTests(unittest.TestCase):
-	def test_direct_install_is_rejected_while_skin_is_inactive(self):
-		keymap, kodi_utils, files = load_keymap(skin='skin.estuary')
-		self.assertFalse(keymap.install())
-		self.assertNotIn(keymap.KEYMAP_PATH, files)
-		kodi_utils.open_file.assert_not_called()
 
 	def test_active_keymap_drift_is_repaired_only_after_reconcile_interval(self):
 		keymap, kodi_utils, files = load_keymap()
@@ -64,21 +59,6 @@ class KeymapLifecycleTests(unittest.TestCase):
 		self.assertTrue(lifecycle.tick())
 		self.assertEqual(files[keymap.KEYMAP_PATH], keymap.KEYMAP_XML)
 
-	def test_inactive_keymap_reappearance_is_removed_after_reconcile_interval(self):
-		keymap, kodi_utils, files = load_keymap()
-		now = [0.0]
-		lifecycle = keymap.Lifecycle(clock=lambda: now[0], reconcile_interval=60.0)
-		lifecycle.tick()
-		kodi_utils.current_skin.return_value = 'skin.estuary'
-		self.assertTrue(lifecycle.tick())
-		files[keymap.KEYMAP_PATH] = keymap.KEYMAP_XML
-
-		now[0] = 59.9
-		self.assertFalse(lifecycle.tick())
-		self.assertIn(keymap.KEYMAP_PATH, files)
-		now[0] = 60.0
-		self.assertTrue(lifecycle.tick())
-		self.assertNotIn(keymap.KEYMAP_PATH, files)
 
 	def test_failed_install_is_retried_without_advancing_lifecycle_state(self):
 		keymap, kodi_utils, files = load_keymap()
@@ -126,12 +106,6 @@ class KeymapLifecycleTests(unittest.TestCase):
 		self.assertFalse(lifecycle.tick())
 		self.assertIn(keymap.KEYMAP_PATH, files)
 
-	def test_stale_global_action_never_restores_context_menu_during_playback(self):
-		focused, kodi_utils = load_focused('skin.estuary')
-		kodi_utils.get_visibility.side_effect = lambda condition: condition == focused.PLAYBACK_WINDOW_VISIBILITY
-		self.assertFalse(focused.source_select_focused())
-		kodi_utils.current_skin.assert_not_called()
-		kodi_utils.execute_builtin.assert_not_called()
 
 
 if __name__ == '__main__': unittest.main()

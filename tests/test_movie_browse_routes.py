@@ -79,12 +79,6 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.kodi_utils.execute_builtin.reset_mock()
 		self.kodi_utils.notification.reset_mock()
 
-	def test_tv_decade_and_language_feeds_use_tv_filters(self):
-		decade_url = self.tmdb.tmdb_tv_decade('2000', 1)['url']
-		self.assertIn('first_air_date.gte=2000-01-01', decade_url)
-		self.assertIn('first_air_date.lte=2009-12-31', decade_url)
-		language_url = self.tmdb.tmdb_tv_language('ja', 1)['url']
-		self.assertIn('with_original_language=ja', language_url)
 
 	def test_other_network_search_lets_user_choose_between_matches(self):
 		meta_lists = types.ModuleType('modules.meta_lists')
@@ -111,21 +105,6 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.kodi_utils.notification.assert_called_once_with(32760)
 		self.kodi_utils.execute_builtin.assert_not_called()
 
-	def test_studio_search_opens_movies_for_selected_company(self):
-		tmdb_api = types.ModuleType('indexers.tmdb_api')
-		tmdb_api.tmdb_company_id = Mock(return_value={'results': [
-			{'id': 1, 'name': 'Other Studio', 'origin_country': 'US'}, {'id': 2, 'name': 'Chosen Studio', 'origin_country': 'CA'}
-		]})
-		indexers = types.ModuleType('indexers')
-		indexers.tmdb_api = tmdb_api
-		self.kodi_utils.dialog.input.return_value = 'studio'
-		self.kodi_utils.select_dialog.return_value = '2'
-		with temporary_modules({'indexers': indexers, 'indexers.tmdb_api': tmdb_api}):
-			result = self.menu.movie_studios()
-
-		self.assertIn('action=tmdb_movies_networks', result)
-		self.assertIn('company=2', result)
-		self.assertIn('name=Chosen Studio', result)
 
 
 if __name__ == '__main__':

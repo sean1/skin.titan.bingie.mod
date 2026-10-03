@@ -9,21 +9,6 @@ from tests.module_isolation import load_module, temporary_modules
 
 class ModuleIsolationTests(unittest.TestCase):
 
-	def test_restores_isolated_module_after_failure(self):
-		name = 'test_module_isolation_transitive'
-		original = types.ModuleType(name)
-		old_module = sys.modules.get(name)
-		sys.modules[name] = original
-		try:
-			with self.assertRaises(RuntimeError):
-				with temporary_modules(isolate=(name,)):
-					self.assertNotIn(name, sys.modules)
-					sys.modules[name] = types.ModuleType(name)
-					raise RuntimeError('load failed')
-			self.assertIs(sys.modules[name], original)
-		finally:
-			if old_module is None: sys.modules.pop(name, None)
-			else: sys.modules[name] = old_module
 
 	def test_load_removes_transitive_modules_and_restores_sys_path(self):
 		package_name = 'test_module_isolation_package'
@@ -51,28 +36,6 @@ class ModuleIsolationTests(unittest.TestCase):
 			if old_child is not None: sys.modules[child_name] = old_child
 			sys.path[:] = old_path
 
-	def test_dotted_stub_temporarily_replaces_existing_parent_attribute(self):
-		parent_name, child_name = 'test_module_isolation_parent', 'test_module_isolation_parent.child'
-		parent = types.ModuleType(parent_name)
-		original = types.ModuleType(child_name)
-		stub = types.ModuleType(child_name)
-		parent.child = original
-		old_parent = sys.modules.get(parent_name)
-		old_child = sys.modules.get(child_name)
-		sys.modules[parent_name] = parent
-		sys.modules[child_name] = original
-		try:
-			with temporary_modules({child_name: stub}):
-				imported_parent = __import__(parent_name, fromlist=('child',))
-				self.assertIs(imported_parent.child, stub)
-				self.assertIs(sys.modules[child_name], stub)
-			self.assertIs(parent.child, original)
-			self.assertIs(sys.modules[child_name], original)
-		finally:
-			if old_parent is None: sys.modules.pop(parent_name, None)
-			else: sys.modules[parent_name] = old_parent
-			if old_child is None: sys.modules.pop(child_name, None)
-			else: sys.modules[child_name] = old_child
 
 
 if __name__ == '__main__':

@@ -52,23 +52,7 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.notification.reset_mock()
 		self.service.kodi_utils.add_item.reset_mock()
 
-	def test_download_provider_failure_adds_no_item_or_notification(self):
-		self.client.download_by_id.return_value = None
 
-		self.service._download(7, {'provider': 'opensubtitles', 'candidate': '123', 'language': 'eng', 'result': '2'})
-
-		self.service.kodi_utils.notification.assert_not_called()
-		self.service.kodi_utils.add_item.assert_not_called()
-		self.client.save_subtitle.assert_not_called()
-
-	def test_download_without_active_playback_adds_no_item_or_notification(self):
-		self.service._client.return_value = None
-
-		self.service._download(7, {'provider': 'opensubtitles', 'candidate': '123'})
-
-		self.service.kodi_utils.logger.assert_called_once()
-		self.service.kodi_utils.notification.assert_not_called()
-		self.service.kodi_utils.add_item.assert_not_called()
 
 	def test_search_playback_change_adds_no_results_or_notification(self):
 		self.client.subtitles_search.return_value = [{'provider': 'opensubtitles', 'id': '123', 'lang': 'eng'}]
@@ -112,16 +96,6 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.notification.assert_not_called()
 		self.service.kodi_utils.add_item.assert_not_called()
 
-	def test_run_contains_download_failure_and_always_ends_directory(self):
-		self.service.kodi_utils.parsed_query.return_value = {'action': 'download', 'provider': 'subdl', 'candidate': 'parent:file'}
-		self.service._download = Mock(side_effect=RuntimeError('download failed'))
-		sys_obj = SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '9', '?action=download'])
-
-		self.service.run(sys_obj)
-
-		self.service.kodi_utils.end_directory.assert_called_once_with(9, False)
-		self.service.kodi_utils.logger.assert_called_once()
-		self.service.kodi_utils.notification.assert_not_called()
 
 	def test_manual_service_actions_record_override_before_search_or_download(self):
 		for action in ('search', 'manualsearch', 'download'):

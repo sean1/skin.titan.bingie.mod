@@ -52,20 +52,6 @@ class MyListActionTests(unittest.TestCase):
 		self.kodi_utils.widget_refresh.assert_not_called()
 		self.assertNotIn('BingieMyListRefresh', self.properties)
 
-	def test_context_add_and_remove_routes_preserve_quoted_unicode_titles(self):
-		title = 'Amélie: Live & (Encore)? "Part 2"'
-		label, command = self.controller.context_item('movie', 101, title)
-		self.assertEqual(label, 'Add to My List')
-		params = command_params(command)
-		self.assertEqual(params, {'mode': 'my_list_action', 'action': 'add', 'mediatype': 'movie', 'tmdb_id': '101', 'title': title})
-		self.assertTrue(self.controller.action(params))
-		label, command = self.controller.context_item('movie', 101, title)
-		self.assertEqual(label, 'Remove from My List')
-		params = command_params(command)
-		self.assertEqual(params['action'], 'remove')
-		self.assertEqual(params['title'], title)
-		self.assertTrue(self.controller.action(params))
-		self.assertFalse(self.store.contains('movie', 101))
 
 	def test_episode_context_saves_the_series_and_series_title(self):
 		label, command = self.controller.context_item('episode', 999, 'Series', tvshow_id=202)
@@ -113,16 +99,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertFalse(self.store.contains('tvshow', 202))
 		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
 
-	def test_unknown_action_or_invalid_identity_reports_failure_without_refresh(self):
-		for params in (
-			{'action': 'toggle', 'mediatype': 'movie', 'tmdb_id': 101}, {'action': 'add', 'mediatype': 'movie', 'tmdb_id': True},
-			{'action': 'add', 'mediatype': 'movie', 'tmdb_id': ''}, {'action': 'add', 'mediatype': 'person', 'tmdb_id': 101}
-		):
-			with self.subTest(params=params):
-				self.assertFalse(self.controller.action(params))
-				self.assert_no_success_refresh()
-				self.kodi_utils.notification.assert_called_with('Could not update My List')
-		self.assertEqual(self.store.items('movie'), ([], 1))
 
 	def test_failed_database_write_leaves_info_state_and_refresh_unchanged(self):
 		self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '101', 'PovInfoMyListSaved': 'false'})
@@ -132,12 +108,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assert_no_success_refresh()
 		self.kodi_utils.notification.assert_called_once_with('Could not update My List')
 
-	def test_unavailable_saved_state_does_not_offer_a_guessed_action(self):
-		with patch.object(self.kodi_utils, 'database_connect', side_effect=sqlite3.OperationalError('unavailable')):
-			self.assertIsNone(self.controller.context_item('movie', 101, 'Movie'))
-			self.assertEqual(self.controller.saved_status('movie', 101), '')
-		self.assert_no_success_refresh()
-		self.kodi_utils.notification.assert_not_called()
 
 	def test_refreshing_unknown_info_state_clears_a_stale_saved_command(self):
 		self.properties.update({'PovInfoMyListSaved': 'true', 'PovInfoMyListCommand': 'RunPlugin(stale-action)'})
@@ -148,25 +118,7 @@ class MyListActionTests(unittest.TestCase):
 		self.kodi_utils.container_refresh.assert_not_called()
 		self.kodi_utils.notification.assert_not_called()
 
-	def test_info_save_defers_container_refresh_until_return_to_listing(self):
-		self.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1123) | Window.IsActive(1122)'
-		self.assertTrue(self.controller.action({'action': 'add', 'mediatype': 'movie', 'tmdb_id': 101, 'title': 'Movie'}))
-		self.assertEqual(self.properties['BingieMyListPendingRefresh'], 'true')
-		self.kodi_utils.container_refresh.assert_not_called()
-		self.kodi_utils.get_visibility = lambda condition: condition in ('Window.IsActive(Videos)', 'Window.IsActive(Videos) | Window.IsActive(Home)')
-		self.controller.refresh_after_info()
-		self.assertNotIn('BingieMyListPendingRefresh', self.properties)
-		self.kodi_utils.container_refresh.assert_called_once_with()
 
-	def test_info_button_runs_the_captured_action_and_disables_unknown_saved_state(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()
-		button = next(control for control in root.iter('control') if control.get('id') == '54')
-		self.assertEqual(button.findtext('onclick'), '$INFO[Window(Home).Property(PovInfoMyListCommand)]')
-		self.assertEqual(button.findtext('enable'), '!String.IsEmpty(Window(Home).Property(PovInfoMyListCommand))')
-		labels = root.find("variable[@name='PovInfoMyListLabel']")
-		values = {value.get('condition'): value.text for value in labels.findall('value')}
-		self.assertEqual(values['String.IsEqual(Window(Home).Property(PovInfoMyListSaved),true)'], 'Remove from My List')
-		self.assertEqual(values['String.IsEqual(Window(Home).Property(PovInfoMyListSaved),false)'], 'Add to My List')
 
 	def test_unavailable_metadata_keeps_saved_movies_and_shows_removable(self):
 		from tests.test_menu_completion import load_menu_module

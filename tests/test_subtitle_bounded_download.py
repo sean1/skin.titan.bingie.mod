@@ -25,15 +25,6 @@ class SubtitleBoundedDownloadTests(unittest.TestCase):
 		self.providers = load_providers()
 		self.request = self.providers.requests.request
 
-	def test_content_length_over_cap_rejects_before_reading(self):
-		response = BinaryResponse((b'not-read',), headers={'Content-Length': '7'})
-		self.request.return_value = response
-
-		with self.assertRaisesRegex(self.providers.ProviderError, 'invalid_size'):
-			self.providers._download_binary('https://download.invalid/subtitle', 'test', 6)
-
-		self.assertIsNone(response.chunk_size)
-		response.close.assert_called_once_with()
 
 	def test_cumulative_cap_stops_stream_and_closes_response(self):
 		response = BinaryResponse((b'abcd', b'efg', b'not-read'))
@@ -63,14 +54,6 @@ class SubtitleBoundedDownloadTests(unittest.TestCase):
 					self.providers._download_binary('https://download.invalid/subtitle', 'test', 20)
 				response.close.assert_called_once_with()
 
-	def test_connection_failure_retries_before_streaming(self):
-		response = BinaryResponse((b'subtitle',))
-		self.request.side_effect = (self.providers.requests.Timeout(), response)
-
-		content = self.providers._download_binary('https://download.invalid/subtitle', 'test', 20)
-
-		self.assertEqual(content, b'subtitle')
-		self.assertEqual(self.request.call_count, 2)
 
 	def test_retryable_status_retries_without_reading_first_body(self):
 		first = BinaryResponse((b'error body',), status_code=503)

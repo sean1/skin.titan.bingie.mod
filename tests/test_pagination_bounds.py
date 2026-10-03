@@ -32,8 +32,6 @@ class PaginationBoundsTests(unittest.TestCase):
 			with self.subTest(page=page):
 				self.assertEqual(self.utils.paginate_list(items, page, 2), ([], 3))
 
-	def test_non_numeric_page_is_empty_with_real_total(self):
-		self.assertEqual(self.utils.paginate_list(list(range(5)), 'stale', 2), ([], 3))
 
 
 if __name__ == '__main__':

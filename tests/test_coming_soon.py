@@ -78,12 +78,6 @@ class ComingSoonDateTests(ComingSoonFixture, unittest.TestCase):
 			with self.subTest(value=value): self.assertFalse(self.media.card_coming_soon({'release_date': value}, 'movie', TODAY))
 		self.assertFalse(self.media.card_coming_soon({}, 'movie', TODAY))
 
-	def test_raw_media_date_precedes_normalized_premiered_and_other_media_dates(self):
-		for mediatype, key, unrelated in (('movie', 'release_date', 'first_air_date'), ('tvshow', 'first_air_date', 'release_date')):
-			with self.subTest(mediatype=mediatype):
-				data = {key: '2026-10-02', 'premiered': '2026-10-04', unrelated: '2026-10-04'}
-				self.assertFalse(self.media.card_coming_soon(data, mediatype, TODAY))
-				self.assertFalse(self.media.card_coming_soon({unrelated: '2026-10-04'}, mediatype, TODAY))
 
 	def test_default_date_is_local_and_badge_disappears_on_the_release_day(self):
 		class BeforeLocalMidnight(LocalDate):

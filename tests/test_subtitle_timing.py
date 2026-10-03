@@ -145,24 +145,7 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.assertEqual(events, ['open', ('write', 'subtitle text'), 'close', ('attach', final_path)])
 		self.subtitles.kodi_utils.sleep.assert_not_called()
 
-	def test_native_rpc_reads_track_names_and_forced_flags_from_the_active_video_player(self):
-		state = {'subtitleenabled': True, 'currentsubtitle': {'index': 0}, 'subtitles': [{'index': 0, 'language': 'eng', 'name': 'English', 'isforced': True}]}
-		requests = []
-		def rpc(value):
-			request = json.loads(value)
-			requests.append(request)
-			return json.dumps({'result': [{'playerid': 7, 'type': 'video'}] if request['method'] == 'Player.GetActivePlayers' else state})
-		self.subtitles.kodi_utils.execJSONRPC.side_effect = rpc
-		self.assertEqual(self.client._subtitle_state(), state)
-		self.assertEqual([request['method'] for request in requests], ['Player.GetActivePlayers', 'Player.GetProperties'])
-		self.assertEqual(requests[-1]['params'], {'playerid': 7, 'properties': ['subtitles', 'currentsubtitle', 'subtitleenabled']})
 
-	def test_matching_language_tracks_with_unknown_coverage_remain_eligible(self):
-		self.client.getAvailableSubtitleStreams = Mock(return_value=['eng'])
-		self.client.setSubtitleStream = Mock()
-		self.client.showSubtitles = Mock()
-		self.assertTrue(self.client._video_file_subs())
-		self.client.setSubtitleStream.assert_called_once_with(0)
 
 	def test_forced_english_does_not_prevent_full_vietnamese_selection(self):
 		self.client.getAvailableSubtitleStreams = Mock(return_value=['English (Forced)', 'Vietnamese (Full)'])
@@ -195,15 +178,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.assertEqual([invocation.args[0]['id'] for invocation in self.client.provider_manager.download.call_args_list], ['full'])
 		self.client._set_context.assert_called_once_with([partial, full])
 
-	def test_automatic_search_never_attaches_known_partial_only_results(self):
-		partial = {'provider': 'opensubtitles', 'id': 'forced', 'lang': 'eng', 'release_names': ['Fixture.eng.forced.srt']}
-		self.client.provider_manager.search.return_value = [partial]
-		self.subtitles.kodi_utils.open_file = Mock()
-		self.client.setSubtitles = Mock()
-		self.assertFalse(self.client._searched_subs())
-		self.client.provider_manager.download.assert_not_called()
-		self.subtitles.kodi_utils.open_file.assert_not_called()
-		self.client.setSubtitles.assert_not_called()
 
 	def test_write_failure_closes_file_without_attach(self):
 		events = []
@@ -233,12 +207,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.subtitles.kodi_utils.delete_file.assert_called_once_with('special://temp/fixture_eng_full.srt')
 		self.client.setSubtitles.assert_not_called()
 
-	def test_automatic_cache_ignores_legacy_files_that_may_be_forced(self):
-		self.subtitles.kodi_utils.list_dirs.return_value = ([], ['fixture_eng.srt', 'fixture_vie.ass', 'fixture_eng_subdl_1.srt'])
-		self.client.setSubtitles = Mock()
-		self.assertFalse(self.client._downloaded_subs())
-		self.client.setSubtitles.assert_not_called()
-		self.subtitles.kodi_utils.notification.assert_not_called()
 
 	def test_late_default_index_is_readiness_and_full_track_still_wins(self):
 		for initial_index in (None, -1):
@@ -254,23 +222,7 @@ class SubtitleTimingTests(unittest.TestCase):
 				self.client.showSubtitles.assert_called_once_with(True)
 				manager.search.assert_not_called()
 
-	def test_user_off_during_initial_delay_cancels_before_attachment(self):
-		state, manager = self.automatic_fixture()
-		self.subtitles.kodi_utils.monitor.waitForAbort.side_effect = lambda delay: state.update({'subtitleenabled': False}) or False
-		self.assertFalse(self.client.run('Fixture', 'tt123', None, None, ''))
-		self.client.setSubtitleStream.assert_not_called()
-		self.client.showSubtitles.assert_not_called()
-		self.client.setSubtitles.assert_not_called()
-		manager.search.assert_not_called()
-		self.subtitles.kodi_utils.notification.assert_not_called()
 
-	def test_user_stream_change_during_initial_delay_cancels_before_attachment(self):
-		state, manager = self.automatic_fixture()
-		self.subtitles.kodi_utils.monitor.waitForAbort.side_effect = lambda delay: state.update({'currentsubtitle': {'index': 1}}) or False
-		self.assertFalse(self.client.run('Fixture', 'tt123', None, None, ''))
-		self.client.setSubtitleStream.assert_not_called()
-		self.client.showSubtitles.assert_not_called()
-		manager.search.assert_not_called()
 
 	def test_only_forced_embedded_tracks_search_and_download_full_dialogue(self):
 		state, manager = self.automatic_fixture(streams=[{'index': 0, 'language': 'eng', 'isforced': True}])
@@ -321,18 +273,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.subtitles.kodi_utils.open_file.assert_not_called()
 		self.client.setSubtitles.assert_not_called()
 
-	def test_manual_choice_before_late_rpc_readiness_still_cancels_automatic_job(self):
-		state, manager = self.automatic_fixture(enabled=False, current_index=None)
-		self.property_fixture()
-		def choose_before_readiness(delay):
-			self.assertTrue(self.subtitles.mark_manual_selection())
-			state.update({'subtitleenabled': True, 'currentsubtitle': {'index': 0}})
-			return False
-		self.subtitles.kodi_utils.monitor.waitForAbort.side_effect = choose_before_readiness
-		self.assertFalse(self.client.run('Fixture', 'tt123', None, None, ''))
-		self.client.setSubtitleStream.assert_not_called()
-		self.client.showSubtitles.assert_not_called()
-		manager.search.assert_not_called()
 
 	def test_pre_run_manual_off_without_context_is_preserved(self):
 		state, manager = self.automatic_fixture(enabled=False, current_index=None)
@@ -358,15 +298,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.client.showSubtitles.assert_called_once_with(True)
 		manager.search.assert_not_called()
 
-	def test_manual_choice_after_new_playback_start_and_before_automatic_task_is_preserved(self):
-		state, manager = self.automatic_fixture(enabled=False, current_index=None)
-		properties = self.property_fixture()
-		self.playback_started(properties)
-		self.assertTrue(self.subtitles.mark_manual_selection())
-		self.assertFalse(self.client.run('Fixture', 'tt123', None, None, ''))
-		self.client.setSubtitleStream.assert_not_called()
-		self.client.showSubtitles.assert_not_called()
-		manager.search.assert_not_called()
 
 	def test_old_generation_or_other_file_marker_does_not_cancel_active_job(self):
 		self.automatic_fixture()

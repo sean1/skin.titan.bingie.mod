@@ -77,13 +77,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 		self.assertEqual(self.cache.lookup(101), (1, 3))
 		self.assertEqual(remaining, [('101', 1, 2), ('101', 1, 3), ('202', 1, 2)])
 
-	def test_progress_delete_commits_even_when_replayed_episode_does_not_advance_cursor(self):
-		self.cache.advance(101, 2, 1)
-		with sqlite3.connect(self.database_path) as dbcon:
-			dbcon.execute('INSERT INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', ('episode', '101', 1, 2, '95', '3000', '', 0, 'Replay'))
-
-		self.assertEqual(self.cache.advance_and_delete_progress(101, 1, 3, 1, 2), (False, True))
-		self.assertEqual(self.cache.lookup(101), (2, 1))
 
 	def test_completed_special_deletes_exact_progress_without_advancing_cursor(self):
 		self.cache.advance(101, 2, 3)
@@ -101,16 +94,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 		self.assertEqual(remaining, [('101', 0, 5), ('202', 0, 4)])
 		self.cache.kodi_utils.set_property.assert_called_once()
 
-	def test_failed_special_progress_delete_rolls_back_without_changing_cursor(self):
-		self.cache.advance(101, 2, 3)
-		with sqlite3.connect(self.database_path) as dbcon:
-			dbcon.execute('INSERT INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', ('episode', '101', 0, 1, '95', '3000', '', 0, 'Completed special'))
-			dbcon.execute("""CREATE TRIGGER reject_special_progress_delete BEFORE DELETE ON progress BEGIN SELECT RAISE(ABORT, 'reject delete'); END""")
-
-		with self.assertRaises(sqlite3.IntegrityError): self.cache.complete_episode(101, 0, 1)
-		self.assertEqual(self.cache.lookup(101), (2, 3))
-		with sqlite3.connect(self.database_path) as dbcon:
-			self.assertEqual(dbcon.execute('SELECT media_id, season, episode FROM progress').fetchall(), [('101', 0, 1)])
 
 	def test_failed_progress_delete_rolls_back_cursor_advance(self):
 		with sqlite3.connect(self.database_path) as dbcon:

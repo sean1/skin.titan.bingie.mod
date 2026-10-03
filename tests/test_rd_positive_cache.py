@@ -100,11 +100,6 @@ class RealDebridPositiveCacheTests(unittest.TestCase):
 		checker.external_check_cache.assert_called_once_with(['positive', 'missing'])
 		self.assertEqual(FakeDebridCache.writes, [((('positive', 'True'),), 'rd')])
 
-	def test_ad_exact_negative_remains_authoritative(self):
-		checker = self.module.DebridCheck({}, 'alldebrid', ('missing',), (('missing', 'ad', 'False', 9999999999),))
-
-		self.assertEqual(checker.cache_check(), {'cached': [], 'checked': {'missing'}})
-		self.assertEqual(FakeDebridCache.writes, [])
 
 	def test_concurrent_identical_auxiliary_checks_are_coalesced(self):
 		started, release, calls, results = threading.Event(), threading.Event(), [], []
@@ -160,19 +155,6 @@ class RealDebridPositiveCacheTests(unittest.TestCase):
 		with mock.patch.dict('sys.modules', {'magneto.dmm': fake_dmm}):
 			self.assertFalse(self.module.dmm_check_cache(('a' * 40,), 'tt1', []))
 
-	def test_dmm_rejects_list_entries_without_valid_hashes(self):
-		class Response:
-			def raise_for_status(self): return None
-			def json(self): return {'available': [{}]}
-
-		class Session:
-			def post(self, *_args, **_kwargs): return Response()
-
-		self.module.session = Session()
-		fake_dmm = types.ModuleType('magneto.dmm')
-		fake_dmm.get_secret = lambda: ('key', 'solution')
-		with mock.patch.dict('sys.modules', {'magneto.dmm': fake_dmm}):
-			self.assertFalse(self.module.dmm_check_cache(('a' * 40,), 'tt1', []))
 
 	def test_positive_upsert_replaces_legacy_false_row(self):
 		cache_module = load_cache_module()

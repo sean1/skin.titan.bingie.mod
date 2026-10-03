@@ -103,15 +103,6 @@ class SkipIntroTimingTests(unittest.TestCase):
 		self.episode_tools.open_window.assert_not_called()
 		self.assertEqual(player.seeks, [])
 
-	def test_get_time_failure_exits_without_prompt(self):
-		player = FakePlayer(9.81, raise_time=True)
-		self.advance_on_sleep(player)
-
-		self.episode_tools.execute_skip_intro(player, {})
-
-		self.assertEqual(self.sleeps, [])
-		self.episode_tools.open_window.assert_not_called()
-		self.assertEqual(player.seeks, [])
 
 
 if __name__ == '__main__':

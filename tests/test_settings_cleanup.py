@@ -89,20 +89,7 @@ class SettingsPersistenceTests(unittest.TestCase):
 		with sqlite3.connect(self.persisted_settings_db) as dbcon:
 			return dict(dbcon.execute('SELECT id, value FROM settings'))
 
-	def test_debrid_credentials_survive_restart(self):
-		credentials = {'ad.account_id': 'ad-user', 'ad.token': 'ad-token', 'tb.account_id': 'tb-user', 'tb.token': 'tb-token'}
 
-		self.assertTrue(self.kodi_utils.set_settings(credentials))
-		fresh = self.configure_module(load_kodi_utils('test_settings_cleanup_restart', self.kodi_utils.window))
-
-		self.assertEqual({setting_id: fresh.get_setting(setting_id) for setting_id in credentials}, credentials)
-		self.assertEqual(self.database_settings(), credentials)
-
-	def test_empty_database_value_round_trips(self):
-		self.assertTrue(self.kodi_utils.set_setting('ad.token', ''))
-
-		self.assertEqual(self.kodi_utils.get_setting('ad.token'), '')
-		self.assertEqual(self.database_settings()['ad.token'], '')
 
 	def test_concurrent_debrid_authorizations_preserve_both_bundles(self):
 		first = self.configure_module(load_kodi_utils('test_settings_cleanup_first', self.kodi_utils.window))

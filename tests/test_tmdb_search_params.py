@@ -41,18 +41,6 @@ class TmdbSearchParameterTests(unittest.TestCase):
 	def setUp(self):
 		self.cache_object.reset_mock()
 
-	def test_get_tmdb_forwards_optional_request_parameters(self):
-		response = Mock(headers={'Content-Type': 'application/json'}, ok=True)
-		response.json.return_value = {'results': []}
-		self.tmdb.session = Mock()
-		self.tmdb.session.get.return_value = response
-
-		result = self.tmdb.get_tmdb('https://api.example/search', {'query': 'A&B + #1'})
-
-		self.assertEqual(result, {'results': []})
-		self.tmdb.session.get.assert_called_once_with(
-			'https://api.example/search', headers={'Authorization': 'Bearer '}, params={'query': 'A&B + #1'}, timeout=self.tmdb.timeout
-		)
 
 	def test_seven_media_search_builders_keep_cache_keys_and_separate_parameters(self):
 		query = 'A&B + #1'

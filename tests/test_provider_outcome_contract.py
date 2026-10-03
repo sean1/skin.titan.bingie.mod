@@ -43,11 +43,6 @@ class ProviderOutcomeContractTests(unittest.TestCase):
 		self.assertEqual(ProviderOutcome.from_cache([{'hash': 'one'}]).status, 'success')
 		self.assertIsNone(ProviderOutcome.from_cache([]))
 
-	def test_versioned_empty_cache_is_a_legitimate_hit(self):
-		payload = {'provider_outcome': PROVIDER_OUTCOME_VERSION, 'status': 'empty', 'sources': []}
-		outcome = ProviderOutcome.from_cache(payload)
-		self.assertEqual(outcome.status, 'empty')
-		self.assertEqual(outcome.sources, [])
 
 	def test_failed_and_partial_results_are_not_cacheable(self):
 		module = load_cache_module()

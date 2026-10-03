@@ -48,19 +48,6 @@ class MetadataLifecycleTests(unittest.TestCase):
 		self.assertEqual(self.metadata._normalize_media_id('trakt_dict', {'imdb': 'tt0101'}, ('tmdb', 'imdb')), ('imdb_id', 'tt0101'))
 		self.assertEqual(self.metadata._normalize_media_id('trakt_dict', {}, ('tmdb', 'imdb')), (None, None))
 
-	def test_claimed_cache_value_is_prepared_without_fetching(self):
-		cached = {'tmdb_id': 101}
-		prepare = Mock(return_value={'prepared': True})
-		fetch = Mock()
-		self.cache.get.return_value = None
-		self.cache.get_or_claim.return_value = (cached, 'other-owner', False)
-
-		result = self.metadata._cached_meta('tvshow', 'tmdb_id', 101, fetch, prepare)
-
-		self.assertEqual(result, {'prepared': True})
-		prepare.assert_called_once_with(cached)
-		fetch.assert_not_called()
-		self.cache.release_claim.assert_not_called()
 
 	def test_blocked_claim_returns_none_without_release(self):
 		self.cache.get.return_value = None

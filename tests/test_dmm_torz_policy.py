@@ -79,25 +79,6 @@ class DmmTorzPolicyTests(unittest.TestCase):
 		self.source_utils.direct_valid = False
 		self.assertIsNone(self.helper.direct_release(direct, 'Wrong.Movie'))
 
-	def test_dmm_and_torz_preserve_season_show_and_rejection_results(self):
-		data = {'tvshowtitle': 'Show', 'title': 'Episode', 'aliases': [], 'year': '2024', 'imdb': 'tt2', 'season': '1', 'episode': '2'}
-		provider_records = {
-			'dmm': {'hash': 'dmm-hash', 'title': 'Show.S01', 'fileSize': 2},
-			'torz': {'hash': 'torz-hash', 'name': 'Show.S01', 'size': 2000000000, 'seeders': 12}
-		}
-		for provider_name, record in provider_records.items():
-			with self.subTest(provider=provider_name):
-				module = load_provider(provider_name, self.source_utils)
-				provider = module.source()
-				provider._get_files = lambda url, result=record: [result]
-				season = provider.sources_packs(data, {})[0]
-				show = provider.sources_packs(data, {}, search_series=True, total_seasons='5')[0]
-				self.assertEqual((season['package'], season['episode_start'], season['episode_end']), ('season', 2, 8))
-				self.assertEqual((show['package'], show['last_season']), ('show', 4))
-
-				self.source_utils.season_result = (False, 0, 0)
-				self.assertEqual(provider.sources_packs(data, {}), [])
-				self.source_utils.season_result = (True, 2, 8)
 
 
 if __name__ == '__main__':

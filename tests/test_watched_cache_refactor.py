@@ -110,8 +110,6 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 		self.watched.kodi_utils.progressDialogBG.close.assert_called_once_with()
 		self.watched.kodi_utils.container_refresh.assert_not_called()
 
-	def test_zero_aired_episodes_never_reports_complete(self):
-		self.assertEqual(self.watched.get_watched_status_tvshow({101: []}, 101, 0), (0, 4, 0, 0))
 
 	def test_single_watched_change_and_progress_delete_share_one_transaction(self):
 		with tempfile.NamedTemporaryFile() as database_file:

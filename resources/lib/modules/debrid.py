@@ -79,6 +79,10 @@ class Source:
 			args = self.url, self.hash, True
 			api = import_debrid(self.debrid)
 			files = api.parse_magnet_pack(*args)
+			torrent_id = next((item.get('torrent_id') for item in files or [] if item.get('torrent_id')), '')
+			evidence = getattr(self, 'identity_evidence', {})
+			if isinstance(evidence, dict) and evidence.get('file_match_required'):
+				files = self._identity_matched_files(files, evidence, season, episode)
 			selected_files = []
 			selected_files_append = selected_files.append
 			for i in files or []:
@@ -86,7 +90,7 @@ class Source:
 				if filename.endswith('.m2ts'): raise Exception('_m2ts_check failed')
 				if not filename.endswith(tuple(extensions)): continue
 				if season:
-					if not seas_ep_filter(season, episode, filename): continue
+					if not (isinstance(evidence, dict) and evidence.get('file_match_required')) and not seas_ep_filter(season, episode, filename): continue
 				elif any(x in filename for x in extras_filtering_list): continue
 				selected_files_append(i)
 			if not selected_files: raise Exception('selected_files failed')
@@ -100,6 +104,18 @@ class Source:
 		except Exception as e:
 			kodi_utils.logger('resolve_external_sources exception', f"{e}\n{self.dumps()}")
 			if api and files and torrent_id: self._delete(api, torrent_id)
+
+	def _identity_matched_files(self, files, evidence, season, episode):
+		expected = '%s:%s:%s' % (self.meta.get('imdb_id'), int(season), int(episode))
+		if evidence.get('file_sid') != expected: raise ValueError('provider file identity does not match requested episode')
+		path = str(evidence.get('file_path') or '').replace('\\', '/').strip('/').casefold()
+		name = str(evidence.get('file_name') or '').replace('\\', '/').rsplit('/', 1)[-1].casefold()
+		if not path and not name: raise ValueError('provider file identity has no usable filename')
+		# Debrid adapters expose full paths, basenames, or (Real-Debrid) paths with separators removed.
+		identifiers = {value for value in (path, path.replace('/', ''), path.rsplit('/', 1)[-1], name) if value}
+		matching = [item for item in files or [] if str(item.get('filename') or '').replace('\\', '/').strip('/').casefold() in identifiers]
+		if len(matching) != 1: raise ValueError('provider identity file missing or ambiguous in debrid pack')
+		return matching
 
 	def _delete(self, api, torrent_id):
 		if not torrent_id: return

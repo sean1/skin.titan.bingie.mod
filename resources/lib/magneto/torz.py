@@ -45,6 +45,8 @@ class source:
 
 		for file in files:
 			try:
+				evidence = self._identity_evidence(file, context['imdb'], data.get('season'), data.get('episode'))
+				if evidence is None: continue
 				hash = file['hash']
 				name = file['name']
 
@@ -68,7 +70,9 @@ class source:
 				except: dsize = 0
 				info = ' | '.join(info)
 
-				sources_append(provider_utils.build_result('torz', hash, name, name_info, quality, info, dsize, seeders))
+				item = provider_utils.build_result('torz', hash, name, name_info, quality, info, dsize, seeders)
+				item['identity_evidence'] = evidence
+				sources_append(item)
 			except:
 				source_utils.scraper_error('TORZ')
 				self.scrape_partial = True
@@ -101,6 +105,8 @@ class source:
 
 		for file in files:
 			try:
+				evidence = self._identity_evidence(file, context['imdb'], data.get('season'), data.get('episode'))
+				if evidence is None: continue
 				hash = file['hash']
 				name = file['name']
 
@@ -122,8 +128,27 @@ class source:
 				except: dsize = 0
 				info = ' | '.join(info)
 
-				sources_append(provider_utils.build_result('torz', hash, name, name_info, quality, info, dsize, seeders, release))
+				item = provider_utils.build_result('torz', hash, name, name_info, quality, info, dsize, seeders, release)
+				item['identity_evidence'] = evidence
+				sources_append(item)
 			except:
 				source_utils.scraper_error('TORZ')
 				self.scrape_partial = True
 		return sources
+
+	@staticmethod
+	def _identity_evidence(item, imdb, season=None, episode=None):
+		evidence = {'provider': 'torz', 'provenance': 'provider_file_sid'}
+		if season is None or episode is None: return evidence
+		if 'files' not in item: return evidence
+		files = item['files']
+		if not isinstance(files, list): return None
+		expected = '%s:%s:%s' % (imdb, int(season), int(episode))
+		video_extensions = ('.mkv', '.mp4', '.avi', '.mov', '.wmv', '.m4v', '.ts', '.m2ts', '.mpg', '.mpeg', '.webm', '.vob')
+		matching = [file for file in files if isinstance(file, dict) and file.get('sid') == expected and str(file.get('p') or file.get('n') or '').lower().endswith(video_extensions)]
+		if not matching: return None
+		file = matching[0]
+		evidence.update({'file_match_required': True, 'file_sid': file['sid'], 'imdb_id': file['sid'].split(':', 1)[0]})
+		for key, field in (('file_index', 'i'), ('file_path', 'p'), ('file_name', 'n'), ('file_size', 's'), ('media_info', 'mi'), ('file_source', 'src')):
+			if file.get(field) is not None: evidence[key] = file[field]
+		return evidence

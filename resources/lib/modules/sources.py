@@ -106,7 +106,7 @@ class Sources:
 		self.config_loader.apply(self, params)
 		if not hasattr(self, 'meta'): self.meta = self.meta_builder.get(self)
 		results = self.get_sources()
-		if not results: return self._process_post_results()
+		if not results and not getattr(self, 'unverified_results', []): return self._process_post_results()
 		self.play_source(results)
 
 	def get_sources(self):
@@ -222,7 +222,9 @@ class Sources:
 		self.filters_ignored = True
 		results = self.results_processor.sort_results(self.orig_results)
 		results = self.results_processor.sort_first(results)
-		if not results: return self._no_results()
+		self.unverified_results = [item for item in results if item.get('_identity_status') == 'unverified']
+		results = [item for item in results if item.get('_identity_status') != 'unverified']
+		if not results and not self.unverified_results: return self._no_results()
 		return self.play_source(results)
 
 	def _no_results(self):
@@ -233,7 +235,7 @@ class Sources:
 	def _clear_properties(self):
 		for item in default_internal_scrapers: clear_property('pov_lite_%s.internal_results' % item)
 
-	def display_results(self, results):
+	def display_results(self, results, unverified_view=False):
 		window_style = results_xml_style()
 		chosen_item = open_window(
 			('windows.sources', 'SourceResults'),
@@ -245,12 +247,16 @@ class Sources:
 			scraper_settings=self.scraper_settings,
 			prescrape=self.prescrape,
 			filters_ignored=self.filters_ignored,
-			full_search_available=self.meta.get('full_search_available', False)
+			full_search_available=self.meta.get('full_search_available', False) and not unverified_view,
+			unverified_count=0 if unverified_view else len(getattr(self, 'unverified_results', [])),
+			unverified_view=unverified_view
 		)
 		if not chosen_item: return self.progress_dialog.kill()
 		action, chosen_item = chosen_item
 		if action == 'play':
 			return self.play_file(results, chosen_item)
+		if action == 'show_unverified':
+			return self.display_results(self.unverified_results, unverified_view=True)
 		if action == 'perform_full_search':
 			self.prescrape, self.clear_properties, self.force_full_search = False, False, True
 			self.params['force_full_search'] = 'true'
@@ -259,6 +265,7 @@ class Sources:
 			return self.source_select()
 
 	def play_source(self, results):
+		results = [item for item in results if item.get('_identity_status') != 'unverified']
 		if self.background: self.pov_background_url = bool(results)
 		elif self.autoplay: return self.play_file(results)
 		else: return self.display_results(results)
@@ -267,12 +274,14 @@ class Sources:
 		try:
 			retry_resume_percent = 0
 			manual_selection = source is not None
-			if source is None:
-				source_index, items = 0, list(results)
+			if source is not None and source.get('_identity_status') == 'unverified':
+				source_index, items = None, [source]
+			elif source is None:
+				source_index, items = 0, [item for item in results if item.get('_identity_status') != 'unverified']
 			elif source in results:
 				source_index = results.index(source)
 				items = results[source_index:] + results[:source_index]
-				items = [i for i in items if 'Uncached' not in i.get('cache_provider', '')]
+				items = [i for i in items if 'Uncached' not in i.get('cache_provider', '') and i.get('_identity_status') != 'unverified']
 			else: source_index, items = None, [source]
 			if self.progress_dialog.full_screen:
 				self.progress_dialog.make(self.meta)
@@ -468,11 +477,12 @@ class MetaBuilder:
 		aliases = self.make_alias_dict(meta, title)
 		year = self.get_search_year(source, meta)
 		ep_name = self.get_ep_name(meta)
+		require_year, conflicting_years = self.tv_identity_policy(source, title, year)
 		search_info = {
 			'scrape_timeout': source.timeout, 'mediatype': source.mediatype, 'expiry_times': expiry_times,
 			'tmdb_id': source.tmdb_id, 'imdb_id': meta.get('imdb_id'), 'tvdb_id': meta.get('tvdb_id'),
 			'title': title, 'aliases': aliases, 'year': year, 'ep_name': ep_name,
-			'require_tv_year': self.require_tv_year(source, title, year),
+			'require_tv_year': require_year, 'conflicting_tv_years': conflicting_years,
 			'total_seasons': meta.get('total_seasons', ''),
 			'season': source.custom_season or source.season,
 			'episode': source.custom_episode or source.episode,
@@ -484,19 +494,41 @@ class MetaBuilder:
 		return meta
 
 	def require_tv_year(self, source, title, year):
-		if source.mediatype != 'episode' or not title or not year: return False
+		return self.tv_identity_policy(source, title, year)[0]
+
+	def tv_identity_policy(self, source, title, year):
+		if source.mediatype != 'episode' or not title or not year: return False, []
+		conflicting_years, require_year = [], False
 		try:
 			from indexers.tmdb_api import tmdb_tv_title_year
-			requested_title = source_utils.clean_title(title)
-			requested_year = str(year)
-			requested_id = str(source.tmdb_id)
+			requested_title, requested_year, requested_id = source_utils.clean_title(title), str(year), str(source.tmdb_id)
 			results = tmdb_tv_title_year(title).get('results', [])
 			for item in results:
 				candidate_year = (item.get('first_air_date') or '')[:4]
 				candidate_titles = (item.get('name') or '', item.get('original_name') or '')
-				if any(source_utils.clean_title(candidate_title) == requested_title for candidate_title in candidate_titles) and candidate_year and candidate_year != requested_year and str(item.get('id')) != requested_id: return True
-		except: pass
-		return False
+				if candidate_year == requested_year or str(item.get('id')) == requested_id: continue
+				if not any(source_utils.clean_title(candidate_title) == requested_title for candidate_title in candidate_titles): continue
+				if not candidate_year:
+					require_year = True
+					continue
+				conflicting_years.append(candidate_year)
+				require_year = self.tv_season_overlap(source, item.get('id')) or require_year
+		except: return True, conflicting_years
+		return require_year, conflicting_years
+
+	def tv_season_overlap(self, source, tmdb_id):
+		# Only a complete season list can establish that another series lacks this numbering.
+		try:
+			season = int(getattr(source, 'custom_season', None) or source.season)
+			if season <= 0 or not tmdb_id: return True
+			meta = tvshow_meta('tmdb_id', tmdb_id, settings.metadata_user_info(), get_datetime())
+			seasons, total = meta['season_data'], int(meta['total_seasons'])
+			if not isinstance(seasons, list) or not seasons or total < 1: return True
+			numbers = [int(item['season_number']) for item in seasons]
+			if any(number < 0 for number in numbers) or len(numbers) != len(set(numbers)): return True
+			if set(number for number in numbers if number > 0) != set(range(1, total + 1)): return True
+			return season in numbers
+		except: return True
 
 	def get_meta(self, source):
 		meta_user_info, current_date = settings.metadata_user_info(), get_datetime()
@@ -619,7 +651,9 @@ class ResultsProcessor:
 			results = self.special_filter(results, dolby_vision_filter_key, self.source.filter_dv)
 			results = self.special_filter(results, av1_filter_key, self.source.filter_av1)
 			results = self.sort_first(results)
-		return results
+		matched_hashes = {item.get('hash') for item in results if item.get('_identity_status') != 'unverified' and item.get('hash')}
+		self.source.unverified_results = [item for item in results if item.get('_identity_status') == 'unverified' and item.get('hash') not in matched_hashes]
+		return [item for item in results if item.get('_identity_status') != 'unverified']
 
 	def filter_results(self, results):
 		results = [i for i in results if i['quality'] in self.source.quality_filter]
@@ -889,7 +923,7 @@ class ExternalManager:
 	def eligible_cached_count(self, sources, cached_hashes):
 		try: eligible = self.eligibility_filter(list(sources)) if self.eligibility_filter else sources
 		except: eligible = sources
-		return len({i['hash'] for i in eligible if i.get('hash') in cached_hashes})
+		return len({i['hash'] for i in eligible if i.get('hash') in cached_hashes and i.get('_identity_status') != 'unverified'})
 
 	def thread_monitor(self, threads, status_line='', debrid=False):
 		len_threads = len(threads)
@@ -926,11 +960,13 @@ class ExternalManager:
 		uniqueHashes = uniqueHashes if uniqueHashes is not None else set()
 		for provider in sources:
 			try:
-				url = provider['url'].lower()
+				evidence = provider.get('identity_evidence') or {}
+				identity_group = ':unverified:%s:%s' % (evidence.get('file_sid', ''), evidence.get('file_path', '')) if provider.get('_identity_status') == 'unverified' else ''
+				url = provider['url'].lower() + identity_group
 				if url in uniqueURLs: continue
 				uniqueURLs.add(url)
 				if 'hash' in provider:
-					_hash = provider['hash'].lower()
+					_hash = provider['hash'].lower() + identity_group
 					if _hash in uniqueHashes: continue
 					uniqueHashes.add(_hash)
 					yield provider
@@ -969,6 +1005,7 @@ class ExternalSource:
 			self.mediatype, self.tmdb_id  = info['mediatype'], str(info['tmdb_id'])
 			self.year, aliases = info['year'], info['aliases']
 			self.require_tv_year = info.get('require_tv_year', False)
+			self.conflicting_tv_years = info.get('conflicting_tv_years', [])
 			self.season, self.episode = info['season'], info['episode']
 			self.total_seasons = info['total_seasons']
 			self.title, self.orig_title = safe_string(info['title']), info['title']
@@ -1015,8 +1052,9 @@ class ExternalSource:
 		if pack in pack_check: s_check, e_check = '' if pack == show_display else self.season, ''
 		else: s_check, e_check = self.season, self.episode
 		epc = ExternalProvidersCache()
+		cache_provider = provider + ':tv_identity_v3'
 		try:
-			outcome = epc.get(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
+			outcome = epc.get(cache_provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
 			if outcome is None:
 				instance = module()
 				data = self.provider_data(instance)
@@ -1029,23 +1067,40 @@ class ExternalSource:
 				else:
 					expiry_hours = self.single_expiry
 					sources = instance.sources(data, self.hostDict)
-				outcome = ProviderOutcome.from_provider(self.filter_ambiguous_tv_sources(sources, pack), instance)
-				outcome.sources = self.process_sources(provider, outcome.sources)
-				epc.set(provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, outcome, expiry_hours)
+				outcome = ProviderOutcome.from_provider(sources, instance)
+				epc.set(cache_provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check, outcome, expiry_hours)
 		finally: epc.close()
-		sources = self.filter_ambiguous_tv_sources(outcome.sources, pack)
+		sources = self.process_sources(provider, self.filter_ambiguous_tv_sources(outcome.sources, pack))
 		if sources:
 			if pack == season_display: sources = [i for i in sources if 'episode_start' not in i or i['episode_start'] <= self.episode <= i['episode_end']]
 			elif pack == show_display: sources = [i for i in sources if i['last_season'] >= self.season]
 			self.sources.extend(sources)
 
 	def filter_ambiguous_tv_sources(self, sources, pack):
-		if not self.require_tv_year: return sources
+		require_year = self.require_tv_year
 		expected_year = str(self.year)
+		conflicting_years = getattr(self, 'conflicting_tv_years', [])
 		filtered = []
-		for item in sources or []:
+		for original in sources or []:
+			item = original.copy()
+			evidence = item.get('identity_evidence') or {}
+			requested_imdb = str(getattr(self, 'data', {}).get('imdb') or '')
+			returned_imdb = str(evidence.get('imdb_id') or '')
+			catalogue_imdb = str(evidence.get('catalogue_imdb_id') or '')
+			if requested_imdb and any(value != requested_imdb for value in (returned_imdb, catalogue_imdb) if value): continue
+			file_sid = evidence.get('file_sid')
+			expected_sid = '%s:%s:%s' % (requested_imdb, getattr(self, 'season', ''), getattr(self, 'episode', ''))
+			if file_sid and str(file_sid) != expected_sid: continue
+			if evidence.get('file_match_required') and not file_sid: continue
 			name = '%s %s' % (item.get('name', ''), item.get('name_info', ''))
-			if re.search(r'(?<![A-Za-z0-9])%s(?![A-Za-z0-9])' % re.escape(expected_year), name): filtered.append(item)
+			def has_year(year): return re.search(r'(?<![A-Za-z0-9])%s(?![A-Za-z0-9])' % re.escape(year), name)
+			if has_year(expected_year): pass
+			elif any(has_year(year) for year in conflicting_years): continue
+			elif require_year:
+				item['_identity_status'] = 'unverified'
+				item['_identity_reason'] = 'Provider association; release does not identify the series year' if returned_imdb or file_sid else 'Release does not identify the series year'
+			else: pass
+			filtered.append(item)
 		return filtered
 
 	def provider_data(self, instance):

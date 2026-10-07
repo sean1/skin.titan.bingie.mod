@@ -51,8 +51,23 @@ class source:
 				if release is None: continue
 				url = stremio_utils.magnet_url(hash, name)
 				quality, info, dsize = stremio_utils.release_details(release['name_info'], url, byte_size=file.get('size'))
-				sources_append(stremio_utils.build_result('zilean', hash, name, release, quality, info, dsize))
+				item = stremio_utils.build_result('zilean', hash, name, release, quality, info, dsize)
+				item['identity_evidence'] = self._identity_evidence(file)
+				sources_append(item)
 			except:
 				source_utils.scraper_error('ZILEAN')
 				self.scrape_partial = True
 		return sources
+
+	@staticmethod
+	def _identity_evidence(file):
+		catalogue = file.get('imdb')
+		if not isinstance(catalogue, dict): catalogue = {}
+		evidence = {'provider': 'zilean', 'provenance': 'provider_catalogue'}
+		fields = (
+			('imdb_id', file.get('imdb_id') or catalogue.get('imdbId')), ('catalogue_imdb_id', catalogue.get('imdbId')),
+			('catalogue_year', catalogue.get('year')), ('release_year', file.get('year')), ('episode_date', file.get('date'))
+		)
+		for key, value in fields:
+			if value not in (None, '', 0): evidence[key] = value
+		return evidence

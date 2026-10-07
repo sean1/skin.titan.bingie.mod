@@ -35,6 +35,8 @@ class SourceResults(BaseDialog):
 		self.info_highlights_dict = kwargs.get('scraper_settings')
 		self.prescrape = kwargs.get('prescrape')
 		self.full_search_available = kwargs.get('full_search_available', False)
+		self.unverified_count = kwargs.get('unverified_count', 0)
+		self.unverified_view = kwargs.get('unverified_view', False)
 		if kwargs.get('filters_ignored'): self.filters_ignored = ignored_str % filters_ignored
 		else: self.filters_ignored = ''
 		self.make_items()
@@ -59,6 +61,9 @@ class SourceResults(BaseDialog):
 			self.selected = (None, '')
 			return self.close()
 		if action in self.selection_actions:
+			if chosen_listitem.getProperty('tikiskins.perform_full_search') == 'unverified':
+				self.selected = ('show_unverified', '')
+				return self.close()
 			if chosen_listitem.getProperty('tikiskins.perform_full_search') == 'true':
 				self.selected = ('perform_full_search', '')
 				return self.close()
@@ -71,12 +76,14 @@ class SourceResults(BaseDialog):
 			if not str(source.get('url')).startswith('magnet'): return
 			Source(source, self.meta).manual_add_magnet_to_cloud()
 		elif action == self.info_actions:
+			if chosen_listitem.getProperty('tikiskins.perform_full_search'): return
 			self.open_info_window(chosen_listitem)
 		elif action in self.context_actions:
+			if chosen_listitem.getProperty('tikiskins.perform_full_search'): return
 			highlight = chosen_listitem.getProperty('tikiskins.highlight')
 #			source = json.loads(chosen_listitem.getProperty('source'))
 			source = self._results[chosen_listitem.getProperty('source')]
-			kwargs = {'item': source, 'meta': self.meta, 'highlight': highlight, 'filter_applied': self.filter_applied}
+			kwargs = {'item': source, 'meta': self.meta, 'highlight': highlight, 'filter_applied': self.filter_applied, 'unverified_view': self.unverified_view}
 			choice = self.open_window(('windows.sources', 'ResultsContextMenu'), 'contextmenu.xml', **kwargs)
 			if choice is None: return
 			if 'clear_results_filter' in choice: return self.clear_filter()
@@ -84,6 +91,7 @@ class SourceResults(BaseDialog):
 			elif 'results_info' in choice:
 				self.open_info_window(chosen_listitem)
 			elif 'browse_packs' in choice:
+				if self.unverified_view or source.get('_identity_status') == 'unverified': return
 				link = Source(source, self.meta).browse_packs(highlight)
 				if link == 'cancel': return
 				source['unrestricted_link'] = link
@@ -116,6 +124,7 @@ class SourceResults(BaseDialog):
 					basic_quality, quality_icon = self.get_quality_and_path(lower(quality))
 					name = get('display_name') or 'N/A'
 					name = upper(name)
+					if self.unverified_view: name = 'UNVERIFIED | %s' % name
 					pack = get('package', 'false') in pack_check
 #					if pack: extra_info = '[B]PACK[/B] | %s' % get('extraInfo', '')
 #					else: extra_info = get('extraInfo', 'N/A')
@@ -175,14 +184,16 @@ class SourceResults(BaseDialog):
 			highlight_type = self.info_highlights_dict['highlight_type']
 			self.item_list = list(builder())
 			self.total_results = string(len(self.item_list))
-			if not self.prescrape and not self.full_search_available: return
-			count = len(self.item_list)
-			self._results[str(count + 1)] = {}
-			prescrape_listitem = self.make_listitem()
-			prescrape_listitem.setProperty('source', str(count + 1))
-			prescrape_listitem.setProperty('tikiskins.perform_full_search', 'true')
-			prescrape_listitem.setProperty('tikiskins.start_full_scrape', '[B]***%s***[/B]' % upper(start_full_scrape))
-			self.item_list.append(prescrape_listitem)
+			if self.unverified_count and not self.unverified_view:
+				unverified_listitem = self.make_listitem()
+				unverified_listitem.setProperty('tikiskins.perform_full_search', 'unverified')
+				unverified_listitem.setProperty('tikiskins.start_full_scrape', '[B]SHOW UNVERIFIED MATCHES (%s)[/B]' % self.unverified_count)
+				self.item_list.append(unverified_listitem)
+			if self.prescrape or self.full_search_available:
+				prescrape_listitem = self.make_listitem()
+				prescrape_listitem.setProperty('tikiskins.perform_full_search', 'true')
+				prescrape_listitem.setProperty('tikiskins.start_full_scrape', '[B]***%s***[/B]' % upper(start_full_scrape))
+				self.item_list.append(prescrape_listitem)
 		except: pass
 
 	def set_properties(self):
@@ -193,7 +204,9 @@ class SourceResults(BaseDialog):
 		self.setProperty('tikiskins.poster', self.poster)
 		self.setProperty('tikiskins.fanart', self.fanart)
 		self.setProperty('tikiskins.clearlogo', self.meta.get('clearlogo') or '')
-		self.setProperty('tikiskins.title', self.meta['title'])
+		title = self.meta['title']
+		if self.unverified_view: title = '%s — Unverified matches: series identity uncertain' % title
+		self.setProperty('tikiskins.title', title)
 		self.setProperty('tikiskins.plot', self.meta['plot'])
 		self.setProperty('tikiskins.total_results', self.total_results)
 		self.setProperty('tikiskins.filters_ignored', self.filters_ignored)
@@ -298,6 +311,7 @@ class ResultsContextMenu(BaseDialog):
 		self.highlight = kwargs['highlight']
 		self.meta = kwargs['meta']
 		self.filter_applied = kwargs['filter_applied']
+		self.unverified_view = kwargs.get('unverified_view', False)
 		self.item_list = []
 		self.selected = None
 		self.make_menu()
@@ -331,7 +345,7 @@ class ResultsContextMenu(BaseDialog):
 		else: append(self.make_contextmenu_item(filter_str, run_plugin_str, {'mode': 'results_filter'}))
 		append(self.make_contextmenu_item(extra_info_str, run_plugin_str, {'mode': 'results_info'}))
 		if 'Uncached' in cache_provider: return
-		if 'package' in self.item:
+		if 'package' in self.item and not self.unverified_view and self.item.get('_identity_status') != 'unverified':
 			append(self.make_contextmenu_item(browse_pack_str, run_plugin_str, {'mode': 'browse_packs'}))
 		if provider_source == 'torrent':
 			append(self.make_contextmenu_item(cloud_str, run_plugin_str, {'mode': 'manual_add_magnet_to_cloud'}))

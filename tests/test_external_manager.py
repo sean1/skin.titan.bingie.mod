@@ -170,6 +170,7 @@ class ExternalManagerTests(unittest.TestCase):
 		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
 		external.require_tv_year = True
 		external.year = '2026'
+		external.conflicting_tv_years = ['2016']
 		external.data = {'title': 'The Next Generation'}
 		sources = [
 			{'name': 'The.Grand.Tour.2016.S01E01.The.Holy.Trinity.1080p'},
@@ -178,7 +179,9 @@ class ExternalManagerTests(unittest.TestCase):
 			{'name': 'The.Grand.Tour.2026.S01E01.1080p'},
 			{'name': 'The.Grand.Tour.S01E01.The.Next.Generation.720p'},
 		]
-		self.assertEqual(external.filter_ambiguous_tv_sources(sources, 'episode'), sources[3:4])
+		filtered = external.filter_ambiguous_tv_sources(sources, 'episode')
+		self.assertEqual([item['name'] for item in filtered], [item['name'] for item in sources[1:]])
+		self.assertEqual([item.get('_identity_status') for item in filtered], ['unverified', 'unverified', None, 'unverified'])
 
 	def test_cached_same_title_tv_sources_are_filtered_before_use(self):
 		outcome = types.SimpleNamespace(sources=[{'name': 'The.Grand.Tour.S01E01.2160p'}, {'name': 'The.Grand.Tour.2026.S01E01.1080p'}])
@@ -191,8 +194,32 @@ class ExternalManagerTests(unittest.TestCase):
 		external.mediatype, external.tmdb_id, external.title, external.year = 'episode', '329471', 'The Grand Tour', '2026'
 		external.season, external.episode = '1', '1'
 		external.require_tv_year = True
-		with mock.patch.object(SOURCES, 'ExternalProvidersCache', Cache): external.get_episode_source('cached', object, 'episode')
-		self.assertEqual(external.sources, outcome.sources[1:])
+		with mock.patch.object(SOURCES, 'ExternalProvidersCache', Cache), mock.patch.object(external, 'process_sources', side_effect=lambda provider, sources: sources): external.get_episode_source('cached', object, 'episode')
+		self.assertEqual([item['name'] for item in external.sources], [item['name'] for item in outcome.sources])
+		self.assertEqual(external.sources[0]['_identity_status'], 'unverified')
+
+	def test_provider_associations_do_not_bypass_ambiguous_year_and_wrong_ids_reject(self):
+		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
+		external.require_tv_year, external.year, external.conflicting_tv_years = True, '2002', ['1978']
+		external.data, external.season, external.episode = {'imdb': 'tt123'}, '33', '1'
+		sources = [
+			{'name': 'Top.Gear.S33E01', 'identity_evidence': {'imdb_id': 'tt123'}},
+			{'name': 'Top.Gear.2002.S33E01', 'identity_evidence': {'catalogue_imdb_id': 'tt999'}},
+			{'name': 'Top.Gear.S33E01', 'identity_evidence': {'file_sid': 'tt123:33:2', 'file_match_required': True}},
+			{'name': 'Top.Gear.S33E01', 'identity_evidence': {'file_match_required': True}},
+			{'name': 'Top.Gear.S33E01', 'identity_evidence': {'file_sid': 'tt123:33:1', 'file_match_required': True}},
+		]
+		filtered = external.filter_ambiguous_tv_sources(sources, '')
+		self.assertEqual(len(filtered), 2)
+		self.assertTrue(all(item['_identity_status'] == 'unverified' for item in filtered))
+		self.assertEqual(filtered[1]['identity_evidence']['file_sid'], 'tt123:33:1')
+
+	def test_uncertain_sources_do_not_satisfy_core_threshold_or_shadow_matched_hash(self):
+		manager = self.manager()
+		uncertain = {'url': 'magnet:a', 'hash': 'a', '_identity_status': 'unverified'}
+		matched = {'url': 'magnet:a', 'hash': 'a'}
+		self.assertEqual(manager.eligible_cached_count([uncertain], {'a'}), 0)
+		self.assertEqual(list(manager.process_duplicates([uncertain, matched])), [uncertain, matched])
 
 	def test_meta_builder_detects_exact_title_tv_collision(self):
 		results = {'results': [
@@ -204,6 +231,66 @@ class ExternalManagerTests(unittest.TestCase):
 		with mock.patch.dict(sys.modules, {'indexers.tmdb_api': tmdb_api}):
 			self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'The Grand Tour', '2026'))
 			self.assertFalse(SOURCES.MetaBuilder().require_tv_year(source, 'A Different Show', '2026'))
+
+	def test_tv_collision_relaxes_only_with_complete_nonoverlapping_seasons(self):
+		results = {'results': [
+			{'id': 45, 'name': 'Top Gear', 'first_air_date': '2002-10-20'},
+			{'id': 4498, 'name': 'Top Gear', 'first_air_date': '1978-07-13'},
+		]}
+		source = types.SimpleNamespace(mediatype='episode', tmdb_id='45', season='33', custom_season='')
+		tmdb_api = module_stub(tmdb_tv_title_year=lambda title: results)
+		complete = {'total_seasons': 2, 'season_data': [{'season_number': 1}, {'season_number': 2}]}
+		with mock.patch.dict(sys.modules, {'indexers.tmdb_api': tmdb_api}), mock.patch.object(SOURCES.settings, 'metadata_user_info', return_value={}, create=True):
+			for metadata, expected in [(complete, False), ({}, True), (None, True), ({'total_seasons': 33, 'season_data': [{'season_number': 1}]}, True), ({'total_seasons': 1, 'season_data': [{'season_number': 1}, {'season_number': 1}]}, True)]:
+				with self.subTest(metadata=metadata), mock.patch.object(SOURCES, 'tvshow_meta', return_value=metadata):
+					self.assertEqual(SOURCES.MetaBuilder().tv_identity_policy(source, 'Top Gear', '2002'), (expected, ['1978']))
+			with mock.patch.object(SOURCES, 'tvshow_meta', return_value=complete):
+				source.custom_season = '1'
+				self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'Top Gear', '2002'))
+
+	def test_overlapping_grand_tour_season_and_specials_keep_year_requirement(self):
+		api = module_stub(tmdb_tv_title_year=lambda title: {'results': [{'id': 46952, 'name': 'The Grand Tour', 'first_air_date': '2016-11-17'}]})
+		complete = {'total_seasons': 2, 'season_data': [{'season_number': 1}, {'season_number': 2}]}
+		with mock.patch.dict(sys.modules, {'indexers.tmdb_api': api}), mock.patch.object(SOURCES.settings, 'metadata_user_info', return_value={}, create=True), mock.patch.object(SOURCES, 'tvshow_meta', return_value=complete):
+			for season in ('1', '0'):
+				source = types.SimpleNamespace(mediatype='episode', tmdb_id='329471', season=season)
+				with self.subTest(season=season): self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'The Grand Tour', '2026'))
+
+	def test_unknown_year_or_metadata_error_keeps_tv_collision_strict(self):
+		source = types.SimpleNamespace(mediatype='episode', tmdb_id='45', season='33')
+		for date in ['', '1978-07-13']:
+			api = module_stub(tmdb_tv_title_year=lambda title: {'results': [{'id': 4498, 'name': 'Top Gear', 'first_air_date': date}]})
+			with self.subTest(date=date), mock.patch.dict(sys.modules, {'indexers.tmdb_api': api}), mock.patch.object(SOURCES, 'tvshow_meta', side_effect=RuntimeError('unavailable')):
+				self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'Top Gear', '2002'))
+
+	def test_relaxed_tv_collision_keeps_yearless_sources_but_rejects_wrong_year_for_all_packs(self):
+		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
+		external.require_tv_year, external.year, external.conflicting_tv_years = False, '2002', ['1978', '2010']
+		sources = [{'name': 'Top.Gear.S33E01.1080p'}, {'name': 'Top.Gear.2002.S33E01.1080p'}, {'name': 'Top.Gear.1978.S33E01.1080p'}, {'name': 'Top.Gear.2010.S33E01.1080p'}, {'name': 'Top.Gear.2002-2010.S01-S15.1080p'}]
+		for pack in ('episode', SOURCES.season_display, SOURCES.show_display):
+			with self.subTest(pack=pack): self.assertEqual(external.filter_ambiguous_tv_sources(sources, pack), sources[:2] + sources[4:])
+
+	def test_episode_cache_policy_refreshes_legacy_rows_and_preserves_unfiltered_sources(self):
+		calls = []
+		class Cache:
+			def get(self, provider, *args):
+				calls.append(('get', provider))
+				return None
+			def set(self, provider, *args): calls.append(('set', provider, args[-2].sources[:]))
+			def close(self): pass
+		class Provider:
+			def sources(self, *args): return [{'name': 'The.Grand.Tour.S01E01.1080p'}, {'name': 'The.Grand.Tour.2026.S01E01.1080p'}]
+		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
+		external.mediatype, external.tmdb_id, external.title, external.year = 'episode', '329471', 'The Grand Tour', '2026'
+		external.season, external.episode, external.single_expiry, external.require_tv_year = '1', '1', 1, True
+		with mock.patch.object(SOURCES, 'ExternalProvidersCache', Cache), mock.patch.object(external, 'provider_data', return_value={}), mock.patch.object(external, 'process_sources', side_effect=lambda provider, sources: sources) as process:
+			external.get_episode_source('torrentio', Provider, 'episode')
+		self.assertEqual(calls[0], ('get', 'torrentio:tv_identity_v3'))
+		self.assertEqual(calls[1][1], 'torrentio:tv_identity_v3')
+		self.assertEqual(len(calls[1][2]), 2)
+		self.assertEqual([item['name'] for item in external.sources], [item['name'] for item in calls[1][2]])
+		self.assertEqual(external.sources[0]['_identity_status'], 'unverified')
+		process.assert_called_once_with('torrentio', external.sources)
 
 	def test_multi_debrid_results_keep_provider_specific_cache_labels(self):
 		FakeDebridCheck.cached_by_provider = {'realdebrid': {'torrentio-0'}, 'alldebrid': {'torrentio-1'}, 'torbox': {'torrentio-0'}}

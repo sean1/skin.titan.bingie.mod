@@ -187,21 +187,22 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
 
 
-	def test_movie_detail_shelf_focus_does_not_offer_an_autoplay_candidate(self):
+	def test_detail_shelf_focus_does_not_offer_an_autoplay_candidate(self):
 		self.preview._preview_context = Mock(return_value='info_card')
-		self.properties['PovInfoType'] = 'movie'
-		self.entry.kodi_utils.get_infolabel = Mock()
+		for media_type in ('movie', 'tvshow'):
+			with self.subTest(media_type=media_type):
+				self.properties['PovInfoType'] = media_type
+				self.entry.kodi_utils.get_infolabel = Mock()
+				self.assertIsNone(self.preview._candidate())
+				self.entry.kodi_utils.get_infolabel.assert_not_called()
 
-		self.assertIsNone(self.preview._candidate())
-		self.entry.kodi_utils.get_infolabel.assert_not_called()
-
-	def test_movie_detail_waits_for_explicit_trailer_request(self):
-		for context in ('info', 'dialog'):
-			with self.subTest(context=context):
+	def test_detail_waits_for_explicit_trailer_request(self):
+		for context, media_type in ((context, media_type) for context in ('info', 'dialog') for media_type in ('movie', 'tvshow')):
+			with self.subTest(context=context, media_type=media_type):
 				self.properties.clear()
 				self.preview = self._new_preview()
-				self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '123', 'PovInfoTrailer': 'trailer-url'})
-				labels = {'Window.Property(PovInfoType)': 'movie', 'Window.Property(PovInfoTmdb)': '123', 'ListItem.Trailer': 'trailer-url'}
+				self.properties.update({'PovInfoType': media_type, 'PovInfoTmdb': '123', 'PovInfoTrailer': 'trailer-url'})
+				labels = {'Window.Property(PovInfoType)': media_type, 'Window.Property(PovInfoTmdb)': '123', 'ListItem.Trailer': 'trailer-url'}
 				self.entry.kodi_utils.get_infolabel = lambda label: labels.get(label, '')
 				self.preview._preview_context = Mock(return_value=context)
 				self.preview._start_preview_preparation = Mock()
@@ -214,7 +215,7 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.properties[self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY] = 'true'
 				self.preview.tick()
 
-				self.preview._start_preview_preparation.assert_called_once_with('info|movie|123', 'trailer-url')
+				self.preview._start_preview_preparation.assert_called_once_with('info|%s|123' % media_type, 'trailer-url')
 				self.assertNotIn(self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY, self.properties)
 
 	def test_listing_candidate_rejects_invalid_media_before_dependent_reads(self):

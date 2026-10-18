@@ -38,6 +38,22 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">False</property>
 		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property>
+			<label>Search</label>
+			<label2>Search</label2>
+			<icon>special://skin/resources/skins/Default/media/search.png</icon>
+			<thumb />
+			<property name="labelID">search</property>
+			<property name="defaultID">search</property>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term</property>
+			<property name="submenuVisibility">search</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
 		<item id="2">
 			<property name="id">$NUMBER[2]</property>
 			<label>$LOCALIZE[342]</label>
@@ -46,15 +62,14 @@
 			<thumb />
 			<property name="labelID">movies</property>
 			<property name="defaultID">movies</property>
-			<onclick>ActivateWindow(1111,return)</onclick>
-			<property name="path">ActivateWindow(1111,return)</property>
-			<property name="list">1111</property>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=movie)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=movie)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=movie</property>
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
 			<property name="submenuVisibility">movies</property>
 			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">True</property>
+			<property name="hasSubmenu">False</property>
 		</item>
 		<item id="3">
 			<property name="id">$NUMBER[3]</property>
@@ -64,15 +79,14 @@
 			<thumb />
 			<property name="labelID">tvshows</property>
 			<property name="defaultID">tvshows</property>
-			<onclick>ActivateWindow(1110,return)</onclick>
-			<property name="path">ActivateWindow(1110,return)</property>
-			<property name="list">1110</property>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow</property>
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="$EXP[IsKnownMenuEntryPath]">SetFocus($VAR[MenuEntryOverrideFocus])</onclick>
 			<property name="submenuVisibility">tvshows</property>
 			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">True</property>
+			<property name="hasSubmenu">False</property>
 		</item>
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
@@ -110,106 +124,6 @@
 		</item>
 	</include>
 	<include name="StaticSubmenu">
-		<item id="1">
-			<property name="id">$NUMBER[1]</property>
-			<property name="mainmenuid">3</property>
-			<label>Browse &amp; Refine</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">browse-refine-tv-shows</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_popular</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="2">
-			<property name="id">$NUMBER[2]</property>
-			<property name="mainmenuid">3</property>
-			<label>Trending TV Shows This Week</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">trending-tv-shows-this-week</property>
-			<property name="defaultID">369</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
-			<property name="mainmenuid">3</property>
-			<label>Search</label>
-			<label2>TV Shows</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">137</property>
-			<property name="defaultID">137</property>
-			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show)</onclick>
-			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=tv_show</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible>
-			<property name="group">tvshows</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="1">
-			<property name="id">$NUMBER[1]</property>
-			<property name="mainmenuid">2</property>
-			<label>Browse &amp; Refine</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">browse-refine-movies</property>
-			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_popular</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="2">
-			<property name="id">$NUMBER[2]</property>
-			<property name="mainmenuid">2</property>
-			<label>Trending Movies This Week</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">trending-movies-this-week</property>
-			<property name="defaultID">135</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=tmdb_movies_trending</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
-		<item id="3">
-			<property name="id">$NUMBER[3]</property>
-			<property name="mainmenuid">2</property>
-			<label>Search</label>
-			<label2>Movies</label2>
-			<icon>DefaultShortcut.png</icon>
-			<thumb />
-			<property name="labelID">137</property>
-			<property name="defaultID">137</property>
-			<onclick>SetFocus(1510)</onclick>
-			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie)</onclick>
-			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=get_search_term&amp;mediatype=movie</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)</visible>
-			<property name="group">movies</property>
-			<property name="isSubmenu">True</property>
-		</item>
 		<item id="1">
 			<property name="id">$NUMBER[1]</property>
 			<property name="mainmenuid">5</property>

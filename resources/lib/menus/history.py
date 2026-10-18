@@ -17,6 +17,9 @@ def search_history(params):
 	return get_search_term(search_params[params['action']])
 
 def get_search_term(params):
+	if params.get('search_type', 'media_title') == 'media_title':
+		from windows.search import show_search
+		return show_search(params)
 	kodi_utils.close_all_dialog()
 	mediatype = params.get('mediatype', '')
 	search_type = params.get('search_type', 'media_title')

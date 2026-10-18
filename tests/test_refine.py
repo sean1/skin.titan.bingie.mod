@@ -22,6 +22,7 @@ def load_refine_module():
 	kodi_utils.get_property = lambda key: properties.get(key, '')
 	kodi_utils.set_property = lambda key, value: properties.__setitem__(key, value)
 	kodi_utils.get_infolabel = lambda key: 'movies'
+	kodi_utils.get_visibility = Mock(return_value=False)
 	kodi_utils.media_path = lambda path: path
 	kodi_utils.build_url = lambda params: 'plugin://skin.titan.bingie.lite/?%s' % urlencode(params)
 	kodi_utils.execute_builtin = Mock(side_effect=lambda command: command)
@@ -45,6 +46,45 @@ def load_refine_module():
 class RefineTests(unittest.TestCase):
 	def setUp(self):
 		self.refine = load_refine_module()
+
+	def test_browse_and_clear_reset_only_the_selected_section_and_return_to_weekly_trending(self):
+		for mediatype, mode, action, name in (
+			('movie', 'build_movie_list', 'tmdb_movies_trending', 'Trending+Movies+This+Week'),
+			('tvshow', 'build_tvshow_list', 'tmdb_tv_trending', 'Trending+TV+Shows+This+Week')
+		):
+			for operation in ('browse', 'clear'):
+				with self.subTest(mediatype=mediatype, operation=operation):
+					other_type = 'tvshow' if mediatype == 'movie' else 'movie'
+					other = self.refine.Refine({'mediatype': other_type})
+					other.draft['rating'] = '8.0'
+					other.apply()
+					menu = self.refine.Refine({'mediatype': mediatype})
+					menu.draft.update({'genres': '35', 'genres_label': 'Comedy', 'rating': '7.0'})
+					menu.apply()
+					command = getattr(menu, operation)()
+					self.assertIn('ActivateWindow(Videos,', command)
+					for fragment in ('mode=' + mode, 'action=' + action, 'name=' + name): self.assertIn(fragment, command)
+					self.assertNotIn('query=', command)
+					self.assertNotIn('new_page=', command)
+					values = self.refine.Refine({'mediatype': mediatype}).initialize()
+					self.assertEqual((values['Genres'], values['Rating'], values['Count'], values['Changed']), ('Any', 'Any', '0', 'false'))
+					self.assertEqual(json.loads(self.refine._properties['Bingie.Refine.Applied.%s' % mediatype]), self.refine.DEFAULT_DRAFT)
+					self.assertEqual(self.refine.Refine({'mediatype': other_type}).initialize()['Rating'], '8.0')
+
+	def test_applying_without_active_refinements_returns_to_trending(self):
+		for mediatype, action in (('movie', 'tmdb_movies_trending'), ('tvshow', 'tmdb_tv_trending')):
+			with self.subTest(mediatype=mediatype):
+				self.assertIn('action=' + action, self.refine.Refine({'mediatype': mediatype}).apply())
+
+	def test_clear_replaces_the_active_listing_so_kodi_reloads_trending(self):
+		self.refine.kodi_utils.get_visibility.return_value = True
+		for mediatype, action in (('movie', 'tmdb_movies_trending'), ('tvshow', 'tmdb_tv_trending')):
+			with self.subTest(mediatype=mediatype):
+				command = self.refine.Refine({'mediatype': mediatype}).clear()
+				self.assertTrue(command.startswith('Container.Update(plugin://skin.titan.bingie.lite/'))
+				self.assertIn('action=' + action, command)
+				self.assertTrue(command.endswith(',replace)'))
+				self.refine.kodi_utils.execute_builtin.assert_any_call('SetFocus(523)')
 
 
 

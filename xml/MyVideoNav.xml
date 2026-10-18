@@ -151,7 +151,7 @@
                 </control>
                 <control type="button" id="9109">
                     <include>SideBladeMenuButton</include>
-                    <label>CLEAR ALL</label>
+                    <label>CLEAR REFINEMENTS</label>
                     <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.clear)</onclick>
                 </control>
             </control>

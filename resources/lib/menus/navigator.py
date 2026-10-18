@@ -64,8 +64,7 @@ class Navigator:
 	def search(self):
 		search_str, people_str = ls(32450), ls(32507)
 		coll_str, s_n_ins = '%s %s (%s)' % (mov_str, ls(32499), ls(32068)), _in_str % (search_str.upper(), '')
-		self._add_item({'mode': 'get_search_term', 'mediatype': 'movie',                                            'name': mov_str   }, 'search_movie.png' , s_n_ins, False)
-		self._add_item({'mode': 'get_search_term', 'mediatype': 'tv_show',                                          'name': tv_str    }, 'search_tv.png'    , s_n_ins, False)
+		self._add_item({'mode': 'get_search_term', 'name': '%s & %s' % (mov_str, tv_str)}, 'search.png', s_n_ins, False)
 		self._add_item({'mode': 'get_search_term', 'search_type': 'people',                                        'name': people_str}, 'search_people.png', s_n_ins, False)
 		self._add_item({'mode': 'get_search_term', 'search_type': 'tmdb_collections', 'mediatype': 'movie',         'name': coll_str  }, 'search_tmdb.png'  , s_n_ins, False)
 		self._end_directory()

@@ -182,11 +182,22 @@ class Refine:
 		self.draft['network_label'], self.draft['network'] = choice if choice[1] else ('', '')
 		return self._save()
 
-	def clear(self):
+	def browse(self):
 		self.draft = dict(DEFAULT_DRAFT)
-		return self._save()
+		kodi_utils.set_property(APPLIED_STATE_PROPERTY % self.mediatype, json.dumps(self.draft, sort_keys=True))
+		self._save()
+		mode, action, name = ('build_movie_list', 'tmdb_movies_trending', 'Trending Movies This Week') if self.mediatype == 'movie' else ('build_tvshow_list', 'tmdb_tv_trending', 'Trending TV Shows This Week')
+		url = kodi_utils.build_url({'mode': mode, 'action': action, 'name': name, 'iconImage': 'trending.png'})
+		if kodi_utils.get_visibility('Window.IsActive(Videos)'):
+			kodi_utils.execute_builtin('SetFocus(523)')
+			return kodi_utils.execute_builtin('Container.Update(%s,replace)' % url)
+		return kodi_utils.execute_builtin('ActivateWindow(Videos,%s,return)' % url)
+
+	def clear(self):
+		return self.browse()
 
 	def apply(self):
+		if not self._active_count(): return self.browse()
 		self._save()
 		kodi_utils.set_property(APPLIED_STATE_PROPERTY % self.mediatype, json.dumps(self.draft, sort_keys=True))
 		self._publish()

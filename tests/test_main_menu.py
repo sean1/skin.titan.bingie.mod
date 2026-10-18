@@ -12,6 +12,24 @@ class MainMenuTests(unittest.TestCase):
 	def setUpClass(cls):
 		cls.root = ET.parse(ROOT / 'xml' / 'IncludesStaticMenus.xml').getroot()
 
+	def test_combined_search_is_a_main_menu_destination_without_duplicate_submenu_entries(self):
+		items = self.root.findall("include[@name='StaticMainMenu']/item")
+		self.assertEqual([item.findtext('label2') for item in items], ['Home', 'Search', 'Movies', 'TV shows', 'My Videos', 'My List'])
+		search = items[1]
+		self.assertEqual(search.findtext("property[@name='hasSubmenu']"), 'False')
+		self.assertIn('RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term)', [action.text for action in search.findall('onclick')])
+		self.assertFalse(any(item.findtext('label') == 'Search' for item in self.root.findall("include[@name='StaticSubmenu']/item")))
+		self.assertEqual(len({item.get('id') for item in items}), len(items))
+
+	def test_movies_and_tv_open_combined_browsing_directly_without_submenu_items(self):
+		for label, mediatype in (('Movies', 'movie'), ('TV shows', 'tvshow')):
+			with self.subTest(mediatype=mediatype):
+				item = next(item for item in self.root.findall("include[@name='StaticMainMenu']/item") if item.findtext('label2') == label)
+				url = 'plugin://skin.titan.bingie.lite/?mode=refine.browse&mediatype=' + mediatype
+				self.assertIn('RunPlugin(%s)' % url, [action.text for action in item.findall('onclick')])
+				self.assertEqual(item.findtext("property[@name='hasSubmenu']"), 'False')
+				self.assertFalse(any(subitem.findtext("property[@name='mainmenuid']") == item.get('id') for subitem in self.root.findall("include[@name='StaticSubmenu']/item")))
+
 
 	def test_my_list_quick_submenu_opens_separate_saved_movie_and_show_views(self):
 		static_submenu = self.root.find("include[@name='StaticSubmenu']")

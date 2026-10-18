@@ -42,9 +42,10 @@ class TmdbSearchParameterTests(unittest.TestCase):
 		self.cache_object.reset_mock()
 
 
-	def test_seven_media_search_builders_keep_cache_keys_and_separate_parameters(self):
+	def test_media_search_builders_keep_cache_keys_and_separate_parameters(self):
 		query = 'A&B + #1'
 		cases = (
+			(self.tmdb.tmdb_media_search, (query, 2), 'tmdb_media_search_%s_2' % query, '/search/multi', {'language': 'en-US', 'query': query, 'page': 2, 'include_adult': False}),
 			(self.tmdb.tmdb_keyword_id, (query,), 'tmdb_keyword_id_%s' % query, '/search/keyword', {'query': query}),
 			(self.tmdb.tmdb_company_id, (query,), 'tmdb_company_id_%s' % query, '/search/company', {'query': query}),
 			(self.tmdb.tmdb_movies_title_year, (query, 2024), 'tmdb_movies_title_year_%s_2024' % query, '/search/movie', {'language': 'en-US', 'query': query, 'year': 2024}),

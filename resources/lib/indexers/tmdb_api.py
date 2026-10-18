@@ -208,6 +208,12 @@ def tmdb_movies_search(query, page_no):
 	params = {'language': 'en-US', 'query': query, 'page': page_no}
 	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_4_HOURS)
 
+def tmdb_media_search(query, page_no):
+	string = 'tmdb_media_search_%s_%s' % (query, page_no)
+	url = '%s/search/multi' % base_url
+	params = {'language': 'en-US', 'query': query, 'page': page_no, 'include_adult': False}
+	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_4_HOURS)
+
 def tmdb_movies_search_collections(query, page_no):
 	string = 'tmdb_movies_search_collections_%s_%s' % (query, page_no)
 	url = '%s/search/collection' % base_url

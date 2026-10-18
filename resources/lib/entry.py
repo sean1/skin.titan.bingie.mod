@@ -175,6 +175,8 @@ class TrailerPreview:
 		self.identity = ''
 		self.focused_at = 0.0
 		self.played = False
+		self.focus_token = None
+		self.preview_token = None
 		self.active = False
 		self.playback_started = False
 		self.preview_ready = False
@@ -190,7 +192,6 @@ class TrailerPreview:
 		self.pending_stop_player = None
 		self.pending_stop_deadline = 0.0
 		self.pending_stop_requested = False
-		self.fullscreen_exit_at = 0.0
 		self.resolved_trailers = OrderedDict()
 		self.resolved_focused_metadata = OrderedDict()
 		self.focused_metadata_retries = OrderedDict()
@@ -205,6 +206,7 @@ class TrailerPreview:
 		self.prepare_generation = 0
 		self.prepare_identity = ''
 		self.prepare_trailer = ''
+		self.prepare_token = None
 		self.closed = False
 		self.focused_metadata_published = False
 		self.manifest_server = None
@@ -247,6 +249,7 @@ class TrailerPreview:
 
 	def pause(self):
 		self.lookup_pending = None
+		self.focus_token = None
 		self._invalidate_preparation()
 		self._clear_focused_metadata()
 		self._stop_pending_preview(monotonic())
@@ -270,35 +273,28 @@ class TrailerPreview:
 			self._stop_pending_preview(now)
 			return self.active or bool(self.pending_stop_trailer) or self._preparing()
 		self._stop_pending_preview(now)
-		if self._restore_preview_window(now): return True
-		self._consume_prepare_results()
-		candidate = self._candidate()
+		candidate, token = self._eligible_candidate()
+		focus_changed = token != self.focus_token or (candidate[0] if candidate else '') != self.identity
+		if focus_changed: self._track_candidate(candidate, now, token)
 		manual_required = bool(candidate and candidate[4])
 		if get_property(TRAILER_PREVIEW_REQUEST_PROPERTY):
 			clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
-			if manual_required and (not self.active or candidate[0] != self.identity):
+			if manual_required and (not self.active or token != self.preview_token):
 				self.manual_identity = candidate[0]
 				self.played = False
 		manual_requested = bool(manual_required and self.manual_identity == candidate[0])
 		if self.pending_stop_trailer:
-			if not candidate:
-				self.manual_identity = ''
-				self._track_candidate(None, now)
-			elif candidate[0] != self.identity: self._track_candidate(candidate, now)
 			return True
 		if self.active:
-			if self.cancelled or not self._preview_window_active():
+			if token is None or token != self.preview_token:
 				self._stop_preview()
-				self._track_candidate(candidate, now)
 				return self.active or bool(candidate) or bool(self.pending_stop_trailer)
-			if self._preview_navigation_away() or not candidate or candidate[0] != self.identity:
-				self._begin_preview_stop(now)
-				self._stop_pending_preview(now)
-				self._track_candidate(candidate, now)
-				return bool(candidate) or bool(self.pending_stop_trailer)
 			if kodi_utils.get_visibility('Player.HasVideo'):
 				owns_preview = self._owns_preview()
-				if owns_preview is None and now - self.launched_at < 10.0: return True
+				if owns_preview is None:
+					if now - self.launched_at < 10.0: return True
+					self._stop_preview()
+					return bool(self.pending_stop_trailer)
 				if not owns_preview:
 					self._finish_preview()
 					return False
@@ -314,10 +310,11 @@ class TrailerPreview:
 			return True
 		if not candidate:
 			self.manual_identity = ''
-			self._track_candidate(None, now)
+			self._consume_prepare_results()
 			return bool(self.pending_stop_trailer) or self._preparing()
-		if candidate[0] != self.identity:
-			self._track_candidate(candidate, now)
+		self._consume_prepare_results()
+		if self.active: return True
+		if focus_changed:
 			if candidate[5] and candidate[0] in self.resolved_focused_metadata:
 				self._ensure_focused_metadata(candidate[0], candidate[2], candidate[3])
 			if not manual_requested: return True
@@ -341,6 +338,35 @@ class TrailerPreview:
 				return False
 		self._start_preview_preparation(candidate[0], trailer)
 		return True
+
+	def _screen_identity(self):
+		return kodi_utils.xbmcgui.getCurrentWindowId(), kodi_utils.xbmcgui.getCurrentWindowDialogId()
+
+	def _autoplay_card(self):
+		control = kodi_utils.get_infolabel('System.CurrentControlID').strip()
+		if not control.isdecimal() or int(control) <= 0: return None
+		position = kodi_utils.get_infolabel('Container(%s).CurrentItem' % control).strip()
+		if not position.isdecimal() or int(position) <= 0: return None
+		return control, position, kodi_utils.get_infolabel('Container(%s).FolderPath' % control).strip()
+
+	def _eligible_candidate(self):
+		if self.closed or self.cancelled or get_property('pov_lite_pause_services') or get_property('PovInfoTransition'): return None, None
+		if not self._preview_window_active(): return None, None
+		screen = self._screen_identity()
+		candidate = self._candidate()
+		if not candidate: return None, None
+		modal = kodi_utils.get_visibility('System.HasActiveModalDialog')
+		if candidate[4]:
+			if modal and not kodi_utils.get_visibility('Window.IsModalDialogTopmost(DialogVideoInfo.xml)'): return None, None
+			token = 'manual', screen, candidate[0]
+		else:
+			if modal or self._preview_navigation_away(): return None, None
+			if kodi_utils.get_visibility('Window.IsVisible(busydialog)') or kodi_utils.get_visibility('Window.IsVisible(busydialognocancel)'): return None, None
+			card = self._autoplay_card()
+			if card is None or card != self._autoplay_card(): return None, None
+			token = 'auto', screen, card, candidate[0]
+		if candidate != self._candidate() or screen != self._screen_identity(): return None, None
+		return candidate, token
 
 	def _candidate(self):
 		context = self._preview_context()
@@ -401,6 +427,7 @@ class TrailerPreview:
 			if not kodi_utils.get_visibility(TRAILER_PREVIEW_SPECIAL_CONTEXTS): return 'listing'
 		for _ in range(2):
 			if kodi_utils.get_visibility('Window.IsActive(1123)'):
+				if get_property('PovInfoType').strip().lower() in ('movie', 'tvshow'): return 'info'
 				if kodi_utils.get_visibility(TRAILER_PREVIEW_INFO_CARD_FOCUS): return 'info_card'
 				if kodi_utils.get_visibility(TRAILER_PREVIEW_INFO_CAST_FOCUS): return ''
 				return 'info'
@@ -432,15 +459,18 @@ class TrailerPreview:
 	def _item_label(self, label):
 		return kodi_utils.get_infolabel('Container.ListItem.%s' % label).strip() or kodi_utils.get_infolabel('ListItem.%s' % label).strip()
 
-	def _track_candidate(self, candidate, now):
+	def _track_candidate(self, candidate, now, token=None):
 		identity = candidate[0] if candidate else ''
 		if self.lookup_pending and self.lookup_pending[0] != identity: self.lookup_pending = None
 		if identity != self.identity:
 			self._clear_focused_metadata()
-			if identity != self.prepare_identity: self._invalidate_preparation()
+		if identity != self.identity or token != self.focus_token:
+			self._invalidate_preparation()
+			self.manual_identity = ''
 		if self.suppressed_identity and identity != self.suppressed_identity: self.suppressed_identity = ''
 		if self.manual_identity and identity != self.manual_identity: self.manual_identity = ''
 		self.identity = identity
+		self.focus_token = token
 		self.focused_at = now
 		self.played = bool(identity and identity == self.suppressed_identity)
 
@@ -593,9 +623,12 @@ class TrailerPreview:
 		self.prepare_generation += 1
 		self.prepare_identity = ''
 		self.prepare_trailer = ''
+		self.prepare_token = None
 		self.prepare_pending = None
 
 	def _start_preview_preparation(self, identity, trailer):
+		candidate, token = self._eligible_candidate()
+		if token is None or token != self.focus_token or not self._candidate_matches_preparation(candidate, identity, trailer): return
 		if identity == self.prepare_identity and trailer == self.prepare_trailer:
 			self._start_pending_preparation()
 			return
@@ -603,6 +636,7 @@ class TrailerPreview:
 		generation = self.prepare_generation
 		self.prepare_identity = identity
 		self.prepare_trailer = trailer
+		self.prepare_token = self.focus_token
 		self.prepare_pending = generation, identity, trailer
 		clear_property(TRAILER_RESOLVED_PROPERTY)
 		self._start_pending_preparation()
@@ -654,10 +688,12 @@ class TrailerPreview:
 		self._start_pending_preparation()
 		if current_result is None: return
 		generation, identity, trailer, prepared, error, _ = current_result
+		token = self.prepare_token
 		self.prepare_identity = ''
 		self.prepare_trailer = ''
-		candidate = self._candidate()
-		if not self._candidate_matches_preparation(candidate, identity, trailer) or self.active or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'): return
+		self.prepare_token = None
+		candidate, current_token = self._eligible_candidate()
+		if token is None or token != current_token or not self._candidate_matches_preparation(candidate, identity, trailer) or self.active or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'): return
 		if candidate[4] and self.manual_identity != identity: return
 		if error is not None:
 			clear_property(TRAILER_RESOLVED_PROPERTY)
@@ -676,8 +712,8 @@ class TrailerPreview:
 			self.manual_identity = ''
 			self.played = True
 			return
-		candidate = self._candidate()
-		if not self._candidate_matches_preparation(candidate, identity, trailer) or self.active or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'):
+		candidate, current_token = self._eligible_candidate()
+		if token != current_token or not self._candidate_matches_preparation(candidate, identity, trailer) or self.active or self.played or self.pending_stop_trailer or kodi_utils.get_visibility('Player.HasMedia'):
 			clear_property(TRAILER_RESOLVED_PROPERTY)
 			return
 		if candidate[4] and self.manual_identity != identity:
@@ -712,12 +748,12 @@ class TrailerPreview:
 		clear_property(TRAILER_PREVIEW_READY_PROPERTY)
 		self.manual_identity = ''
 		self.active = True
+		self.preview_token = self.focus_token
 		self.played = True
 		self.playback_started = False
 		self.launched_at = monotonic()
 		self.trailer = playback_url
 		self.cancelled = False
-		self.fullscreen_exit_at = 0.0
 		set_property(TRAILER_PREVIEW_PROPERTY, 'true')
 		logger('BINGIE Lite', 'Starting BINGIE row trailer preview')
 		self.preview_player = TrailerPreviewPlayer(self, generation)
@@ -732,16 +768,6 @@ class TrailerPreview:
 		self.preview_ready = True
 		set_property(TRAILER_PREVIEW_READY_PROPERTY, 'true')
 		logger('BINGIE Lite', 'BINGIE row trailer preview first frame ready')
-
-	def _restore_preview_window(self, now):
-		if not self.active or not kodi_utils.get_visibility('Window.IsActive(fullscreenvideo)'):
-			self.fullscreen_exit_at = 0.0
-			return False
-		if now >= self.fullscreen_exit_at:
-			logger('BINGIE Lite', 'Returning trailer playback to the embedded preview window')
-			kodi_utils.execute_builtin('Action(FullScreen)')
-			self.fullscreen_exit_at = now + 1.0
-		return True
 
 	def _begin_preview_stop(self, now):
 		if not self.active: return
@@ -763,14 +789,15 @@ class TrailerPreview:
 		if owns_preview is False:
 			self._clear_pending_stop()
 			return False
-		if owns_preview and not self.pending_stop_requested:
+		if owns_preview and (not self.pending_stop_requested or now >= self.pending_stop_deadline):
 			logger('BINGIE Lite', 'Stopping BINGIE row trailer preview playback')
 			kodi_utils.execute_builtin('PlayerControl(Stop)')
 			self.pending_stop_requested = True
+			self.pending_stop_deadline = now + TRAILER_PREVIEW_STOP_TIMEOUT
 		if self.pending_stop_requested and not kodi_utils.get_visibility('Player.HasMedia'):
 			self._clear_pending_stop()
 			return False
-		if now >= self.pending_stop_deadline:
+		if now >= self.pending_stop_deadline and not kodi_utils.get_visibility('Player.HasMedia'):
 			self._clear_pending_stop()
 			return False
 		return True
@@ -785,23 +812,9 @@ class TrailerPreview:
 		clear_property(TRAILER_RESOLVED_PROPERTY)
 
 	def _stop_preview(self):
-		if self.active and kodi_utils.get_visibility('Player.HasMedia'):
-			owns_preview = self._owns_preview()
-			if owns_preview is None and not self.playback_started and monotonic() - self.launched_at < 10.0:
-				self.cancelled = True
-				clear_property(TRAILER_PREVIEW_PROPERTY)
-				clear_property(TRAILER_PREVIEW_READY_PROPERTY)
-				return
-			if owns_preview: kodi_utils.execute_builtin('PlayerControl(Stop)')
-			self._finish_preview()
-		elif self.active and not self.playback_started and monotonic() - self.launched_at < 10.0:
-			self.cancelled = True
-			kodi_utils.execute_builtin('PlayerControl(Stop)')
-			clear_property(TRAILER_PREVIEW_PROPERTY)
-			clear_property(TRAILER_PREVIEW_READY_PROPERTY)
-		else:
-			if self.active and not self.playback_started: kodi_utils.execute_builtin('PlayerControl(Stop)')
-			self._finish_preview()
+		now = monotonic()
+		self._begin_preview_stop(now)
+		self._stop_pending_preview(now)
 
 	def _owns_preview(self, trailer=None):
 		playing_file = kodi_utils.get_infolabel('Player.FilenameAndPath').strip()
@@ -820,6 +833,7 @@ class TrailerPreview:
 	def _finish_preview(self, preserve_window=False):
 		if self.active: logger('BINGIE Lite', 'Stopping BINGIE row trailer preview')
 		self.active = False
+		self.preview_token = None
 		self.playback_started = False
 		self.preview_ready = False
 		self.preview_generation += 1
@@ -827,7 +841,6 @@ class TrailerPreview:
 		self.preview_player = None
 		self.trailer = ''
 		self.cancelled = False
-		self.fullscreen_exit_at = 0.0
 		clear_property(TRAILER_PREVIEW_READY_PROPERTY)
 		if not preserve_window:
 			clear_property(TRAILER_PREVIEW_PROPERTY)

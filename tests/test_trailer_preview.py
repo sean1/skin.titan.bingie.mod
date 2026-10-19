@@ -224,7 +224,7 @@ class TrailerPreviewTests(unittest.TestCase):
 
 	def test_movie_details_remain_manual_when_cast_or_shelf_has_focus(self):
 		self.properties['PovInfoType'] = 'movie'
-		self.visibility.update({self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: True, 'Window.IsActive(1123)': True, self.entry.TRAILER_PREVIEW_INFO_CAST_FOCUS: True})
+		self.visibility.update({self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: True, 'Window.IsActive(1123)': True, 'Control.HasFocus(550)': True})
 		self.assertEqual(self.preview._preview_context(), 'info')
 
 	def test_manual_request_on_new_screen_survives_outgoing_autoplay_stop(self):
@@ -349,8 +349,8 @@ class TrailerPreviewTests(unittest.TestCase):
 		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
 		osd = 'Window.IsActive(VideoOSD)'
 		for label, results, expected, expected_calls in (
-			('opening', (True, False, False, True, True, True, False, False), 'info',
-				(window, osd, special, 'ControlGroup(77777).HasFocus()', special, 'Window.IsActive(1123)', self.entry.TRAILER_PREVIEW_INFO_CARD_FOCUS, self.entry.TRAILER_PREVIEW_INFO_CAST_FOCUS)),
+			('opening', (True, False, False, True, True, True), 'info',
+				(window, osd, special, 'ControlGroup(77777).HasFocus()', special, 'Window.IsActive(1123)')),
 			('closing', (True, False, True, False, False, False, False, True), 'listing',
 				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
 					'ControlGroup(77777).HasFocus()')),
@@ -370,24 +370,14 @@ class TrailerPreviewTests(unittest.TestCase):
 		osd = 'Window.IsActive(VideoOSD)'
 		conditions = (
 			window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
-			'Control.HasFocus(523)', non_listing, 'Window.IsActive(1123)', self.entry.TRAILER_PREVIEW_INFO_CARD_FOCUS, self.entry.TRAILER_PREVIEW_INFO_CAST_FOCUS
+			'Control.HasFocus(523)', non_listing, 'Window.IsActive(1123)'
 		)
-		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, False, True, True, True, True, False, False))
+		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, False, True, True, True, True))
 		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
 		self.entry.get_property = Mock(return_value='')
 
 		self.assertEqual(self.preview._preview_context(), 'info')
 		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
-
-
-	def test_detail_shelf_focus_does_not_offer_an_autoplay_candidate(self):
-		self.preview._preview_context = Mock(return_value='info_card')
-		for media_type in ('movie', 'tvshow'):
-			with self.subTest(media_type=media_type):
-				self.properties['PovInfoType'] = media_type
-				self.entry.kodi_utils.get_infolabel = Mock()
-				self.assertIsNone(self.preview._candidate())
-				self.entry.kodi_utils.get_infolabel.assert_not_called()
 
 	def test_detail_waits_for_explicit_trailer_request(self):
 		for context, media_type in ((context, media_type) for context in ('info', 'dialog') for media_type in ('movie', 'tvshow')):
@@ -410,6 +400,50 @@ class TrailerPreviewTests(unittest.TestCase):
 
 				self.preview._start_preview_preparation.assert_called_once_with('info|%s|123' % media_type, 'trailer-url')
 				self.assertNotIn(self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY, self.properties)
+
+	def test_detail_shelves_never_autoplay_without_valid_type(self):
+		for media_type in ('', 'unknown'):
+			for control in ('563', '560'):
+				with self.subTest(media_type=media_type, control=control):
+					self.setUp()
+					self.window_id = 11123
+					self.properties.update({'PovInfoType': media_type, 'PovInfoTmdb': '123', 'PovInfoTrailer': 'detail-trailer-url'})
+					self.visibility.update({self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: True, 'Window.IsActive(1123)': True,
+						'Control.HasFocus(563) | Control.HasFocus(560)': True})
+					self.labels.update({'System.CurrentControlID': control, 'Container(%s).CurrentItem' % control: '1', 'Container(%s).FolderPath' % control: 'plugin://related',
+						'Container.ListItem.Property(DBTYPE)': 'movie', 'Container.ListItem.Property(tmdb_id)': '456', 'Container.ListItem.Label': 'Related title',
+						'Container.ListItem.Property(trailer)': 'related-trailer-url'})
+					self.preview._ensure_focused_metadata = Mock()
+					self.preview._start_pending_preparation = Mock()
+					self.entry.monotonic = Mock(return_value=10.0)
+
+					self.preview.tick()
+					self.entry.monotonic.return_value = 12.0
+					self.preview.tick()
+
+					self.assertEqual(self.preview.prepare_identity, '')
+					self.assertIsNone(self.preview.prepare_pending)
+					self.assertFalse(self.preview.active)
+
+	def test_prepared_listing_trailer_cannot_launch_on_detail_without_type(self):
+		self.entry.monotonic = Mock(return_value=20.0)
+		self.labels.update({'Container.ListItem.DBType': 'movie', 'Container.ListItem.UniqueID(tmdb)': '456', 'Container.ListItem.Label': 'Related title',
+			'Container.ListItem.Trailer': 'trailer-url', 'Container.ListItem.Property(DBTYPE)': 'movie', 'Container.ListItem.Property(tmdb_id)': '456',
+			'Container.ListItem.Property(trailer)': 'trailer-url'})
+		self._queue_prepared_preview()
+		self.window_id = 11123
+		self.visibility.update({self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: True, 'Window.IsActive(1123)': True,
+			'Control.HasFocus(563) | Control.HasFocus(560)': True})
+		self.labels.update({'System.CurrentControlID': '563', 'Container(563).CurrentItem': '1', 'Container(563).FolderPath': 'plugin://related'})
+		trailers = types.ModuleType('modules.trailers')
+		trailers.commit_prepared = Mock()
+
+		with patch.dict(sys.modules, {'modules.trailers': trailers}): self.preview.tick()
+
+		trailers.commit_prepared.assert_not_called()
+		self.assertEqual(self.preview.prepare_identity, '')
+		self.assertFalse(self.preview.active)
+		self.assertIsNone(self.preview.preview_player)
 
 	def test_listing_candidate_rejects_invalid_media_before_dependent_reads(self):
 		self.preview._preview_context = Mock(return_value='listing')

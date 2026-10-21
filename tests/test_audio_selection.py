@@ -20,6 +20,7 @@ def load_player():
 	kodi_utils.local_string = str
 	kodi_utils.get_setting = lambda key, default=None: default
 	kodi_utils.get_addoninfo = lambda key: ''
+	kodi_utils.get_property = lambda key: ''
 	kodi_utils.media_path = lambda value: value
 	kodi_utils.monitor = types.SimpleNamespace(waitForAbort=lambda timeout: False)
 	kodi_utils.xbmc = types.SimpleNamespace(ISO_639_2=2, convertLanguage=lambda language, language_format: {'ca': 'cat'}.get(language, language))

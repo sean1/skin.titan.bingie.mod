@@ -25,7 +25,6 @@ POV_PAGE_HISTORY_PROPERTY = 'PovPageHistory'
 POV_INFO_HYDRATION_PROPERTY = 'PovInfoHydrationRequest'
 POV_INFO_PENDING_TMDB_PROPERTY = 'PovInfoPendingTmdb'
 POV_ACTOR_HYDRATION_PROPERTY = 'PovActorHydrationRequest'
-TRAILER_PREVIEW_PROPERTY = 'BingieTrailerPreview'
 TRAILER_PREVIEW_CANCEL_PROPERTY = 'BingieTrailerPreviewCancel'
 TRAILER_PREVIEW_REQUEST_PROPERTY = 'BingieTrailerPreviewRequest'
 POV_INFO_FOCUS_CONTROLS = (80, 55, 51, 53, 54, 550, 563, 560)
@@ -221,10 +220,8 @@ def _match_label(rating):
 
 def _stop_owned_trailer_preview(suppress_identity=''):
 	clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
+	clear_property('BingieTrailerPreviewReady')
 	set_property(TRAILER_PREVIEW_CANCEL_PROPERTY, suppress_identity or 'true')
-	if get_property(TRAILER_PREVIEW_PROPERTY) != 'true': return
-	execute_builtin('PlayerControl(Stop)')
-	clear_property(TRAILER_PREVIEW_PROPERTY)
 
 def play_from_info(params):
 	media_type, tmdb_id = params.get('mediatype'), params.get('tmdb_id')

@@ -465,7 +465,7 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertEqual(self.preview._candidate(), ('listing|movie|123', 'trailer-url', 'movie', '123', False, True))
 		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
 
-	def test_preview_ownership_reads_resolved_fallback_only_after_primary_mismatch(self):
+	def test_preview_ownership_requires_the_exact_request_url(self):
 		self.preview.trailer = 'preview-url'
 		self.entry.get_property = Mock(return_value='resolved-url')
 		self.entry.kodi_utils.get_infolabel = Mock(return_value='preview-url')
@@ -475,13 +475,13 @@ class TrailerPreviewTests(unittest.TestCase):
 
 		self.preview.trailer = 'http://127.0.0.1:1234/preview.m3u8?token=old'
 		self.entry.kodi_utils.get_infolabel.return_value = 'http://127.0.0.1:1234/preview.m3u8?token=new'
-		self.assertTrue(self.preview._owns_preview())
+		self.assertFalse(self.preview._owns_preview())
 		self.entry.get_property.assert_not_called()
 
 		self.preview.trailer = 'preview-url'
 		self.entry.kodi_utils.get_infolabel.return_value = 'resolved-url'
-		self.assertTrue(self.preview._owns_preview())
-		self.entry.get_property.assert_called_once_with(self.entry.TRAILER_RESOLVED_PROPERTY)
+		self.assertFalse(self.preview._owns_preview())
+		self.entry.get_property.assert_not_called()
 
 	def test_new_focused_lookup_overtakes_stale_lookup_without_stale_publication(self):
 		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)

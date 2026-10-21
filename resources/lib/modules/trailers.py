@@ -1,8 +1,10 @@
 import re
+from collections import OrderedDict
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from threading import Thread
-from time import monotonic_ns
+from secrets import token_hex
+from threading import Lock, Thread
 from urllib.parse import urljoin, urlparse
+from urllib.request import Request, urlopen
 
 from modules import kodi_utils
 
@@ -16,9 +18,11 @@ YOUTUBE_VIDEO_ID = re.compile(r'^[A-Za-z0-9_-]{6,20}$')
 TRAILER_RESOLVED_PROPERTY = 'BingieTrailerResolved'
 TRAILER_MANIFEST_URL_PROPERTY = 'BingieTrailerManifestUrl'
 TRAILER_RESOLUTION = (1280, 720)
-TRAILER_MANIFEST_FILE = kodi_utils.profile_path + 'trailer_preview.m3u8'
+TRAILER_MANIFEST_LIMIT = 32
+TRAILER_MANIFEST_MAX_BYTES = 65536
 HLS_ATTRIBUTE = re.compile(r'([A-Z0-9-]+)=("[^"]*"|[^,]*)')
 HTTP_SESSION = None
+MANIFEST_SERVER = None
 
 
 def _http_session():
@@ -66,10 +70,10 @@ def prepare_data_isolated(url):
 	finally: session.close()
 
 
-def commit_prepared(prepared):
+def commit_prepared(prepared, preview_server=None):
 	stream_url, manifest = prepared
 	if not manifest: return stream_url, None
-	stream_url = _commit_hls_manifest(manifest)
+	stream_url = preview_server[0].publish(manifest, preview=True) if preview_server else _commit_hls_manifest(manifest)
 	listitem = kodi_utils.make_listitem()
 	listitem.setPath(stream_url)
 	listitem.setMimeType('application/vnd.apple.mpegurl')
@@ -99,13 +103,11 @@ def limit_hls_resolution(master_url):
 
 
 def _commit_hls_manifest(manifest):
-	kodi_utils.make_directorys(kodi_utils.profile_path)
-	manifest_file = kodi_utils.open_file(TRAILER_MANIFEST_FILE, 'w')
-	try: manifest_file.write(manifest)
-	finally: manifest_file.close()
+	if MANIFEST_SERVER is not None: return MANIFEST_SERVER.publish(manifest)
 	manifest_url = kodi_utils.get_property(TRAILER_MANIFEST_URL_PROPERTY)
 	if not manifest_url: raise RuntimeError('BINGIE trailer manifest service is unavailable')
-	return '%s?%d' % (manifest_url, monotonic_ns())
+	request = Request(manifest_url, data=manifest.encode('utf-8'), headers={'Content-Type': 'application/vnd.apple.mpegurl'}, method='POST')
+	with urlopen(request, timeout=2) as response: return response.read(4096).decode('utf-8')
 
 
 def _limited_hls_manifest(manifest, master_url):
@@ -166,37 +168,81 @@ def _absolute_hls_uri(line, master_url):
 
 
 def start_manifest_server():
-	server = HTTPServer(('127.0.0.1', 0), _ManifestHandler)
-	server.manifest_file = kodi_utils.translate_path(TRAILER_MANIFEST_FILE)
+	global MANIFEST_SERVER
+	server = _ManifestServer(('127.0.0.1', 0), _ManifestHandler)
+	MANIFEST_SERVER = server
 	thread = Thread(target=server.serve_forever, name='BINGIE trailer manifest', daemon=True)
 	thread.start()
-	kodi_utils.set_property(TRAILER_MANIFEST_URL_PROPERTY, 'http://127.0.0.1:%d/trailer_preview.m3u8' % server.server_port)
+	kodi_utils.set_property(TRAILER_MANIFEST_URL_PROPERTY, server.base_url)
 	return server, thread
 
 
 def stop_manifest_server(server_thread):
-	kodi_utils.clear_property(TRAILER_MANIFEST_URL_PROPERTY)
+	global MANIFEST_SERVER
 	if server_thread is None: return
 	server, thread = server_thread
+	if kodi_utils.get_property(TRAILER_MANIFEST_URL_PROPERTY) == server.base_url: kodi_utils.clear_property(TRAILER_MANIFEST_URL_PROPERTY)
+	if MANIFEST_SERVER is server: MANIFEST_SERVER = None
 	server.shutdown()
 	server.server_close()
 	thread.join()
-	kodi_utils.delete_file(TRAILER_MANIFEST_FILE)
+	server.manifests.clear()
+
+
+class _ManifestServer(HTTPServer):
+	def __init__(self, *args):
+		super().__init__(*args)
+		self.base_path = '/trailers/%s' % token_hex(16)
+		self.base_url = 'http://127.0.0.1:%d%s' % (self.server_port, self.base_path)
+		self.preview_prefix = self.base_url + '/preview/'
+		self.manifests = OrderedDict()
+		self.manifest_lock = Lock()
+
+	def publish(self, manifest, preview=False):
+		body = manifest.encode('utf-8')
+		if not body.startswith(b'#EXTM3U') or len(body) > TRAILER_MANIFEST_MAX_BYTES: raise ValueError('Invalid trailer manifest')
+		path = '%s/%s/%s.m3u8' % (self.base_path, 'preview' if preview else 'manual', token_hex(16))
+		with self.manifest_lock:
+			self.manifests[path] = body
+			while len(self.manifests) > TRAILER_MANIFEST_LIMIT: self.manifests.popitem(last=False)
+		return 'http://127.0.0.1:%d%s' % (self.server_port, path)
+
+	def revoke(self, url):
+		with self.manifest_lock: self.manifests.pop(urlparse(url).path, None)
+
+	def owns_preview(self, url):
+		return url.startswith(self.preview_prefix) and re.fullmatch(r'[0-9a-f]{32}\.m3u8', url[len(self.preview_prefix):]) is not None
 
 
 class _ManifestHandler(BaseHTTPRequestHandler):
+	def setup(self):
+		self.request.settimeout(2)
+		super().setup()
+
 	def do_GET(self):
-		if urlparse(self.path).path != '/trailer_preview.m3u8': return self.send_error(404)
-		try:
-			with open(self.server.manifest_file, 'rb') as manifest_file: manifest = manifest_file.read()
-		except OSError: return self.send_error(503)
-		if not manifest: return self.send_error(503)
+		path = urlparse(self.path).path
+		with self.server.manifest_lock: manifest = self.server.manifests.get(path)
+		if manifest is None: return self.send_error(410)
 		self.send_response(200)
 		self.send_header('Content-Type', 'application/vnd.apple.mpegurl')
 		self.send_header('Content-Length', str(len(manifest)))
 		self.send_header('Cache-Control', 'no-store')
 		self.end_headers()
 		try: self.wfile.write(manifest)
+		except OSError: pass
+
+	def do_POST(self):
+		if self.path != self.server.base_path: return self.send_error(404)
+		try:
+			length = int(self.headers.get('Content-Length', '0'))
+			if not 0 < length <= TRAILER_MANIFEST_MAX_BYTES: return self.send_error(413)
+			url = self.server.publish(self.rfile.read(length).decode('utf-8'))
+		except (ValueError, OSError): return self.send_error(400)
+		body = url.encode('utf-8')
+		self.send_response(201)
+		self.send_header('Content-Length', str(len(body)))
+		self.end_headers()
+		try: self.wfile.write(body)
 		except OSError: pass
 
 	def log_message(self, format, *args):

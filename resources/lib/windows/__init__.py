@@ -41,6 +41,7 @@ def videoplayer(url, close_action=None, callback=None):
 		kodi_utils.logger('BINGIE trailer playback', str(exc))
 		return kodi_utils.notification('Trailer unavailable', 2500)
 	kodi_utils.set_property(TRAILER_PREVIEW_PROPERTY, 'true')
+	kodi_utils.set_property('BingieManualTrailerUrl', playback_url)
 	try:
 		if listitem is None: player.play(playback_url, windowed=True)
 		else: player.play(playback_url, listitem, windowed=True)
@@ -51,7 +52,9 @@ def videoplayer(url, close_action=None, callback=None):
 		while player.isPlayingVideo():
 			if kodi_utils.get_visibility('Window.IsActive(fullscreenvideo)'): kodi_utils.execute_builtin('Action(FullScreen)')
 			kodi_utils.sleep(200)
-	finally: kodi_utils.clear_property(TRAILER_PREVIEW_PROPERTY)
+	finally:
+		kodi_utils.clear_property('BingieManualTrailerUrl')
+		kodi_utils.clear_property(TRAILER_PREVIEW_PROPERTY)
 	if player.playback_event and callable(callback): callback()
 
 class BaseDialog(kodi_utils.window_xml_dialog):

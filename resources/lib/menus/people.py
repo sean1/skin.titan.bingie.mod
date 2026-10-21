@@ -220,9 +220,8 @@ def show_person_info(params):
 		else:
 			reset_pov_page_history()
 			if active_native_info: push_native_info_state()
-		if kodi_utils.get_property('BingieTrailerPreview') == 'true':
-			kodi_utils.execute_builtin('PlayerControl(Stop)')
-			kodi_utils.clear_property('BingieTrailerPreview')
+		kodi_utils.clear_property('BingieTrailerPreviewReady')
+		kodi_utils.set_property('BingieTrailerPreviewCancel', 'true')
 		if active_native_info:
 			kodi_utils.execute_builtin('Dialog.Close(movieinformation)')
 			close_deadline = monotonic() + 2.0

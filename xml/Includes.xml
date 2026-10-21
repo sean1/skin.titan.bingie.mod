@@ -116,6 +116,26 @@
 		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +
 		$EXP[IsPovLiteListItem] + !String.IsEmpty(ListItem.UniqueID(tmdb))
 	</expression>
+	<expression name="BingieTrailerPreviewVisible">
+		[Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieManualTrailerUrl)) + String.IsEqual(Player.FilenameAndPath,Window(Home).Property(BingieManualTrailerUrl))] |
+		[Player.HasVideo + String.IsEqual(Window(Home).Property(BingieTrailerPreviewReady),true) + String.IsEqual(Player.FilenameAndPath,Window(Home).Property(BingieTrailerPreviewUrl)) +
+		!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewCancel)) + String.IsEmpty(Window(Home).Property(PovInfoTransition)) +
+		[[String.IsEqual(Window(Home).Property(BingieTrailerPreviewMode),manual) +
+		[[Window.IsActive(1123) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewType),Window(Home).Property(PovInfoType)) +
+		String.IsEqual(Window(Home).Property(BingieTrailerPreviewItem),Window(Home).Property(PovInfoTmdb))] |
+		[Window.IsActive(DialogVideoInfo.xml) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewType),Window.Property(PovInfoType)) +
+		String.IsEqual(Window(Home).Property(BingieTrailerPreviewItem),Window.Property(PovInfoTmdb))]]] |
+		[String.IsEqual(Window(Home).Property(BingieTrailerPreviewMode),auto) + !Window.IsActive(1123) + !Window.IsActive(DialogVideoInfo.xml) + !System.HasActiveModalDialog +
+		String.IsEqual(System.CurrentControlID,Window(Home).Property(BingieTrailerPreviewControl)) +
+		String.IsEqual(ListItem.DBType,Window(Home).Property(BingieTrailerPreviewType)) +
+		[String.IsEqual(ListItem.UniqueID(tmdb),Window(Home).Property(BingieTrailerPreviewItem)) | String.IsEqual(ListItem.FileNameAndPath,Window(Home).Property(BingieTrailerPreviewItem))] +
+		[[Window.IsActive(Home) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewWindow),10000)] |
+		[Window.IsActive(Videos) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewWindow),10025)] |
+		[Window.IsActive(1110) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewWindow),11110)] |
+		[Window.IsActive(1111) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewWindow),11111)] |
+		[Window.IsActive(1112) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewWindow),11112)] |
+		[Window.IsActive(1122) + String.IsEqual(Window(Home).Property(BingieTrailerPreviewWindow),11122)]]]]]
+	</expression>
 	<expression name="PovFocusedMetadataMatches">
 		!String.IsEmpty(ListItem.Property(PovFocusIdentity)) +
 		String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),ListItem.Property(PovFocusIdentity))

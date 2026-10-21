@@ -31,7 +31,7 @@
 
 	<include name="BingieRowTrailerPreviewWindow">
 		<control type="group">
-			<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))</visible>
+			<visible>$EXP[BingieTrailerPreviewVisible]</visible>
 			<top>0</top>
 			<right>0</right>
 			<width>1200</width>

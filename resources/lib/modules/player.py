@@ -1,6 +1,6 @@
 import json
 from threading import Thread
-from time import monotonic
+from time import monotonic, monotonic_ns
 from caches import watched_cache as ws
 from windows import open_window
 from indexers.segments import SegmentScraper
@@ -63,6 +63,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.volume_check = get_setting('volumecheck.enabled', 'false') == 'true'
 
 	def onAVStarted(self):
+		if getattr(self, 'awaiting_preview_handoff', False): return
 		if getattr(self, 'startup_cancel_requested', False):
 			self.playback_event = False
 			try: self.stop()
@@ -153,6 +154,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		return not cls._is_original_audio(stream), not bool(stream.get('isdefault')), stream.get('index', 0)
 
 	def onPlayBackStarted(self):
+		if getattr(self, 'awaiting_preview_handoff', False): return
 		if getattr(self, 'startup_cancel_requested', False): return
 		kodi_utils.clear_property('pov_lite_subtitle_manual_override')
 		kodi_utils.clear_property('pov_lite_subtitle_context')
@@ -161,6 +163,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		except: pass
 
 	def onPlayBackStopped(self):
+		if getattr(self, 'awaiting_preview_handoff', False): return
 		if getattr(self, 'startup_cancel_requested', False):
 			self.playback_event = False
 			return
@@ -174,6 +177,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		kodi_utils.clear_property('pov_lite_total_autoplays')
 
 	def onPlayBackEnded(self):
+		if getattr(self, 'awaiting_preview_handoff', False): return
 		if getattr(self, 'startup_cancel_requested', False):
 			self.playback_event = False
 			return
@@ -181,6 +185,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self._set_terminal_playback_event()
 
 	def onPlayBackError(self):
+		if getattr(self, 'awaiting_preview_handoff', False): return
 		if getattr(self, 'startup_cancel_requested', False):
 			self.playback_event = False
 			return
@@ -258,6 +263,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def run(self, url=None, meta=None, progress_media=None):
 		if not url: return False
+		preview_handoff = ''
 		try:
 			self.meta = meta or {}
 			self.playback_health_context = self.meta.pop('_playback_health_context', None)
@@ -291,6 +297,22 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.ignore_startup_stop = self.isPlaying()
 			self.startup_playback_started, self.startup_cancel_requested = False, False
 			self.playback_error, self.retry_resume_percent = False, 0
+			self.playback_event = None
+			if kodi_utils.get_property('BingieTrailerManifestUrl'):
+				preview_handoff = str(monotonic_ns())
+				self.awaiting_preview_handoff = True
+				kodi_utils.clear_property('BingieTrailerPreviewReady')
+				kodi_utils.set_property('BingieTrailerPlaybackHandoff', preview_handoff)
+				kodi_utils.set_property('BingieTrailerPreviewCancel', 'true')
+				handoff_deadline = monotonic() + 2.0
+				while kodi_utils.get_property('BingieTrailerPlaybackAck') != preview_handoff:
+					if monotonic() >= handoff_deadline:
+						kodi_utils.logger('POVPlayer', 'Trailer controller did not release playback')
+						return False
+					if kodi_utils.monitor.waitForAbort(0.05): return False
+			self.awaiting_preview_handoff = False
+			self.ignore_startup_stop = bool(preview_handoff) or self.isPlaying()
+			self.startup_playback_started = False
 			self.playback_event = None
 			self.play(url, listitem)
 			start_deadline = monotonic() + PLAYBACK_START_TIMEOUT
@@ -338,6 +360,11 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self._finalize_stream(False)
 				self._stop_and_wait()
 			return False
+		finally:
+			self.awaiting_preview_handoff = False
+			if preview_handoff and kodi_utils.get_property('BingieTrailerPlaybackHandoff') == preview_handoff:
+				kodi_utils.clear_property('BingieTrailerPlaybackHandoff')
+				kodi_utils.clear_property('BingieTrailerPlaybackAck')
 
 	def check_playback_events(self):
 		try:

@@ -12,7 +12,7 @@
 			</control>
 			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
-				<param name="visibility" value="String.IsEqual(Window(Home).Property(PovActorReady),true) + [!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + String.IsEmpty(Window(Home).Property(BingieTrailerPreviewReady))]]" />
+				<param name="visibility" value="String.IsEqual(Window(Home).Property(PovActorReady),true) + [!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + !$EXP[BingieTrailerPreviewVisible]]]" />
 				<param name="image" value="$VAR[PovActorPageBackdrop]" />
 			</include>
 

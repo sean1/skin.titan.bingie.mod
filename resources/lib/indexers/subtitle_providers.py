@@ -489,12 +489,26 @@ class SubSourceProvider(Provider):
 		return []
 
 	def _movie_id(self):
+		self._lookup_season = None
 		params = {'searchType': 'imdb', 'imdb': self.media.get('imdb_id'), 'type': 'tv' if self.media.get('season') is not None else 'movie'}
 		if self.media.get('season') is not None: params['season'] = self.media['season']
 		payload = self.request_json('GET', '%s/movies/search' % self.api_url, 'lookup', headers=self.headers(), params=params)
 		for item in self._items(payload):
-			if item.get('movieId') is not None: return item['movieId']
+			if item.get('movieId') is not None:
+				self._lookup_season = _as_int(item.get('season'))
+				return item['movieId']
 		raise ProviderError('not_found')
+
+	def _release_matches(self, release):
+		season, episode = int(self.media['season']), int(self.media['episode'])
+		if _episode_matches(release, season, episode): return True
+		if self._lookup_season != season: return False
+		release = str(release or '')
+		if re.search(r'(?i)s\d+[ ._-]*e\d+|\d+x\d+|\bs(?:eason)?[ ._-]*\d+\b', release): return False
+		for match in re.finditer(r'(?i)\bepisode[ ._-]*(\d+)\b(?:[ ._]*-[ ._]*(\d+)\b)?', release):
+			start, end = int(match.group(1)), int(match.group(2) or match.group(1))
+			if start <= episode <= end: return True
+		return False
 
 	def search(self):
 		try: movie_id = self._movie_id()
@@ -506,7 +520,7 @@ class SubSourceProvider(Provider):
 			for item in self._items(payload):
 				releases = item.get('releaseInfo')
 				if not isinstance(releases, list): releases = [releases] if releases else []
-				if self.media.get('season') is not None and not any(_episode_matches(release, self.media['season'], self.media['episode']) for release in releases): continue
+				if self.media.get('season') is not None and not any(self._release_matches(release) for release in releases): continue
 				production_type = str(item.get('productionType') or '').lower()
 				candidate = _candidate(
 					self.name, item.get('subtitleId'), item.get('language') or provider_language, releases,

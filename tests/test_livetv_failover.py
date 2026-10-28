@@ -4,7 +4,8 @@ from pathlib import Path
 import sys
 import types
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+from urllib.error import HTTPError
 
 
 class FakePlayer:
@@ -45,12 +46,19 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.properties = {self.module.PROPERTY: json.dumps({'token': 'one', 'id': '1', 'alternatives': ['2', '3']})}
 		self.ku.get_property = lambda name: self.properties.get(name, '')
 		self.ku.clear_property = lambda name: self.properties.pop(name, None)
+		self.ku.set_property = lambda name, value: self.properties.__setitem__(name, value)
+		self.ku.get_visibility = lambda condition: False
+		self.ku.get_infolabel = lambda label: 'Playback failed'
+		self.ku.xbmc = types.SimpleNamespace(getLocalizedString=lambda value: 'Playback failed' if value == 16026 else '', executebuiltin=Mock())
 		self.notes = []
 		self.ku.dialog.notification = lambda *args: self.notes.append(args)
 		self.player = self.module.LiveTVFailover(clock=lambda: self.now)
 		self.modules = patch.dict(sys.modules, self.imports)
 		self.modules.start()
 		self.addCleanup(self.modules.stop)
+		self.probe = patch.object(self.module, '_probe_failure', return_value=False)
+		self.probe.start()
+		self.addCleanup(self.probe.stop)
 
 	def start(self):
 		self.player.tick()
@@ -98,12 +106,139 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.now = 10
 		self.player.position = 5
 		self.player.tick()
-		self.now = 20
+		self.now = 17
 		self.player.tick()
 		self.assertFalse(self.player.played)
-		self.now = 26
+		self.now = 19
 		self.player.tick()
 		self.assertEqual(self.player.played, [self.player._url('2')])
+
+	def test_verified_unavailable_startup_tries_alternative(self):
+		self.player.tick()
+		self.ku.get_visibility = lambda condition: True
+		self.player.probe_results.put(('one', '1', True))
+		self.now = 3
+		self.assertTrue(self.player.tick())
+		self.assertEqual(self.player.played, [self.player._url('2')])
+		self.ku.xbmc.executebuiltin.assert_called_once_with('Dialog.Close(okdialog)')
+
+	def test_dismissed_error_dialog_cancels_pending_probe_result(self):
+		self.player.tick()
+		self.player.probe_results.put(('one', '1', True))
+		self.now = 3
+		self.player.tick()
+		self.assertFalse(self.player.played)
+		self.ku.xbmc.executebuiltin.assert_not_called()
+
+	def test_unrelated_dialog_does_not_probe_or_switch(self):
+		self.player.tick()
+		self.ku.get_visibility = lambda condition: True
+		self.ku.get_infolabel = lambda label: 'Some other dialog'
+		self.now = 3
+		self.player.probe_results.put(('one', '1', True))
+		self.player.tick()
+		self.assertFalse(self.player.played)
+		self.assertFalse(self.player.session['probe_started'])
+		self.ku.xbmc.executebuiltin.assert_not_called()
+
+	def test_dialog_heading_uses_kodi_localization(self):
+		self.ku.get_visibility = lambda condition: True
+		self.ku.xbmc.getLocalizedString = lambda value: 'Échec de lecture'
+		self.ku.get_infolabel = lambda label: 'Échec de lecture'
+		self.assertTrue(self.module._playback_error_dialog())
+		self.ku.get_infolabel = lambda label: 'Playback failed'
+		self.assertFalse(self.module._playback_error_dialog())
+
+	def test_alternate_waits_for_old_dialog_to_close_before_probing(self):
+		self.start()
+		self.now = 20
+		self.player.tick()
+		self.player.file = ''
+		self.ku.get_visibility = lambda condition: True
+		self.now = 23
+		self.player.tick()
+		self.assertFalse(self.player.session['probe_started'])
+		self.assertFalse(self.player.session['probe_allowed'])
+		self.ku.get_visibility = lambda condition: False
+		self.player.tick()
+		self.assertTrue(self.player.session['probe_allowed'])
+
+	def test_second_unavailable_feed_retries_after_a_new_error_dialog(self):
+		self.player.tick()
+		self.ku.get_visibility = lambda condition: True
+		self.player.probe_results.put(('one', '1', True))
+		self.now = 3
+		self.player.tick()
+		self.player.file = ''
+		self.ku.get_visibility = lambda condition: False
+		self.now = 4
+		self.player.tick()
+		self.ku.get_visibility = lambda condition: True
+		self.player.probe_results.put(('one', '2', True))
+		self.now = 7
+		self.player.tick()
+		self.assertEqual([url.rsplit('/', 1)[-1] for url in self.player.played], ['2.ts', '3.ts'])
+
+	def test_probe_waits_for_error_dialog_before_opening_another_connection(self):
+		class ImmediateThread:
+			def __init__(self, target, args, daemon): self.target, self.args = target, args
+			def start(self): self.target(*self.args)
+		self.player.tick()
+		self.now = 3
+		with patch.object(self.module, 'Thread', ImmediateThread):
+			self.player.tick()
+			self.assertFalse(self.player.session['probe_started'])
+			self.ku.get_visibility = lambda condition: True
+			self.probe.stop()
+			with patch.object(self.module, '_probe_failure', return_value=True): self.player.tick()
+			self.player.tick()
+		self.assertEqual(self.player.played, [self.player._url('2')])
+
+	def test_only_explicit_http_failures_count_as_failed_probe(self):
+		self.probe.stop()
+		with patch.object(self.module, 'urlopen', side_effect=HTTPError('http://example.test', 503, 'Unavailable', {}, None)):
+			self.assertTrue(self.module._probe_failure('http://example.test'))
+		with patch.object(self.module, 'urlopen', side_effect=TimeoutError()):
+			self.assertFalse(self.module._probe_failure('http://example.test'))
+
+	def test_pending_failed_probe_does_not_override_stop(self):
+		self.player.tick()
+		self.player.probe_results.put(('one', '1', True))
+		self.player.onPlayBackStopped()
+		self.now = 3
+		self.assertFalse(self.player.tick())
+		self.assertFalse(self.player.played)
+
+	def test_outdated_probe_does_not_switch_new_session(self):
+		self.player.tick()
+		self.player.probe_results.put(('one', '1', True))
+		self.properties[self.module.PROPERTY] = json.dumps({'token': 'two', 'id': '4', 'alternatives': ['5']})
+		self.now = 3
+		self.player.tick()
+		self.assertFalse(self.player.played)
+		self.assertEqual(self.player.session['id'], '4')
+
+	def test_manual_request_switches_only_currently_playing_session(self):
+		self.start()
+		self.assertEqual(self.properties[self.module.CAN_SWITCH], 'true')
+		self.assertTrue(self.module.request_manual_switch())
+		self.player.tick()
+		self.assertEqual(self.player.played, [self.player._url('2')])
+		self.assertNotIn(self.module.CAN_SWITCH, self.properties)
+
+	def test_manual_request_does_not_restart_stopped_stream(self):
+		self.start()
+		self.player.file = ''
+		self.player.onPlayBackStopped()
+		self.assertTrue(self.module.request_manual_switch())
+		self.assertFalse(self.player.tick())
+		self.assertFalse(self.player.played)
+		self.assertNotIn(self.module.CAN_SWITCH, self.properties)
+
+	def test_manual_request_without_session_gives_feedback(self):
+		self.properties.clear()
+		self.assertFalse(self.module.request_manual_switch())
+		self.assertIn('No matching', self.notes[-1][1])
 
 	def test_pause_and_manual_stop_do_not_switch(self):
 		self.start()

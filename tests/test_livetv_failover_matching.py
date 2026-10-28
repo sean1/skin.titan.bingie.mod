@@ -20,7 +20,7 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 	def test_same_teams_only_unique_and_bounded_without_credentials(self):
 		streams = [{'stream_id': 1, 'name': self.name}, {'stream_id': 2, 'name': self.name.replace('CA:', 'US:')}, {'stream_id': 2, 'name': self.name}, {'stream_id': 3, 'name': self.name.replace('Chelsea', 'Everton')}, {'stream_id': 4, 'name': self.name.replace('Live', 'End')}]
 		streams += [{'stream_id': n, 'name': self.name} for n in range(5, 30)]
-		with patch.object(self.live, '_request', return_value=streams): self.live._prepare_failover(self.account, '1', self.name)
+		with patch.object(self.live, '_catalog', return_value=streams): self.live._prepare_failover(self.account, '1', self.name)
 		payload = json.loads(self.live.xbmcgui.Window.return_value.setProperty.call_args.args[1])
 		self.assertEqual(payload['id'], '1')
 		self.assertEqual(payload['alternatives'], ['2', '5', '6', '7', '8', '9', '10', '11'])
@@ -28,7 +28,7 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 		self.assertTrue(payload['token'])
 
 	def test_unrecognized_play_avoids_network_and_clears_previous_session(self):
-		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_request') as request, patch.object(self.live, '_handle', return_value=1):
+		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog') as request, patch.object(self.live, '_handle', return_value=1):
 			self.live.play({'id': '1', 'name': 'TSN 1'})
 		request.assert_not_called()
 		self.live.xbmcgui.Window.return_value.clearProperty.assert_called_once_with('BingieLiveTVFailover')
@@ -36,11 +36,30 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 
 	def test_route_name_must_match_selected_id_in_catalog(self):
 		streams = [{'stream_id': 1, 'name': 'TSN 1'}, {'stream_id': 2, 'name': self.name}]
-		with patch.object(self.live, '_request', return_value=streams): self.live._prepare_failover(self.account, '1', self.name)
+		with patch.object(self.live, '_catalog', return_value=streams): self.live._prepare_failover(self.account, '1', self.name)
+		self.live.xbmcgui.Window.return_value.setProperty.assert_not_called()
+
+	def test_failover_rejects_alternatives_with_different_date_or_competition(self):
+		selected = 'Live | Liverpool vs. Chelsea | Premier League | 2026-10-28 | CA: SOCCER 1'
+		streams = [
+			{'stream_id': 1, 'name': selected},
+			{'stream_id': 2, 'name': selected.replace('CA:', 'US:')},
+			{'stream_id': 3, 'name': selected.replace('2026-10-28', '2026-11-04')},
+			{'stream_id': 4, 'name': selected.replace('Premier League', 'Carabao Cup')},
+			{'stream_id': 5, 'name': self.name},
+		]
+		with patch.object(self.live, '_catalog', return_value=streams): self.live._prepare_failover(self.account, '1', selected)
+		payload = json.loads(self.live.xbmcgui.Window.return_value.setProperty.call_args.args[1])
+		self.assertEqual(payload['alternatives'], ['2'])
+
+	def test_selected_catalog_entry_must_match_route_scope(self):
+		selected = 'Live | Liverpool vs. Chelsea | Premier League | 2026-10-28 | CA: SOCCER 1'
+		streams = [{'stream_id': 1, 'name': selected.replace('2026-10-28', '2026-11-04')}, {'stream_id': 2, 'name': selected}]
+		with patch.object(self.live, '_catalog', return_value=streams): self.live._prepare_failover(self.account, '1', selected)
 		self.live.xbmcgui.Window.return_value.setProperty.assert_not_called()
 
 	def test_request_failure_still_resolves_original_stream(self):
-		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_request', side_effect=OSError('network error')), patch.object(self.live, '_handle', return_value=1):
+		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', side_effect=OSError('network error')), patch.object(self.live, '_handle', return_value=1):
 			self.live.play({'id': '1', 'name': self.name})
 		self.live.xbmcplugin.setResolvedUrl.assert_called_once()
 		self.live.xbmcgui.Window.return_value.setProperty.assert_not_called()

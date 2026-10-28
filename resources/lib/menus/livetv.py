@@ -19,6 +19,8 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 from modules import kodi_utils as ku
+from modules.livetv_catalog import get as _catalog_get
+from modules.livetv_guide_search import cached_search as _cached_guide_search
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
@@ -45,6 +47,18 @@ def _soccer_event(name):
 	return teams
 
 
+def _fixture_scope(name):
+	"""Keep explicitly dated or named competitions separate from other feeds."""
+	metadata = ' | '.join(name.split('|')[2:]).casefold()
+	date_pattern = (r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4}|\d{1,2}\s+'
+		r'(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{4})?)\b')
+	competition_pattern = (r'\b(?:uefa\s+champions\s+league|champions\s+league|europa\s+league|conference\s+league|premier\s+league|carabao\s+cup|fa\s+cup|'
+		r'la\s+liga|serie\s+a|ligue\s+1|bundesliga|major\s+league\s+soccer|world\s+cup)\b')
+	dates = re.findall(date_pattern, metadata)
+	competitions = re.findall(competition_pattern, metadata)
+	return '|'.join(sorted(set(' '.join(value.split()) for value in dates + competitions)))
+
+
 def _play_params(stream_id, name):
 	params = {'mode': 'livetv.play', 'id': stream_id}
 	if _soccer_event(name): params['name'] = name
@@ -54,16 +68,17 @@ def _play_params(stream_id, name):
 def _prepare_failover(account, stream_id, name):
 	event = _soccer_event(name)
 	if not event: return
+	scope = _fixture_scope(name)
 	try:
-		streams = _request(account, 'get_live_streams')
+		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): return
-		if not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event for stream in streams): return
+		if not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event and _fixture_scope(stream['name']) == scope for stream in streams): return
 		alternatives = []
 		for stream in streams:
 			if not isinstance(stream, dict): continue
 			candidate = str(stream.get('stream_id') or '')
 			if not candidate.isdecimal() or candidate == stream_id or candidate in alternatives: continue
-			if _soccer_event(stream.get('name')) != event: continue
+			if _soccer_event(stream.get('name')) != event or _fixture_scope(stream['name']) != scope: continue
 			alternatives.append(candidate)
 			if len(alternatives) >= _FAILOVER_LIMIT: break
 		if alternatives:
@@ -143,8 +158,17 @@ def _request(account, action, **params):
 		return json.loads(data.decode('utf-8-sig'))
 
 
+def _catalog(account, action, **params):
+	return _catalog_get(account, action, _request, ku.translate_path(ku.profile_path), on_stale=lambda: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.'), **params)
+
+
 def _error(message):
 	ku.dialog.ok('Live TV', message)
+
+
+def next_feed(params):
+	from modules.livetv_failover import request_manual_switch
+	request_manual_switch()
 
 
 def settings(params):
@@ -207,9 +231,10 @@ def browse(params):
 		_finish(False)
 		return
 	try:
-		categories = _request(account, 'get_live_categories')
+		categories = _catalog(account, 'get_live_categories')
 		if not isinstance(categories, list): raise ValueError('Invalid response')
 		_item('Search Live TV', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
+		_item('Try another feed', {'mode': 'livetv.next', 'isFolder': 'false'}, False, None, False)
 		_item('TV guide', {'mode': 'livetv.guide'})
 		_item('All channels', {'mode': 'livetv.channels'})
 		for category in categories:
@@ -228,7 +253,7 @@ def channels(params):
 		return
 	try:
 		category = params.get('category', '')
-		streams = _request(account, 'get_live_streams', **({'category_id': category} if category else {}))
+		streams = _catalog(account, 'get_live_streams', **({'category_id': category} if category else {}))
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 		if category: _item('TV guide for this category', {'mode': 'livetv.guide_channels', 'category': category})
 		for stream in streams:
@@ -454,7 +479,7 @@ def search_results(params):
 		return
 	needle = query.casefold()
 	try:
-		streams = _request(account, 'get_live_streams')
+		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 	except (OSError, ValueError, TypeError):
 		_error('Could not search Live TV channels. Check the account and try again.')
@@ -462,21 +487,39 @@ def search_results(params):
 		return
 	streams = [s for s in streams if isinstance(s, dict) and str(s.get('stream_id') or '').isdecimal()]
 	by_epg = {}
+	event_feeds = {}
 	channel_matches = []
 	for stream in streams:
 		name = str(stream.get('name') or 'Live channel')
 		epg_id = str(stream.get('epg_channel_id') or '')
 		if epg_id: by_epg.setdefault(epg_id, []).append(stream)
+		event = _soccer_event(name)
+		if event: event_feeds.setdefault((event, _fixture_scope(name)), {})[str(stream['stream_id'])] = stream
 		if needle in name.casefold(): channel_matches.append(stream)
 	channel_matches.sort(key=lambda stream: (0 if str(stream.get('name') or '').casefold().startswith('live |') else 2 if str(stream.get('name') or '').casefold().startswith('end |') else 1))
-	for stream in channel_matches[:_SEARCH_RESULT_LIMIT]:
+	rows = []
+	seen_events = set()
+	for stream in channel_matches:
 		name = str(stream.get('name') or 'Live channel')
-		_item(name + ' (play channel)', _play_params(str(stream['stream_id']), name), False, stream.get('stream_icon'))
+		event = _soccer_event(name)
+		scope = _fixture_scope(name) if event else ''
+		key = (event, scope)
+		feeds = event_feeds.get(key, {})
+		if event and len(feeds) > 1:
+			if key in seen_events: continue
+			seen_events.add(key)
+			rows.append((name.split('|')[1].strip() + (' — ' + scope if scope else '') + ' — %d feeds' % len(feeds), {'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope}, True, stream.get('stream_icon')))
+		else:
+			rows.append((name + ' (play channel)', _play_params(str(stream['stream_id']), name), False, stream.get('stream_icon')))
+	for row in rows[:_SEARCH_RESULT_LIMIT]: _item(*row)
 	guide_count = 0
 	guide_truncated = False
 	try:
 		now = time.time()
-		programmes = _download_guide(_guide_url(account), now, set(by_epg), search_term=needle) if by_epg else {}
+		if by_epg:
+			url, wanted = _guide_url(account), set(by_epg)
+			programmes = _cached_guide_search(ku.translate_path(ku.profile_path), url, now, wanted, needle, lambda: _download_guide(url, now, wanted, search_term=needle))
+		else: programmes = {}
 		matches = heapq.nsmallest(_SEARCH_RESULT_LIMIT + 1, ((start, stop, title, epg_id, stream) for epg_id, entries in programmes.items() for start, stop, title in entries for stream in by_epg.get(epg_id, [])), key=lambda entry: entry[0])
 		guide_truncated = len(matches) > _SEARCH_RESULT_LIMIT or sum(map(len, programmes.values())) >= _SEARCH_GUIDE_LIMIT
 		for start, stop, title, epg_id, stream in matches[:_SEARCH_RESULT_LIMIT]:
@@ -486,10 +529,47 @@ def search_results(params):
 		guide_count = min(len(matches), _SEARCH_RESULT_LIMIT)
 	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
 		ku.dialog.notification('Live TV', 'TV guide unavailable; showing channel name matches only.')
-	if len(channel_matches) > _SEARCH_RESULT_LIMIT or guide_truncated:
+	if len(rows) > _SEARCH_RESULT_LIMIT or guide_truncated:
 		ku.dialog.notification('Live TV', 'Showing the first search results. Try a more specific name.')
 	elif not channel_matches and not guide_count:
 		ku.dialog.notification('Live TV', 'No matches found.')
+	_finish()
+
+
+def match_feeds(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
+		_finish(False)
+		return
+	home, away, scope = params.get('home', ''), params.get('away', ''), params.get('scope', '')
+	if not isinstance(home, str) or not isinstance(away, str) or not isinstance(scope, str) or not home or not away:
+		_finish(False)
+		return
+	try:
+		streams = _catalog(account, 'get_live_streams')
+		if not isinstance(streams, list): raise ValueError('Invalid response')
+		feeds = {}
+		for stream in streams:
+			if not isinstance(stream, dict): continue
+			stream_id = str(stream.get('stream_id') or '')
+			if stream_id.isdecimal() and _soccer_event(stream.get('name')) == (home, away) and _fixture_scope(stream['name']) == scope: feeds.setdefault(stream_id, stream)
+		choices = list(feeds.items())
+		choices.sort(key=lambda entry: 0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1)
+		if choices:
+			stream_id, first = choices[0]
+			name = str(first.get('name') or 'Live channel')
+			feed_label = name.split('|')[-1].strip()
+			_item('Play first feed — ' + feed_label, _play_params(stream_id, name), False, first.get('stream_icon'))
+			for stream_id, stream in choices:
+				name = str(stream.get('name') or 'Live channel')
+				_item(name.split('|')[-1].strip() + ' (play channel)', _play_params(stream_id, name), False, stream.get('stream_icon'))
+		else:
+			ku.dialog.notification('Live TV', 'No matching live feeds are currently available.')
+	except (OSError, ValueError, TypeError):
+		_error('Could not load matching feeds. Try again.')
+		_finish(False)
+		return
 	_finish()
 
 
@@ -500,7 +580,7 @@ def guide(params):
 		_finish(False)
 		return
 	try:
-		categories = _request(account, 'get_live_categories')
+		categories = _catalog(account, 'get_live_categories')
 		if not isinstance(categories, list): raise ValueError('Invalid response')
 		_item('Search Live TV', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 		_item('All channels', {'mode': 'livetv.guide_channels'})
@@ -522,7 +602,7 @@ def guide_channels(params):
 		return
 	try:
 		category = params.get('category', '')
-		streams = _request(account, 'get_live_streams', **({'category_id': category} if category else {}))
+		streams = _catalog(account, 'get_live_streams', **({'category_id': category} if category else {}))
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 		wanted = {str(stream['epg_channel_id']) for stream in streams if isinstance(stream, dict) and stream.get('epg_channel_id')}
 		programmes = _guide_data(account, wanted) if wanted else {}

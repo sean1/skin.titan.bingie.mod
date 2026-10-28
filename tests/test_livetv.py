@@ -19,6 +19,7 @@ def load_livetv():
 	kodi_utils.translate_path = lambda path: path
 	kodi_utils.dialog = Mock()
 	modules = types.ModuleType('modules')
+	modules.__path__ = [str(ROOT / 'resources/lib/modules')]
 	modules.kodi_utils = kodi_utils
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'xbmc': Mock(), 'xbmcgui': Mock(), 'xbmcplugin': Mock()}
 	return load_module('test_livetv_module', ROOT / 'resources/lib/menus/livetv.py', stubs)

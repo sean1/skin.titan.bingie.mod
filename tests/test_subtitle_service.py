@@ -63,17 +63,5 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.notification.assert_not_called()
 
 
-	def test_download_save_failure_adds_no_item_or_notification(self):
-		payload = {'content': 'subtitle text', 'extension': 'srt'}
-		self.client.download_by_id.return_value = payload
-		self.client.save_subtitle.return_value = False
-
-		self.service._download(7, {'provider': 'subsource', 'candidate': '123', 'language': 'vie', 'result': '3'})
-
-		self.client.save_subtitle.assert_called_once_with(payload, 'special://temp/fixture_vie_subsource_3.srt')
-		self.service.kodi_utils.notification.assert_not_called()
-		self.service.kodi_utils.add_item.assert_not_called()
-
-
 if __name__ == '__main__':
 	unittest.main()

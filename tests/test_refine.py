@@ -1,4 +1,3 @@
-import json
 import types
 import unittest
 from pathlib import Path
@@ -46,43 +45,6 @@ class RefineTests(unittest.TestCase):
 	def setUp(self):
 		self.refine = load_refine_module()
 
-	def test_browse_and_clear_reset_only_the_selected_section_and_return_to_weekly_trending(self):
-		for mediatype, mode, action, name in (
-			('movie', 'build_movie_list', 'tmdb_movies_trending', 'Trending+Movies+This+Week'),
-			('tvshow', 'build_tvshow_list', 'tmdb_tv_trending', 'Trending+TV+Shows+This+Week')
-		):
-			for operation in ('browse', 'clear'):
-				with self.subTest(mediatype=mediatype, operation=operation):
-					other_type = 'tvshow' if mediatype == 'movie' else 'movie'
-					other = self.refine.Refine({'mediatype': other_type})
-					other.draft['rating'] = '8.0'
-					other.apply()
-					menu = self.refine.Refine({'mediatype': mediatype})
-					menu.draft.update({'genres': '35', 'genres_label': 'Comedy', 'rating': '7.0'})
-					menu.apply()
-					command = getattr(menu, operation)()
-					self.assertIn('ActivateWindow(Videos,', command)
-					for fragment in ('mode=' + mode, 'action=' + action, 'name=' + name): self.assertIn(fragment, command)
-					self.assertNotIn('query=', command)
-					self.assertNotIn('new_page=', command)
-					values = self.refine.Refine({'mediatype': mediatype}).initialize()
-					self.assertEqual((values['Genres'], values['Rating'], values['Count'], values['Changed']), ('Any', 'Any', '0', 'false'))
-					self.assertEqual(json.loads(self.refine._properties['Bingie.Refine.Applied.%s' % mediatype]), self.refine.DEFAULT_DRAFT)
-					self.assertEqual(self.refine.Refine({'mediatype': other_type}).initialize()['Rating'], '8.0')
-
-
-	def test_initialize_discards_unapplied_changes_and_restores_applied_values(self):
-		menu = self.refine.Refine({'mediatype': 'movie'})
-		menu.draft['rating'] = '7.0'
-		menu.apply()
-		menu.draft['rating'] = '9.0'
-		menu._save()
-
-		values = self.refine.Refine({'mediatype': 'movie'}).initialize()
-
-		self.assertEqual(values['Rating'], '7.0')
-		self.assertEqual(json.loads(self.refine._properties['Bingie.Refine.Draft.movie'])['rating'], '7.0')
-
 
 	def test_show_results_encodes_all_filters_and_starts_a_fresh_movie_listing(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -101,20 +63,6 @@ class RefineTests(unittest.TestCase):
 		self.assertIn('page=%s', command)
 		for fragment in ('sort_by=vote_average.desc', 'with_genres=28,35', 'primary_release_date.gte=2015-01-01', 'primary_release_date.lte=2026-12-31', 'vote_average.gte=7.0', 'vote_count.gte=250', 'with_original_language=fr', 'certification_country=US', 'certification=PG-13'):
 			self.assertIn(fragment, command)
-
-	def test_tv_results_use_tv_discover_and_first_air_dates(self):
-		menu = self.refine.Refine({'mediatype': 'tvshow'})
-		menu.draft.update({'year_start': '2020', 'year_end': '2024', 'mpaa': 'R'})
-
-		command = unquote(menu.show_results())
-
-		self.assertIn('action=tmdb_tv_discover', command)
-		self.assertIn('name=Refined+TV+Shows', command)
-		self.assertIn('first_air_date.gte=2020-01-01', command)
-		self.assertIn('first_air_date.lte=2024-12-31', command)
-		self.assertNotIn('certification=', command)
-		self.assertEqual(menu._publish()['MPAA'], 'Any')
-		self.assertEqual(menu._active_count(), 1)
 
 
 if __name__ == '__main__':

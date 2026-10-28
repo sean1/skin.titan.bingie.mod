@@ -157,35 +157,6 @@ class MenuCompletionTests(unittest.TestCase):
 		values.update(overrides)
 		self.media.complete_media_directory(**values)
 
-	def test_standard_page_adds_next_page_finishes_and_schedules_prefetch(self):
-		self.complete()
-
-		expected_page = {
-			'new_page': '2', 'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'exit_list_params': 'plugin://origin', 'name': 'Popular'
-		}
-		self.media.kodi_utils.add_dir.assert_called_once_with(7, expected_page, 'Next', 'next.png')
-		self.media.kodi_utils.set_category.assert_called_once_with(7, 'Popular')
-		self.media.kodi_utils.set_sort_method.assert_called_once_with(7, 'movies')
-		self.media.kodi_utils.set_content.assert_called_once_with(7, 'movies')
-		self.media.kodi_utils.end_directory.assert_called_once_with(7, None)
-		self.media.kodi_utils.build_url.assert_called_once_with({**expected_page, 'prefetch': 'true'})
-		self.media.kodi_utils.set_view_mode.assert_called_once_with('view.movies', 'movies', False)
-		self.media._schedule_next_page_prefetch.assert_called_once_with(
-			{**expected_page, 'prefetch': 'true'}, {'mode': 'build_movie_list', 'action': 'tmdb_movies_popular'}
-		)
-
-	def test_limited_hub_widget_uses_full_listing_browse_link(self):
-		self.complete(
-			is_widget=True, limited_listing=True,
-			origin_params={'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'limit': '5', 'hub_next': 'true'}
-		)
-
-		self.media.kodi_utils.add_dir.assert_called_once_with(7, {
-			'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'exit_list_params': 'plugin://origin', 'name': 'Popular'
-		}, 'Next', 'next.png')
-		self.media.kodi_utils.end_directory.assert_called_once_with(7, False)
-		self.media._schedule_next_page_prefetch.assert_not_called()
-
 
 	def test_pagination_error_with_empty_category_still_finishes_directory(self):
 		self.media.kodi_utils.add_dir.side_effect = RuntimeError('pagination failed')

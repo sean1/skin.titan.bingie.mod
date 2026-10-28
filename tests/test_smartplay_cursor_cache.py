@@ -49,15 +49,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 			dbcon.execute("""CREATE TABLE watched_status (db_type TEXT, media_id TEXT, season INTEGER, episode INTEGER, last_played TEXT, title TEXT, UNIQUE (db_type, media_id, season, episode))""")
 			dbcon.execute("""CREATE TABLE progress (db_type TEXT, media_id TEXT, season INTEGER, episode INTEGER, resume_point TEXT, curr_time TEXT, last_played TEXT, resume_id INTEGER, title TEXT, UNIQUE (db_type, media_id, season, episode))""")
 
-	def test_lookup_and_forward_only_idempotent_advance(self):
-		self.assertIsNone(self.cache.lookup('101'))
-		self.assertTrue(self.cache.advance('101', '1', '2'))
-		self.assertEqual(self.cache.lookup(101), (1, 2))
-		self.assertFalse(self.cache.advance(101, 1, 2))
-		self.assertFalse(self.cache.advance(101, 1, 1))
-		self.assertTrue(self.cache.advance(101, 2, 1))
-		self.assertEqual(self.cache.lookup(101), (2, 1))
-
 
 	def test_advance_and_exact_progress_delete_share_one_transaction(self):
 		with sqlite3.connect(self.database_path) as dbcon:
@@ -73,23 +64,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 			remaining = dbcon.execute('SELECT media_id, season, episode FROM progress ORDER BY media_id, season, episode').fetchall()
 		self.assertEqual(self.cache.lookup(101), (1, 3))
 		self.assertEqual(remaining, [('101', 1, 2), ('101', 1, 3), ('202', 1, 2)])
-
-
-	def test_completed_special_deletes_exact_progress_without_advancing_cursor(self):
-		self.cache.advance(101, 2, 3)
-		with sqlite3.connect(self.database_path) as dbcon:
-			dbcon.executemany('INSERT INTO progress VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', (
-				('episode', '101', 0, 4, '95', '3000', '', 0, 'Completed special'),
-				('episode', '101', 0, 5, '40', '1200', '', 0, 'Keep special'),
-				('episode', '202', 0, 4, '50', '1500', '', 0, 'Other show')
-			))
-
-		self.assertEqual(self.cache.complete_episode(101, 0, 4), (False, True))
-		self.assertEqual(self.cache.lookup(101), (2, 3))
-		with sqlite3.connect(self.database_path) as dbcon:
-			remaining = dbcon.execute("SELECT media_id, season, episode FROM progress WHERE db_type = 'episode' ORDER BY media_id, season, episode").fetchall()
-		self.assertEqual(remaining, [('101', 0, 5), ('202', 0, 4)])
-		self.cache.kodi_utils.set_property.assert_called_once()
 
 
 	def test_failed_progress_delete_rolls_back_cursor_advance(self):

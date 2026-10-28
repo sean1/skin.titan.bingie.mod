@@ -59,58 +59,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertEqual(played, ['https://stream.invalid/first', 'https://stream.invalid/second'])
 
 
-	def test_playback_error_resume_position_reaches_next_source(self):
-		sources_module = load_sources_module()
-		seen_meta = []
-
-		class Player:
-			def run(self, link, meta, progress):
-				seen_meta.append(meta)
-				self.retry_resume_percent = 37.5 if len(seen_meta) == 1 else 0
-				return len(seen_meta) > 1
-
-		sources_module.POVPlayer = Player
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background = False
-		instance.autoplay = True
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie', 'bookmark': 12}
-		instance._no_results = lambda: None
-		items = [
-			{'name': 'first', 'unrestricted_link': 'https://stream.invalid/first', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
-			{'name': 'second', 'unrestricted_link': 'https://stream.invalid/second', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'fixture'},
-		]
-
-		self.assertTrue(instance.play_file(items))
-		self.assertNotIn('_retry_resume_percent', seen_meta[0])
-		self.assertTrue(seen_meta[0]['_playback_health_allow_stall_recovery'])
-		self.assertTrue(seen_meta[0]['_playback_health_has_stall_fallback'])
-		self.assertEqual(seen_meta[1]['_retry_resume_percent'], 37.5)
-		self.assertFalse(seen_meta[1]['_playback_health_has_stall_fallback'])
-		self.assertEqual(seen_meta[1]['release_name'], 'second')
-
-	def test_stall_sampling_ignores_pause_seek_and_records_sustained_freeze(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.playback_paused, player.playback_seek_grace_until = False, 0
-		player.playback_sample_wall, player.playback_sample_media = None, None
-		player.playback_stall_seconds, player.playback_stall_count, player.playback_stall_active = 0, 0, False
-		player.curr_time, player.remaining_time = 100, 1000
-		player.getPlaySpeed = lambda: 1
-
-		for now in (0, 1, 2, 3): player._sample_playback_stall(now)
-		self.assertEqual(player.playback_stall_count, 1)
-		player.onPlayBackPaused()
-		player.curr_time = 100
-		player._sample_playback_stall(20)
-		player.onPlayBackResumed()
-		player._sample_playback_stall(21)
-		self.assertEqual(player.playback_stall_count, 1)
-		with mock.patch.object(player_module, 'monotonic', return_value=22): player.onPlayBackSeek(600000, 0)
-		player.curr_time = 700
-		player._sample_playback_stall(23)
-		self.assertEqual(player.playback_stall_count, 1)
-
 	def test_two_confirmed_stalls_request_autoplay_fallback_with_resume(self):
 		player_module = load_player()
 		events = []

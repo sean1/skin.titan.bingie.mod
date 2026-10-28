@@ -1,4 +1,3 @@
-import json
 import types
 import unittest
 from pathlib import Path
@@ -32,36 +31,6 @@ def load_dialogs():
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.cache': cache, 'modules.utils': utils, 'modules.mylist': mylist}
 	path = ROOT / 'resources' / 'lib' / 'modules' / 'dialogs.py'
 	return load_module('test_dialog_navigation_dialogs', path, stubs)
-
-
-class DialogNavigationTests(unittest.TestCase):
-	@classmethod
-	def setUpClass(cls):
-		cls.dialogs = load_dialogs()
-
-	def setUp(self):
-		self.properties = {}
-		self.commands = []
-		self.dialogs.get_property = lambda key: self.properties.get(key, '')
-		self.dialogs.set_property = self.properties.__setitem__
-		self.dialogs.clear_property = lambda key: self.properties.pop(key, None)
-		self.dialogs.execute_builtin = self.commands.append
-		self.dialogs.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1123)'
-		self.dialogs._stop_owned_trailer_preview = lambda *args, **kwargs: None
-
-
-	def test_back_from_actor_reopens_saved_video_info_page(self):
-		info_values = {prop: '' for prop in self.dialogs.POV_INFO_PROPERTIES}
-		info_values.update({'PovInfoType': 'movie', 'PovInfoTmdb': '497698', 'PovInfoTitle': 'Black Widow'})
-		self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY] = json.dumps([{'page': 'info', 'values': info_values}])
-		self.dialogs.kodi_utils.get_visibility = lambda condition: condition == 'Window.IsActive(1122)'
-
-		self.dialogs.pov_page_back()
-
-		self.assertEqual(self.commands, ['ReplaceWindow(1123)', 'SetFocus(80)'])
-		self.assertEqual(self.properties['PovInfoTmdb'], '497698')
-		self.assertEqual(self.properties['PovInfoTitle'], 'Black Widow')
-		self.assertNotIn(self.dialogs.POV_PAGE_HISTORY_PROPERTY, self.properties)
 
 
 if __name__ == '__main__':

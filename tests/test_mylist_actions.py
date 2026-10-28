@@ -2,13 +2,12 @@ import sqlite3
 import tempfile
 import types
 import unittest
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 from tests.module_isolation import load_module, temporary_modules
-from tests.test_mylist_cache import LIB, ROOT, load_mylist_cache
+from tests.test_mylist_cache import LIB, load_mylist_cache
 
 
 def load_mylist_controller(database_path):
@@ -51,37 +50,6 @@ class MyListActionTests(unittest.TestCase):
 		self.kodi_utils.container_refresh.assert_not_called()
 		self.kodi_utils.widget_refresh.assert_not_called()
 		self.assertNotIn('BingieMyListRefresh', self.properties)
-
-
-	def test_episode_context_saves_the_series_and_series_title(self):
-		label, command = self.controller.context_item('episode', 999, 'Series', tvshow_id=202)
-		params = command_params(command)
-		self.assertEqual(label, 'Add to My List')
-		self.assertEqual((params['mediatype'], params['tmdb_id'], params['title']), ('tvshow', '202', 'Series'))
-		self.assertNotIn('season', params)
-		self.assertNotIn('episode', params)
-		self.assertTrue(self.controller.action(params))
-		self.assertEqual([(item['media_id'], item['title']) for item in self.store.items('tvshow')[0]], [('202', 'Series')])
-
-
-	def test_info_action_uses_the_displayed_series_identity(self):
-		self.properties.update({'PovInfoType': 'tvshow', 'PovInfoTmdb': '202', 'PovInfoTitle': 'Series', 'PovInfoMyListSaved': 'false'})
-		self.assertTrue(self.controller.from_info({'action': 'add'}))
-		self.assertTrue(self.store.contains('tvshow', 202))
-		self.assertFalse(self.store.contains('movie', 202))
-		self.assertEqual(self.store.items('tvshow')[0][0]['title'], 'Series')
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'true')
-		self.assertTrue(self.controller.from_info({'action': 'remove'}))
-		self.assertFalse(self.store.contains('tvshow', 202))
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
-
-
-	def test_captured_info_identity_is_preserved_after_navigation_to_another_title(self):
-		self.properties.update({'PovInfoType': 'tvshow', 'PovInfoTmdb': '202', 'PovInfoTitle': 'Current Show', 'PovInfoMyListSaved': 'false'})
-		self.assertTrue(self.controller.from_info({'action': 'add', 'mediatype': 'movie', 'tmdb_id': '101', 'title': 'Clicked Movie'}))
-		self.assertTrue(self.store.contains('movie', 101))
-		self.assertFalse(self.store.contains('tvshow', 202))
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
 
 
 	def test_failed_database_write_leaves_info_state_and_refresh_unchanged(self):

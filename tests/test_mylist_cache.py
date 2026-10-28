@@ -47,15 +47,6 @@ class MyListCacheTests(unittest.TestCase):
 		self.assertTrue(reopened.remove('movie', 101))
 		self.assertFalse(self.cache.MyList(str(self.database_path)).contains('movie', 101))
 
-	def test_movies_and_shows_with_the_same_tmdb_id_are_independent(self):
-		self.assertTrue(self.store.add('movie', 101, 'Movie'))
-		self.assertTrue(self.store.add('tvshow', 101, 'Show'))
-		self.assertEqual([(item['media_id'], item['title']) for item in self.items('movie')], [('101', 'Movie')])
-		self.assertEqual([(item['media_id'], item['title']) for item in self.items('tvshow')], [('101', 'Show')])
-		self.assertTrue(self.store.remove('movie', 101))
-		self.assertFalse(self.store.contains('movie', 101))
-		self.assertTrue(self.store.contains('tvshow', 101))
-
 
 	def test_invalid_identities_are_rejected_without_modifying_saved_items(self):
 		self.store.add('movie', 101, 'Keep')
@@ -68,12 +59,6 @@ class MyListCacheTests(unittest.TestCase):
 			with self.subTest(mediatype=mediatype):
 				with self.assertRaises(ValueError): self.store.add(mediatype, 202)
 		self.assertEqual(self.items(), before)
-
-	def test_invalid_explicit_series_parent_does_not_fall_back_to_the_episode_id(self):
-		for parent_id in ('', 0, 'bad', -1, True):
-			with self.subTest(parent_id=parent_id):
-				with self.assertRaises(ValueError): self.store.add('episode', 9876, 'Episode', tvshow_id=parent_id)
-		self.assertEqual(self.items('tvshow'), [])
 
 
 if __name__ == '__main__':

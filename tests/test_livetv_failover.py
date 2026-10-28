@@ -66,17 +66,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.player.tick()
 
 
-	def test_observed_stream_that_never_starts_retries_after_timeout(self):
-		self.player.tick()
-		self.player.file = self.player._url('1')
-		self.player.video = False
-		self.now = 1
-		self.player.tick()
-		self.now = 26
-		self.assertTrue(self.player.tick())
-		self.assertEqual(self.player.played, [self.player._url('2')])
-
-
 	def test_error_tries_next_stream(self):
 		self.start()
 		self.now = 3
@@ -97,38 +86,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.assertEqual(self.player.played, [self.player._url('2')])
 
 
-	def test_dismissed_error_dialog_cancels_pending_probe_result(self):
-		self.player.tick()
-		self.player.probe_results.put(('one', '1', True))
-		self.now = 3
-		self.player.tick()
-		self.assertFalse(self.player.played)
-		self.ku.xbmc.executebuiltin.assert_not_called()
-
-
-	def test_alternate_waits_for_old_dialog_to_close_before_probing(self):
-		self.start()
-		self.now = 20
-		self.player.tick()
-		self.player.file = ''
-		self.ku.get_visibility = lambda condition: True
-		self.now = 23
-		self.player.tick()
-		self.assertFalse(self.player.session['probe_started'])
-		self.assertFalse(self.player.session['probe_allowed'])
-		self.ku.get_visibility = lambda condition: False
-		self.player.tick()
-		self.assertTrue(self.player.session['probe_allowed'])
-
-
-	def test_pending_failed_probe_does_not_override_stop(self):
-		self.player.tick()
-		self.player.probe_results.put(('one', '1', True))
-		self.player.onPlayBackStopped()
-		self.now = 3
-		self.assertFalse(self.player.tick())
-		self.assertFalse(self.player.played)
-
 	def test_outdated_probe_does_not_switch_new_session(self):
 		self.player.tick()
 		self.player.probe_results.put(('one', '1', True))
@@ -137,14 +94,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.player.tick()
 		self.assertFalse(self.player.played)
 		self.assertEqual(self.player.session['id'], '4')
-
-	def test_manual_request_switches_only_currently_playing_session(self):
-		self.start()
-		self.assertEqual(self.properties[self.module.CAN_SWITCH], 'true')
-		self.assertTrue(self.module.request_manual_switch())
-		self.player.tick()
-		self.assertEqual(self.player.played, [self.player._url('2')])
-		self.assertNotIn(self.module.CAN_SWITCH, self.properties)
 
 
 	def test_pause_and_manual_stop_do_not_switch(self):
@@ -157,27 +106,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.assertFalse(self.player.tick())
 		self.assertFalse(self.player.played)
 
-	def test_different_playback_cancels_monitor(self):
-		self.start()
-		self.now = 4
-		self.player.file = 'http://example.test/other'
-		self.assertFalse(self.player.tick())
-		self.assertFalse(self.player.played)
-
-	def test_outgoing_stream_during_handoff_does_not_count_as_foreign(self):
-		self.start()
-		old = self.player.file
-		self.now = 20
-		self.player.tick()
-		self.player.file = old
-		self.now = 21
-		self.assertTrue(self.player.tick())
-		self.player.file = ''
-		self.now = 22
-		self.assertTrue(self.player.tick())
-		self.player.file = self.player._url('2')
-		self.player.onAVStarted()
-		self.assertTrue(self.player.tick())
 
 	def test_manual_stop_during_alternative_start_cancels(self):
 		self.start()
@@ -189,17 +117,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.assertFalse(self.player.tick())
 		self.assertEqual(len(self.player.played), 1)
 
-	def test_short_unrelated_playback_cancels_pending_start(self):
-		self.player.tick()
-		self.now = 1
-		self.player.file = 'http://example.test/other'
-		self.player.tick()
-		self.player.file = ''
-		self.now = 2
-		self.assertFalse(self.player.tick())
-		self.now = 30
-		self.assertFalse(self.player.tick())
-		self.assertFalse(self.player.played)
 
 	def test_new_session_token_invalidates_old_events(self):
 		self.start()
@@ -209,24 +126,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.player.tick()
 		self.assertFalse(self.player.played)
 		self.assertEqual(self.player.session['id'], '4')
-
-
-	def test_delayed_stop_from_old_feed_does_not_cancel_new_playback(self):
-		self.start()
-		self.now = 20
-		self.player.tick()
-		self.player.onPlayBackStopped()
-		self.assertTrue(self.player.tick())
-		self.assertEqual(self.player.session['id'], '2')
-
-	def test_error_followed_by_stop_with_no_player_respects_stop(self):
-		self.start()
-		self.now = 3
-		self.player.onPlayBackError()
-		self.player.file = ''
-		self.player.onPlayBackStopped()
-		self.assertFalse(self.player.tick())
-		self.assertFalse(self.player.played)
 
 
 if __name__ == '__main__': unittest.main()

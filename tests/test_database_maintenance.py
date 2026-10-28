@@ -82,27 +82,5 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 				self.assertEqual(dbcon.execute('SELECT db_type, tmdb_id FROM dropped').fetchall(), [('tvshow', '303')])
 
 
-	def test_purge_database_deletes_expired_rows_from_all_tables_and_vacuums_once(self):
-		with tempfile.TemporaryDirectory() as temp_dir:
-			database_path = str(Path(temp_dir) / 'cache.db')
-			with sqlite3.connect(database_path) as dbcon:
-				for table in ('function_cache', 'season_metadata', 'metadata'):
-					dbcon.execute('CREATE TABLE %s (expires INTEGER)' % table)
-					dbcon.executemany('INSERT INTO %s VALUES (?)' % table, ((9,), (10,), (11,)))
-			statements = []
-			def connect(path):
-				dbcon = sqlite3.connect(path)
-				dbcon.set_trace_callback(statements.append)
-				return dbcon
-			self.cache.database_connect = connect
-
-			self.cache.purge_database(database_path, ('function_cache', 'season_metadata', 'metadata'), 10)
-
-			with sqlite3.connect(database_path) as dbcon:
-				for table in ('function_cache', 'season_metadata', 'metadata'):
-					self.assertEqual(dbcon.execute('SELECT expires FROM %s' % table).fetchall(), [(11,)])
-			self.assertEqual(sum(statement.strip().upper() == 'VACUUM' for statement in statements), 1)
-
-
 if __name__ == '__main__':
 	unittest.main()

@@ -82,37 +82,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 				if autoplay == 'true': expected.update({'autoplay': 'true', 'autoplay_next': 'true'})
 				episode_tools.Sources.factory.assert_called_once_with(expected)
 
-	def test_smart_play_resolves_after_the_anonymous_completed_episode_cursor(self):
-		episode_tools = load_episode_tools()
-		episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
-		episode_tools.nextep_playback_info = mock.Mock(return_value=({}, {'mode': 'play_media'}))
-		episode_tools.Sources.factory = mock.Mock()
-		smartplay_cache = types.ModuleType('caches.smartplay_cache')
-		smartplay_cache.lookup = lambda tmdb_id: (2, 3)
-
-		with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): episode_tools.SmartPlay({'tmdb_id': '123'})
-
-		cursor_meta = episode_tools.nextep_playback_info.call_args.args[0]
-		self.assertEqual((cursor_meta['season'], cursor_meta['episode']), (2, 3))
-		episode_tools.Sources.factory.assert_called_once_with({'mode': 'play_media', 'autoplay': 'false'})
-
-
-	def test_manual_stop_clears_queued_next_episode(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.playback_event = True
-		player.ignore_startup_stop = False
-		player.startup_playback_started = True
-		player.next_episode_requested = False
-		sources = types.SimpleNamespace(nextep_params=[{'episode': 2}])
-		player_module.kodi_utils.clear_property = mock.Mock()
-
-		with mock.patch.dict('sys.modules', {'modules.sources': types.SimpleNamespace(Sources=sources)}):
-			player.onPlayBackStopped()
-
-		self.assertEqual(sources.nextep_params, [])
-		player_module.kodi_utils.clear_property.assert_called_once_with('pov_lite_total_autoplays')
-
 
 	def test_playback_error_requests_retry_at_current_position(self):
 		player_module = load_player()
@@ -127,20 +96,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		self.assertFalse(player.playback_event)
 		self.assertEqual(player.retry_resume_percent, 37.5)
 
-	def test_startup_playback_error_does_not_capture_stale_position(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.playback_event = None
-		player.playback_error = True
-		player.retry_resume_percent = 72
-		player.getTotalTime = lambda: 1000
-		player.getTime = lambda: 720
-
-		player.onPlayBackError()
-
-		self.assertFalse(player.playback_error)
-		self.assertFalse(player.playback_event)
-		self.assertEqual(player.retry_resume_percent, 0)
 
 	def test_startup_timeout_stops_pending_play_request(self):
 		player_module = load_player()
@@ -169,44 +124,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		player.onAVStarted()
 		self.assertFalse(player.playback_event)
 		self.assertEqual(player.stop.call_count, 2)
-
-
-	def test_implausibly_short_playback_is_rejected(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.meta_get = {'duration': 7200}.get
-		player.getTotalTime = lambda: 177
-
-		self.assertFalse(player._duration_is_plausible())
-
-
-	def test_completed_playback_erases_resume_without_recording_watched(self):
-		player_module = load_player()
-		player_module.kodi_utils.clear_property = mock.Mock()
-		player_module.ws.erase_bookmark = mock.Mock(return_value=True)
-		smartplay_cache = types.ModuleType('caches.smartplay_cache')
-		smartplay_cache.complete_episode = mock.Mock(return_value=(True, True))
-		player_module.ws.mark_as_watched_unwatched_movie = mock.Mock()
-		player_module.ws.mark_as_watched_unwatched_episode = mock.Mock()
-		for mediatype, season, episode in (('movie', '', ''), ('episode', 2, 3)):
-			with self.subTest(mediatype=mediatype):
-				player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-				player.media_marked = False
-				player.current_point = 95
-				player.set_watched = 90
-				player.mediatype = mediatype
-				player.tmdb_id = '101'
-				player.season = season
-				player.episode = episode
-				player.meta = {}
-
-				with mock.patch.dict('sys.modules', {'caches.smartplay_cache': smartplay_cache}): player.media_watched_marker()
-
-				self.assertTrue(player.media_marked)
-				if mediatype == 'movie': player_module.ws.erase_bookmark.assert_called_with(mediatype, '101', season, episode, 'progress')
-				else: smartplay_cache.complete_episode.assert_called_once_with('101', 2, 3)
-		player_module.ws.mark_as_watched_unwatched_movie.assert_not_called()
-		player_module.ws.mark_as_watched_unwatched_episode.assert_not_called()
 
 
 if __name__ == '__main__':

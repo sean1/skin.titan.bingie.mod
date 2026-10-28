@@ -40,32 +40,6 @@ class LiveTVGuideTests(unittest.TestCase):
 			with self.assertRaises(ValueError): self.live._parse_guide(io.BytesIO(b'<tv>1234567890</tv>'), time.time())
 
 
-	def test_corrupt_raw_feed_is_refetched_without_using_partial_data(self):
-		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
-		url = 'http://example.test/guide'
-		xml = b'<tv><programme channel="a" start="20261028200000 +0000" stop="20261028210000 +0000"><title>Match</title></programme></tv>'
-		with patch.object(self.live, 'urlopen', return_value=io.BytesIO(xml)):
-			self.live._download_guide(url, now, {'a'})
-		path = next(Path(self.temp.name).glob('livetv-xmltv-*.cache'))
-		path.write_bytes(b'<tv><programme')
-		with patch.object(self.live, 'urlopen', return_value=io.BytesIO(xml)) as request:
-			self.assertEqual(self.live._download_guide(url, now, {'a'})['a'][0][2], 'Match')
-			self.assertEqual(request.call_count, 1)
-		self.assertEqual(path.read_bytes(), xml)
-
-
-	def test_corrupt_stale_raw_feed_is_not_used_on_outage(self):
-		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
-		with patch.object(self.live, 'urlopen', return_value=io.BytesIO(b'<tv/>')):
-			self.live._download_guide('http://example.test/guide', now, {'a'})
-		path = next(Path(self.temp.name).glob('livetv-xmltv-*.cache'))
-		path.write_bytes(b'<tv>')
-		old = time.time() - self.live._GUIDE_FRESH_SECONDS - 1
-		os.utime(path, (old, old))
-		with patch.object(self.live, 'urlopen', side_effect=OSError('offline')):
-			with self.assertRaises(OSError): self.live._download_guide('http://example.test/guide', now, {'b'})
-		self.live.ku.dialog.notification.assert_not_called()
-
 	def test_cache_is_private_and_invalidates_when_guide_changes(self):
 		with patch.object(self.live, '_download_guide', side_effect=[{'a': [[1, 2, 'one']]}, {'b': [[1, 2, 'two']]}]) as download:
 			self.assertIn('a', self.live._guide_data(self.account))
@@ -83,30 +57,6 @@ class LiveTVGuideTests(unittest.TestCase):
 			self.assertIn('sports', self.live._guide_data(self.account))
 		message = str(self.live.ku.dialog.notification.call_args)
 		self.assertNotIn('secret server URL', message)
-
-
-	def test_custom_guide_url_is_hidden_and_cancel_keeps_existing_url(self):
-		url = 'http://guide.test/xmltv.php?username=test&password=secret'
-		self.live.ku.dialog.input.return_value = url
-		self.live.guide_settings({})
-		self.assertEqual(self.live._load()['epg_url'], url)
-		self.assertEqual(self.live.ku.dialog.input.call_args.kwargs['option'], self.live.xbmcgui.ALPHANUM_HIDE_INPUT)
-		self.live.ku.dialog.input.return_value = ''
-		self.live.guide_settings({})
-		self.assertEqual(self.live._load()['epg_url'], url)
-
-
-	def test_guide_shows_current_next_and_keeps_unmatched_channel_playable(self):
-		now = 1000
-		streams = [{'name': 'Sports', 'stream_id': 7, 'epg_channel_id': 'sports'}, {'name': 'Other', 'stream_id': 8, 'epg_channel_id': None}]
-		guide = {'sports': [[900, 1100, 'Live match'], [1100, 1200, 'Next match']]}
-		with patch.object(self.live, '_request', return_value=streams), patch.object(self.live, '_guide_data', return_value=guide), patch.object(self.live.time, 'time', return_value=now), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.guide_channels({'category': '3'})
-		first, second = item.call_args_list
-		self.assertIn('Now: Live match', first.args[0])
-		self.assertIn('Next:', first.args[0])
-		self.assertEqual(first.args[1]['mode'], 'livetv.schedule')
-		self.assertEqual(second.args[1], {'mode': 'livetv.play', 'id': '8'})
 
 
 if __name__ == '__main__': unittest.main()

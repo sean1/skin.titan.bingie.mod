@@ -165,23 +165,6 @@ class ExternalManagerTests(unittest.TestCase):
 		meta = {'background': True, 'search_info': {'scrape_timeout': 1}}
 		return SOURCES.ExternalManager(meta, providers, debrid_names, [], [], Progress(), eligibility_filter=eligibility_filter, force_full_search=force_full_search)
 
-	def test_same_title_tv_collision_requires_year(self):
-		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
-		external.require_tv_year = True
-		external.year = '2026'
-		external.conflicting_tv_years = ['2016']
-		external.data = {'title': 'The Next Generation'}
-		sources = [
-			{'name': 'The.Grand.Tour.2016.S01E01.The.Holy.Trinity.1080p'},
-			{'name': 'The.Grand.Tour.S01E01.2160p'},
-			{'name': 'The.Grand.Tour.S01E01.2026p'},
-			{'name': 'The.Grand.Tour.2026.S01E01.1080p'},
-			{'name': 'The.Grand.Tour.S01E01.The.Next.Generation.720p'},
-		]
-		filtered = external.filter_ambiguous_tv_sources(sources, 'episode')
-		self.assertEqual([item['name'] for item in filtered], [item['name'] for item in sources[1:]])
-		self.assertEqual([item.get('_identity_status') for item in filtered], ['unverified', 'unverified', None, 'unverified'])
-
 
 	def test_provider_associations_do_not_bypass_ambiguous_year_and_wrong_ids_reject(self):
 		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')

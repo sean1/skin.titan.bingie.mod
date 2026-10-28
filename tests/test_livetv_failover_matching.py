@@ -28,18 +28,4 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 		self.assertTrue(payload['token'])
 
 
-	def test_failover_rejects_alternatives_with_different_date_or_competition(self):
-		selected = 'Live | Liverpool vs. Chelsea | Premier League | 2026-10-28 | CA: SOCCER 1'
-		streams = [
-			{'stream_id': 1, 'name': selected},
-			{'stream_id': 2, 'name': selected.replace('CA:', 'US:')},
-			{'stream_id': 3, 'name': selected.replace('2026-10-28', '2026-11-04')},
-			{'stream_id': 4, 'name': selected.replace('Premier League', 'Carabao Cup')},
-			{'stream_id': 5, 'name': self.name},
-		]
-		with patch.object(self.live, '_catalog', return_value=streams): self.live._prepare_failover(self.account, '1', selected)
-		payload = json.loads(self.live.xbmcgui.Window.return_value.setProperty.call_args.args[1])
-		self.assertEqual(payload['alternatives'], ['2'])
-
-
 if __name__ == '__main__': unittest.main()

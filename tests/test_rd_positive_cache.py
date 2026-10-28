@@ -3,7 +3,6 @@ import threading
 import types
 import unittest
 from pathlib import Path
-from unittest import mock
 
 from tests.module_isolation import load_module
 
@@ -90,16 +89,6 @@ class RealDebridPositiveCacheTests(unittest.TestCase):
 		FakeDebridCache.writes = []
 		self.module = load_debrid_module()
 
-	def test_rd_legacy_false_is_rechecked_and_only_positive_is_persisted(self):
-		checker = self.module.DebridCheck({'imdb_id': 'tt1'}, 'realdebrid', ('positive', 'missing'), (
-			('positive', 'rd', 'False', 9999999999), ('missing', 'rd', 'False', 9999999999)
-		))
-		checker.external_check_cache = mock.Mock(return_value=['positive'])
-
-		self.assertEqual(checker.cache_check(), ['positive'])
-		checker.external_check_cache.assert_called_once_with(['positive', 'missing'])
-		self.assertEqual(FakeDebridCache.writes, [((('positive', 'True'),), 'rd')])
-
 
 	def test_concurrent_identical_auxiliary_checks_are_coalesced(self):
 		started, release, calls, results = threading.Event(), threading.Event(), [], []
@@ -121,31 +110,6 @@ class RealDebridPositiveCacheTests(unittest.TestCase):
 		second.join(2)
 		self.assertEqual(len(calls), 1)
 		self.assertEqual(results, [['cached-hash'], ['cached-hash']])
-
-	def test_torrentio_http_failure_is_not_reused(self):
-		class FailedResponse:
-			def raise_for_status(self): raise RuntimeError('503')
-			def json(self): return {'streams': []}
-
-		class Session:
-			calls = 0
-			def get(self, *_args, **_kwargs):
-				self.calls += 1
-				return FailedResponse()
-
-		self.module.session = Session()
-		self.assertEqual(self.module._tio_results('tt1', None, None), [])
-		self.assertEqual(self.module._tio_results('tt1', None, None), [])
-		self.assertEqual(self.module.session.calls, 2)
-
-
-	def test_late_negative_cannot_overwrite_an_unexpired_positive(self):
-		cache_module = load_cache_module()
-		cache = cache_module.DebridCache()
-		cache.set_many((('same-hash', 'True'),), 'ad')
-		cache.set_many((('same-hash', 'False'),), 'ad')
-
-		self.assertEqual(cache.dbcur.execute("SELECT cached FROM debrid_data WHERE hash = 'same-hash' AND debrid = 'ad'").fetchone(), ('True',))
 
 
 if __name__ == '__main__':

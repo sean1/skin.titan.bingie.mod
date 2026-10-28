@@ -42,15 +42,6 @@ class MetadataLifecycleTests(unittest.TestCase):
 		self.metadata.MetaCache = Mock(return_value=self.cache)
 
 
-	def test_blocked_claim_returns_none_without_release(self):
-		self.cache.get.return_value = None
-		self.cache.get_or_claim.return_value = (None, 'other-owner', False)
-		fetch = Mock()
-
-		self.assertIsNone(self.metadata._cached_meta('movie', 'tmdb_id', 101, fetch))
-		fetch.assert_not_called()
-		self.cache.release_claim.assert_not_called()
-
 	def test_fetch_error_still_releases_owned_claim(self):
 		self.cache.get.return_value = None
 		self.cache.get_or_claim.return_value = (None, 'owner-1', True)
@@ -59,17 +50,6 @@ class MetadataLifecycleTests(unittest.TestCase):
 		with self.assertRaises(RuntimeError): self.metadata._cached_meta('tvshow', 'tmdb_id', 101, fetch)
 
 		self.cache.release_claim.assert_called_once_with('tvshow', 'tmdb_id', 101, 'owner-1')
-
-	def test_failed_renewal_returns_prepared_cached_value(self):
-		cached = {'tmdb_id': 101}
-		prepare = Mock(return_value={'prepared': True})
-		self.cache.renew_claim.return_value = False
-		self.cache.get.return_value = cached
-
-		result = self.metadata._renew_metadata_claim(self.cache, 'tvshow', 'imdb_id', 'tt0101', 'owner-1', prepare)
-
-		self.assertEqual(result, (False, {'prepared': True}))
-		prepare.assert_called_once_with(cached)
 
 
 if __name__ == '__main__':

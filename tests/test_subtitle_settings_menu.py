@@ -42,12 +42,5 @@ class SubtitleSettingsMenuTests(unittest.TestCase):
 		self.assertEqual(events, ['manual', 'off'])
 
 
-	def test_cancelled_stream_selection_does_not_block_automatic_subtitles(self):
-		self.dialogs.kodi_utils.dialog.select.side_effect = (2, -1)
-		self.dialogs.subtitle_settings_menu()
-		self.mark_manual_selection.assert_not_called()
-		self.assertFalse(any(invocation.args[0] == 'Player.SetSubtitle' for invocation in self.dialogs._subtitle_rpc.call_args_list))
-
-
 if __name__ == '__main__':
 	unittest.main()

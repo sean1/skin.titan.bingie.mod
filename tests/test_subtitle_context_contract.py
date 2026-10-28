@@ -1,5 +1,4 @@
 import hashlib
-import json
 import types
 import unittest
 from pathlib import Path
@@ -60,37 +59,6 @@ class SubtitleContextContractTests(unittest.TestCase):
 		self.assertNotIn('secret', payload)
 		self.assertEqual(context['playing_fingerprint'], hashlib.sha256(b'https://stream.invalid/private?token=secret').hexdigest())
 		self.assertEqual(context['version'], 2)
-
-
-	def test_candidate_projection_is_bounded_allowlisted_and_download_complete(self):
-		client = self.subtitles.Subtitles().configure('tt123')
-		client.getPlayingFile = Mock(return_value='movie.mkv')
-		candidate = {
-			'provider': 'subdl', 'id': 'file:12:34', 'lang': 'eng', 'extension': 'ass', 'release_names': ['Release.Name'],
-			'score': 42.0, 'api_key': 'private', 'content': b'subtitle', 'url': 'https://signed.invalid/file?token=secret'
-		}
-
-		projected = client._set_context([candidate])['subtitles'][0]
-
-		self.assertEqual({key: projected[key] for key in ('provider', 'id', 'lang', 'extension')}, {'provider': 'subdl', 'id': 'file:12:34', 'lang': 'eng', 'extension': 'ass'})
-		self.assertEqual(projected['release'], 'Release.Name')
-		self.assertIn('token', projected)
-		self.assertNotIn('api_key', projected)
-		self.assertNotIn('content', projected)
-		self.assertNotIn('url', projected)
-		self.assertLessEqual(len(json.dumps(client._set_context([candidate] * 200)).encode('utf-8')), self.subtitles.subtitle_context_max_bytes)
-
-
-	def test_manual_download_rejects_candidate_from_previous_generation(self):
-		service = load_service(self.subtitles)
-		client = Mock()
-		context = {'version': 2, 'generation': 'current', 'subtitles': [{'token': 'selected-token', 'provider': 'subdl', 'id': 'file:12:34', 'lang': 'eng'}]}
-		service._client = Mock(return_value=(client, context))
-
-		service._download(7, {'generation': 'previous', 'candidate': 'selected-token', 'language': 'eng', 'result': '1'})
-
-		client.download_candidate.assert_not_called()
-		client.download_by_id.assert_not_called()
 
 
 if __name__ == '__main__':

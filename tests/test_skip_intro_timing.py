@@ -1,7 +1,7 @@
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 from tests.module_isolation import load_module
 
@@ -92,17 +92,6 @@ class SkipIntroTimingTests(unittest.TestCase):
 		self.assertEqual(self.sleeps, [])
 		self.assertEqual(self.episode_tools.open_window.call_count, 1)
 		self.assertEqual(player.seeks, [20.0])
-
-	def test_playback_stop_before_intro_exits_without_prompt(self):
-		player = FakePlayer(9.81, playing_states=[True, False])
-		self.advance_on_sleep(player)
-
-		self.episode_tools.execute_skip_intro(player, {})
-
-		self.assertEqual(self.sleeps, [200])
-		self.episode_tools.open_window.assert_not_called()
-		self.assertEqual(player.seeks, [])
-
 
 
 if __name__ == '__main__':

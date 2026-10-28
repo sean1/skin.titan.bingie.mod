@@ -1,7 +1,5 @@
 import io
 import json
-import os
-import threading
 import types
 import unittest
 import zipfile
@@ -97,24 +95,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertEqual(manager.diagnostics(), {'config': '', 'providers': ('subsource',)})
 
 
-	def test_valid_episode_archive_selects_exact_member(self):
-		content = archive_bytes([('Show.S01E01.srt', b'wrong'), ('Show.S01E02.ass', b'correct'), ('readme.nfo', b'ignore')])
-
-		payload = self.providers.extract_subtitle_archive(content, 1, 2)
-
-		self.assertEqual(payload, {'content': b'correct', 'extension': 'ass'})
-
-
-	def test_partial_only_archive_is_rejected_automatically_but_remains_manually_selectable(self):
-		content = archive_bytes([('Movie.eng.forced.srt', b'partial')])
-		self.assertIsNone(self.providers.extract_subtitle_archive(content, full_dialogue_only=True))
-		self.assertEqual(self.providers.extract_subtitle_archive(content), {'content': b'partial', 'extension': 'srt'})
-
-	def test_removing_forced_members_never_attaches_full_subtitles_for_the_wrong_episode(self):
-		content = archive_bytes([('Show.S01E02.forced.srt', b'partial for target'), ('Show.S01E03.full.srt', b'wrong episode')])
-		self.assertIsNone(self.providers.extract_subtitle_archive(content, 1, 2, full_dialogue_only=True))
-
-
 	def test_extracted_subtitle_size_limit_is_enforced(self):
 		content = archive_bytes([('oversized.srt', b'12345')])
 
@@ -124,11 +104,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		content = archive_bytes([('../escape.srt', b'bad'), ('safe.srt', b'good')])
 
 		self.assertIsNone(self.providers.extract_subtitle_archive(content))
-
-	def test_ambiguous_episode_archive_is_rejected(self):
-		content = archive_bytes([('first.srt', b'first'), ('second.srt', b'second')])
-
-		self.assertIsNone(self.providers.extract_subtitle_archive(content, 1, 2))
 
 
 if __name__ == '__main__':

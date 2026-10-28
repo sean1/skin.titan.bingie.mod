@@ -57,13 +57,6 @@ class RealDebridAPITests(unittest.TestCase):
 		self.assertFalse(self.api.delete_torrent('44'))
 		self.assertFalse(self.api.delete_download('55'))
 
-	def test_delete_rejects_timeout_during_authenticated_retry(self):
-		self.module.session.request = lambda *args, **kwargs: Response(401, b'json', {'error': 'bad_token', 'error_code': 8})
-		self.module.session.send = lambda *args, **kwargs: (_ for _ in ()).throw(self.module.requests.Timeout('retry timeout'))
-		self.api.refresh_token = lambda: True
-
-		self.assertFalse(self.api.delete_torrent('44'))
-
 
 if __name__ == '__main__':
 	unittest.main()

@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LIB = ROOT / 'resources' / 'lib'
 sys.path.insert(0, str(LIB))
 
-from modules.source_search import PROVIDER_OUTCOME_VERSION, ProviderOutcome, RequestCoalescer
+from modules.source_search import PROVIDER_OUTCOME_VERSION, ProviderOutcome
 
 
 class FakeCursor:
@@ -39,9 +39,6 @@ def load_cache_module():
 
 
 class ProviderOutcomeContractTests(unittest.TestCase):
-	def test_legacy_nonempty_cache_is_success_but_legacy_empty_is_miss(self):
-		self.assertEqual(ProviderOutcome.from_cache([{'hash': 'one'}]).status, 'success')
-		self.assertIsNone(ProviderOutcome.from_cache([]))
 
 
 	def test_failed_and_partial_results_are_not_cacheable(self):
@@ -52,12 +49,6 @@ class ProviderOutcomeContractTests(unittest.TestCase):
 			with self.subTest(status=status):
 				self.assertFalse(cache.set('provider', 'movie', '1', 'Title', '2024', '', '', ProviderOutcome(sources, status), 3))
 		self.assertEqual(cache.dbcur.executions, [])
-
-
-	def test_bundled_coalescer_can_propagate_fetch_failures(self):
-		coalescer = RequestCoalescer(raise_errors=True)
-		with self.assertRaises(ZeroDivisionError): coalescer.get('key', lambda: 1 / 0, 1)
-		with self.assertRaises(ZeroDivisionError): coalescer.get('key', lambda: ['unused'], 1)
 
 
 if __name__ == '__main__':

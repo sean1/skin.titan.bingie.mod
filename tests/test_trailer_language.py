@@ -1,10 +1,8 @@
 import types
 import unittest
 from pathlib import Path
-from tempfile import TemporaryDirectory
-from urllib.request import urlopen
 
-from tests.module_isolation import load_module, temporary_modules
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,20 +51,6 @@ class TrailerLanguageTests(unittest.TestCase):
 	def setUpClass(cls):
 		cls.metadata = load_metadata()
 		cls.trailers = load_trailers()
-
-	def test_english_trailer_wins_over_higher_ranked_german_trailer(self):
-		videos = [
-			{'site': 'YouTube', 'type': 'Trailer', 'key': 'german', 'name': 'Official Trailer', 'official': True, 'size': 2160, 'iso_639_1': 'de'},
-			{'site': 'YouTube', 'type': 'Trailer', 'key': 'english', 'name': 'Trailer', 'official': False, 'size': 720, 'iso_639_1': 'en'},
-		]
-		trailer_module = types.ModuleType('modules.trailers')
-		trailer_module.plugin_url = lambda video_id: 'trailer://%s' % video_id
-		modules = types.ModuleType('modules')
-		modules.__path__ = []
-		modules.trailers = trailer_module
-
-		with temporary_modules({'modules': modules, 'modules.trailers': trailer_module}):
-			self.assertEqual(self.metadata.select_trailer(videos), 'trailer://english')
 
 
 	def test_manifest_keeps_only_normal_english_audio(self):

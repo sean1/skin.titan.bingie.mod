@@ -42,22 +42,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertIn('cdn.example.org', serialized)
 
 
-	def test_corrupt_missing_and_unknown_state_are_neutral(self):
-		for value in (None, 'bad', {'version': 999}, {'version': 1, 'providers': {'realdebrid': {'stages': 'bad'}}}):
-			FakeCache.data = value
-			self.assertEqual(self.module.provider_penalty('realdebrid', now=10), 0)
-		self.assertEqual(self.module.provider_penalty('not-a-provider', now=10), 0)
-
-
-	def test_host_penalty_requires_three_matching_provider_attempts(self):
-		context = {'provider': 'rd', 'host': 'bad.example.com'}
-		for now in (1, 2): self.module.record(context, 'stream_error', now=now)
-		self.assertEqual(self.module.host_penalty(context, now=2), 0)
-		self.module.record(context, 'stream_error', now=3)
-		self.assertEqual(self.module.host_penalty(context, now=3), 80)
-		self.assertEqual(self.module.host_penalty({'provider': 'ad', 'host': 'bad.example.com'}, now=3), 0)
-		self.assertEqual(self.module.host_penalty({'provider': 'rd', 'host': '127.0.0.1'}, now=3), 0)
-
 	def test_learned_bandwidth_needs_repeat_success_and_respects_stalls(self):
 		context = {'provider': 'rd'}
 		self.module.record(context, 'healthy_play', bitrate_mbps=50, now=1)

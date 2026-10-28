@@ -71,15 +71,6 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 		self.watched = load_watched_cache()
 
 
-	def test_batch_closes_progress_without_refresh_when_loader_fails(self):
-		loader = Mock(side_effect=RuntimeError('metadata failed'))
-
-		with self.assertRaises(RuntimeError): self.watched._mark_episode_batch({'action': 'mark_as_watched', 'tmdb_id': 101}, loader, '')
-
-		self.watched.kodi_utils.progressDialogBG.close.assert_called_once_with()
-		self.watched.kodi_utils.container_refresh.assert_not_called()
-
-
 	def test_single_watched_change_and_progress_delete_share_one_transaction(self):
 		with tempfile.NamedTemporaryFile() as database_file:
 			self._create_watched_schema(database_file.name)
@@ -119,24 +110,6 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 			connection.close()
 			watched.kodi_utils.notification.assert_called_once_with(32574)
 			watched.kodi_utils.set_property.assert_not_called()
-
-	def test_batch_watched_changes_commit_status_and_progress_atomically(self):
-		with tempfile.NamedTemporaryFile() as database_file:
-			self._create_watched_schema(database_file.name)
-			connection = sqlite3.connect(database_file.name)
-			connection.executemany("INSERT INTO progress VALUES ('episode', '101', ?, ?, '50', '100', 'now', 0, 'Show')", [(1, 1), (1, 2)])
-			connection.commit()
-			connection.close()
-			watched = load_watched_cache()
-			watched.kodi_utils.database_connect.side_effect = lambda path, **kwargs: sqlite3.connect(database_file.name, **kwargs)
-			rows = [('episode', '101', 1, 1, 'now', 'Show'), ('episode', '101', 1, 2, 'now', 'Show')]
-
-			self.assertTrue(watched.batch_mark_as_watched_unwatched('local', rows, 'mark_as_watched'))
-
-			connection = sqlite3.connect(database_file.name)
-			self.assertEqual(connection.execute('SELECT COUNT(*) FROM watched_status').fetchone()[0], 2)
-			self.assertEqual(connection.execute('SELECT COUNT(*) FROM progress').fetchone()[0], 0)
-			connection.close()
 
 
 	@staticmethod

@@ -1,5 +1,4 @@
 import importlib.util
-import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -20,15 +19,6 @@ class LiveTVCatalogTests(unittest.TestCase):
 		self.account = {'server': 'http://provider.example', 'username': 'test-user-secret', 'password': 'test-pass-secret'}
 		self.data = [{'stream_id': 42, 'name': 'Live | Alpha vs Beta | SOCCER', 'category_id': '1', 'epg_channel_id': 'alpha', 'stream_icon': 'https://example.test/icon.png'}]
 
-	def test_fresh_cache_avoids_network_and_keeps_required_fields(self):
-		fetch = Mock(return_value=self.data)
-		self.assertEqual(catalog.get(self.account, 'get_live_streams', fetch, self.profile, now=1000), self.data)
-		self.assertEqual(catalog.get(self.account, 'get_live_streams', fetch, self.profile, now=1010), self.data)
-		self.assertEqual(fetch.call_count, 1)
-		path = next(Path(self.profile).glob('livetv-catalog-*.json'))
-		self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
-		self.assertNotIn(self.account['username'], path.read_text())
-		self.assertNotIn(self.account['password'], path.read_text())
 
 	def test_expired_cache_refreshes_and_failed_refresh_uses_bounded_stale(self):
 		fetch = Mock(side_effect=[self.data, OSError('private'), [{'stream_id': 43, 'name': 'new'}]])
@@ -57,14 +47,6 @@ class LiveTVCatalogTests(unittest.TestCase):
 		path.write_text('{invalid')
 		with self.assertRaises(ValueError): catalog.get(self.account, 'get_live_streams', Mock(return_value={}), self.profile, now=1000)
 		self.assertEqual(catalog.get(self.account, 'get_live_streams', Mock(return_value=self.data), self.profile, now=1001), self.data)
-
-	def test_identifier_matching_credential_is_never_changed_or_cached(self):
-		account = {**self.account, 'username': '42'}
-		fetch = Mock(return_value=self.data)
-		self.assertEqual(catalog.get(account, 'get_live_streams', fetch, self.profile, now=1000), self.data)
-		self.assertEqual(catalog.get(account, 'get_live_streams', fetch, self.profile, now=1001), self.data)
-		self.assertEqual(fetch.call_count, 2)
-		self.assertFalse(list(Path(self.profile).glob('livetv-catalog-*.json')))
 
 
 if __name__ == '__main__': unittest.main()

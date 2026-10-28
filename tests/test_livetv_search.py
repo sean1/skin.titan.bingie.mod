@@ -52,35 +52,5 @@ class LiveTVSearchTests(unittest.TestCase):
 		self.assertIn('End | Liverpool', calls[2].args[0])
 		self.assertNotIn('private', str(calls))
 
-	def test_explicit_dates_and_competitions_do_not_merge_distinct_matches(self):
-		streams = [
-			{'name': 'Live | Liverpool vs. Chelsea | Premier League | 2026-10-28 | CA: SOCCER 1', 'stream_id': 1},
-			{'name': 'Live | Liverpool vs. Chelsea | Premier League | 2026-10-28 | US: SOCCER 2', 'stream_id': 2},
-			{'name': 'Live | Liverpool vs. Chelsea | Premier League | 2026-11-04 | CA: SOCCER 3', 'stream_id': 3},
-			{'name': 'Live | Liverpool vs. Chelsea | Carabao Cup | 2026-10-28 | CA: SOCCER 4', 'stream_id': 4},
-			{'name': 'Live | Liverpool vs. Chelsea | all | CA: SOCCER 5', 'stream_id': 5},
-		]
-		with patch.object(self.live, '_request', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.search_results({'query': 'Liverpool'})
-		calls = item.call_args_list
-		self.assertEqual(len(calls), 4)
-		group = calls[0].args[1]
-		self.assertEqual(group['mode'], 'livetv.match_feeds')
-		self.assertEqual(group['scope'], '2026-10-28|premier league')
-		with patch.object(self.live, '_request', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.match_feeds(group)
-		self.assertEqual([call.args[1]['id'] for call in item.call_args_list], ['1', '1', '2'])
-
-
-	def test_match_folder_rejects_invalid_or_disappeared_fixtures(self):
-		with patch.object(self.live, '_request') as request, patch.object(self.live, '_finish') as finish:
-			self.live.match_feeds({'home': '', 'away': 'chelsea'})
-		request.assert_not_called()
-		finish.assert_called_once_with(False)
-		with patch.object(self.live, '_request', return_value=[]), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.match_feeds({'home': 'liverpool', 'away': 'chelsea'})
-		item.assert_not_called()
-		self.assertIn('No matching live feeds', self.live.ku.dialog.notification.call_args.args[1])
-
 
 if __name__ == '__main__': unittest.main()

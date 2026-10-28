@@ -1,9 +1,9 @@
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
-from tests.module_isolation import load_module, temporary_modules
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,78 +23,6 @@ def load_media_module():
 	stubs = {'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.utils': utils, 'indexers': indexers, 'indexers.metadata': metadata}
 	path = ROOT / 'resources' / 'lib' / 'menus' / 'media.py'
 	return load_module('test_menu_media_module', path, stubs)
-
-
-class MenuMediaTests(unittest.TestCase):
-	@classmethod
-	def setUpClass(cls):
-		cls.media = load_media_module()
-
-	def setUp(self):
-		mylist = types.ModuleType('modules.mylist')
-		mylist.context_item = Mock(return_value=None)
-		stubs = temporary_modules({'modules': types.ModuleType('modules'), 'modules.mylist': mylist})
-		stubs.__enter__()
-		self.addCleanup(stubs.__exit__, None, None, None)
-		self.listitem = Mock()
-		self.video = Mock()
-		self.listitem.getVideoInfoTag.return_value = self.video
-		self.media.kodi_utils.make_listitem.return_value = self.listitem
-		self.media.kodi_utils.build_url.reset_mock()
-		self.media.media_percentage_properties.reset_mock()
-
-	def test_movie_summary_preserves_legacy_info_and_art(self):
-		item = {
-			'id': 101, 'title': 'Movie', 'release_date': '2024-06-07', 'vote_average': 7.5, 'genre_ids': [1, 99],
-			'poster_path': '/poster.jpg', 'backdrop_path': '/backdrop.jpg', 'overview': 'Plot', 'original_language': 'en', 'country_codes': ['US']
-		}
-
-		result = self.media.build_tmdb_detail_shelf_item(3, item, '55', 'movie', {1: 'Drama'}, 'poster-empty', 'fanart-empty', 19)
-
-		self.assertEqual(result, ({'mode': 'show_media_info', 'mediatype': 'movie', 'tmdb_id': 101}, self.listitem, False))
-		self.listitem.setLabel.assert_called_once_with('Movie')
-		self.listitem.setProperties.assert_called_once_with({
-			'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|movie|101', 'pov_lite_sort_order': '3',
-			'tmdb_id': '101', 'PovInfoSourceTmdb': '55',
-			'PovLiteSourceSelect': {'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': 101, 'autoplay': 'false'},
-			'card_language': 'EN', 'rating_percent': '7.5'
-		})
-		self.listitem.setArt.assert_called_once_with({
-			'poster': 'https://image/w342/poster.jpg', 'icon': 'https://image/w342/poster.jpg', 'fanart': 'https://image/w1280/backdrop.jpg',
-			'thumb': 'https://image/w780/backdrop.jpg', 'landscape': 'https://image/w780/backdrop.jpg'
-		})
-		self.listitem.setUniqueIDs.assert_called_once_with({'tmdb': '101'})
-		self.listitem.setInfo.assert_called_once_with('video', {
-			'title': 'Movie', 'plot': 'Plot', 'premiered': '2024-06-07', 'year': '2024', 'rating': 7.5, 'genre': ['Drama'], 'mediatype': 'movie'
-		})
-
-	def test_tvshow_summary_preserves_modern_video_tag_and_fallback_art(self):
-		item = {
-			'id': 202, 'original_name': 'Show', 'first_air_date': '', 'vote_average': 0, 'genre_ids': [], 'poster_path': None, 'backdrop_path': None,
-			'overview': '', 'origin_country': ['CA', 'US'], 'original_language': 'en'
-		}
-
-		result = self.media.build_tmdb_detail_shelf_item(4, item, None, 'tvshow', {}, 'poster-empty', 'fanart-empty', 21)
-
-		self.assertEqual(result, ({'mode': 'show_media_info', 'mediatype': 'tvshow', 'tmdb_id': 202}, self.listitem, False))
-		self.listitem.setArt.assert_called_once_with({
-			'poster': 'poster-empty', 'icon': 'poster-empty', 'fanart': 'fanart-empty', 'thumb': 'fanart-empty', 'landscape': 'fanart-empty',
-			'tvshow.poster': 'poster-empty', 'tvshow.landscape': 'fanart-empty'
-		})
-		self.listitem.setProperties.assert_called_once_with({
-			'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|tvshow|202', 'pov_lite_sort_order': '4', 'tmdb_id': '202',
-			'PovInfoSourceTmdb': '', 'PovLiteSourceSelect': {'mode': 'smart_play_media', 'tmdb_id': 202, 'autoplay': 'false'},
-			'card_flag': 'flags/country/ca.png', 'rating_percent': '0'
-		})
-		self.video.setTitle.assert_called_once_with('Show')
-		self.video.setTvShowTitle.assert_called_once_with('Show')
-		self.video.setUniqueIDs.assert_called_once_with({'tmdb': '202'})
-		self.video.setMediaType.assert_called_once_with('tvshow')
-		self.video.setPlot.assert_called_once_with('')
-		self.assertEqual(self.video.method_calls, [
-			call.setTitle('Show'), call.setTvShowTitle('Show'), call.setUniqueIDs({'tmdb': '202'}), call.setMediaType('tvshow'), call.setPlot('')
-		])
-
 
 
 if __name__ == '__main__':

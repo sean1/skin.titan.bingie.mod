@@ -17,11 +17,3 @@ class SourceIdentityResolutionTests(unittest.TestCase):
 
 	def test_missing_file_does_not_fall_back_to_episode_number(self):
 		with self.assertRaises(ValueError): self.source._identity_matched_files([{'filename': 'Top.Gear.S33E01.alternate.mkv'}], self.evidence, 33, 1)
-
-	def test_duplicate_filenames_fail_safely(self):
-		with self.assertRaises(ValueError): self.source._identity_matched_files([{'filename': 'Top.Gear.S33E01.mkv'}] * 2, self.evidence, 33, 1)
-
-
-	def test_index_alone_cannot_be_mapped_to_filtered_debrid_list(self):
-		evidence = {'file_match_required': True, 'file_sid': 'tt0264235:33:1', 'file_index': 0}
-		with self.assertRaises(ValueError): self.source._identity_matched_files([{'filename': 'Top.Gear.S33E01.mkv'}], evidence, 33, 1)

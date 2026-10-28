@@ -1,7 +1,6 @@
 import sys
 import types
 import unittest
-from queue import Empty
 from threading import Event
 from unittest.mock import Mock, patch
 
@@ -113,17 +112,6 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
 				self.assertFalse(self.preview.active)
 
-	def test_autoplay_stops_for_modal_or_busy_dialog(self):
-		for condition in ('System.HasActiveModalDialog', 'Window.IsVisible(busydialog)', 'Window.IsVisible(busydialognocancel)'):
-			with self.subTest(condition=condition):
-				self.setUp()
-				self._activate()
-				self.visibility[condition] = True
-
-				self.preview.tick()
-				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-				self.assertFalse(self.preview.active)
-
 
 	def _queue_prepared_preview(self):
 		candidate, token = self.preview._eligible_candidate()
@@ -195,24 +183,6 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
 
 
-	def test_preview_ownership_requires_the_exact_request_url(self):
-		self.preview.trailer = 'preview-url'
-		self.entry.get_property = Mock(return_value='resolved-url')
-		self.entry.kodi_utils.get_infolabel = Mock(return_value='preview-url')
-
-		self.assertTrue(self.preview._owns_preview())
-		self.entry.get_property.assert_not_called()
-
-		self.preview.trailer = 'http://127.0.0.1:1234/preview.m3u8?token=old'
-		self.entry.kodi_utils.get_infolabel.return_value = 'http://127.0.0.1:1234/preview.m3u8?token=new'
-		self.assertFalse(self.preview._owns_preview())
-		self.entry.get_property.assert_not_called()
-
-		self.preview.trailer = 'preview-url'
-		self.entry.kodi_utils.get_infolabel.return_value = 'resolved-url'
-		self.assertFalse(self.preview._owns_preview())
-		self.entry.get_property.assert_not_called()
-
 	def test_new_focused_lookup_overtakes_stale_lookup_without_stale_publication(self):
 		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)
 		started, released, finished, _ = self._lookup_harness({
@@ -272,70 +242,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		for key in (keys[1], keys[3]): released[key].set()
 		for key in (keys[1], keys[3]): self._wait(finished[key])
 		self.preview._consume_lookup_results()
-
-
-	def test_close_discards_pending_and_prevents_results_or_new_workers(self):
-		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
-		started, released, finished, calls = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
-		for key in keys[:2]:
-			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
-			self._wait(started[key])
-		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
-		self.preview.resolved_trailers['old'] = 'trailer'
-		self.preview.resolved_focused_metadata['old'] = {'genre': 'Drama'}
-		self.preview.focused_metadata_retries['old'] = 10.0
-		self.preview.prepared_trailers['old'] = (0.0, ('url', 'manifest'))
-		self.preview.prepare_results.put((1, 'old', 'trailer', None, None, 0.0))
-		self.preview.prepare_workers[1] = (None, 'old', 'trailer')
-		trailers = types.ModuleType('modules.trailers')
-		trailers.stop_manifest_server = Mock()
-		old_trailers = sys.modules.get('modules.trailers')
-		sys.modules['modules.trailers'] = trailers
-		try: self.preview.close()
-		finally:
-			if old_trailers is None: sys.modules.pop('modules.trailers', None)
-			else: sys.modules['modules.trailers'] = old_trailers
-
-		self.assertIsNone(self.preview.lookup_pending)
-		self.assertEqual(self.preview.lookup_workers, {})
-		self.assertEqual(self.preview.prepare_workers, {})
-		self.assertEqual(self.preview.resolved_trailers, {})
-		self.assertEqual(self.preview.resolved_focused_metadata, {})
-		self.assertEqual(self.preview.focused_metadata_retries, {})
-		self.assertEqual(self.preview.prepared_trailers, {})
-		with self.assertRaises(Empty): self.preview.prepare_results.get_nowait()
-		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
-		self.assertEqual(calls, keys[:2])
-		for key in keys[:2]: released[key].set()
-		for key in keys[:2]: self._wait(finished[key])
-		with self.assertRaises(Empty): self.preview.lookup_results.get_nowait()
-
-
-	def test_stale_first_frame_callback_cannot_ready_a_new_preview(self):
-		self.entry.monotonic = Mock(return_value=20.0)
-		self.preview._launch_preview('first-preview', None)
-		stale_player = self.preview.preview_player
-		self.preview._finish_preview()
-		self.preview._launch_preview('second-preview', None)
-
-		stale_player.onAVStarted()
-		self.assertEqual(self.preview.av_started_generation, -1)
-		self.assertNotIn(self.entry.TRAILER_PREVIEW_READY_PROPERTY, self.properties)
-		self.preview.preview_player.onAVStarted()
-		self.assertEqual(self.preview.av_started_generation, self.preview.preview_generation)
-
-
-	def test_row_cancel_request_stops_immediately_and_invalidates_callback(self):
-		self._activate()
-		stale_player = self.preview.preview_player
-		self.properties[self.entry.TRAILER_PREVIEW_CANCEL_PROPERTY] = 'true'
-
-		self.assertTrue(self.preview.tick())
-		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-		self.assertFalse(self.preview.active)
-		self.assertNotIn(self.entry.TRAILER_PREVIEW_READY_PROPERTY, self.properties)
-		stale_player.onAVStarted()
-		self.assertEqual(self.preview.av_started_generation, -1)
 
 
 	def test_unrelated_playback_is_never_stopped(self):

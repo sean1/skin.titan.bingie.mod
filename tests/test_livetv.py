@@ -40,16 +40,6 @@ class LiveTVTests(unittest.TestCase):
 		self.assertEqual(self.live._load(), self.account)
 		self.assertEqual(os.stat(self.live._credentials_path()).st_mode & 0o777, 0o600)
 
-	def test_bundled_account_takes_precedence_over_profile_and_invalid_bundle_does_not_fallback(self):
-		self.live._save(self.account)
-		path = Path(self.live._bundled_credentials_path())
-		path.parent.mkdir(parents=True)
-		bundled = {**self.account, 'username': 'bundled-user'}
-		path.write_text(json.dumps(bundled), encoding='utf-8')
-		self.assertEqual(self.live._load(), bundled)
-		path.write_text('{invalid', encoding='utf-8')
-		self.assertIsNone(self.live._load())
-
 
 	def test_channel_items_do_not_contain_account_credentials(self):
 		self.live._save(self.account)

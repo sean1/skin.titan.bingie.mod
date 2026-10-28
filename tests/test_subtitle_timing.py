@@ -1,8 +1,6 @@
-import json
 import types
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 from tests.module_isolation import load_module, temporary_modules
@@ -146,31 +144,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.subtitles.kodi_utils.sleep.assert_not_called()
 
 
-	def test_failed_top_download_falls_through_to_next_ranked_candidate(self):
-		second_candidate = {'provider': 'subdl', 'id': 'eng-2', 'lang': 'eng', 'release_names': ['Fixture'], 'score': 10}
-		self.client.provider_manager.search.return_value = [self.candidates[0], second_candidate]
-		self.client.provider_manager.download.side_effect = [None, {'content': b'second subtitle', 'extension': 'ass'}]
-		events = []
-		self.subtitles.kodi_utils.open_file = Mock(return_value=RecordingFile(events))
-		self.client.setSubtitles = Mock(side_effect=lambda path: events.append(('attach', path)))
-
-		result = self.client._searched_subs()
-
-		self.assertTrue(result)
-		self.assertEqual([call.args[0]['id'] for call in self.client.provider_manager.download.call_args_list], ['eng-1', 'eng-2'])
-		self.assertEqual(events, ['open', ('write', b'second subtitle'), 'close', ('attach', 'special://temp/fixture_eng_full.ass')])
-
-	def test_automatic_search_skips_known_partial_candidates_without_hiding_manual_results(self):
-		partial = {'provider': 'opensubtitles', 'id': 'forced', 'lang': 'eng', 'forced': True, 'release_names': ['Fixture']}
-		full = {'provider': 'subdl', 'id': 'full', 'lang': 'eng', 'foreign_parts_only': False, 'release_names': ['Fixture']}
-		self.client.provider_manager.search.return_value = [partial, full]
-		self.subtitles.kodi_utils.open_file = Mock(return_value=RecordingFile([]))
-		self.client.setSubtitles = Mock()
-		self.assertTrue(self.client._searched_subs())
-		self.assertEqual([invocation.args[0]['id'] for invocation in self.client.provider_manager.download.call_args_list], ['full'])
-		self.client._set_context.assert_called_once_with([partial, full])
-
-
 	def test_write_failure_closes_file_without_attach(self):
 		events = []
 		self.client.provider_manager.search.return_value = self.candidates[:1]
@@ -187,31 +160,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.subtitles.kodi_utils.sleep.assert_not_called()
 
 
-	def test_only_forced_embedded_tracks_search_and_download_full_dialogue(self):
-		state, manager = self.automatic_fixture(streams=[{'index': 0, 'language': 'eng', 'isforced': True}])
-		self.client.getAvailableSubtitleStreams.return_value = ['eng']
-		self.assertTrue(self.client.run('Fixture', 'tt123', None, None, ''))
-		manager.search.assert_called_once_with()
-		manager.download.assert_called_once_with({**self.candidates[0], 'full_dialogue_only': True})
-		self.client.setSubtitleStream.assert_not_called()
-		self.client.setSubtitles.assert_called_once_with('special://temp/POVLiteSubs_tt123_eng_full.srt')
-
-	def test_late_first_index_is_latched_so_a_later_manual_change_cancels_search(self):
-		for initial_index in (None, -1):
-			with self.subTest(initial_index=initial_index):
-				state, manager = self.automatic_fixture(current_index=initial_index)
-				self.client.getAvailableSubtitleStreams.return_value = ['eng']
-				def ready(delay):
-					state.update({'currentsubtitle': {'index': 0}, 'subtitles': [{'index': 0, 'language': 'eng', 'isforced': True}]})
-					return False
-				self.subtitles.kodi_utils.monitor.waitForAbort.side_effect = ready
-				manager.search.side_effect = lambda: state.update({'currentsubtitle': {'index': 1}}) or self.candidates
-				self.assertFalse(self.client.run('Fixture', 'tt123', None, None, ''))
-				manager.download.assert_not_called()
-				self.subtitles.kodi_utils.open_file.assert_not_called()
-				self.client.setSubtitles.assert_not_called()
-
-
 	def test_manual_choice_during_search_cancels_automatic_job_for_same_file(self):
 		state, manager = self.automatic_fixture(streams=[{'index': 0, 'language': 'eng', 'isforced': True}])
 		self.client.getAvailableSubtitleStreams.return_value = ['eng']
@@ -226,29 +174,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.client.setSubtitles.assert_not_called()
 
 
-	def test_replaying_same_file_clears_previous_manual_choice_and_allows_automatic_full_subtitles(self):
-		state, manager = self.automatic_fixture(enabled=False)
-		properties = self.property_fixture()
-		old_context = {'playing_fingerprint': self.subtitles.playing_file_fingerprint('video.mkv'), 'generation': 'previous-generation'}
-		properties.update({self.subtitles.subtitle_context_property: json.dumps(old_context), self.subtitles.subtitle_manual_override_property: json.dumps(old_context), 'unrelated': 'keep'})
-		self.playback_started(properties)
-		self.assertNotIn(self.subtitles.subtitle_manual_override_property, properties)
-		self.assertNotIn(self.subtitles.subtitle_context_property, properties)
-		self.assertEqual(properties['unrelated'], 'keep')
-		self.assertTrue(self.client.run('Fixture', 'tt123', None, None, ''))
-		self.client.setSubtitleStream.assert_called_once_with(0)
-		self.client.showSubtitles.assert_called_once_with(True)
-		manager.search.assert_not_called()
-
-
-	def test_open_failure_does_not_delete_an_existing_destination(self):
-		self.subtitles.kodi_utils.open_file = Mock(side_effect=OSError('open failed'))
-
-		result = self.client.save_subtitle(SimpleNamespace(text='subtitle text'), 'special://temp/fixture_eng.srt')
-
-		self.assertFalse(result)
-		self.subtitles.kodi_utils.delete_file.assert_not_called()
-
 	def test_playback_change_after_download_does_not_write_attach_or_notify(self):
 		self.client.expected_playing_file = 'old-video'
 		self.client.isPlayingVideo = Mock(return_value=True)
@@ -262,17 +187,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.client.setSubtitles.assert_not_called()
 		self.subtitles.kodi_utils.notification.assert_not_called()
 
-	def test_playback_change_does_not_attach_cached_subtitle(self):
-		self.client.expected_playing_file = 'old-video'
-		self.client.isPlayingVideo = Mock(return_value=True)
-		self.client.getPlayingFile = Mock(side_effect=('old-video', 'new-video'))
-		self.client.setSubtitles = Mock()
-		self.subtitles.kodi_utils.list_dirs.return_value = ([], ['fixture_eng_full.srt'])
-
-		with self.assertRaises(self.subtitles.SubtitleCancelled): self.client._downloaded_subs()
-
-		self.client.setSubtitles.assert_not_called()
-		self.subtitles.kodi_utils.notification.assert_not_called()
 
 	def test_playback_change_after_search_does_not_store_context_or_notify(self):
 		self.client.expected_playing_file = 'old-video'

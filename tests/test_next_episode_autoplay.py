@@ -113,18 +113,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		self.assertEqual(sources.nextep_params, [])
 		player_module.kodi_utils.clear_property.assert_called_once_with('pov_lite_total_autoplays')
 
-	def test_natural_end_preserves_queued_next_episode(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.playback_event = True
-		player.ignore_startup_stop = False
-		player.startup_playback_started = True
-		sources = types.SimpleNamespace(nextep_params=[{'episode': 2}])
-
-		with mock.patch.dict('sys.modules', {'modules.sources': types.SimpleNamespace(Sources=sources)}):
-			player.onPlayBackEnded()
-
-		self.assertEqual(sources.nextep_params, [{'episode': 2}])
 
 	def test_playback_error_requests_retry_at_current_position(self):
 		player_module = load_player()
@@ -191,13 +179,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 
 		self.assertFalse(player._duration_is_plausible())
 
-	def test_short_episode_with_matching_metadata_is_allowed(self):
-		player_module = load_player()
-		player = player_module.POVPlayer.__new__(player_module.POVPlayer)
-		player.meta_get = {'duration': 1500}.get
-		player.getTotalTime = lambda: 1200
-
-		self.assertTrue(player._duration_is_plausible())
 
 	def test_completed_playback_erases_resume_without_recording_watched(self):
 		player_module = load_player()

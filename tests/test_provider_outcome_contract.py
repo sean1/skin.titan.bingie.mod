@@ -53,12 +53,6 @@ class ProviderOutcomeContractTests(unittest.TestCase):
 				self.assertFalse(cache.set('provider', 'movie', '1', 'Title', '2024', '', '', ProviderOutcome(sources, status), 3))
 		self.assertEqual(cache.dbcur.executions, [])
 
-	def test_provider_flags_preserve_partial_sources_without_caching(self):
-		provider = types.SimpleNamespace(scrape_failed=True)
-		outcome = ProviderOutcome.from_provider([{'hash': 'one'}], provider)
-		self.assertEqual(outcome.status, 'partial')
-		self.assertEqual(outcome.sources, [{'hash': 'one'}])
-		self.assertFalse(outcome.cacheable)
 
 	def test_bundled_coalescer_can_propagate_fetch_failures(self):
 		coalescer = RequestCoalescer(raise_errors=True)

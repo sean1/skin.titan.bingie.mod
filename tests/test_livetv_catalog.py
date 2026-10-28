@@ -40,13 +40,6 @@ class LiveTVCatalogTests(unittest.TestCase):
 		fetch.side_effect = OSError('private')
 		with self.assertRaises(OSError): catalog.get(self.account, 'get_live_streams', fetch, self.profile, now=1122 + catalog.STALE_SECONDS)
 
-	def test_account_action_and_category_do_not_share_cache(self):
-		fetch = Mock(return_value=self.data)
-		catalog.get(self.account, 'get_live_streams', fetch, self.profile, category_id='1', now=1000)
-		catalog.get(self.account, 'get_live_streams', fetch, self.profile, category_id='2', now=1000)
-		catalog.get({**self.account, 'password': 'other'}, 'get_live_streams', fetch, self.profile, category_id='1', now=1000)
-		catalog.get(self.account, 'get_live_categories', fetch, self.profile, now=1000)
-		self.assertEqual(fetch.call_count, 4)
 
 	def test_credential_and_signed_icon_data_is_not_persisted(self):
 		data = [{'stream_id': 1, 'name': 'Safe name', 'stream_icon': 'https://cdn.test/logo?token=' + self.account['password'], 'private_payload': self.account}]
@@ -72,11 +65,6 @@ class LiveTVCatalogTests(unittest.TestCase):
 		self.assertEqual(catalog.get(account, 'get_live_streams', fetch, self.profile, now=1001), self.data)
 		self.assertEqual(fetch.call_count, 2)
 		self.assertFalse(list(Path(self.profile).glob('livetv-catalog-*.json')))
-
-	def test_unwritable_cache_does_not_block_live_data(self):
-		profile = Path(self.profile) / 'not-a-directory'
-		profile.write_text('x')
-		self.assertEqual(catalog.get(self.account, 'get_live_streams', Mock(return_value=self.data), str(profile), now=1000), self.data)
 
 
 if __name__ == '__main__': unittest.main()

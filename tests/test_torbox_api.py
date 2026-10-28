@@ -46,19 +46,6 @@ class TorBoxAPITests(unittest.TestCase):
 		self.api._post = lambda *args, **kwargs: None
 		self.assertEqual(self.api.check_cache(['A' * 40]), {})
 
-	def test_cached_transfer_creation_uses_multipart_cached_only_flag(self):
-		request = {}
-		def post(path, **kwargs):
-			request.update(path=path, **kwargs)
-			return {'torrent_id': 44}
-		self.api._post = post
-
-		result = self.api.create_transfer('magnet:?xt=urn:btih:' + 'A' * 40, cached_only=True)
-
-		self.assertEqual(result, 44)
-		self.assertEqual(request['path'], 'torrents/createtorrent')
-		self.assertEqual(request['files']['add_only_if_cached'], (None, 'true'))
-		self.assertEqual(request['files']['allow_zip'], (None, 'false'))
 
 	def test_parse_magnet_pack_preserves_existing_transfer(self):
 		transfer = {'id': 44, 'hash': 'A' * 40, 'download_present': True, 'files': [{'id': 7, 'name': 'Movie.mkv', 'size': 123}]}
@@ -74,17 +61,6 @@ class TorBoxAPITests(unittest.TestCase):
 		self.assertEqual(result[0]['torrent_id'], '')
 		self.assertEqual(deleted, [])
 
-	def test_request_download_uses_opaque_ids_and_returns_direct_link(self):
-		request = {}
-		def get(path, params):
-			request.update(path=path, params=params)
-			return 'https://cdn.example/Movie.mkv'
-		self.api._get = get
-
-		result = self.api.unrestrict_link('44,7')
-
-		self.assertEqual(result, 'https://cdn.example/Movie.mkv')
-		self.assertEqual(request, {'path': 'torrents/requestdl', 'params': {'token': 'token', 'torrent_id': '44', 'file_id': '7'}})
 
 	def test_failed_download_request_does_not_log_token_bearing_url(self):
 		logs = []

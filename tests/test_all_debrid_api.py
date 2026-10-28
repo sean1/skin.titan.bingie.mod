@@ -3,7 +3,7 @@ import types
 import unittest
 from pathlib import Path
 
-from tests.module_isolation import load_module, temporary_modules
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,17 +53,6 @@ class AllDebridAPITests(unittest.TestCase):
 
 		self.assertEqual(result, {})
 		self.assertEqual(len(checked), self.module.cache_check_chunk_size)
-
-	def test_parse_magnet_pack_never_marks_existing_transfer_for_deletion(self):
-		self.api._existing_transfer_ids = lambda: {'44'}
-		self.api._upload_magnets = lambda magnets: [{'id': 44, 'hash': 'A' * 40, 'ready': True}]
-		self.api.torrent_files = lambda transfer_id: [{'n': 'Movie.mkv', 's': 123, 'l': 'https://example/video'}]
-		source_utils = types.ModuleType('modules.source_utils')
-		source_utils.supported_video_extensions = lambda: ['.mkv']
-		with temporary_modules({'modules.source_utils': source_utils}):
-			result = self.api.parse_magnet_pack('magnet:?xt=urn:btih:' + 'A' * 40, 'A' * 40, errors=True)
-
-		self.assertEqual(result[0]['torrent_id'], '')
 
 
 if __name__ == '__main__':

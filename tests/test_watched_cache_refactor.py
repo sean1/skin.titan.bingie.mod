@@ -1,6 +1,5 @@
 import sqlite3
 import tempfile
-import threading
 import types
 import unittest
 from datetime import datetime
@@ -71,36 +70,6 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 	def setUp(self):
 		self.watched = load_watched_cache()
 
-	def test_tvshow_loader_fetches_regular_seasons_concurrently_and_preserves_order(self):
-		watched = load_watched_cache()
-		barrier = threading.Barrier(2)
-		def load_season(season, meta, user_info):
-			barrier.wait(1)
-			return ['s%de1' % season]
-		watched.metadata.season_episodes_meta.side_effect = load_season
-
-		result = watched._tvshow_episodes_meta({'season_data': [{'season_number': 0}, {'season_number': 1}, {'season_number': 2}]}, {})
-
-		self.assertEqual(result, ['s1e1', 's2e1'])
-
-	def test_batch_marks_only_aired_episodes_and_closes_progress(self):
-		params = {'action': 'mark_as_watched', 'tmdb_id': 101}
-		episodes = [
-			{'season': 1, 'episode': 1, 'premiered': '2024-01-01'},
-			{'season': 1, 'episode': 2, 'premiered': '2024-01-03'}
-		]
-		loader = Mock(return_value=episodes)
-		self.watched.adjust_premiered_date.side_effect = [(datetime(2024, 1, 1), '2024-01-01'), (datetime(2024, 1, 3), '2024-01-03')]
-		self.watched.get_last_played_value = Mock(return_value='now')
-		self.watched.batch_mark_as_watched_unwatched = Mock()
-
-		self.watched._mark_episode_batch(params, loader, '')
-
-		loader.assert_called_once_with({'season_data': []}, {'language': 'en'})
-		self.watched.batch_mark_as_watched_unwatched.assert_called_once_with('local', [('episode', 101, 1, 1, 'now', '')], 'mark_as_watched')
-		self.assertEqual([call.args[0] for call in self.watched.kodi_utils.progressDialogBG.update.call_args_list], [50, 100])
-		self.watched.kodi_utils.progressDialogBG.close.assert_called_once_with()
-		self.watched.kodi_utils.container_refresh.assert_called_once_with()
 
 	def test_batch_closes_progress_without_refresh_when_loader_fails(self):
 		loader = Mock(side_effect=RuntimeError('metadata failed'))

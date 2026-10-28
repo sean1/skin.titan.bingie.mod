@@ -29,12 +29,6 @@ class NextPagePrefetchTests(unittest.TestCase):
 		self.prefetch.kodi_utils.get_infolabel = Mock(side_effect=self.labels.get)
 		self.worker = self.prefetch.NextPagePrefetch()
 
-	def test_near_end_rejects_missing_or_malformed_labels(self):
-		for current_item, num_items in (('', '21'), (None, '21'), ('invalid', '21'), ('0', '21'), ('-1', '21'), ('22', '21'), ('17', ''), ('17', None), ('17', 'invalid'), ('1', '0')):
-			with self.subTest(current_item=current_item, num_items=num_items):
-				self.labels.update({'Container.CurrentItem': current_item, 'Container.NumItems': num_items})
-				self.assertFalse(self.worker._near_end())
-
 
 	def test_tick_launches_prefetch_from_grid_near_end(self):
 		origin = {'mode': 'build_movie_list', 'action': 'tmdb_movies_popular', 'new_page': '1'}

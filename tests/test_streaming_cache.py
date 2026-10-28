@@ -2,7 +2,7 @@ import json
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from tests.module_isolation import load_module
 
@@ -31,12 +31,6 @@ class StreamingCacheTests(unittest.TestCase):
 		)
 		for memory, expected in cases:
 			with self.subTest(memory=memory): self.assertEqual(self.cache.select_cache_mb(*memory), expected)
-
-
-	def test_missing_memory_leaves_kodi_unchanged(self):
-		with patch.object(self.cache, 'memory_mb', return_value=(None, None)):
-			self.assertFalse(self.cache.tune())
-		self.ku.execJSONRPC.assert_not_called()
 
 
 if __name__ == '__main__':

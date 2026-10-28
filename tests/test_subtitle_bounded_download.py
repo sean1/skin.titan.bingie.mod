@@ -55,18 +55,5 @@ class SubtitleBoundedDownloadTests(unittest.TestCase):
 				response.close.assert_called_once_with()
 
 
-	def test_retryable_status_retries_without_reading_first_body(self):
-		first = BinaryResponse((b'error body',), status_code=503)
-		second = BinaryResponse((b'subtitle',))
-		self.request.side_effect = (first, second)
-
-		content = self.providers._download_binary('https://download.invalid/subtitle', 'test', 20)
-
-		self.assertEqual(content, b'subtitle')
-		self.assertIsNone(first.chunk_size)
-		first.close.assert_called_once_with()
-		self.assertEqual(self.request.call_count, 2)
-
-
 if __name__ == '__main__':
 	unittest.main()

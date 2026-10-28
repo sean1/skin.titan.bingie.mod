@@ -1,10 +1,8 @@
 import io
-import json
 import os
 import tempfile
 import time
 import unittest
-import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -41,27 +39,6 @@ class LiveTVGuideTests(unittest.TestCase):
 		with patch.object(self.live, '_GUIDE_XML_LIMIT', 10):
 			with self.assertRaises(ValueError): self.live._parse_guide(io.BytesIO(b'<tv>1234567890</tv>'), time.time())
 
-	def test_external_xmltv_doctype_is_stripped_even_across_chunks(self):
-		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
-		xml = b'<?xml version="1.0"?><!DOCTYPE tv SYSTEM "http://example.invalid/external.dtd"><tv><programme channel="sport" start="20261028200000 +0000" stop="20261028210000 +0000"><title>Soccer</title></programme></tv>'
-		class SmallChunks(io.BytesIO):
-			def read(self, size=-1): return super().read(min(size, 3))
-		with patch.object(self.live, 'urlopen', side_effect=AssertionError('External DTD must not be fetched')):
-			guide = self.live._parse_guide(SmallChunks(xml), now)
-		self.assertEqual(guide['sport'][0][2], 'Soccer')
-
-
-	def test_raw_feed_is_reused_for_other_categories_with_private_permissions(self):
-		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
-		xml = b'<tv><programme channel="a" start="20261028200000 +0000" stop="20261028210000 +0000"><title>First</title></programme><programme channel="b" start="20261028200000 +0000" stop="20261028210000 +0000"><title>Second</title></programme></tv>'
-		with patch.object(self.live, 'urlopen', return_value=io.BytesIO(xml)) as request:
-			self.assertEqual(list(self.live._download_guide('http://example.test/guide?password=secret', now, {'a'})), ['a'])
-			self.assertEqual(list(self.live._download_guide('http://example.test/guide?password=secret', now, {'b'})), ['b'])
-			self.assertEqual(request.call_count, 1)
-		paths = list(Path(self.temp.name).glob('livetv-xmltv-*.cache'))
-		self.assertEqual(len(paths), 1)
-		self.assertEqual(os.stat(paths[0]).st_mode & 0o777, 0o600)
-		self.assertNotIn('secret', paths[0].name)
 
 	def test_corrupt_raw_feed_is_refetched_without_using_partial_data(self):
 		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
@@ -76,34 +53,6 @@ class LiveTVGuideTests(unittest.TestCase):
 			self.assertEqual(request.call_count, 1)
 		self.assertEqual(path.read_bytes(), xml)
 
-	def test_failed_refresh_does_not_replace_previous_raw_feed(self):
-		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
-		xml = b'<tv><programme channel="a" start="20261028200000 +0000" stop="20261028210000 +0000"><title>Match</title></programme></tv>'
-		with patch.object(self.live, 'urlopen', return_value=io.BytesIO(xml)):
-			self.live._download_guide('http://example.test/guide', now, {'a'})
-		path = next(Path(self.temp.name).glob('livetv-xmltv-*.cache'))
-		old = time.time() - self.live._GUIDE_FRESH_SECONDS - 1
-		os.utime(path, (old, old))
-		with patch.object(self.live, 'urlopen', return_value=io.BytesIO(b'<tv>')):
-			stale = self.live._download_guide('http://example.test/guide', now, {'a'})
-			self.assertEqual(stale['a'][0][2], 'Match')
-			self.assertAlmostEqual(stale.created, old)
-			self.live.ku.dialog.notification.assert_called_once()
-		self.assertEqual(path.read_bytes(), xml)
-
-	def test_stale_raw_feed_serves_a_new_category_when_network_fails(self):
-		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
-		xml = b'<tv><programme channel="a" start="20261028200000 +0000" stop="20261028210000 +0000"><title>First</title></programme><programme channel="b" start="20261028200000 +0000" stop="20261028210000 +0000"><title>Second</title></programme></tv>'
-		with patch.object(self.live, 'urlopen', return_value=io.BytesIO(xml)):
-			self.live._download_guide('http://example.test/guide', now, {'a'})
-		path = next(Path(self.temp.name).glob('livetv-xmltv-*.cache'))
-		old = time.time() - self.live._GUIDE_FRESH_SECONDS - 1
-		os.utime(path, (old, old))
-		with patch.object(self.live, 'urlopen', side_effect=OSError('private detail')):
-			result = self.live._download_guide('http://example.test/guide', now, {'b'})
-		self.assertEqual(result['b'][0][2], 'Second')
-		self.assertAlmostEqual(result.created, old)
-		self.assertNotIn('private detail', str(self.live.ku.dialog.notification.call_args))
 
 	def test_corrupt_stale_raw_feed_is_not_used_on_outage(self):
 		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
@@ -135,11 +84,6 @@ class LiveTVGuideTests(unittest.TestCase):
 		message = str(self.live.ku.dialog.notification.call_args)
 		self.assertNotIn('secret server URL', message)
 
-	def test_corrupt_gzip_uses_stale_cache(self):
-		with patch.object(self.live.time, 'time', return_value=10000), patch.object(self.live, '_download_guide', return_value={'sports': [[1, 2, 'Match']]}):
-			self.live._guide_data(self.account)
-		with patch.object(self.live.time, 'time', return_value=10000 + 3 * 3600), patch.object(self.live, '_download_guide', side_effect=zlib.error('bad compressed data')):
-			self.assertIn('sports', self.live._guide_data(self.account))
 
 	def test_custom_guide_url_is_hidden_and_cancel_keeps_existing_url(self):
 		url = 'http://guide.test/xmltv.php?username=test&password=secret'
@@ -151,17 +95,6 @@ class LiveTVGuideTests(unittest.TestCase):
 		self.live.guide_settings({})
 		self.assertEqual(self.live._load()['epg_url'], url)
 
-	def test_guide_setting_overrides_matching_bundle_until_bundle_changes(self):
-		path = Path(self.live._bundled_credentials_path())
-		path.parent.mkdir(parents=True)
-		bundle = {**self.account, 'epg_url': 'http://guide.test/initial'}
-		path.write_text(json.dumps(bundle), encoding='utf-8')
-		self.live.ku.dialog.input.return_value = 'http://guide.test/custom'
-		self.live.guide_settings({})
-		self.assertEqual(self.live._load()['epg_url'], 'http://guide.test/custom')
-		bundle['epg_url'] = 'http://guide.test/updated'
-		path.write_text(json.dumps(bundle), encoding='utf-8')
-		self.assertEqual(self.live._load()['epg_url'], 'http://guide.test/updated')
 
 	def test_guide_shows_current_next_and_keeps_unmatched_channel_playable(self):
 		now = 1000

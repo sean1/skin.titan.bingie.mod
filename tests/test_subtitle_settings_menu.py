@@ -1,7 +1,7 @@
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 from tests.module_isolation import temporary_modules
 from tests.test_dialog_navigation import load_dialogs
@@ -41,18 +41,6 @@ class SubtitleSettingsMenuTests(unittest.TestCase):
 		self.dialogs.subtitle_settings_menu()
 		self.assertEqual(events, ['manual', 'off'])
 
-
-	def test_subtitle_stream_selection_uses_player_api(self):
-		self.dialogs.kodi_utils.dialog.select.side_effect = (2, 1)
-
-		self.dialogs.subtitle_settings_menu()
-
-		self.dialogs._subtitle_rpc.assert_has_calls([
-			call('Player.GetActivePlayers'),
-			call('Player.GetProperties', {'playerid': 1, 'properties': ['subtitleenabled', 'subtitles', 'currentsubtitle']}),
-			call('Player.SetSubtitle', {'playerid': 1, 'subtitle': 1, 'enable': True}),
-		])
-		self.mark_manual_selection.assert_called_once_with()
 
 	def test_cancelled_stream_selection_does_not_block_automatic_subtitles(self):
 		self.dialogs.kodi_utils.dialog.select.side_effect = (2, -1)

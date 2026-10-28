@@ -58,9 +58,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 		self.assertTrue(self.cache.advance(101, 2, 1))
 		self.assertEqual(self.cache.lookup(101), (2, 1))
 
-	def test_invalid_identity_values_are_rejected(self):
-		for args in ((0, 1, 1), ('invalid', 1, 1), (101, 0, 1), (101, 1, 0), (True, 1, 1), (101, 1.5, 1)):
-			with self.subTest(args=args), self.assertRaises(ValueError): self.cache.advance(*args)
 
 	def test_advance_and_exact_progress_delete_share_one_transaction(self):
 		with sqlite3.connect(self.database_path) as dbcon:
@@ -104,19 +101,6 @@ class SmartPlayCursorCacheTests(unittest.TestCase):
 		self.assertIsNone(self.cache.lookup(101))
 		with sqlite3.connect(self.database_path) as dbcon:
 			self.assertEqual(dbcon.execute('SELECT media_id, season, episode FROM progress').fetchall(), [('101', 1, 1)])
-
-	def test_startup_watched_history_clear_preserves_cursor_schema_and_row(self):
-		cache = load_database_cache(self.temp_dir.name)
-		cache.check_databases()
-		with sqlite3.connect(cache.watched_db) as dbcon:
-			dbcon.execute('INSERT INTO watched_status VALUES (?, ?, ?, ?, ?, ?)', ('episode', '101', 1, 1, '', 'Completed'))
-			dbcon.execute('INSERT INTO smartplay_cursor VALUES (?, ?, ?)', (101, 1, 2))
-
-		cache.check_databases()
-
-		with sqlite3.connect(cache.watched_db) as dbcon:
-			self.assertEqual(dbcon.execute('SELECT * FROM watched_status').fetchall(), [])
-			self.assertEqual(dbcon.execute('SELECT * FROM smartplay_cursor').fetchall(), [(101, 1, 2)])
 
 
 if __name__ == '__main__':

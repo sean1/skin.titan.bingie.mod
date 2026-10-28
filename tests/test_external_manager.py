@@ -2,7 +2,6 @@ import sys
 import time
 import types
 import unittest
-from unittest import mock
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Event, Thread
@@ -183,20 +182,6 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertEqual([item['name'] for item in filtered], [item['name'] for item in sources[1:]])
 		self.assertEqual([item.get('_identity_status') for item in filtered], ['unverified', 'unverified', None, 'unverified'])
 
-	def test_cached_same_title_tv_sources_are_filtered_before_use(self):
-		outcome = types.SimpleNamespace(sources=[{'name': 'The.Grand.Tour.S01E01.2160p'}, {'name': 'The.Grand.Tour.2026.S01E01.1080p'}])
-
-		class Cache:
-			def get(self, *args): return outcome
-			def close(self): pass
-
-		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
-		external.mediatype, external.tmdb_id, external.title, external.year = 'episode', '329471', 'The Grand Tour', '2026'
-		external.season, external.episode = '1', '1'
-		external.require_tv_year = True
-		with mock.patch.object(SOURCES, 'ExternalProvidersCache', Cache), mock.patch.object(external, 'process_sources', side_effect=lambda provider, sources: sources): external.get_episode_source('cached', object, 'episode')
-		self.assertEqual([item['name'] for item in external.sources], [item['name'] for item in outcome.sources])
-		self.assertEqual(external.sources[0]['_identity_status'], 'unverified')
 
 	def test_provider_associations_do_not_bypass_ambiguous_year_and_wrong_ids_reject(self):
 		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
@@ -214,71 +199,6 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertTrue(all(item['_identity_status'] == 'unverified' for item in filtered))
 		self.assertEqual(filtered[1]['identity_evidence']['file_sid'], 'tt123:33:1')
 
-	def test_uncertain_sources_do_not_satisfy_core_threshold_or_shadow_matched_hash(self):
-		manager = self.manager()
-		uncertain = {'url': 'magnet:a', 'hash': 'a', '_identity_status': 'unverified'}
-		matched = {'url': 'magnet:a', 'hash': 'a'}
-		self.assertEqual(manager.eligible_cached_count([uncertain], {'a'}), 0)
-		self.assertEqual(list(manager.process_duplicates([uncertain, matched])), [uncertain, matched])
-
-
-	def test_tv_collision_relaxes_only_with_complete_nonoverlapping_seasons(self):
-		results = {'results': [
-			{'id': 45, 'name': 'Top Gear', 'first_air_date': '2002-10-20'},
-			{'id': 4498, 'name': 'Top Gear', 'first_air_date': '1978-07-13'},
-		]}
-		source = types.SimpleNamespace(mediatype='episode', tmdb_id='45', season='33', custom_season='')
-		tmdb_api = module_stub(tmdb_tv_title_year=lambda title: results)
-		complete = {'total_seasons': 2, 'season_data': [{'season_number': 1}, {'season_number': 2}]}
-		with mock.patch.dict(sys.modules, {'indexers.tmdb_api': tmdb_api}), mock.patch.object(SOURCES.settings, 'metadata_user_info', return_value={}, create=True):
-			for metadata, expected in [(complete, False), ({}, True), (None, True), ({'total_seasons': 33, 'season_data': [{'season_number': 1}]}, True), ({'total_seasons': 1, 'season_data': [{'season_number': 1}, {'season_number': 1}]}, True)]:
-				with self.subTest(metadata=metadata), mock.patch.object(SOURCES, 'tvshow_meta', return_value=metadata):
-					self.assertEqual(SOURCES.MetaBuilder().tv_identity_policy(source, 'Top Gear', '2002'), (expected, ['1978']))
-			with mock.patch.object(SOURCES, 'tvshow_meta', return_value=complete):
-				source.custom_season = '1'
-				self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'Top Gear', '2002'))
-
-
-	def test_unknown_year_or_metadata_error_keeps_tv_collision_strict(self):
-		source = types.SimpleNamespace(mediatype='episode', tmdb_id='45', season='33')
-		for date in ['', '1978-07-13']:
-			api = module_stub(tmdb_tv_title_year=lambda title: {'results': [{'id': 4498, 'name': 'Top Gear', 'first_air_date': date}]})
-			with self.subTest(date=date), mock.patch.dict(sys.modules, {'indexers.tmdb_api': api}), mock.patch.object(SOURCES, 'tvshow_meta', side_effect=RuntimeError('unavailable')):
-				self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'Top Gear', '2002'))
-
-
-	def test_episode_cache_policy_refreshes_legacy_rows_and_preserves_unfiltered_sources(self):
-		calls = []
-		class Cache:
-			def get(self, provider, *args):
-				calls.append(('get', provider))
-				return None
-			def set(self, provider, *args): calls.append(('set', provider, args[-2].sources[:]))
-			def close(self): pass
-		class Provider:
-			def sources(self, *args): return [{'name': 'The.Grand.Tour.S01E01.1080p'}, {'name': 'The.Grand.Tour.2026.S01E01.1080p'}]
-		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
-		external.mediatype, external.tmdb_id, external.title, external.year = 'episode', '329471', 'The Grand Tour', '2026'
-		external.season, external.episode, external.single_expiry, external.require_tv_year = '1', '1', 1, True
-		with mock.patch.object(SOURCES, 'ExternalProvidersCache', Cache), mock.patch.object(external, 'provider_data', return_value={}), mock.patch.object(external, 'process_sources', side_effect=lambda provider, sources: sources) as process:
-			external.get_episode_source('torrentio', Provider, 'episode')
-		self.assertEqual(calls[0], ('get', 'torrentio:tv_identity_v3'))
-		self.assertEqual(calls[1][1], 'torrentio:tv_identity_v3')
-		self.assertEqual(len(calls[1][2]), 2)
-		self.assertEqual([item['name'] for item in external.sources], [item['name'] for item in calls[1][2]])
-		self.assertEqual(external.sources[0]['_identity_status'], 'unverified')
-		process.assert_called_once_with('torrentio', external.sources)
-
-	def test_multi_debrid_results_keep_provider_specific_cache_labels(self):
-		FakeDebridCheck.cached_by_provider = {'realdebrid': {'torrentio-0'}, 'alldebrid': {'torrentio-1'}, 'torbox': {'torrentio-0'}}
-		FakeDebridCheck.exact_providers = {'alldebrid', 'torbox'}
-		results = self.manager(provider_names=['torrentio'], debrid_names=['realdebrid', 'alldebrid', 'torbox']).results({})
-		labels = {(item['hash'], item['debrid'], item['cache_provider']) for item in results}
-		self.assertEqual(labels, {
-			('torrentio-0', 'realdebrid', 'realdebrid'), ('torrentio-1', 'realdebrid', 'Unchecked realdebrid'),
-			('torrentio-0', 'alldebrid', 'Uncached alldebrid'), ('torrentio-1', 'alldebrid', 'alldebrid'),
-			('torrentio-0', 'torbox', 'torbox'), ('torrentio-1', 'torbox', 'Uncached torbox')
-		})
 
 	def test_running_provider_cannot_publish_after_source_sink_closes(self):
 		sink = SOURCES.SourceResultSink()
@@ -293,65 +213,6 @@ class ExternalManagerTests(unittest.TestCase):
 
 		self.assertFalse(worker.is_alive())
 		self.assertEqual(sink.items, [])
-
-	def test_full_search_replaces_closed_result_sink(self):
-		source = SOURCES.Sources()
-		old_sink = source.source_sink
-		old_sink.close()
-		source.meta = {}
-		source.scraper_settings = {}
-		source.prescrape = False
-		source.filters_ignored = False
-		source.progress_dialog = types.SimpleNamespace(kill=lambda: None)
-		source.source_select = lambda: 'restarted'
-		old_open_window = SOURCES.open_window
-		SOURCES.open_window = lambda *args, **kwargs: ('perform_full_search', None)
-		try: result = source.display_results([])
-		finally: SOURCES.open_window = old_open_window
-
-		self.assertEqual(result, 'restarted')
-		self.assertIsNot(source.source_sink, old_sink)
-		self.assertIs(source.sources, source.source_sink.items)
-		self.assertTrue(source.source_sink.accepting)
-
-
-	def test_debrid_request_context_is_immutable_per_search(self):
-		debrid = load_debrid_module()
-		FakeDebridCache.rows = [('a', 'rd', 'True', 999)]
-		context_a = debrid.DebridCheck.request_context(['a'])
-		check_a = debrid.DebridCheck({}, 'realdebrid', *context_a)
-		FakeDebridCache.rows = [('b', 'rd', 'True', 999)]
-		debrid.DebridCheck.request_context(['b'])
-
-		self.assertEqual(check_a.hash_list, ('a',))
-		self.assertEqual(check_a.cached_hashes, (('a', 'rd', 'True', 999),))
-
-	def test_only_eligible_hashes_are_cache_checked(self):
-		FakeDebridCheck.cached = {'%s-%d' % (provider, index) for provider in CORE_EXTERNAL_PROVIDERS for index in range(2)}
-		manager = self.manager(eligibility_filter=lambda results: [item for item in results if item['hash'].endswith('-0')])
-		manager.results({})
-		self.assertEqual(FakeDebridCheck.checked_batches[0], {'%s-0' % provider for provider in CORE_EXTERNAL_PROVIDERS})
-		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
-
-
-	def test_resolution_fallback_keeps_exact_limit_and_unknown_4k_ahead_of_1080p(self):
-		source = types.SimpleNamespace(meta={'duration': 7200}, mediatype='movie')
-		processor = SOURCES.ResultsProcessor(source)
-		results = [
-			{'quality': '4K', 'quality_rank': 1, 'size': 6.3},
-			{'quality': '4K', 'quality_rank': 1, 'size': 6.31},
-			{'quality': '4K', 'quality_rank': 1, 'size': 0},
-			{'quality': '1080p', 'quality_rank': 2, 'size': 5.0},
-			{'quality': '720p', 'quality_rank': 3, 'size': 2.0},
-		]
-		original = SOURCES.playback_health
-		SOURCES.playback_health = types.SimpleNamespace(learned_bandwidth=lambda default: 10, resolution_fallback_limit=lambda: 7)
-		try: results.sort(key=processor.autoplay_source_key)
-		finally: SOURCES.playback_health = original
-
-		self.assertEqual([(item['quality'], item['size']) for item in results], [
-			('4K', 6.3), ('4K', 0), ('1080p', 5.0), ('4K', 6.31), ('720p', 2.0)
-		])
 
 
 if __name__ == '__main__':

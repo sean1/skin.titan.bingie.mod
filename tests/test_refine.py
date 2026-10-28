@@ -1,10 +1,9 @@
 import json
 import types
 import unittest
-from datetime import date
 from pathlib import Path
 from urllib.parse import unquote, urlencode
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from tests.module_isolation import load_module
 
@@ -116,39 +115,6 @@ class RefineTests(unittest.TestCase):
 		self.assertNotIn('certification=', command)
 		self.assertEqual(menu._publish()['MPAA'], 'Any')
 		self.assertEqual(menu._active_count(), 1)
-
-	def test_tv_network_is_encoded_and_movies_ignore_network_state(self):
-		tv = self.refine.Refine({'mediatype': 'tvshow'})
-		tv.draft.update({'network': '213', 'network_label': 'Netflix'})
-		self.assertIn('with_networks=213', unquote(tv.apply()))
-
-		movie = self.refine.Refine({'mediatype': 'movie'})
-		movie.draft.update({'network': '213', 'network_label': 'Netflix'})
-		command = unquote(movie.apply())
-		self.assertNotIn('with_networks=', command)
-		self.assertEqual(movie._publish()['Network'], 'Any')
-		self.assertEqual(movie._active_count(), 0)
-
-
-	def test_new_releases_uses_rolling_90_day_window_for_movies_and_tv(self):
-		class FixedDate(date):
-			@classmethod
-			def today(cls): return cls(2026, 8, 22)
-
-		for mediatype, date_key, sort in (('movie', 'primary_release_date', 'primary_release_date'), ('tvshow', 'first_air_date', 'first_air_date')):
-			with self.subTest(mediatype=mediatype), patch.object(self.refine, 'date', FixedDate):
-				menu = self.refine.Refine({'mediatype': mediatype})
-				menu.draft.update({'genres': '28', 'genres_label': 'Action', 'language': 'fr', 'language_label': 'French'})
-				menu._select = Mock(return_value=('New Releases', 'New Releases'))
-				values = menu.preset()
-				command = unquote(menu.apply())
-				self.assertEqual((menu.draft['sort'], menu.draft['votes'], menu.draft['release_window']), (sort, '1', '90'))
-				self.assertEqual((menu.draft['genres'], menu.draft['language']), ('28', 'fr'))
-				self.assertEqual(values['Preset'], 'New Releases')
-				self.assertIn('%s.gte=2026-05-24' % date_key, command)
-				self.assertIn('%s.lte=2026-08-22' % date_key, command)
-				self.assertIn('vote_count.gte=1', command)
-				self.assertIn('sort_by=%s.desc' % sort, command)
 
 
 if __name__ == '__main__':

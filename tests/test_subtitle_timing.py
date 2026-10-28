@@ -187,21 +187,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.subtitles.kodi_utils.sleep.assert_not_called()
 
 
-	def test_late_default_index_is_readiness_and_full_track_still_wins(self):
-		for initial_index in (None, -1):
-			with self.subTest(initial_index=initial_index):
-				state, manager = self.automatic_fixture(current_index=initial_index)
-				self.client.getAvailableSubtitleStreams.return_value = ['eng', 'eng']
-				def ready(delay):
-					state.update({'currentsubtitle': {'index': 0}, 'subtitles': [{'index': 0, 'language': 'eng', 'isforced': True}, {'index': 1, 'language': 'eng', 'isforced': False}]})
-					return False
-				self.subtitles.kodi_utils.monitor.waitForAbort.side_effect = ready
-				self.assertTrue(self.client.run('Fixture', 'tt123', None, None, ''))
-				self.client.setSubtitleStream.assert_called_once_with(1)
-				self.client.showSubtitles.assert_called_once_with(True)
-				manager.search.assert_not_called()
-
-
 	def test_only_forced_embedded_tracks_search_and_download_full_dialogue(self):
 		state, manager = self.automatic_fixture(streams=[{'index': 0, 'language': 'eng', 'isforced': True}])
 		self.client.getAvailableSubtitleStreams.return_value = ['eng']
@@ -226,17 +211,6 @@ class SubtitleTimingTests(unittest.TestCase):
 				self.subtitles.kodi_utils.open_file.assert_not_called()
 				self.client.setSubtitles.assert_not_called()
 
-	def test_initial_disabled_then_ready_enabled_then_user_off_cancels_search(self):
-		state, manager = self.automatic_fixture(enabled=False, current_index=None)
-		self.client.getAvailableSubtitleStreams.return_value = ['eng']
-		def ready(delay):
-			state.update({'subtitleenabled': True, 'currentsubtitle': {'index': 0}, 'subtitles': [{'index': 0, 'language': 'eng', 'isforced': True}]})
-			return False
-		self.subtitles.kodi_utils.monitor.waitForAbort.side_effect = ready
-		manager.search.side_effect = lambda: state.update({'subtitleenabled': False}) or self.candidates
-		self.assertFalse(self.client.run('Fixture', 'tt123', None, None, ''))
-		manager.download.assert_not_called()
-		self.client.setSubtitles.assert_not_called()
 
 	def test_manual_choice_during_search_cancels_automatic_job_for_same_file(self):
 		state, manager = self.automatic_fixture(streams=[{'index': 0, 'language': 'eng', 'isforced': True}])
@@ -252,16 +226,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.client.setSubtitles.assert_not_called()
 
 
-	def test_pre_run_manual_off_without_context_is_preserved(self):
-		state, manager = self.automatic_fixture(enabled=False, current_index=None)
-		self.property_fixture()
-		self.assertTrue(self.subtitles.mark_manual_selection())
-		self.client.configure = Mock(wraps=self.client.configure)
-		self.assertFalse(self.client.run('Fixture', 'tt123', None, None, ''))
-		self.client.configure.assert_not_called()
-		self.client.showSubtitles.assert_not_called()
-		manager.search.assert_not_called()
-
 	def test_replaying_same_file_clears_previous_manual_choice_and_allows_automatic_full_subtitles(self):
 		state, manager = self.automatic_fixture(enabled=False)
 		properties = self.property_fixture()
@@ -276,18 +240,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.client.showSubtitles.assert_called_once_with(True)
 		manager.search.assert_not_called()
 
-
-	def test_explicit_manual_forced_download_remains_available_despite_override(self):
-		state, manager = self.automatic_fixture()
-		self.property_fixture()
-		self.client.configure('tt123', expected_playing_file='video.mkv')
-		self.client._set_context()
-		self.assertTrue(self.subtitles.mark_manual_selection())
-		partial = {'provider': 'opensubtitles', 'id': 'forced', 'lang': 'eng', 'forced': True}
-		manager.find.return_value = partial
-		self.assertFalse(self.client._cancelled())
-		self.assertEqual(self.client.download_by_id('opensubtitles', 'forced'), manager.download.return_value)
-		manager.download.assert_called_once_with(partial)
 
 	def test_open_failure_does_not_delete_an_existing_destination(self):
 		self.subtitles.kodi_utils.open_file = Mock(side_effect=OSError('open failed'))

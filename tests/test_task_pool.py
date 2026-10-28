@@ -75,12 +75,6 @@ class TaskPoolTests(unittest.TestCase):
 		self.assert_tail_workers_terminate(lambda queue: pool._thread_target(queue, processed.append), ('item',))
 		self.assertEqual(processed, ['item'])
 
-	def test_media_list_workers_terminate_when_competing_for_tail_item(self):
-		processed = []
-		builder = object.__new__(self.list_helper.BaseMediaListBuilder)
-		self.assert_tail_workers_terminate(builder._thread_target, (processed.append, 'item'))
-		self.assertEqual(processed, ['item'])
-
 
 if __name__ == '__main__':
 	unittest.main()

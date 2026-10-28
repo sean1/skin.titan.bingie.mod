@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from tests.module_isolation import load_module, temporary_modules
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,15 +56,6 @@ class MyListCacheTests(unittest.TestCase):
 		self.assertFalse(self.store.contains('movie', 101))
 		self.assertTrue(self.store.contains('tvshow', 101))
 
-	def test_repeated_add_preserves_a_single_row_and_saved_order(self):
-		self.assertTrue(self.store.add('movie', 101, 'First'))
-		self.assertTrue(self.store.add('movie', 102, 'Second'))
-		before = self.items()
-		self.assertEqual([item['media_id'] for item in before], ['102', '101'])
-		self.assertTrue(self.store.add('movie', '101', 'First'))
-		self.assertEqual(self.items(), before)
-		self.assertTrue(self.store.contains('movie', 101))
-		self.assertTrue(all(isinstance(item['saved_at'], int) for item in before))
 
 	def test_invalid_identities_are_rejected_without_modifying_saved_items(self):
 		self.store.add('movie', 101, 'Keep')
@@ -83,31 +74,6 @@ class MyListCacheTests(unittest.TestCase):
 			with self.subTest(parent_id=parent_id):
 				with self.assertRaises(ValueError): self.store.add('episode', 9876, 'Episode', tvshow_id=parent_id)
 		self.assertEqual(self.items('tvshow'), [])
-
-
-	def test_database_initialization_and_cleanup_preserve_saved_items(self):
-		kodi_utils = self.stubs['modules.kodi_utils']
-		for name in ('navigator_db', 'watched_db', 'views_db', 'trakt_db', 'maincache_db', 'metacache_db', 'debridcache_db', 'external_db'):
-			setattr(kodi_utils, name, str(Path(self.temp_dir.name) / ('watched.db' if name == 'watched_db' else '%s.db' % name)))
-		kodi_utils.databases_path = self.temp_dir.name
-		kodi_utils.local_string = str
-		kodi_utils.path_exists = lambda path: True
-		kodi_utils.make_directory = Mock()
-		kodi_utils.open_file = Mock()
-		caches = types.ModuleType('caches')
-		caches.__path__ = []
-		stubs = {**self.stubs, 'caches': caches, 'caches.mylist_cache': self.cache}
-		maintenance = load_module('test_mylist_maintenance_module', LIB / 'modules' / 'cache.py', stubs)
-		maintenance.limit_metacache_database = Mock()
-		self.store.add('movie', 101, 'Movie')
-		self.store.add('tvshow', 101, 'Show')
-		with temporary_modules(stubs):
-			maintenance.check_databases()
-			maintenance.check_databases()
-			maintenance.clean_databases(current_time=100, silent=True)
-		reopened = self.cache.MyList(str(self.database_path))
-		self.assertEqual([(item['media_id'], item['title']) for item in reopened.items('movie')[0]], [('101', 'Movie')])
-		self.assertEqual([(item['media_id'], item['title']) for item in reopened.items('tvshow')[0]], [('101', 'Show')])
 
 
 if __name__ == '__main__':

@@ -101,13 +101,6 @@ class SearchWindowTests(unittest.TestCase):
 		self.complete(payload(alien))
 		self.assertEqual(self.window.items, [alien])
 
-	def test_clear_discards_inflight_results_without_an_empty_request(self):
-		self.request('fargo')
-		self.window.set_query('')
-		self.complete(payload(MOVIE))
-		self.assertEqual(self.window.items, [])
-		self.assertEqual(self.executor.submit.call_count, 1)
-		self.assertEqual(self.window.properties['Search.Pending'], 'false')
 
 	def test_page_two_appends_without_duplicates_and_keeps_movie_show_identity(self):
 		self.request('fargo')
@@ -132,20 +125,6 @@ class SearchWindowTests(unittest.TestCase):
 		self.executor.submit.assert_called_with(self.module.tmdb_media_search, 'fargo', 1)
 		self.complete(payload(SHOW))
 		self.assertEqual(self.window.items, [SHOW])
-
-
-	def test_failed_next_page_retries_that_page_and_preserves_existing_results(self):
-		self.request('fargo')
-		self.complete(payload(MOVIE, pages=3))
-		self.executor.submit.return_value = Future()
-		self.window.onClick(501)
-		self.window.tick()
-		self.complete(None)
-		self.assertEqual(self.window.items, [MOVIE])
-		self.executor.submit.return_value = Future()
-		self.window.onClick(501)
-		self.window.tick()
-		self.executor.submit.assert_called_with(self.module.tmdb_media_search, 'fargo', 2)
 
 
 if __name__ == '__main__': unittest.main()

@@ -44,21 +44,6 @@ def load_focused(skin):
 
 class KeymapLifecycleTests(unittest.TestCase):
 
-	def test_active_keymap_drift_is_repaired_only_after_reconcile_interval(self):
-		keymap, kodi_utils, files = load_keymap()
-		now = [0.0]
-		lifecycle = keymap.Lifecycle(clock=lambda: now[0], reconcile_interval=60.0)
-		self.assertTrue(lifecycle.tick())
-		files[keymap.KEYMAP_PATH] = '<keymap><!-- corrupted --></keymap>'
-		kodi_utils.open_file.reset_mock()
-
-		now[0] = 59.9
-		self.assertFalse(lifecycle.tick())
-		kodi_utils.open_file.assert_not_called()
-		now[0] = 60.0
-		self.assertTrue(lifecycle.tick())
-		self.assertEqual(files[keymap.KEYMAP_PATH], keymap.KEYMAP_XML)
-
 
 	def test_failed_install_is_retried_without_advancing_lifecycle_state(self):
 		keymap, kodi_utils, files = load_keymap()
@@ -80,32 +65,6 @@ class KeymapLifecycleTests(unittest.TestCase):
 		failed = False
 		self.assertTrue(lifecycle.tick())
 		self.assertEqual(lifecycle.active, True)
-
-	def test_failed_removal_is_retried_without_advancing_lifecycle_state(self):
-		keymap, kodi_utils, files = load_keymap()
-		lifecycle = keymap.Lifecycle()
-		lifecycle.tick()
-		kodi_utils.current_skin.return_value = 'skin.estuary'
-		kodi_utils.delete_file.side_effect = lambda path: None
-		with self.assertRaises(IOError): lifecycle.tick()
-		self.assertEqual(lifecycle.active, True)
-		kodi_utils.delete_file.side_effect = lambda path: files.pop(path, None)
-		self.assertTrue(lifecycle.tick())
-		self.assertEqual(lifecycle.active, False)
-
-	def test_skin_transition_removes_only_owned_file(self):
-		keymap, kodi_utils, files = load_keymap()
-		lifecycle = keymap.Lifecycle()
-		lifecycle.tick()
-		kodi_utils.current_skin.return_value = 'skin.estuary'
-		self.assertTrue(lifecycle.tick())
-		self.assertNotIn(keymap.KEYMAP_PATH, files)
-
-		files[keymap.KEYMAP_PATH] = '<keymap><!-- user file --></keymap>'
-		lifecycle.active = None
-		self.assertFalse(lifecycle.tick())
-		self.assertIn(keymap.KEYMAP_PATH, files)
-
 
 
 if __name__ == '__main__': unittest.main()

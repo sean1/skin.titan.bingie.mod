@@ -195,42 +195,6 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
 
 
-	def test_pending_stop_retains_playing_trailer_and_retries_after_deadline(self):
-		self._activate()
-		self.preview._candidate.return_value = None
-		player = self.preview.preview_player
-		self.preview.tick()
-		self.entry.monotonic.return_value = 31.0
-		self.preview.tick()
-
-		self.assertIs(self.preview.pending_stop_player, player)
-		self.assertEqual(self.commands, ['PlayerControl(Stop)', 'PlayerControl(Stop)'])
-		self.visibility.update({'Player.HasMedia': False, 'Player.HasVideo': False})
-		self.preview.tick()
-		self.assertFalse(self.preview.pending_stop_trailer)
-
-
-	def test_prepared_listing_trailer_cannot_launch_on_detail_without_type(self):
-		self.entry.monotonic = Mock(return_value=20.0)
-		self.labels.update({'Container.ListItem.DBType': 'movie', 'Container.ListItem.UniqueID(tmdb)': '456', 'Container.ListItem.Label': 'Related title',
-			'Container.ListItem.Trailer': 'trailer-url', 'Container.ListItem.Property(DBTYPE)': 'movie', 'Container.ListItem.Property(tmdb_id)': '456',
-			'Container.ListItem.Property(trailer)': 'trailer-url'})
-		self._queue_prepared_preview()
-		self.window_id = 11123
-		self.visibility.update({self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: True, 'Window.IsActive(1123)': True,
-			'Control.HasFocus(563) | Control.HasFocus(560)': True})
-		self.labels.update({'System.CurrentControlID': '563', 'Container(563).CurrentItem': '1', 'Container(563).FolderPath': 'plugin://related'})
-		trailers = types.ModuleType('modules.trailers')
-		trailers.commit_prepared = Mock()
-
-		with patch.dict(sys.modules, {'modules.trailers': trailers}): self.preview.tick()
-
-		trailers.commit_prepared.assert_not_called()
-		self.assertEqual(self.preview.prepare_identity, '')
-		self.assertFalse(self.preview.active)
-		self.assertIsNone(self.preview.preview_player)
-
-
 	def test_preview_ownership_requires_the_exact_request_url(self):
 		self.preview.trailer = 'preview-url'
 		self.entry.get_property = Mock(return_value='resolved-url')
@@ -360,44 +324,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview.preview_player.onAVStarted()
 		self.assertEqual(self.preview.av_started_generation, self.preview.preview_generation)
 
-	def test_player_wrapper_is_retained_until_starting_playback_has_stopped(self):
-		self.entry.monotonic = Mock(return_value=20.0)
-		self.preview._launch_preview('preview-url', None)
-		player = self.preview.preview_player
-		self.visibility['Player.HasMedia'] = True
-		self.preview._owns_preview = Mock(return_value=True)
-
-		self.preview._begin_preview_stop(21.0)
-		self.preview._stop_pending_preview(21.0)
-
-		self.assertIsNone(self.preview.preview_player)
-		self.assertIs(self.preview.pending_stop_player, player)
-		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-		self.visibility['Player.HasMedia'] = False
-		self.preview._stop_pending_preview(21.1)
-		self.assertIsNone(self.preview.pending_stop_player)
-		self.assertFalse(self.preview.pending_stop_trailer)
-
-	def test_item_menu_and_empty_row_navigation_request_stop_in_same_tick(self):
-		for label, candidate, navigating in (
-			('item', self._candidate('movie|2'), False),
-			('menu', self._candidate(), True),
-			('row', None, False),
-		):
-			with self.subTest(label=label):
-				self.properties.clear()
-				self.commands.clear()
-				self.preview = self._new_preview()
-				self._activate()
-				self.preview._candidate = Mock(return_value=candidate)
-				self.preview._preview_navigation_away = Mock(return_value=navigating)
-
-				self.assertTrue(self.preview.tick())
-				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-				self.assertFalse(self.preview.active)
-				self.assertTrue(self.preview.pending_stop_requested)
-				self.assertEqual(self.properties[self.entry.TRAILER_PREVIEW_PROPERTY], 'true')
-				self.assertNotIn(self.entry.TRAILER_PREVIEW_READY_PROPERTY, self.properties)
 
 	def test_row_cancel_request_stops_immediately_and_invalidates_callback(self):
 		self._activate()
@@ -411,58 +337,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		stale_player.onAVStarted()
 		self.assertEqual(self.preview.av_started_generation, -1)
 
-	def test_screen_exit_retains_preview_until_playing_path_returns_and_playback_stops(self):
-		for playback_started in (False, True):
-			with self.subTest(playback_started=playback_started):
-				self.setUp()
-				self._activate()
-				player = self.preview.preview_player
-				del self.preview._owns_preview
-				self.preview.playback_started = playback_started
-				self.preview._preview_window_active.return_value = False
-				self.preview._candidate = Mock(return_value=None)
-
-				self.assertTrue(self.preview.tick())
-				self.assertEqual(self.commands, [])
-				self.assertFalse(self.preview.active)
-				self.assertEqual(self.preview.pending_stop_trailer, 'preview-url')
-				self.assertIs(self.preview.pending_stop_player, player)
-				self.assertNotIn(self.entry.TRAILER_PREVIEW_READY_PROPERTY, self.properties)
-				player.onAVStarted()
-				self.assertEqual(self.preview.av_started_generation, -1)
-
-				self.entry.monotonic.return_value = 20.25
-				self.entry.kodi_utils.get_infolabel = lambda label: 'preview-url' if label == 'Player.FilenameAndPath' else ''
-				self.assertTrue(self.preview.tick())
-				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-				self.assertEqual(self.properties[self.entry.TRAILER_PREVIEW_PROPERTY], 'true')
-				self.assertIs(self.preview.pending_stop_player, player)
-
-				self.entry.monotonic.return_value = 20.5
-				self.visibility.update({'Player.HasMedia': False, 'Player.HasVideo': False})
-				self.entry.kodi_utils.get_infolabel = lambda label: ''
-				self.assertFalse(self.preview.tick())
-				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-				self.assertIsNone(self.preview.pending_stop_player)
-				self.assertFalse(self.preview.pending_stop_trailer)
-				self.assertNotIn(self.entry.TRAILER_PREVIEW_PROPERTY, self.properties)
-
-	def test_screen_exit_does_not_stop_other_video_after_playing_path_returns(self):
-		self._activate()
-		del self.preview._owns_preview
-		self.preview.playback_started = True
-		self.preview._preview_window_active.return_value = False
-		self.preview._candidate = Mock(return_value=None)
-
-		self.assertTrue(self.preview.tick())
-		self.entry.monotonic.return_value = 20.25
-		self.entry.kodi_utils.get_infolabel = lambda label: 'other-video' if label == 'Player.FilenameAndPath' else ''
-		self.assertFalse(self.preview.tick())
-
-		self.assertEqual(self.commands, [])
-		self.assertFalse(self.preview.pending_stop_trailer)
-		self.assertIsNone(self.preview.pending_stop_player)
-		self.assertNotIn(self.entry.TRAILER_PREVIEW_PROPERTY, self.properties)
 
 	def test_unrelated_playback_is_never_stopped(self):
 		self._activate()

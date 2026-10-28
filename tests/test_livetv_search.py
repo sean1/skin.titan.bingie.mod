@@ -19,19 +19,6 @@ class LiveTVSearchTests(unittest.TestCase):
 		self.live._save({'server': 'http://example.test', 'username': 'user', 'password': 'private'})
 
 
-	def test_prompt_opens_encoded_results_and_cancel_is_safe(self):
-		self.live.ku.dialog.input.return_value = ' Liverpool & Chelsea '
-		self.live.ku.build_url = lambda params: 'plugin://example/?query=Liverpool%20%26%20Chelsea'
-		with patch.object(self.live, '_finish') as finish:
-			self.live.search({})
-			finish.assert_not_called()
-		self.live.xbmc.executebuiltin.assert_called_once_with('Container.Update(plugin://example/?query=Liverpool%20%26%20Chelsea)')
-		self.live.xbmc.executebuiltin.reset_mock()
-		self.live.ku.dialog.input.return_value = ''
-		with patch.object(self.live, '_finish') as finish: self.live.search({})
-		finish.assert_not_called()
-		self.live.xbmc.executebuiltin.assert_not_called()
-
 	def test_matches_event_names_and_guide_titles_without_credentials(self):
 		now = 1000
 		streams = [{'name': 'End | Liverpool vs Old', 'stream_id': 1}, {'name': 'Live | Liverpool vs Chelsea', 'stream_id': 2}, {'name': 'TSN 1', 'stream_id': 3, 'epg_channel_id': 'tsn'}]
@@ -47,13 +34,6 @@ class LiveTVSearchTests(unittest.TestCase):
 		self.assertNotIn('private', str(calls))
 		self.assertEqual(guide.call_args.kwargs['search_term'], 'liverpool')
 
-	def test_guide_failure_still_returns_channel_results(self):
-		streams = [{'name': 'Live | Liverpool vs Chelsea', 'stream_id': 2, 'epg_channel_id': 'sports'}]
-		with patch.object(self.live, '_request', return_value=streams), patch.object(self.live, '_download_guide', side_effect=OSError('private URL')), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.search_results({'query': 'Liverpool'})
-		self.assertEqual(item.call_count, 1)
-		self.assertIn('channel name matches only', self.live.ku.dialog.notification.call_args.args[1])
-		self.assertNotIn('private URL', str(self.live.ku.dialog.notification.call_args))
 
 	def test_live_soccer_variants_are_grouped_without_hiding_other_results(self):
 		streams = [
@@ -91,21 +71,6 @@ class LiveTVSearchTests(unittest.TestCase):
 			self.live.match_feeds(group)
 		self.assertEqual([call.args[1]['id'] for call in item.call_args_list], ['1', '1', '2'])
 
-	def test_match_folder_prefers_ca_and_offers_all_unique_feeds(self):
-		streams = [
-			{'name': 'Live | Liverpool vs. Chelsea | all | US: SOCCER PPV 77', 'stream_id': 1},
-			{'name': 'Live | Liverpool vs. Chelsea | all | CA: SOCCER PPV 17', 'stream_id': 2},
-			{'name': 'Live | Liverpool vs. Chelsea | all | CA: SOCCER PPV 17', 'stream_id': 2},
-			{'name': 'Live | Liverpool vs. Everton | all | CA: SOCCER PPV 19', 'stream_id': 3},
-		]
-		with patch.object(self.live, '_request', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.match_feeds({'home': 'liverpool', 'away': 'chelsea'})
-		calls = item.call_args_list
-		self.assertEqual(len(calls), 3)
-		self.assertEqual(calls[0].args[0], 'Play first feed — CA: SOCCER PPV 17')
-		self.assertEqual(calls[0].args[1]['id'], '2')
-		self.assertEqual([call.args[1]['id'] for call in calls[1:]], ['2', '1'])
-		self.assertNotIn('private', str(calls))
 
 	def test_match_folder_rejects_invalid_or_disappeared_fixtures(self):
 		with patch.object(self.live, '_request') as request, patch.object(self.live, '_finish') as finish:

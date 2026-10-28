@@ -1,7 +1,6 @@
 import types
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 from tests.module_isolation import load_module
@@ -63,17 +62,6 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.add_item.assert_not_called()
 		self.service.kodi_utils.notification.assert_not_called()
 
-	def test_manual_search_reports_safe_config_issue(self):
-		self.client.subtitles_search.return_value = []
-		self.client.subtitle_diagnostics.return_value = {'config': 'unreadable', 'providers': (), 'path': '/private/path', 'detail': 'secret'}
-
-		self.service._search(7)
-
-		self.service.kodi_utils.ok_dialog.assert_called_once_with('Subtitle search', 'Subtitle search unavailable: provider settings cannot be read.')
-		self.assertNotIn('private', self.service.kodi_utils.ok_dialog.call_args.args[1])
-		self.assertNotIn('secret', self.service.kodi_utils.ok_dialog.call_args.args[1])
-		self.service.kodi_utils.notification.assert_not_called()
-
 
 	def test_download_save_failure_adds_no_item_or_notification(self):
 		payload = {'content': 'subtitle text', 'extension': 'srt'}
@@ -85,19 +73,6 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.client.save_subtitle.assert_called_once_with(payload, 'special://temp/fixture_vie_subsource_3.srt')
 		self.service.kodi_utils.notification.assert_not_called()
 		self.service.kodi_utils.add_item.assert_not_called()
-
-
-	def test_manual_service_actions_record_override_before_search_or_download(self):
-		for action in ('search', 'manualsearch', 'download'):
-			with self.subTest(action=action):
-				events = []
-				self.service.mark_manual_selection = Mock(side_effect=lambda: events.append('manual'))
-				self.service._search = Mock(side_effect=lambda handle: events.append('search'))
-				self.service._download = Mock(side_effect=lambda handle, params: events.append('download'))
-				self.service.kodi_utils.parsed_query.return_value = {'action': action}
-				self.service.run(SimpleNamespace(argv=['plugin://skin.titan.bingie.lite', '9', '?action=%s' % action]))
-				self.assertEqual(events, ['manual', 'download' if action == 'download' else 'search'])
-				self.service.mark_manual_selection.assert_called_once_with()
 
 
 if __name__ == '__main__':

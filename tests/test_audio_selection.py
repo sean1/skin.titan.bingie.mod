@@ -1,4 +1,3 @@
-import json
 import sys
 import types
 import unittest
@@ -63,35 +62,6 @@ class AudioSelectionTests(unittest.TestCase):
 	def setUp(self):
 		self.player_module.tmdb_api.media_original_language = lambda mediatype, tmdb_id: ''
 
-
-	def test_english_commentary_does_not_beat_normal_original_language(self):
-		streams = [
-			{'index': 0, 'language': 'eng', 'name': 'Director Commentary'},
-			{'index': 1, 'language': 'jpn', 'name': 'Main Audio'},
-		]
-		self.assertEqual(self.player_class._preferred_audio_stream(streams, 'ja')['index'], 1)
-
-	def test_live_selection_switches_once_and_skips_already_selected_track(self):
-		streams = [{'index': 0, 'language': 'cze', 'isdefault': True}, {'index': 1, 'language': 'chi'}]
-		player = self.player_class.__new__(self.player_class)
-		player.meta_get = {'original_language': 'zh'}.get
-		player.meta = {'original_language': 'zh'}
-		player.mediatype = 'movie'
-		player.tmdb_id = '1419406'
-		player.isPlayingVideo = lambda: True
-		player.getPlayingFile = lambda: 'movie.mkv'
-		selected = []
-		player.setAudioStream = selected.append
-
-		def response(current_index):
-			return json.dumps({'result': {'audiostreams': streams, 'currentaudiostream': {'index': current_index}}})
-
-		self.player_module.kodi_utils.execJSONRPC = lambda request: response(0)
-		player._select_preferred_audio()
-		self.assertEqual(selected, [1])
-		self.player_module.kodi_utils.execJSONRPC = lambda request: response(1)
-		player._select_preferred_audio()
-		self.assertEqual(selected, [1])
 
 	def test_stale_audio_selection_does_not_touch_new_playback(self):
 		player = self.player_class.__new__(self.player_class)

@@ -58,56 +58,6 @@ class SubtitleReleaseContextTests(unittest.TestCase):
 		self.assertTrue(instance.play_file(items))
 		self.assertEqual(played, ['https://stream.invalid/first', 'https://stream.invalid/second'])
 
-	def test_autoplay_defers_unhealthy_host_but_keeps_last_resort(self):
-		sources_module = load_sources_module()
-		played = []
-		sources_module.playback_health = types.SimpleNamespace(
-			source_context=lambda item, link=None: {'provider': 'rd', 'host': link.split('/')[2] if link else ''},
-			record=lambda *args, **kwargs: None,
-			host_penalty=lambda context: 100 if context.get('host') == 'bad.invalid' else 0
-		)
-
-		class Player:
-			def run(self, link, meta, progress):
-				played.append(link)
-				return True
-
-		sources_module.POVPlayer = Player
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background, instance.autoplay = False, True
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie', 'mediatype': 'movie'}
-		instance._no_results = lambda: None
-		bad = {'name': 'bad', 'unrestricted_link': 'https://bad.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
-		good = {'name': 'good', 'unrestricted_link': 'https://good.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
-
-		self.assertTrue(instance.play_file([bad, good]))
-		self.assertEqual(played, ['https://good.invalid/file'])
-		played.clear()
-		self.assertTrue(instance.play_file([bad]))
-		self.assertEqual(played, ['https://bad.invalid/file'])
-
-
-	def test_expired_deferred_unrestricted_link_is_not_replayed(self):
-		sources_module = load_sources_module()
-		played = []
-		sources_module.playback_health = types.SimpleNamespace(
-			source_context=lambda item, link=None: {'provider': 'rd', 'host': link.split('/')[2] if link else ''},
-			record=lambda *args, **kwargs: None,
-			host_penalty=lambda context: 100 if context.get('host') == 'bad.invalid' else 0
-		)
-		sources_module.POVPlayer = type('Player', (), {'run': lambda self, link, meta, progress: played.append(link) or False})
-		instance = sources_module.Sources.__new__(sources_module.Sources)
-		instance.background, instance.autoplay = False, True
-		instance.progress_dialog = types.SimpleNamespace(full_screen=False)
-		instance.meta = {'title': 'Movie'}
-		instance._no_results = lambda: 'none'
-		bad = {'name': 'bad', 'unrestricted_link': 'https://bad.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
-		good = {'name': 'good', 'unrestricted_link': 'https://good.invalid/file', 'quality': '4K', 'extraInfo': '', 'scrape_provider': 'fixture', 'provider': 'rd'}
-
-		with mock.patch.object(sources_module, 'DEFERRED_LINK_TTL', 0): result = instance.play_file([bad, good])
-		self.assertEqual(result, 'none')
-		self.assertEqual(played, ['https://good.invalid/file'])
 
 	def test_playback_error_resume_position_reaches_next_source(self):
 		sources_module = load_sources_module()

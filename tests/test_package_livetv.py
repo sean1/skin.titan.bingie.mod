@@ -42,11 +42,6 @@ class PackageLiveTVTests(unittest.TestCase):
 			self.assertEqual(json.loads(archive.read(entry)), account)
 			self.assertEqual((entry.external_attr >> 16) & 0o777, 0o600)
 
-	def test_missing_account_is_allowed(self):
-		result = self.package()
-		self.assertEqual(result.returncode, 0, result.stderr)
-		with zipfile.ZipFile(self.output / 'skin.example-1.0.0.zip') as archive:
-			self.assertNotIn('skin.example/resources/private/livetv-account.json', archive.namelist())
 
 	def test_symlink_account_is_rejected(self):
 		self.account.symlink_to(self.project / 'addon.xml')

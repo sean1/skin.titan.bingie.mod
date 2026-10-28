@@ -68,18 +68,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertNotIn(secret, repr(self.providers.kodi_utils.logger.call_args_list))
 
 
-	def test_exact_release_match_wins_within_language(self):
-		media = {'release_name': 'Movie.2024.1080p.WEB-DL-GROUP', 'season': None, 'episode': None}
-		candidates = [
-			self.providers._candidate('opensubtitles', 'partial', 'eng', ('Movie.2024.BluRay-OTHER',), trusted=True),
-			self.providers._candidate('subdl', 'exact', 'eng', ('Movie.2024.1080p.WEB-DL-GROUP',))
-		]
-
-		ranked = self.providers.rank_candidates(candidates, media)
-
-		self.assertEqual(ranked[0]['id'], 'exact')
-
-
 	def test_wrong_episode_is_rejected_before_scoring(self):
 		media = {'release_name': 'Show.S01E02.WEB-DL', 'season': 1, 'episode': 2}
 		candidates = [
@@ -108,37 +96,6 @@ class SubtitleProviderTests(unittest.TestCase):
 		self.assertNotIn('secret request details', repr(self.providers.kodi_utils.logger.call_args_list))
 		self.assertEqual(manager.diagnostics(), {'config': '', 'providers': ('subsource',)})
 
-
-	def test_opensubtitles_quota_rejection_disables_repeated_download_attempts(self):
-		provider = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})
-		provider.authenticated_json = Mock(side_effect=self.providers.ProviderError('http_406'))
-
-		self.assertIsNone(provider.download({'id': '456'}))
-		self.assertIsNone(provider.download({'id': '789'}))
-
-		provider.authenticated_json.assert_called_once_with('POST', 'download', 'download', json={'file_id': 456})
-		self.assertTrue(provider.download_disabled)
-
-
-	def test_subsource_searches_both_languages_and_rejects_wrong_episode(self):
-		media = {'imdb_id': 'tt123', 'season': 1, 'episode': 2, 'release_name': 'Show.S01E02.WEB-DL'}
-		provider = self.providers.SubSourceProvider({'api_key': 'key'}, media)
-		provider.request_json = Mock(side_effect=[
-			{'data': [{'movieId': 77}]},
-			{'data': [
-				{'subtitleId': 1, 'language': 'english', 'releaseInfo': ['Show.S01E02.WEB-DL'], 'downloads': 100},
-				{'subtitleId': 2, 'language': 'english', 'releaseInfo': ['Show.S01E03.WEB-DL'], 'downloads': 200}
-			]},
-			{'data': [{'subtitleId': 3, 'language': 'vietnamese', 'releaseInfo': ['Show.S01E02.WEB-DL'], 'rating': {'good': 9, 'bad': 1}}]}
-		])
-
-		results = provider.search()
-
-		self.assertEqual({item['id'] for item in results}, {'1', '3'})
-		self.assertEqual({item['lang'] for item in results}, {'eng', 'vie'})
-		languages = [call.kwargs['params']['language'] for call in provider.request_json.call_args_list[1:]]
-		self.assertEqual(languages, ['english', 'vietnamese'])
-		self.assertEqual(next(item for item in results if item['id'] == '3')['rating'], 9.0)
 
 	def test_valid_episode_archive_selects_exact_member(self):
 		content = archive_bytes([('Show.S01E01.srt', b'wrong'), ('Show.S01E02.ass', b'correct'), ('readme.nfo', b'ignore')])

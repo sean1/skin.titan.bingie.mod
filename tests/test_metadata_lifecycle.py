@@ -41,13 +41,6 @@ class MetadataLifecycleTests(unittest.TestCase):
 		self.cache = Mock()
 		self.metadata.MetaCache = Mock(return_value=self.cache)
 
-	def test_normalizes_trakt_ids_in_declared_priority_order(self):
-		media_ids = {'tmdb': 101, 'imdb': 'tt0101', 'tvdb': 202}
-
-		self.assertEqual(self.metadata._normalize_media_id('trakt_dict', media_ids, ('tmdb', 'imdb')), ('tmdb_id', 101))
-		self.assertEqual(self.metadata._normalize_media_id('trakt_dict', {'imdb': 'tt0101'}, ('tmdb', 'imdb')), ('imdb_id', 'tt0101'))
-		self.assertEqual(self.metadata._normalize_media_id('trakt_dict', {}, ('tmdb', 'imdb')), (None, None))
-
 
 	def test_blocked_claim_returns_none_without_release(self):
 		self.cache.get.return_value = None

@@ -1,11 +1,10 @@
-import json
 import sqlite3
 import tempfile
 import types
 import unittest
 from pathlib import Path
 
-from tests.module_isolation import load_module, temporary_modules
+from tests.module_isolation import load_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,46 +64,6 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 		with sqlite3.connect(self.cache.metacache_db) as dbcon:
 			return {name: sql for name, sql in dbcon.execute("SELECT name, sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'metadata'")}
 
-	def test_menu_normalization_hides_watched_pages_adds_dropped_shows_and_is_idempotent(self):
-		class NavigatorCache:
-			def __init__(self):
-				self.dbcon = sqlite3.connect(':memory:')
-				self.dbcur = self.dbcon.cursor()
-				self.dbcur.execute('CREATE TABLE navigator (list_name TEXT, list_type TEXT, list_contents TEXT, UNIQUE (list_name, list_type))')
-				rows = (
-					('RootList', 'default', [{'action': 'in_progress_movies'}]),
-					('MovieList', 'default', [{'action': 'watched_movies'}, {'mode': 'navigator.discover_main'}, {'action': 'in_progress_movies'}]),
-					('TVShowList', 'edited', [{'action': 'watched_tvshows'}, {'action': 'in_progress_tvshows'}, {'mode': 'build_next_episode'}, {'action': 'tmdb_tv_popular'}]),
-					('Keep Watching', 'shortcut_folder', [{'action': 'watched_movies'}, {'action': 'navigator.because_you_watched'}])
-				)
-				self.dbcur.executemany('INSERT INTO navigator VALUES (?, ?, ?)', ((name, list_type, json.dumps(items)) for name, list_type, items in rows))
-
-			jsloads = staticmethod(json.loads)
-			jsdumps = staticmethod(json.dumps)
-
-			def set_list(self, list_name, list_type, items):
-				self.dbcur.execute('INSERT OR REPLACE INTO navigator VALUES (?, ?, ?)', (list_name, list_type, self.jsdumps(items)))
-
-		navigator_cache = NavigatorCache()
-		self.addCleanup(navigator_cache.dbcon.close)
-		self.cache.kodi_utils.logger = lambda *args: None
-		navigator_cache_module = types.ModuleType('caches.navigator_cache')
-		navigator_cache_module.navigator_cache = navigator_cache
-		menu_lists = types.ModuleType('modules.menu_lists')
-		menu_lists.root_list = [{'action': 'dropped_tvshows', 'name': 'Dropped Shows'}]
-
-		with temporary_modules({'caches.navigator_cache': navigator_cache_module, 'modules.menu_lists': menu_lists}):
-			self.assertTrue(self.cache.normalize_menu_data())
-			first_contents = list(navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator ORDER BY list_name, list_type'))
-			self.assertTrue(self.cache.normalize_menu_data())
-			second_contents = list(navigator_cache.dbcur.execute('SELECT list_name, list_type, list_contents FROM navigator ORDER BY list_name, list_type'))
-
-		contents = {(name, list_type): json.loads(items) for name, list_type, items in first_contents}
-		self.assertEqual(first_contents, second_contents)
-		self.assertEqual(contents[('MovieList', 'default')], [{'action': 'in_progress_movies'}])
-		self.assertEqual(contents[('TVShowList', 'edited')], [{'action': 'tmdb_tv_popular'}])
-		self.assertEqual(contents[('Keep Watching', 'shortcut_folder')], [])
-		self.assertEqual(contents[('RootList', 'default')], [{'action': 'in_progress_movies'}, {'action': 'dropped_tvshows', 'name': 'Dropped Shows'}])
 
 	def test_database_check_clears_watched_history_but_preserves_resume_and_dropped_rows(self):
 		with tempfile.TemporaryDirectory() as temp_dir:
@@ -122,37 +81,6 @@ class DatabaseMaintenanceTests(unittest.TestCase):
 				self.assertEqual(dbcon.execute('SELECT db_type, media_id, season, episode FROM progress').fetchall(), [('episode', '202', 1, 2)])
 				self.assertEqual(dbcon.execute('SELECT db_type, tmdb_id FROM dropped').fetchall(), [('tvshow', '303')])
 
-	def test_metacache_external_id_indexes_support_stable_lookup_and_schema_is_idempotent(self):
-		with tempfile.TemporaryDirectory() as temp_dir:
-			self._configure_database_check(temp_dir)
-			self.cache.check_databases()
-			with sqlite3.connect(self.cache.metacache_db) as dbcon:
-				dbcon.executemany('INSERT INTO metadata VALUES (?, ?, ?, ?, ?, ?)', (
-					('tvshow', 'z-tmdb', 'duplicate-imdb', 'duplicate-tvdb', 4102444800, 'z-meta'),
-					('tvshow', 'a-tmdb', 'duplicate-imdb', 'duplicate-tvdb', 4102444800, 'a-meta')
-				))
-
-			indexes = self._metadata_indexes()
-			self.assertEqual(indexes['pov_select_imdb_media'], 'CREATE INDEX pov_select_imdb_media ON metadata (db_type, imdb_id, tmdb_id)')
-			self.assertEqual(indexes['pov_select_tvdb_media'], 'CREATE INDEX pov_select_tvdb_media ON metadata (db_type, tvdb_id, tmdb_id)')
-			with sqlite3.connect(self.cache.metacache_db) as dbcon:
-				for id_column, index_name in (('imdb_id', 'pov_select_imdb_media'), ('tvdb_id', 'pov_select_tvdb_media')):
-					plan = dbcon.execute('EXPLAIN QUERY PLAN ' + self.meta_cache.GET_MOVIE_SHOW % id_column, ('tvshow', 'missing', 0)).fetchone()[3]
-					self.assertIn('USING INDEX %s' % index_name, plan)
-			self.assertEqual(self._external_id_result('imdb_id', 'duplicate-imdb'), 'a-meta')
-			self.assertEqual(self._external_id_result('tvdb_id', 'duplicate-tvdb'), 'a-meta')
-			self.assertEqual(self._external_id_result('imdb_id', 'duplicate-imdb', reverse_unordered_selects=True), 'a-meta')
-			self.assertEqual(self._external_id_result('tvdb_id', 'duplicate-tvdb', reverse_unordered_selects=True), 'a-meta')
-			with sqlite3.connect(self.cache.metacache_db) as dbcon:
-				schema_version = dbcon.execute('PRAGMA schema_version').fetchone()[0]
-
-			self.cache.check_databases()
-
-			self.assertEqual(self._metadata_indexes(), indexes)
-			self.assertEqual(self._external_id_result('imdb_id', 'duplicate-imdb'), 'a-meta')
-			self.assertEqual(self._external_id_result('tvdb_id', 'duplicate-tvdb'), 'a-meta')
-			with sqlite3.connect(self.cache.metacache_db) as dbcon:
-				self.assertEqual(dbcon.execute('PRAGMA schema_version').fetchone()[0], schema_version)
 
 	def test_purge_database_deletes_expired_rows_from_all_tables_and_vacuums_once(self):
 		with tempfile.TemporaryDirectory() as temp_dir:

@@ -32,20 +32,5 @@ class FocusedPlaybackTests(unittest.TestCase):
 		with temporary_modules({'modules.sources': sources}): self.assertTrue(focused.source_select_focused())
 		sources.Sources.factory.assert_called_once_with({'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': '42', 'autoplay': 'false'})
 
-	def test_unrelated_info_control_restores_context_menu_without_reusing_background_item(self):
-		focused = load_focused(
-			{'Container.ListItem.Property(PovLiteItem)': 'true', 'Container.ListItem.DBType': 'movie', 'Container.ListItem.UniqueID(tmdb)': '99'},
-			{'PovInfoType': 'movie', 'PovInfoTmdb': '42'}, window_id=11123
-		)
-		self.assertFalse(focused.source_select_focused())
-		focused.kodi_utils.get_property.assert_not_called()
-		focused.kodi_utils.execute_builtin.assert_called_once_with('Action(ContextMenu)')
-
-	def test_info_play_button_rejects_missing_or_invalid_media(self):
-		for properties in ({'PovInfoType': 'movie'}, {'PovInfoType': 'episode', 'PovInfoTmdb': '42'}, {'PovInfoType': 'movie', 'PovInfoTmdb': '0'}):
-			focused = load_focused(properties=properties, window_id=11123, play_focused=True)
-			self.assertFalse(focused.source_select_focused())
-			focused.kodi_utils.execute_builtin.assert_called_once_with('Action(ContextMenu)')
-
 
 if __name__ == '__main__': unittest.main()

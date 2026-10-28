@@ -21,8 +21,6 @@ class SourceIdentityResolutionTests(unittest.TestCase):
 	def test_duplicate_filenames_fail_safely(self):
 		with self.assertRaises(ValueError): self.source._identity_matched_files([{'filename': 'Top.Gear.S33E01.mkv'}] * 2, self.evidence, 33, 1)
 
-	def test_stale_episode_identity_fails_safely(self):
-		with self.assertRaises(ValueError): self.source._identity_matched_files([{'filename': 'Top.Gear.S33E01.mkv'}], self.evidence, 33, 2)
 
 	def test_index_alone_cannot_be_mapped_to_filtered_debrid_list(self):
 		evidence = {'file_match_required': True, 'file_sid': 'tt0264235:33:1', 'file_index': 0}

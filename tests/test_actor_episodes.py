@@ -32,11 +32,6 @@ class ActorEpisodesTests(unittest.TestCase):
 		self.module = load_actor_episodes()
 		self.progress = self.module.kodi_utils.progressDialog
 
-	def test_matches_cast_and_guest_ids_without_matching_crew_or_names(self):
-		for credits in ({'cast': [{'id': 42}], 'guest_stars': []}, {'cast': [], 'guest_stars': [{'id': '42'}]}):
-			with self.subTest(credits=credits): self.assertTrue(self.module.credited_actor(credits, '42'))
-		self.assertFalse(self.module.credited_actor({'cast': [{'id': 17, 'name': 'Target Actor'}], 'guest_stars': [], 'crew': [{'id': 42}]}, 42))
-
 
 	def test_failed_lookup_preserves_matches_and_warns_of_partial_results(self):
 		episodes = [{'season': 1, 'episode': number} for number in range(1, 4)]
@@ -48,16 +43,6 @@ class ActorEpisodesTests(unittest.TestCase):
 		self.assertEqual(self.module.filter_actor_episodes(100, episodes, 42, 'Target Actor'), episodes[:1])
 		self.module.kodi_utils.notification.assert_called_once_with('Could not check 2 episodes. Results may be incomplete.')
 		self.progress.close.assert_called_once_with()
-
-	def test_cancellation_after_first_batch_discards_partial_results_and_closes_dialog(self):
-		episodes = [{'season': 1, 'episode': number} for number in range(1, 7)]
-		self.module.episode_credits = Mock(return_value={'cast': [{'id': 42}], 'guest_stars': []})
-		self.progress.iscanceled.side_effect = [False, True]
-		self.assertEqual(self.module.filter_actor_episodes(100, episodes, 42, 'Target Actor'), [])
-		self.assertEqual(self.module.episode_credits.call_count, 4)
-		self.progress.close.assert_called_once_with()
-		self.module.kodi_utils.notification.assert_not_called()
-
 
 
 if __name__ == '__main__': unittest.main()

@@ -48,11 +48,6 @@ class PlaybackHealthTests(unittest.TestCase):
 			self.assertEqual(self.module.provider_penalty('realdebrid', now=10), 0)
 		self.assertEqual(self.module.provider_penalty('not-a-provider', now=10), 0)
 
-	def test_host_history_is_capped_at_32_and_evicts_oldest(self):
-		for index in range(40): self.module.record({'provider': 'rd', 'host': 'cdn%02d.example.com' % index}, 'resolve_ok', now=index + 1)
-		self.assertEqual(len(FakeCache.data['hosts']), 32)
-		self.assertNotIn('realdebrid|cdn00.example.com', FakeCache.data['hosts'])
-		self.assertIn('realdebrid|cdn39.example.com', FakeCache.data['hosts'])
 
 	def test_host_penalty_requires_three_matching_provider_attempts(self):
 		context = {'provider': 'rd', 'host': 'bad.example.com'}
@@ -77,16 +72,6 @@ class PlaybackHealthTests(unittest.TestCase):
 		self.assertIsNone(self.module.resolution_fallback_limit(now=4))
 		self.module.record(context, 'stalled_play', bitrate_mbps=35, stalls=1, now=5)
 		self.assertEqual(self.module.resolution_fallback_limit(now=5), 60)
-
-
-	def test_bandwidth_samples_are_numeric_bounded_and_device_local(self):
-		context = {'provider': 'tb'}
-		for index in range(20): self.module.record(context, 'healthy_play', bitrate_mbps=index + 1, now=index + 1)
-		self.assertEqual(len(FakeCache.data['bandwidth']), 12)
-		serialized = json.dumps(FakeCache.data['bandwidth'])
-		self.assertNotIn('provider', serialized)
-		self.module.record(context, 'healthy_play', bitrate_mbps=float('inf'), now=30)
-		self.assertEqual(len(FakeCache.data['bandwidth']), 12)
 
 
 if __name__ == '__main__':

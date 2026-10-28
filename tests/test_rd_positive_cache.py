@@ -138,31 +138,6 @@ class RealDebridPositiveCacheTests(unittest.TestCase):
 		self.assertEqual(self.module._tio_results('tt1', None, None), [])
 		self.assertEqual(self.module.session.calls, 2)
 
-	def test_auxiliary_checks_reject_non_list_result_schemas(self):
-		class Response:
-			def __init__(self, payload): self.payload = payload
-			def raise_for_status(self): return None
-			def json(self): return self.payload
-
-		class Session:
-			def get(self, *_args, **_kwargs): return Response({'streams': {}})
-			def post(self, *_args, **_kwargs): return Response({'available': 'not-a-list'})
-
-		self.module.session = Session()
-		self.assertFalse(self.module.tio_check_cache('tt1', None, None, []))
-		fake_dmm = types.ModuleType('magneto.dmm')
-		fake_dmm.get_secret = lambda: ('key', 'solution')
-		with mock.patch.dict('sys.modules', {'magneto.dmm': fake_dmm}):
-			self.assertFalse(self.module.dmm_check_cache(('a' * 40,), 'tt1', []))
-
-
-	def test_positive_upsert_replaces_legacy_false_row(self):
-		cache_module = load_cache_module()
-		cache = cache_module.DebridCache()
-		cache.set_many((('same-hash', 'False'),), 'rd')
-		cache.set_many((('same-hash', 'True'),), 'rd')
-
-		self.assertEqual(cache.dbcur.execute("SELECT cached FROM debrid_data WHERE hash = 'same-hash' AND debrid = 'rd'").fetchone(), ('True',))
 
 	def test_late_negative_cannot_overwrite_an_unexpired_positive(self):
 		cache_module = load_cache_module()

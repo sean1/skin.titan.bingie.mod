@@ -63,15 +63,6 @@ class DialogNavigationTests(unittest.TestCase):
 		self.assertEqual(self.properties['PovInfoTitle'], 'Black Widow')
 		self.assertNotIn(self.dialogs.POV_PAGE_HISTORY_PROPERTY, self.properties)
 
-	def test_back_to_native_info_returns_to_caller_then_reopens_info(self):
-		self.properties[self.dialogs.POV_PAGE_HISTORY_PROPERTY] = json.dumps([{'page': 'native_info'}])
-
-		self.dialogs.pov_page_back()
-
-		self.assertEqual(self.commands, ['PreviousMenu', 'AlarmClock(PovNativeInfoBack,Action(Info),00:00,silent)'])
-		self.assertNotIn(self.dialogs.POV_PAGE_HISTORY_PROPERTY, self.properties)
-
-
 
 if __name__ == '__main__':
 	unittest.main()

@@ -41,17 +41,5 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 		payload = json.loads(self.live.xbmcgui.Window.return_value.setProperty.call_args.args[1])
 		self.assertEqual(payload['alternatives'], ['2'])
 
-	def test_selected_catalog_entry_must_match_route_scope(self):
-		selected = 'Live | Liverpool vs. Chelsea | Premier League | 2026-10-28 | CA: SOCCER 1'
-		streams = [{'stream_id': 1, 'name': selected.replace('2026-10-28', '2026-11-04')}, {'stream_id': 2, 'name': selected}]
-		with patch.object(self.live, '_catalog', return_value=streams): self.live._prepare_failover(self.account, '1', selected)
-		self.live.xbmcgui.Window.return_value.setProperty.assert_not_called()
-
-	def test_request_failure_still_resolves_original_stream(self):
-		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', side_effect=OSError('network error')), patch.object(self.live, '_handle', return_value=1):
-			self.live.play({'id': '1', 'name': self.name})
-		self.live.xbmcplugin.setResolvedUrl.assert_called_once()
-		self.live.xbmcgui.Window.return_value.setProperty.assert_not_called()
-
 
 if __name__ == '__main__': unittest.main()

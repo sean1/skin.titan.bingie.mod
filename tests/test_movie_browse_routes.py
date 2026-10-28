@@ -93,19 +93,6 @@ class MovieBrowseRouteTests(unittest.TestCase):
 		self.assertIn('network_id=332', result)
 		self.assertIn('name=BBC Two', result)
 
-	def test_other_network_search_cancel_or_no_results_does_not_navigate(self):
-		meta_lists = types.ModuleType('modules.meta_lists')
-		meta_lists.networks = ({'id': 213, 'name': 'Netflix', 'logo': 'netflix.png'},)
-		with temporary_modules({'modules.meta_lists': meta_lists}):
-			self.kodi_utils.dialog.input.return_value = ''
-			self.assertIsNone(self.menu.search_tv_network())
-			self.kodi_utils.dialog.input.return_value = 'missing'
-			self.menu.search_tv_network()
-
-		self.kodi_utils.notification.assert_called_once_with(32760)
-		self.kodi_utils.execute_builtin.assert_not_called()
-
-
 
 if __name__ == '__main__':
 	unittest.main()

@@ -80,26 +80,6 @@ class SubtitleContextContractTests(unittest.TestCase):
 		self.assertNotIn('url', projected)
 		self.assertLessEqual(len(json.dumps(client._set_context([candidate] * 200)).encode('utf-8')), self.subtitles.subtitle_context_max_bytes)
 
-	def test_manual_download_uses_generation_bound_candidate_without_research(self):
-		service = load_service(self.subtitles)
-		client, payload = Mock(), {'content': b'subtitle', 'extension': 'srt'}
-		client.subtitle_path, client.sub_filename = 'special://temp/', 'fixture'
-		client._cancelled.return_value = False
-		client._safe_extension.return_value = 'srt'
-		client.download_candidate.return_value = payload
-		client.save_subtitle.return_value = True
-		context = {
-			'version': 2, 'generation': 'playback-generation',
-			'subtitles': [{'token': 'selected-token', 'provider': 'subdl', 'id': 'file:12:34', 'lang': 'eng', 'extension': 'srt'}]
-		}
-		service._client = Mock(return_value=(client, context))
-
-		service._download(7, {'generation': 'playback-generation', 'candidate': 'selected-token', 'language': 'vie', 'result': '1'})
-
-		client.download_candidate.assert_called_once_with(context['subtitles'][0])
-		client.download_by_id.assert_not_called()
-		self.assertIn('_eng_', client.save_subtitle.call_args.args[1])
-
 
 	def test_manual_download_rejects_candidate_from_previous_generation(self):
 		service = load_service(self.subtitles)

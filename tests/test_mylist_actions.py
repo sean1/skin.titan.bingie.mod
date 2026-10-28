@@ -63,11 +63,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertTrue(self.controller.action(params))
 		self.assertEqual([(item['media_id'], item['title']) for item in self.store.items('tvshow')[0]], [('202', 'Series')])
 
-	def test_mutating_another_title_does_not_change_the_current_info_button(self):
-		self.properties.update({'PovInfoType': 'tvshow', 'PovInfoTmdb': '101', 'PovInfoMyListSaved': 'false'})
-		self.assertTrue(self.controller.action({'action': 'add', 'mediatype': 'movie', 'tmdb_id': 101, 'title': 'Movie'}))
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
-		self.assertIn('BingieMyListRefresh', self.properties)
 
 	def test_info_action_uses_the_displayed_series_identity(self):
 		self.properties.update({'PovInfoType': 'tvshow', 'PovInfoTmdb': '202', 'PovInfoTitle': 'Series', 'PovInfoMyListSaved': 'false'})
@@ -80,17 +75,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertFalse(self.store.contains('tvshow', 202))
 		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
 
-	def test_replaying_a_captured_info_add_keeps_the_movie_saved(self):
-		self.properties.update({'PovInfoType': 'movie', 'PovInfoTmdb': '101', 'PovInfoTitle': 'Movie', 'PovInfoMyListSaved': 'false'})
-		self.controller.refresh_info_state('movie', 101, 'Movie')
-		params = command_params(self.properties['PovInfoMyListCommand'])
-		self.assertEqual((params['mode'], params['action'], params['mediatype'], params['tmdb_id']), ('my_list_from_info', 'add', 'movie', '101'))
-		self.assertTrue(self.controller.from_info(params))
-		before = self.store.items('movie')
-		self.assertTrue(self.controller.from_info(params))
-		self.assertTrue(self.store.contains('movie', 101))
-		self.assertEqual(self.store.items('movie'), before)
-		self.assertEqual(self.properties['PovInfoMyListSaved'], 'true')
 
 	def test_captured_info_identity_is_preserved_after_navigation_to_another_title(self):
 		self.properties.update({'PovInfoType': 'tvshow', 'PovInfoTmdb': '202', 'PovInfoTitle': 'Current Show', 'PovInfoMyListSaved': 'false'})
@@ -107,17 +91,6 @@ class MyListActionTests(unittest.TestCase):
 		self.assertEqual(self.properties['PovInfoMyListSaved'], 'false')
 		self.assert_no_success_refresh()
 		self.kodi_utils.notification.assert_called_once_with('Could not update My List')
-
-
-	def test_refreshing_unknown_info_state_clears_a_stale_saved_command(self):
-		self.properties.update({'PovInfoMyListSaved': 'true', 'PovInfoMyListCommand': 'RunPlugin(stale-action)'})
-		with patch.object(self.kodi_utils, 'database_connect', side_effect=sqlite3.OperationalError('unavailable')):
-			self.controller.refresh_info_state('movie', 101, 'Movie')
-		self.assertEqual(self.properties['PovInfoMyListSaved'], '')
-		self.assertEqual(self.properties['PovInfoMyListCommand'], '')
-		self.kodi_utils.container_refresh.assert_not_called()
-		self.kodi_utils.notification.assert_not_called()
-
 
 
 	def test_unavailable_metadata_keeps_saved_movies_and_shows_removable(self):

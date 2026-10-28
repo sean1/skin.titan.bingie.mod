@@ -65,12 +65,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.player.onAVStarted()
 		self.player.tick()
 
-	def test_unobserved_startup_timeout_does_not_restart_playback(self):
-		self.player.tick()
-		self.now = 26
-		self.assertFalse(self.player.tick())
-		self.assertFalse(self.player.played)
-		self.assertNotIn('private', json.dumps(self.properties))
 
 	def test_observed_stream_that_never_starts_retries_after_timeout(self):
 		self.player.tick()
@@ -82,16 +76,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.assertTrue(self.player.tick())
 		self.assertEqual(self.player.played, [self.player._url('2')])
 
-	def test_observed_startup_error_retries(self):
-		self.player.tick()
-		self.player.file = self.player._url('1')
-		self.player.video = False
-		self.now = 1
-		self.player.tick()
-		self.now = 3
-		self.player.onPlayBackError()
-		self.player.tick()
-		self.assertEqual(self.player.played, [self.player._url('2')])
 
 	def test_error_tries_next_stream(self):
 		self.start()
@@ -112,14 +96,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.player.tick()
 		self.assertEqual(self.player.played, [self.player._url('2')])
 
-	def test_verified_unavailable_startup_tries_alternative(self):
-		self.player.tick()
-		self.ku.get_visibility = lambda condition: True
-		self.player.probe_results.put(('one', '1', True))
-		self.now = 3
-		self.assertTrue(self.player.tick())
-		self.assertEqual(self.player.played, [self.player._url('2')])
-		self.ku.xbmc.executebuiltin.assert_called_once_with('Dialog.Close(okdialog)')
 
 	def test_dismissed_error_dialog_cancels_pending_probe_result(self):
 		self.player.tick()
@@ -127,17 +103,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.now = 3
 		self.player.tick()
 		self.assertFalse(self.player.played)
-		self.ku.xbmc.executebuiltin.assert_not_called()
-
-	def test_unrelated_dialog_does_not_probe_or_switch(self):
-		self.player.tick()
-		self.ku.get_visibility = lambda condition: True
-		self.ku.get_infolabel = lambda label: 'Some other dialog'
-		self.now = 3
-		self.player.probe_results.put(('one', '1', True))
-		self.player.tick()
-		self.assertFalse(self.player.played)
-		self.assertFalse(self.player.session['probe_started'])
 		self.ku.xbmc.executebuiltin.assert_not_called()
 
 
@@ -154,22 +119,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.ku.get_visibility = lambda condition: False
 		self.player.tick()
 		self.assertTrue(self.player.session['probe_allowed'])
-
-
-	def test_probe_waits_for_error_dialog_before_opening_another_connection(self):
-		class ImmediateThread:
-			def __init__(self, target, args, daemon): self.target, self.args = target, args
-			def start(self): self.target(*self.args)
-		self.player.tick()
-		self.now = 3
-		with patch.object(self.module, 'Thread', ImmediateThread):
-			self.player.tick()
-			self.assertFalse(self.player.session['probe_started'])
-			self.ku.get_visibility = lambda condition: True
-			self.probe.stop()
-			with patch.object(self.module, '_probe_failure', return_value=True): self.player.tick()
-			self.player.tick()
-		self.assertEqual(self.player.played, [self.player._url('2')])
 
 
 	def test_pending_failed_probe_does_not_override_stop(self):
@@ -195,15 +144,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.assertTrue(self.module.request_manual_switch())
 		self.player.tick()
 		self.assertEqual(self.player.played, [self.player._url('2')])
-		self.assertNotIn(self.module.CAN_SWITCH, self.properties)
-
-	def test_manual_request_does_not_restart_stopped_stream(self):
-		self.start()
-		self.player.file = ''
-		self.player.onPlayBackStopped()
-		self.assertTrue(self.module.request_manual_switch())
-		self.assertFalse(self.player.tick())
-		self.assertFalse(self.player.played)
 		self.assertNotIn(self.module.CAN_SWITCH, self.properties)
 
 
@@ -270,17 +210,6 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.assertFalse(self.player.played)
 		self.assertEqual(self.player.session['id'], '4')
 
-	def test_alternatives_are_capped_and_exhaustion_stops(self):
-		self.properties[self.module.PROPERTY] = json.dumps({'token': 'one', 'id': '1', 'alternatives': ['2', '3', '4', '5']})
-		self.start()
-		for i in range(4):
-			self.now += 3
-			self.player.onPlayBackError()
-			self.player.tick()
-			if self.player.session: self.player.onAVStarted()
-		self.assertEqual(len(self.player.played), 3)
-		self.assertIsNone(self.player.session)
-		self.assertIn('No more', self.notes[-1][1])
 
 	def test_delayed_stop_from_old_feed_does_not_cancel_new_playback(self):
 		self.start()

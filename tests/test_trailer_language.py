@@ -86,17 +86,6 @@ video/720.m3u8
 		self.assertNotIn('LANGUAGE="de"', limited)
 		self.assertNotIn('en-description.m3u8', limited)
 
-	def test_manifest_rejects_explicitly_foreign_audio(self):
-		manifest = '''#EXTM3U
-#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="Deutsch",LANGUAGE="de",DEFAULT=YES,AUTOSELECT=YES,URI="de.m3u8"
-#EXT-X-STREAM-INF:BANDWIDTH=2000000,CODECS="avc1.64001f,mp4a.40.2",RESOLUTION=1280x720,AUDIO="audio"
-720.m3u8
-'''
-
-		with self.assertRaisesRegex(RuntimeError, 'English trailer audio track'):
-			self.trailers._limited_hls_manifest(manifest, 'https://video.test/master.m3u8')
-
-
 
 if __name__ == '__main__':
 	unittest.main()

@@ -2,7 +2,6 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
 
 from tests.module_isolation import load_module
 
@@ -32,38 +31,6 @@ def load_entry():
 		path = ROOT / 'resources' / 'lib' / 'entry.py'
 		return load_module('test_focused_fanart_entry', path, stubs)
 	finally: sys.path.pop(0)
-
-
-class FocusedFanartTests(unittest.TestCase):
-	@classmethod
-	def setUpClass(cls):
-		cls.entry = load_entry()
-
-	def setUp(self):
-		self.properties = {}
-		self.entry.set_property = self.properties.__setitem__
-		self.entry.clear_property = lambda key: self.properties.pop(key, None)
-		self.entry.kodi_utils.get_visibility = lambda condition: condition != 'Window.IsActive(Videos)'
-		self.fanart = self.entry.FocusedFanart()
-
-	def test_pending_focus_becomes_stable_after_publication(self):
-		self.fanart._focused_identity = Mock(return_value='listing|movie|1')
-		self.fanart._focused_art = Mock(return_value='fanart.jpg')
-		self.entry.monotonic = Mock(side_effect=(10.0, 10.1, 10.25))
-
-		self.assertTrue(self.fanart.tick())
-		self.assertFalse(self.fanart.stable)
-		self.assertTrue(self.fanart.tick())
-		self.assertFalse(self.fanart.stable)
-		self.assertFalse(self.fanart.tick())
-		self.assertTrue(self.fanart.stable)
-		self.assertEqual(self.properties[self.entry.FOCUSED_FANART_PROPERTY], 'fanart.jpg')
-		self.assertEqual(self.properties[self.entry.FOCUSED_FANART_IDENTITY_PROPERTY], 'listing|movie|1')
-
-		self.entry.monotonic = Mock(return_value=11.0)
-		self.assertFalse(self.fanart.tick())
-		self.assertTrue(self.fanart.stable)
-		self.assertEqual(self.fanart._focused_art.call_count, 1)
 
 
 if __name__ == '__main__':

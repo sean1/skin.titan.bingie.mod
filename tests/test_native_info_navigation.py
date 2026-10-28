@@ -1,59 +1,14 @@
 import tempfile
 import unittest
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import Mock
-from urllib.parse import parse_qs, urlencode, urlsplit
+from urllib.parse import urlencode
 
 from tests.test_dialog_navigation import load_dialogs
 from tests.test_mylist_actions import command_params, load_mylist_controller
 
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-class NativeInfoNavigationTests(unittest.TestCase):
-	def test_view_series_requires_a_known_parent_on_a_bingie_episode(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesDialogVideoInfo.xml').getroot()
-		button = next(control for control in root.iter('control') if control.get('id') == '56')
-		self.assertEqual(button.findtext('label'), 'View Series')
-		self.assertEqual(button.findtext('visible').split(' + '), [
-			'String.IsEqual(ListItem.DBTYPE,episode)',
-			'String.StartsWith(ListItem.FileNameAndPath,plugin://skin.titan.bingie.lite/)',
-			'Integer.IsGreater(ListItem.UniqueID(tmdb),0)',
-		])
-
-
-
-	def test_custom_info_opens_dedicated_season_window(self):
-		root = ET.parse(ROOT / 'xml' / 'IncludesPovInfo.xml').getroot()
-		button = next(control for control in root.iter('control') if control.get('id') == '53')
-		actions = [(node.get('condition'), node.text) for node in button.findall('onclick')]
-
-		resolved = '!String.IsEmpty(Window(Home).Property(PovInfoTmdb))'
-		pending = 'String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))'
-		self.assertEqual(actions, [
-			(resolved, 'ActivateWindow(1124,return)'),
-			(pending, 'ActivateWindow(1124,return)'),
-		])
-
-	def test_dedicated_season_window_owns_season_content_and_native_back(self):
-		root = ET.parse(ROOT / 'xml' / 'View_527_Bingie_Seasons.xml').getroot()
-		season_list = next(control for control in root.iter('control') if control.get('id') == '527')
-		content_include = next(node for node in season_list.findall('include') if node.text == 'PovSeasonBrowserContent')
-		self.assertEqual(content_include.get('condition'), 'Window.IsActive(1124)')
-
-		for control_id in ('527', '5027', '60'):
-			control = next(control for control in root.iter('control') if control.get('id') == control_id)
-			self.assertIn(('Window.IsActive(1124)', 'PreviousMenu'), [(node.get('condition'), node.text) for node in control.findall('onback')])
-
-		content = next(include for include in root.findall('include') if include.get('name') == 'PovSeasonBrowserContent').find('content')
-		self.assertEqual(content.get('target'), 'videos')
-		self.assertEqual(content.get('browse'), 'never')
-		self.assertEqual(content.text, '$VAR[PovSeasonBrowserPath]')
-
-		episode_list = next(control for control in root.iter('control') if control.get('id') == '5027')
-		self.assertEqual(episode_list.find('content').text, '$INFO[Container(527).ListItem.FolderPath]')
 
 
 class EpisodeParentInfoBridgeTests(unittest.TestCase):

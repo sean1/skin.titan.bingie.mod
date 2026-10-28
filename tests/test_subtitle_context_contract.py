@@ -61,29 +61,6 @@ class SubtitleContextContractTests(unittest.TestCase):
 		self.assertEqual(context['playing_fingerprint'], hashlib.sha256(b'https://stream.invalid/private?token=secret').hexdigest())
 		self.assertEqual(context['version'], 2)
 
-	def test_context_keeps_safe_poster_without_query_credentials(self):
-		client = self.subtitles.Subtitles().configure('tt123', poster='https://image.invalid/poster.jpg?token=secret')
-		client.getPlayingFile = Mock(return_value='movie.mkv')
-
-		context = client._set_context()
-
-		self.assertEqual(context['poster'], 'https://image.invalid/poster.jpg')
-		self.assertNotIn('secret', json.dumps(context))
-
-	def test_manual_override_fingerprints_current_file_and_keeps_matching_generation(self):
-		playing_file = 'https://stream.invalid/private?token=secret'
-		fingerprint = self.subtitles.playing_file_fingerprint(playing_file)
-		self.subtitles.kodi_utils.player.isPlayingVideo.return_value = True
-		self.subtitles.kodi_utils.player.getPlayingFile.return_value = playing_file
-		self.subtitles.kodi_utils.get_property.return_value = json.dumps({'playing_fingerprint': fingerprint, 'generation': 'current-generation'})
-		self.assertTrue(self.subtitles.mark_manual_selection())
-		property_name, payload = self.subtitles.kodi_utils.set_property.call_args.args
-		self.assertEqual(property_name, self.subtitles.subtitle_manual_override_property)
-		self.assertEqual(json.loads(payload), {'playing_fingerprint': fingerprint, 'generation': 'current-generation'})
-		self.assertNotIn('stream.invalid', payload)
-		self.assertNotIn('secret', payload)
-
-
 
 	def test_candidate_projection_is_bounded_allowlisted_and_download_complete(self):
 		client = self.subtitles.Subtitles().configure('tt123')

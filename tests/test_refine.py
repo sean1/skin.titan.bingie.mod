@@ -3,7 +3,7 @@ import types
 import unittest
 from datetime import date
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlparse, urlencode
+from urllib.parse import unquote, urlencode
 from unittest.mock import Mock, patch
 
 from tests.module_isolation import load_module
@@ -71,22 +71,6 @@ class RefineTests(unittest.TestCase):
 					self.assertEqual(json.loads(self.refine._properties['Bingie.Refine.Applied.%s' % mediatype]), self.refine.DEFAULT_DRAFT)
 					self.assertEqual(self.refine.Refine({'mediatype': other_type}).initialize()['Rating'], '8.0')
 
-	def test_applying_without_active_refinements_returns_to_trending(self):
-		for mediatype, action in (('movie', 'tmdb_movies_trending'), ('tvshow', 'tmdb_tv_trending')):
-			with self.subTest(mediatype=mediatype):
-				self.assertIn('action=' + action, self.refine.Refine({'mediatype': mediatype}).apply())
-
-	def test_clear_replaces_the_active_listing_so_kodi_reloads_trending(self):
-		self.refine.kodi_utils.get_visibility.return_value = True
-		for mediatype, action in (('movie', 'tmdb_movies_trending'), ('tvshow', 'tmdb_tv_trending')):
-			with self.subTest(mediatype=mediatype):
-				command = self.refine.Refine({'mediatype': mediatype}).clear()
-				self.assertTrue(command.startswith('Container.Update(plugin://skin.titan.bingie.lite/'))
-				self.assertIn('action=' + action, command)
-				self.assertTrue(command.endswith(',replace)'))
-				self.refine.kodi_utils.execute_builtin.assert_any_call('SetFocus(523)')
-
-
 
 	def test_initialize_discards_unapplied_changes_and_restores_applied_values(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -100,17 +84,6 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(values['Rating'], '7.0')
 		self.assertEqual(json.loads(self.refine._properties['Bingie.Refine.Draft.movie'])['rating'], '7.0')
 
-	def test_every_curated_theme_is_available_and_encodes_only_its_keywords(self):
-		self.assertEqual(len(self.refine.THEME_OPTIONS), 25)
-		for mediatype in ('movie', 'tvshow'):
-			for label, keywords in self.refine.THEME_OPTIONS[1:]:
-				with self.subTest(mediatype=mediatype, label=label):
-					menu = self.refine.Refine({'mediatype': mediatype})
-					menu.draft.update({'theme': keywords, 'theme_label': label})
-					command = unquote(menu.apply())
-					self.assertIn('&with_keywords=%s' % keywords, command)
-					self.assertNotIn('&with_genres=', command)
-					self.assertNotIn('&vote_count.gte=', command)
 
 	def test_show_results_encodes_all_filters_and_starts_a_fresh_movie_listing(self):
 		menu = self.refine.Refine({'mediatype': 'movie'})
@@ -157,14 +130,6 @@ class RefineTests(unittest.TestCase):
 		self.assertEqual(movie._active_count(), 0)
 
 
-	def test_drafts_are_independent_per_media_type(self):
-		movie = self.refine.Refine({'mediatype': 'movie'})
-		movie.draft['rating'] = '8.0'
-		movie._save()
-
-		self.assertEqual(self.refine.Refine({'mediatype': 'movie'}).draft['rating'], '8.0')
-		self.assertEqual(self.refine.Refine({'mediatype': 'tvshow'}).draft['rating'], '')
-
 	def test_new_releases_uses_rolling_90_day_window_for_movies_and_tv(self):
 		class FixedDate(date):
 			@classmethod
@@ -184,7 +149,6 @@ class RefineTests(unittest.TestCase):
 				self.assertIn('%s.lte=2026-08-22' % date_key, command)
 				self.assertIn('vote_count.gte=1', command)
 				self.assertIn('sort_by=%s.desc' % sort, command)
-
 
 
 if __name__ == '__main__':

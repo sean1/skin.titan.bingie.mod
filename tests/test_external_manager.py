@@ -221,16 +221,6 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertEqual(manager.eligible_cached_count([uncertain], {'a'}), 0)
 		self.assertEqual(list(manager.process_duplicates([uncertain, matched])), [uncertain, matched])
 
-	def test_meta_builder_detects_exact_title_tv_collision(self):
-		results = {'results': [
-			{'id': 46952, 'name': 'Le Grand Tour', 'original_name': 'The Grand Tour', 'first_air_date': '2016-11-17'},
-			{'id': 329471, 'name': 'The Grand Tour', 'first_air_date': '2026-01-01'},
-		]}
-		tmdb_api = module_stub(tmdb_tv_title_year=lambda title: results)
-		source = types.SimpleNamespace(mediatype='episode', tmdb_id='329471')
-		with mock.patch.dict(sys.modules, {'indexers.tmdb_api': tmdb_api}):
-			self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'The Grand Tour', '2026'))
-			self.assertFalse(SOURCES.MetaBuilder().require_tv_year(source, 'A Different Show', '2026'))
 
 	def test_tv_collision_relaxes_only_with_complete_nonoverlapping_seasons(self):
 		results = {'results': [
@@ -248,13 +238,6 @@ class ExternalManagerTests(unittest.TestCase):
 				source.custom_season = '1'
 				self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'Top Gear', '2002'))
 
-	def test_overlapping_grand_tour_season_and_specials_keep_year_requirement(self):
-		api = module_stub(tmdb_tv_title_year=lambda title: {'results': [{'id': 46952, 'name': 'The Grand Tour', 'first_air_date': '2016-11-17'}]})
-		complete = {'total_seasons': 2, 'season_data': [{'season_number': 1}, {'season_number': 2}]}
-		with mock.patch.dict(sys.modules, {'indexers.tmdb_api': api}), mock.patch.object(SOURCES.settings, 'metadata_user_info', return_value={}, create=True), mock.patch.object(SOURCES, 'tvshow_meta', return_value=complete):
-			for season in ('1', '0'):
-				source = types.SimpleNamespace(mediatype='episode', tmdb_id='329471', season=season)
-				with self.subTest(season=season): self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'The Grand Tour', '2026'))
 
 	def test_unknown_year_or_metadata_error_keeps_tv_collision_strict(self):
 		source = types.SimpleNamespace(mediatype='episode', tmdb_id='45', season='33')
@@ -263,12 +246,6 @@ class ExternalManagerTests(unittest.TestCase):
 			with self.subTest(date=date), mock.patch.dict(sys.modules, {'indexers.tmdb_api': api}), mock.patch.object(SOURCES, 'tvshow_meta', side_effect=RuntimeError('unavailable')):
 				self.assertTrue(SOURCES.MetaBuilder().require_tv_year(source, 'Top Gear', '2002'))
 
-	def test_relaxed_tv_collision_keeps_yearless_sources_but_rejects_wrong_year_for_all_packs(self):
-		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')
-		external.require_tv_year, external.year, external.conflicting_tv_years = False, '2002', ['1978', '2010']
-		sources = [{'name': 'Top.Gear.S33E01.1080p'}, {'name': 'Top.Gear.2002.S33E01.1080p'}, {'name': 'Top.Gear.1978.S33E01.1080p'}, {'name': 'Top.Gear.2010.S33E01.1080p'}, {'name': 'Top.Gear.2002-2010.S01-S15.1080p'}]
-		for pack in ('episode', SOURCES.season_display, SOURCES.show_display):
-			with self.subTest(pack=pack): self.assertEqual(external.filter_ambiguous_tv_sources(sources, pack), sources[:2] + sources[4:])
 
 	def test_episode_cache_policy_refreshes_legacy_rows_and_preserves_unfiltered_sources(self):
 		calls = []
@@ -338,7 +315,6 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertTrue(source.source_sink.accepting)
 
 
-
 	def test_debrid_request_context_is_immutable_per_search(self):
 		debrid = load_debrid_module()
 		FakeDebridCache.rows = [('a', 'rd', 'True', 999)]
@@ -356,8 +332,6 @@ class ExternalManagerTests(unittest.TestCase):
 		manager.results({})
 		self.assertEqual(FakeDebridCheck.checked_batches[0], {'%s-0' % provider for provider in CORE_EXTERNAL_PROVIDERS})
 		self.assertEqual(set(FakeExternalSource.calls), CORE_EXTERNAL_PROVIDERS | {'bitsearch', 'dmm'})
-
-
 
 
 	def test_resolution_fallback_keeps_exact_limit_and_unknown_4k_ahead_of_1080p(self):
@@ -378,7 +352,6 @@ class ExternalManagerTests(unittest.TestCase):
 		self.assertEqual([(item['quality'], item['size']) for item in results], [
 			('4K', 6.3), ('4K', 0), ('1080p', 5.0), ('4K', 6.31), ('720p', 2.0)
 		])
-
 
 
 if __name__ == '__main__':

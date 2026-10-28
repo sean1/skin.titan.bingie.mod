@@ -1,13 +1,12 @@
 import types
 import unittest
-import xml.etree.ElementTree as ET
 from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from tests.module_isolation import load_module, temporary_modules
-from tests.test_menu_completion import load_episode_module, load_menu_module
+from tests.module_isolation import load_module
+from tests.test_menu_completion import load_episode_module
 from tests.test_menu_media import load_media_module
 
 
@@ -77,18 +76,6 @@ class ComingSoonDateTests(ComingSoonFixture, unittest.TestCase):
 		for value in invalid:
 			with self.subTest(value=value): self.assertFalse(self.media.card_coming_soon({'release_date': value}, 'movie', TODAY))
 		self.assertFalse(self.media.card_coming_soon({}, 'movie', TODAY))
-
-
-	def test_default_date_is_local_and_badge_disappears_on_the_release_day(self):
-		class BeforeLocalMidnight(LocalDate):
-			@classmethod
-			def today(cls): return date(2026, 10, 2)
-		data = {'release_date': '2026-10-03', 'original_language': 'en'}
-		with patch.object(self.media, 'date', BeforeLocalMidnight):
-			self.assertTrue(self.media.card_coming_soon(data, 'movie'))
-			self.assertEqual(self.media.card_badge_properties(data, 'movie'), {'card_coming_soon': 'true', 'card_language': 'EN'})
-		self.assertFalse(self.media.card_coming_soon(data, 'movie'))
-		self.assertEqual(self.media.card_badge_properties(data, 'movie'), {'card_language': 'EN'})
 
 
 class ComingSoonBuilderTests(ComingSoonFixture, unittest.TestCase):

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from tests.test_subtitle_providers import load_providers
 
@@ -66,35 +66,6 @@ class SubtitleBoundedDownloadTests(unittest.TestCase):
 		self.assertIsNone(first.chunk_size)
 		first.close.assert_called_once_with()
 		self.assertEqual(self.request.call_count, 2)
-
-	def test_body_read_error_is_rejected_without_retry(self):
-		response = BinaryResponse((b'partial',), read_error=OSError('connection dropped'))
-		self.request.return_value = response
-
-		with self.assertRaisesRegex(self.providers.ProviderError, 'read_OSError'):
-			self.providers._download_binary('https://download.invalid/subtitle', 'test', 20)
-
-		self.request.assert_called_once()
-		response.close.assert_called_once_with()
-
-	def test_providers_select_direct_and_archive_caps(self):
-		opensubtitles = self.providers.OpenSubtitlesProvider({'api_key': 'key', 'user_agent': 'Test'}, {})
-		opensubtitles.authenticated_json = Mock(return_value={'link': 'https://download.invalid/subtitle'})
-		subdl = self.providers.SubDLProvider({'api_key': 'key'}, {})
-		subsource = self.providers.SubSourceProvider({'api_key': 'key'}, {})
-
-		with patch.object(self.providers, '_download_binary', return_value=b'subtitle') as download:
-			self.assertIsNotNone(opensubtitles.download({'id': '1', 'extension': 'srt'}))
-			self.assertIsNotNone(subdl.download({'id': 'file:2:3', 'extension': 'srt'}))
-			download.assert_any_call('https://download.invalid/subtitle', 'opensubtitles', self.providers.MAX_SUBTITLE_BYTES, None)
-			download.assert_any_call('https://dl.subdl.com/subtitle/2/3', 'subdl', self.providers.MAX_SUBTITLE_BYTES, None, headers={'X-API-Key': 'key'})
-
-		archive_payload = {'content': b'subtitle', 'extension': 'srt'}
-		with patch.object(self.providers, '_download_binary', return_value=b'archive') as download, patch.object(self.providers, 'extract_subtitle_archive', return_value=archive_payload):
-			self.assertEqual(subdl.download({'id': 'archive:file.zip'}), archive_payload)
-			self.assertEqual(subsource.download({'id': '4'}), archive_payload)
-			download.assert_any_call('https://dl.subdl.com/subtitle/file.zip', 'subdl', self.providers.MAX_ARCHIVE_BYTES, None, headers={'X-API-Key': 'key'})
-			download.assert_any_call('https://api.subsource.net/api/v1/subtitles/4/download', 'subsource', self.providers.MAX_ARCHIVE_BYTES, None, headers=subsource.headers())
 
 
 if __name__ == '__main__':

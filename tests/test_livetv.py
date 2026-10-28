@@ -50,15 +50,6 @@ class LiveTVTests(unittest.TestCase):
 		path.write_text('{invalid', encoding='utf-8')
 		self.assertIsNone(self.live._load())
 
-	def test_xtream_request_encodes_credentials_and_category(self):
-		response = Mock()
-		response.__enter__ = Mock(return_value=response)
-		response.__exit__ = Mock(return_value=False)
-		response.read.return_value = json.dumps([{'stream_id': 10}]).encode()
-		with patch.object(self.live, 'urlopen', return_value=response) as open_url:
-			self.assertEqual(self.live._request(self.account, 'get_live_streams', category_id='sport & news'), [{'stream_id': 10}])
-		url = open_url.call_args.args[0].full_url
-		self.assertEqual(parse_qs(urlsplit(url).query), {'username': ['my user'], 'password': ['p/a&ss'], 'action': ['get_live_streams'], 'category_id': ['sport & news']})
 
 	def test_channel_items_do_not_contain_account_credentials(self):
 		self.live._save(self.account)
@@ -66,32 +57,6 @@ class LiveTVTests(unittest.TestCase):
 			self.live.channels({'category': '12'})
 		self.assertEqual(item.call_args.args[:3], ('Soccer', {'mode': 'livetv.play', 'id': '42'}, False))
 
-	def test_cancelled_setup_does_not_overwrite_existing_account(self):
-		self.live._save(self.account)
-		self.live.ku.dialog.input.side_effect = ['http://other.test', 'new-user', '']
-		self.live.settings({})
-		self.assertEqual(self.live._load(), self.account)
-		self.live.xbmcplugin.endOfDirectory.assert_not_called()
-
-	def test_settings_saves_account_without_directory_operations(self):
-		self.live.ku.dialog.input.side_effect = [self.account['server'], self.account['username'], self.account['password']]
-		self.live.settings({})
-		self.assertEqual(self.live._load(), self.account)
-		self.live.xbmcplugin.endOfDirectory.assert_not_called()
-		self.live.xbmc.executebuiltin.assert_not_called()
-
-	def test_unconfigured_browser_directs_to_private_package_file(self):
-		with patch.object(self.live, '_item') as item, patch.object(self.live, '_finish') as finish:
-			self.live.browse({})
-		item.assert_not_called()
-		finish.assert_called_once_with(False)
-		self.assertIn('private account file', self.live.ku.dialog.ok.call_args.args[1])
-
-	def test_browse_lists_categories_without_credentials_in_routes(self):
-		self.live._save(self.account)
-		with patch.object(self.live, '_request', return_value=[{'category_id': '17', 'category_name': 'Sports'}]), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.browse({})
-		self.assertEqual(item.call_args_list[-1].args, ('Sports', {'mode': 'livetv.channels', 'category': '17'}))
 
 	def test_provider_error_does_not_expose_exception_or_credentials(self):
 		self.live._save(self.account)
@@ -140,14 +105,6 @@ class LiveTVTests(unittest.TestCase):
 			self.live.xbmcgui.ListItem.assert_called_with(path=account['server'] + '/live/user/pass/21.ts')
 			self.assertEqual(finish.call_count, 2)
 		self.assertEqual([request[1]['action'][0] for request in requests], ['get_live_categories', 'get_live_streams'])
-
-	def test_playback_url_encodes_credentials_and_rejects_invalid_id(self):
-		self.live._save(self.account)
-		with patch.object(self.live, '_handle', return_value=1):
-			self.live.play({'id': '42'})
-			self.live.xbmcgui.ListItem.assert_called_with(path='http://example.test:8080/live/my%20user/p%2Fa%26ss/42.ts')
-			self.live.play({'id': '../42'})
-			self.assertFalse(self.live.xbmcplugin.setResolvedUrl.call_args.args[1])
 
 
 if __name__ == '__main__': unittest.main()

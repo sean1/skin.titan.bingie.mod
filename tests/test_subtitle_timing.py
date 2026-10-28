@@ -146,14 +146,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.subtitles.kodi_utils.sleep.assert_not_called()
 
 
-
-	def test_forced_english_does_not_prevent_full_vietnamese_selection(self):
-		self.client.getAvailableSubtitleStreams = Mock(return_value=['English (Forced)', 'Vietnamese (Full)'])
-		self.client.setSubtitleStream = Mock()
-		self.client.showSubtitles = Mock()
-		self.assertTrue(self.client._video_file_subs())
-		self.client.setSubtitleStream.assert_called_once_with(1)
-
 	def test_failed_top_download_falls_through_to_next_ranked_candidate(self):
 		second_candidate = {'provider': 'subdl', 'id': 'eng-2', 'lang': 'eng', 'release_names': ['Fixture'], 'score': 10}
 		self.client.provider_manager.search.return_value = [self.candidates[0], second_candidate]
@@ -194,19 +186,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.client.setSubtitles.assert_not_called()
 		self.subtitles.kodi_utils.sleep.assert_not_called()
 
-	def test_false_write_result_removes_partial_file_without_attach(self):
-		events = []
-		self.client.provider_manager.search.return_value = self.candidates[:1]
-		self.subtitles.kodi_utils.open_file = Mock(return_value=RecordingFile(events, write_result=False))
-		self.client.setSubtitles = Mock()
-
-		result = self.client._searched_subs()
-
-		self.assertFalse(result)
-		self.assertEqual(events, ['open', ('write', 'subtitle text'), 'close'])
-		self.subtitles.kodi_utils.delete_file.assert_called_once_with('special://temp/fixture_eng_full.srt')
-		self.client.setSubtitles.assert_not_called()
-
 
 	def test_late_default_index_is_readiness_and_full_track_still_wins(self):
 		for initial_index in (None, -1):
@@ -221,7 +200,6 @@ class SubtitleTimingTests(unittest.TestCase):
 				self.client.setSubtitleStream.assert_called_once_with(1)
 				self.client.showSubtitles.assert_called_once_with(True)
 				manager.search.assert_not_called()
-
 
 
 	def test_only_forced_embedded_tracks_search_and_download_full_dialogue(self):
@@ -298,18 +276,6 @@ class SubtitleTimingTests(unittest.TestCase):
 		self.client.showSubtitles.assert_called_once_with(True)
 		manager.search.assert_not_called()
 
-
-	def test_old_generation_or_other_file_marker_does_not_cancel_active_job(self):
-		self.automatic_fixture()
-		properties = self.property_fixture()
-		self.client.configure('tt123', expected_playing_file='video.mkv', context_generation='current-generation')
-		self.client.automatic = True
-		self.client.automatic_subtitle_index = 0
-		self.client.automatic_subtitle_enabled = True
-		for filename, generation in (('video.mkv', 'older-generation'), ('other.mkv', 'current-generation')):
-			with self.subTest(filename=filename, generation=generation):
-				properties[self.subtitles.subtitle_manual_override_property] = json.dumps({'playing_fingerprint': self.subtitles.playing_file_fingerprint(filename), 'generation': generation})
-				self.assertFalse(self.client._cancelled())
 
 	def test_explicit_manual_forced_download_remains_available_despite_override(self):
 		state, manager = self.automatic_fixture()

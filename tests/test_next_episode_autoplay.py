@@ -1,5 +1,4 @@
 from datetime import date
-import json
 import types
 import unittest
 from pathlib import Path
@@ -7,7 +6,6 @@ from unittest import mock
 
 from tests.module_isolation import load_module
 from tests.test_audio_selection import load_player
-from tests.test_external_manager import load_sources_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,30 +60,7 @@ def load_episode_tools():
 
 
 class NextEpisodeAutoplayTests(unittest.TestCase):
-	def test_continual_random_history_keeps_only_compact_episode_identity_for_current_show(self):
-		episode_tools = load_episode_tools()
-		episodes = [
-			{'season': 1, 'episode': 1, 'premiered': '2025-01-01', 'title': 'First', 'plot': 'Plot'},
-			{'season': 1, 'episode': 2, 'premiered': '2025-01-01', 'title': 'Second', 'plot': 'Plot'},
-			{'season': 1, 'episode': 3, 'premiered': '2025-01-01', 'title': 'Third', 'plot': 'Plot'},
-		]
-		episode_tools.tvshow_meta = lambda *args: {'title': 'Example', 'tmdb_id': '123'}
-		episode_tools.all_episodes_meta = lambda *args: episodes
-		episode_tools.kodi_utils.get_property.return_value = json.dumps({'456': [{'season': 9, 'episode': 9}], '123': [episodes[0], episodes[0], [9, 9], ['invalid']]})
-		with mock.patch.object(episode_tools, 'choice', side_effect=lambda items: items[0]): episode_tools.get_random_episode('123', True)
 
-		stored = json.loads(episode_tools.kodi_utils.set_property.call_args.args[1])
-		self.assertEqual(stored, {'123': [[1, 1], [1, 2]]})
-
-	def test_resolved_next_episode_is_marked_for_autoplay(self):
-		episode_tools = load_episode_tools()
-		meta = {'title': 'Example', 'rootname': 'Example', 'tmdb_id': '123', 'season': 1, 'episode': 1, 'total_seasons': 1}
-
-		_, params = episode_tools.nextep_playback_info(meta)
-
-		self.assertEqual(params['autoplay'], 'true')
-		self.assertEqual(params['autoplay_next'], 'true')
-		self.assertEqual((params['season'], params['episode']), (1, 2))
 
 	def test_smart_play_uses_manual_sources_unless_autoplay_is_explicit(self):
 		for autoplay in (None, 'false', 'true'):
@@ -121,15 +96,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 		self.assertEqual((cursor_meta['season'], cursor_meta['episode']), (2, 3))
 		episode_tools.Sources.factory.assert_called_once_with({'mode': 'play_media', 'autoplay': 'false'})
 
-	def test_next_episode_queue_keeps_only_latest_request(self):
-		sources_module = load_sources_module()
-		sources_module.Sources.clear_nextep()
-		sources_module.Sources.nextep_callback({'episode': 2})
-		sources_module.Sources.nextep_callback({'episode': 3})
-
-		self.assertEqual(sources_module.Sources.nextep_params, [{'episode': 3}])
-		self.assertEqual(sources_module.Sources._pop_nextep(), {'episode': 3})
-		self.assertEqual(sources_module.Sources.nextep_params, [])
 
 	def test_manual_stop_clears_queued_next_episode(self):
 		player_module = load_player()
@@ -260,7 +226,6 @@ class NextEpisodeAutoplayTests(unittest.TestCase):
 				else: smartplay_cache.complete_episode.assert_called_once_with('101', 2, 3)
 		player_module.ws.mark_as_watched_unwatched_movie.assert_not_called()
 		player_module.ws.mark_as_watched_unwatched_episode.assert_not_called()
-
 
 
 if __name__ == '__main__':

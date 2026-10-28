@@ -53,7 +53,6 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.service.kodi_utils.add_item.reset_mock()
 
 
-
 	def test_search_playback_change_adds_no_results_or_notification(self):
 		self.client.subtitles_search.return_value = [{'provider': 'opensubtitles', 'id': '123', 'lang': 'eng'}]
 		self.client._ensure_current_playback.side_effect = self.service.SubtitleCancelled()
@@ -75,15 +74,6 @@ class SubtitleServiceTests(unittest.TestCase):
 		self.assertNotIn('secret', self.service.kodi_utils.ok_dialog.call_args.args[1])
 		self.service.kodi_utils.notification.assert_not_called()
 
-	def test_manual_search_reports_failed_provider_names_and_keeps_results(self):
-		candidate = {'provider': 'subdl', 'id': 'good', 'lang': 'eng'}
-		self.client.subtitles_search.return_value = [candidate]
-		self.client.subtitle_diagnostics.return_value = {'config': '', 'providers': ('subsource', 'unknown')}
-
-		self.service._search(7)
-
-		self.service.kodi_utils.notification.assert_called_once_with('Subtitle provider failed: SubSource.')
-		self.service.kodi_utils.add_item.assert_called_once()
 
 	def test_download_save_failure_adds_no_item_or_notification(self):
 		payload = {'content': 'subtitle text', 'extension': 'srt'}

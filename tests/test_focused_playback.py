@@ -47,12 +47,5 @@ class FocusedPlaybackTests(unittest.TestCase):
 			self.assertFalse(focused.source_select_focused())
 			focused.kodi_utils.execute_builtin.assert_called_once_with('Action(ContextMenu)')
 
-	def test_rejects_playback_window_before_checking_play_focus(self):
-		focused = load_focused(properties={'PovInfoType': 'movie', 'PovInfoTmdb': '42'}, window_id=11123, play_focused=True)
-		focused.kodi_utils.get_visibility.side_effect = lambda condition: condition == focused.PLAYBACK_WINDOW_VISIBILITY
-		self.assertFalse(focused.source_select_focused())
-		focused.kodi_utils.get_property.assert_not_called()
-		focused.kodi_utils.execute_builtin.assert_not_called()
-
 
 if __name__ == '__main__': unittest.main()

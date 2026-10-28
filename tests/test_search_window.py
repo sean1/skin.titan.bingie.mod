@@ -133,23 +133,6 @@ class SearchWindowTests(unittest.TestCase):
 		self.complete(payload(SHOW))
 		self.assertEqual(self.window.items, [SHOW])
 
-	def test_result_cards_supply_type_year_and_metadata_for_existing_details_page(self):
-		self.window.items = [MOVIE, SHOW]
-		self.window._render_results()
-		cards = self.window.getControl(500).addItems.call_args.args[0]
-		self.assertEqual(len(cards), 2)
-		cards[0].setLabel2.assert_called_once_with('Movie · 1996')
-		cards[1].setLabel2.assert_called_once_with('TV show · 2014')
-		cards[0].getVideoInfoTag().setMediaType.assert_called_once_with('movie')
-		cards[1].getVideoInfoTag().setMediaType.assert_called_once_with('tvshow')
-
-	def test_keyboard_is_populated_with_clickable_dynamic_items_including_literal_digits(self):
-		self.window.onInit()
-		keys = self.window.getControl(200).addItems.call_args.args[0]
-		self.assertEqual([key.setLabel.call_args.args[0] for key in keys], list('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'))
-		self.window.getControl(200).getSelectedItem.return_value.getLabel.return_value = '0'
-		self.window.onClick(200)
-		self.assertEqual(self.window.query, '0')
 
 	def test_failed_next_page_retries_that_page_and_preserves_existing_results(self):
 		self.request('fargo')

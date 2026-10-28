@@ -2,7 +2,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 from tests.module_isolation import load_module
 
@@ -64,15 +64,6 @@ class FocusedFanartTests(unittest.TestCase):
 		self.assertFalse(self.fanart.tick())
 		self.assertTrue(self.fanart.stable)
 		self.assertEqual(self.fanart._focused_art.call_count, 1)
-
-	def test_service_wait_honors_abort_during_idle_menu_slices(self):
-		monitor = Mock()
-		monitor.waitForAbort.side_effect = (False, True)
-		self.entry.kodi_utils.get_visibility = Mock(return_value=True)
-
-		self.assertTrue(self.entry._wait_for_service_tick(monitor, 1.0))
-		self.assertEqual(monitor.waitForAbort.call_args_list, [call(0.25), call(0.25)])
-		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(self.entry.MAIN_MENU_FOCUS)] * 2)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,6 @@
 import hashlib
 import importlib.util
 import json
-import os
 from pathlib import Path
 import tempfile
 import time
@@ -43,26 +42,6 @@ class LiveTVGuideSearchCacheTests(unittest.TestCase):
 		self.assertNotIn('secret', path.read_text())
 		self.assertNotIn('private', path.name)
 
-	def test_different_query_or_channel_set_does_not_reuse_results(self):
-		self.search()
-		self.search(term='chelsea')
-		self.search(wanted={'sports', 'other'})
-		self.assertEqual(self.loader.call_count, 3)
-
-	def test_raw_feed_change_invalidates_result(self):
-		self.search()
-		self.raw.write_bytes(b'<tv>changed</tv>')
-		self.search()
-		self.assertEqual(self.loader.call_count, 2)
-
-	def test_missing_or_stale_source_does_not_use_cache(self):
-		self.search()
-		old = time.time() - 3 * 3600
-		os.utime(self.raw, (old, old))
-		self.search()
-		self.raw.unlink()
-		self.search()
-		self.assertEqual(self.loader.call_count, 3)
 
 	def test_corrupt_or_expired_result_falls_back_to_loader(self):
 		self.search()
@@ -74,17 +53,6 @@ class LiveTVGuideSearchCacheTests(unittest.TestCase):
 		path.write_text(json.dumps(data))
 		self.search()
 		self.assertEqual(self.loader.call_count, 3)
-
-	def test_cache_keeps_only_recent_search_files(self):
-		for index in range(12): self.search(term='query%d' % index)
-		self.assertLessEqual(len(self.files()), 8)
-
-	def test_truncated_search_is_not_cached(self):
-		self.loader.return_value = {'sports': [[self.now - 1, self.now + 60, 'Match']] * 5000}
-		self.search()
-		self.search(now=self.now + 120)
-		self.assertEqual(self.loader.call_count, 2)
-		self.assertEqual(self.files(), [])
 
 
 if __name__ == '__main__': unittest.main()

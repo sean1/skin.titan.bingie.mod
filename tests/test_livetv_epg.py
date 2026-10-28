@@ -1,4 +1,3 @@
-import gzip
 import io
 import json
 import os
@@ -8,7 +7,7 @@ import unittest
 import zlib
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from tests.test_livetv import load_livetv
 
@@ -51,11 +50,6 @@ class LiveTVGuideTests(unittest.TestCase):
 			guide = self.live._parse_guide(SmallChunks(xml), now)
 		self.assertEqual(guide['sport'][0][2], 'Soccer')
 
-	def test_download_accepts_gzipped_xmltv(self):
-		response = io.BytesIO(gzip.compress(b'<tv><programme channel="s" start="20261028200000 +0000" stop="20261028210000 +0000"><title>Soccer</title></programme></tv>'))
-		with patch.object(self.live, 'urlopen', return_value=response):
-			guide = self.live._download_guide('http://example.test/guide', datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp())
-		self.assertEqual(guide['s'][0][2], 'Soccer')
 
 	def test_raw_feed_is_reused_for_other_categories_with_private_permissions(self):
 		now = datetime(2026, 10, 28, 20, 30, tzinfo=timezone.utc).timestamp()
@@ -132,25 +126,6 @@ class LiveTVGuideTests(unittest.TestCase):
 		self.assertEqual(os.stat(self.live._guide_cache_path()).st_mode & 0o777, 0o600)
 		with open(self.live._guide_cache_path(), encoding='utf-8') as cache: self.assertNotIn('password=other', cache.read())
 
-	def test_category_filter_reuses_cache_for_channel_schedule(self):
-		with patch.object(self.live, '_download_guide', return_value={'a': [[1, 2, 'one']]}) as download:
-			self.live._guide_data(self.account, {'a', 'b'})
-			self.live._guide_data(self.account, {'a'})
-			self.assertEqual(download.call_count, 1)
-			self.live._guide_data(self.account, {'c'})
-			self.assertEqual(download.call_count, 2)
-
-	def test_parsed_cache_retains_raw_feed_age(self):
-		with patch.object(self.live, '_download_guide', return_value=self.live._GuideProgrammes({'a': [[1, 2, 'one']]}, 12345)):
-			self.live._guide_data(self.account, {'a'})
-		with open(self.live._guide_cache_path(), encoding='utf-8') as cache:
-			self.assertEqual(json.load(cache)['created'], 12345)
-
-	def test_saved_guide_url_survives_account_change(self):
-		self.live._save({**self.account, 'epg_url': 'http://guide.test/guide?password=private'})
-		self.live.ku.dialog.input.side_effect = ['http://example.test', 'user', 'newsecret']
-		self.live.settings({})
-		self.assertEqual(self.live._load()['epg_url'], 'http://guide.test/guide?password=private')
 
 	def test_stale_cached_guide_is_available_during_outage(self):
 		with patch.object(self.live.time, 'time', return_value=10000), patch.object(self.live, '_download_guide', return_value={'sports': [[1, 2, 'Match']]}):

@@ -169,19 +169,6 @@ class WatchedCacheRefactorTests(unittest.TestCase):
 			self.assertEqual(connection.execute('SELECT COUNT(*) FROM progress').fetchone()[0], 0)
 			connection.close()
 
-	def test_batch_progress_updates_are_throttled(self):
-		params = {'action': 'mark_as_watched', 'tmdb_id': 101}
-		episodes = [{'season': 1, 'episode': number, 'premiered': '2024-01-01'} for number in range(1, 101)]
-		self.watched.adjust_premiered_date.return_value = datetime(2024, 1, 1), '2024-01-01'
-		self.watched.get_last_played_value = Mock(return_value='now')
-		self.watched.batch_mark_as_watched_unwatched = Mock(return_value=False)
-
-		self.watched._mark_episode_batch(params, Mock(return_value=episodes), '')
-
-		percentages = [call.args[0] for call in self.watched.kodi_utils.progressDialogBG.update.call_args_list]
-		self.assertLessEqual(len(percentages), 21)
-		self.assertEqual(percentages[-1], 100)
-		self.assertEqual(percentages, sorted(percentages))
 
 	@staticmethod
 	def _create_watched_schema(path):

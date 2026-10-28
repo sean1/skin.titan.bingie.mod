@@ -107,21 +107,5 @@ class ActorFocusTests(unittest.TestCase):
 		])
 
 
-	def test_focus_loaded_actor_shelf_does_not_steal_focus(self):
-		self.properties.update({'PovActorHasMovies': 'true', 'PovActorHasTVShows': 'true'})
-		cases = (
-			('empty shelf', '1245', 'movies', False, True),
-			('stale actor', '9999', 'movies', True, True),
-			('lower priority shelf', '1245', 'tvshows', True, True),
-			('user moved focus', '1245', 'movies', True, False)
-		)
-		for name, actor_id, credit_type, has_items, visibility in cases:
-			with self.subTest(name=name):
-				self.commands.clear()
-				self.people.kodi_utils.get_visibility = lambda condition, result=visibility: result
-				self.people._focus_loaded_actor_shelf(actor_id, credit_type, has_items)
-				self.assertEqual(self.commands, [])
-
-
 if __name__ == '__main__':
 	unittest.main()

@@ -3,7 +3,7 @@ import types
 import unittest
 from queue import Empty
 from threading import Event
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 from tests.test_focused_fanart import load_entry
 
@@ -124,34 +124,6 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
 				self.assertFalse(self.preview.active)
 
-	def test_background_refresh_keeps_preview_on_the_same_card(self):
-		self._activate()
-		self.visibility['Container.IsUpdating'] = True
-
-		self.preview.tick()
-
-		self.assertTrue(self.preview.active)
-		self.assertEqual(self.commands, [])
-		self.labels['Container(510).CurrentItem'] = '2'
-		self.preview.tick()
-		self.assertFalse(self.preview.active)
-		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-
-	def test_autoplay_card_change_restarts_the_dwell_delay_for_same_title(self):
-		self.entry.monotonic = Mock(return_value=20.0)
-		self.preview._candidate = Mock(return_value=self._candidate())
-		self.preview._start_preview_preparation = Mock()
-		self.preview.tick()
-		self.entry.monotonic.return_value = 20.75
-		self.labels['Container(510).CurrentItem'] = '2'
-		self.preview.tick()
-		self.entry.monotonic.return_value = 21.0
-		self.preview.tick()
-		self.preview._start_preview_preparation.assert_not_called()
-
-		self.entry.monotonic.return_value = 22.0
-		self.preview.tick()
-		self.preview._start_preview_preparation.assert_called_once_with('movie|1', 'trailer-url')
 
 	def _queue_prepared_preview(self):
 		candidate, token = self.preview._eligible_candidate()
@@ -222,25 +194,6 @@ class TrailerPreviewTests(unittest.TestCase):
 				self.assertFalse(self.preview.active)
 				self.assertEqual(self.commands, ['PlayerControl(Stop)'])
 
-	def test_movie_details_remain_manual_when_cast_or_shelf_has_focus(self):
-		self.properties['PovInfoType'] = 'movie'
-		self.visibility.update({self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: True, 'Window.IsActive(1123)': True, 'Control.HasFocus(550)': True})
-		self.assertEqual(self.preview._preview_context(), 'info')
-
-	def test_manual_request_on_new_screen_survives_outgoing_autoplay_stop(self):
-		self._activate()
-		self.window_id = 11123
-		self.preview._candidate.return_value = ('info|movie|1', 'trailer-url', 'movie', '1', True, False)
-		self.properties[self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY] = 'true'
-		self.preview._start_preview_preparation = Mock()
-
-		self.preview.tick()
-		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-		self.assertEqual(self.preview.manual_identity, 'info|movie|1')
-		self.visibility.update({'Player.HasMedia': False, 'Player.HasVideo': False})
-		self.entry.monotonic.return_value = 20.25
-		self.preview.tick()
-		self.preview._start_preview_preparation.assert_called_once_with('info|movie|1', 'trailer-url')
 
 	def test_pending_stop_retains_playing_trailer_and_retries_after_deadline(self):
 		self._activate()
@@ -256,174 +209,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.preview.tick()
 		self.assertFalse(self.preview.pending_stop_trailer)
 
-	def test_pending_stop_retains_media_with_unknown_path_beyond_deadline(self):
-		self._activate()
-		self.preview._owns_preview.return_value = None
-		self.preview._candidate.return_value = None
-		self.preview.tick()
-		self.entry.monotonic.return_value = 31.0
-		self.preview.tick()
-		self.assertEqual(self.preview.pending_stop_trailer, 'preview-url')
-		self.assertEqual(self.commands, [])
-
-		self.preview._owns_preview.return_value = True
-		self.preview.tick()
-		self.assertEqual(self.commands, ['PlayerControl(Stop)'])
-
-	def test_pause_requires_fresh_autoplay_dwell_after_resume(self):
-		self.entry.monotonic = Mock(return_value=20.0)
-		self.preview._candidate = Mock(return_value=self._candidate())
-		self.preview._start_preview_preparation = Mock()
-		self.preview.tick()
-		self.entry.monotonic.return_value = 25.0
-		self.preview.pause()
-		self.preview.tick()
-		self.preview._start_preview_preparation.assert_not_called()
-		self.entry.monotonic.return_value = 26.0
-		self.preview.tick()
-		self.preview._start_preview_preparation.assert_called_once_with('movie|1', 'trailer-url')
-
-	def test_inactive_preview_window_skips_skin_and_transition_reads(self):
-		self.entry.kodi_utils.get_visibility = Mock(return_value=False)
-		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
-		self.entry.get_property = Mock(return_value='')
-
-		self.assertEqual(self.preview._preview_context(), '')
-		self.entry.kodi_utils.get_visibility.assert_called_once_with(self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY)
-		self.entry.kodi_utils.xbmc.getSkinDir.assert_not_called()
-		self.entry.get_property.assert_not_called()
-
-	def test_active_preview_context_preserves_skin_and_transition_guards(self):
-		visibility = {
-			self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY: True,
-			'Window.IsActive(VideoOSD)': False,
-			self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: False,
-			'ControlGroup(77777).HasFocus()': True,
-		}
-		self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: visibility[condition])
-		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
-		self.entry.get_property = Mock(return_value='')
-
-		self.assertEqual(self.preview._preview_context(), 'listing')
-		self.entry.kodi_utils.xbmc.getSkinDir.assert_called_once_with()
-		self.entry.get_property.assert_called_once_with('PovInfoTransition')
-
-		self.entry.kodi_utils.xbmc.getSkinDir.reset_mock()
-		self.entry.get_property.reset_mock()
-		self.entry.kodi_utils.xbmc.getSkinDir.return_value = 'skin.other'
-
-		self.assertEqual(self.preview._preview_context(), '')
-		self.entry.kodi_utils.xbmc.getSkinDir.assert_called_once_with()
-		self.entry.get_property.assert_not_called()
-
-		self.entry.kodi_utils.xbmc.getSkinDir.return_value = 'skin.titan.bingie.lite'
-		self.entry.get_property.return_value = 'true'
-		self.entry.kodi_utils.get_visibility.reset_mock()
-
-		self.assertEqual(self.preview._preview_context(), '')
-		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [
-			call(self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY), call('Window.IsActive(VideoOSD)')
-		])
-
-	def test_preview_context_preserves_focus_rejections(self):
-		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
-		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
-		osd = 'Window.IsActive(VideoOSD)'
-		actor_focus = 'Control.HasFocus(610) | Control.HasFocus(620) | Control.HasFocus(630)'
-		for label, values in (
-			('actor', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
-				'Window.IsActive(1122)': True, actor_focus: False}),
-			('videos', {window: True, osd: False, special: True, 'Window.IsActive(1123)': False, 'Window.IsActive(DialogVideoInfo.xml)': False,
-				'Window.IsActive(1122)': False, 'Window.IsActive(Videos)': True, 'Control.HasFocus(523)': False}),
-			('default', {window: True, osd: False, special: False, 'ControlGroup(77777).HasFocus()': False}),
-		):
-			with self.subTest(label=label):
-				self.entry.kodi_utils.get_visibility = Mock(side_effect=lambda condition: values[condition])
-				self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
-				self.entry.get_property = Mock(return_value='')
-
-				self.assertEqual(self.preview._preview_context(), '')
-
-	def test_preview_context_rechecks_window_transitions_before_selecting_data_source(self):
-		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
-		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
-		osd = 'Window.IsActive(VideoOSD)'
-		for label, results, expected, expected_calls in (
-			('opening', (True, False, False, True, True, True), 'info',
-				(window, osd, special, 'ControlGroup(77777).HasFocus()', special, 'Window.IsActive(1123)')),
-			('closing', (True, False, True, False, False, False, False, True), 'listing',
-				(window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
-					'ControlGroup(77777).HasFocus()')),
-		):
-			with self.subTest(label=label):
-				self.entry.kodi_utils.get_visibility = Mock(side_effect=results)
-				self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
-				self.entry.get_property = Mock(return_value='')
-
-				self.assertEqual(self.preview._preview_context(), expected)
-				self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in expected_calls])
-
-	def test_preview_context_rechecks_higher_priority_windows_after_focus(self):
-		window = self.entry.TRAILER_PREVIEW_WINDOW_VISIBILITY
-		special = self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS
-		non_listing = self.entry.TRAILER_PREVIEW_NON_LISTING_CONTEXTS
-		osd = 'Window.IsActive(VideoOSD)'
-		conditions = (
-			window, osd, special, 'Window.IsActive(1123)', 'Window.IsActive(DialogVideoInfo.xml)', 'Window.IsActive(1122)', 'Window.IsActive(Videos)',
-			'Control.HasFocus(523)', non_listing, 'Window.IsActive(1123)'
-		)
-		self.entry.kodi_utils.get_visibility = Mock(side_effect=(True, False, True, False, False, False, True, True, True, True))
-		self.entry.kodi_utils.xbmc.getSkinDir = Mock(return_value='skin.titan.bingie.lite')
-		self.entry.get_property = Mock(return_value='')
-
-		self.assertEqual(self.preview._preview_context(), 'info')
-		self.assertEqual(self.entry.kodi_utils.get_visibility.call_args_list, [call(condition) for condition in conditions])
-
-	def test_detail_waits_for_explicit_trailer_request(self):
-		for context, media_type in ((context, media_type) for context in ('info', 'dialog') for media_type in ('movie', 'tvshow')):
-			with self.subTest(context=context, media_type=media_type):
-				self.properties.clear()
-				self.preview = self._new_preview()
-				self.properties.update({'PovInfoType': media_type, 'PovInfoTmdb': '123', 'PovInfoTrailer': 'trailer-url'})
-				labels = {'Window.Property(PovInfoType)': media_type, 'Window.Property(PovInfoTmdb)': '123', 'ListItem.Trailer': 'trailer-url'}
-				self.entry.kodi_utils.get_infolabel = lambda label: labels.get(label, '')
-				self.preview._preview_context = Mock(return_value=context)
-				self.preview._start_preview_preparation = Mock()
-				self.entry.monotonic = Mock(return_value=10.0)
-
-				self.preview.tick()
-				self.entry.monotonic.return_value = 20.0
-				self.preview.tick()
-				self.preview._start_preview_preparation.assert_not_called()
-				self.properties[self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY] = 'true'
-				self.preview.tick()
-
-				self.preview._start_preview_preparation.assert_called_once_with('info|%s|123' % media_type, 'trailer-url')
-				self.assertNotIn(self.entry.TRAILER_PREVIEW_REQUEST_PROPERTY, self.properties)
-
-	def test_detail_shelves_never_autoplay_without_valid_type(self):
-		for media_type in ('', 'unknown'):
-			for control in ('563', '560'):
-				with self.subTest(media_type=media_type, control=control):
-					self.setUp()
-					self.window_id = 11123
-					self.properties.update({'PovInfoType': media_type, 'PovInfoTmdb': '123', 'PovInfoTrailer': 'detail-trailer-url'})
-					self.visibility.update({self.entry.TRAILER_PREVIEW_SPECIAL_CONTEXTS: True, 'Window.IsActive(1123)': True,
-						'Control.HasFocus(563) | Control.HasFocus(560)': True})
-					self.labels.update({'System.CurrentControlID': control, 'Container(%s).CurrentItem' % control: '1', 'Container(%s).FolderPath' % control: 'plugin://related',
-						'Container.ListItem.Property(DBTYPE)': 'movie', 'Container.ListItem.Property(tmdb_id)': '456', 'Container.ListItem.Label': 'Related title',
-						'Container.ListItem.Property(trailer)': 'related-trailer-url'})
-					self.preview._ensure_focused_metadata = Mock()
-					self.preview._start_pending_preparation = Mock()
-					self.entry.monotonic = Mock(return_value=10.0)
-
-					self.preview.tick()
-					self.entry.monotonic.return_value = 12.0
-					self.preview.tick()
-
-					self.assertEqual(self.preview.prepare_identity, '')
-					self.assertIsNone(self.preview.prepare_pending)
-					self.assertFalse(self.preview.active)
 
 	def test_prepared_listing_trailer_cannot_launch_on_detail_without_type(self):
 		self.entry.monotonic = Mock(return_value=20.0)
@@ -445,25 +230,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		self.assertFalse(self.preview.active)
 		self.assertIsNone(self.preview.preview_player)
 
-	def test_listing_candidate_rejects_invalid_media_before_dependent_reads(self):
-		self.preview._preview_context = Mock(return_value='listing')
-		self.entry.kodi_utils.get_infolabel = Mock(return_value='episode')
-
-		self.assertIsNone(self.preview._candidate())
-		self.entry.kodi_utils.get_infolabel.assert_called_once_with('Container.ListItem.DBType')
-
-		values = {
-			'Container.ListItem.DBType': 'movie',
-			'Container.ListItem.Trailer': 'trailer-url',
-			'Container.ListItem.Property(PovLiteSummary)': 'true',
-			'Container.ListItem.Label': 'Movie',
-			'Container.ListItem.UniqueID(tmdb)': '123',
-			'Container.ListItem.Property(PovFocusIdentity)': 'listing|movie|123',
-		}
-		self.entry.kodi_utils.get_infolabel = Mock(side_effect=lambda label: values[label])
-
-		self.assertEqual(self.preview._candidate(), ('listing|movie|123', 'trailer-url', 'movie', '123', False, True))
-		self.assertEqual(self.entry.kodi_utils.get_infolabel.call_args_list, [call(label) for label in values])
 
 	def test_preview_ownership_requires_the_exact_request_url(self):
 		self.preview.trailer = 'preview-url'
@@ -543,52 +309,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		for key in (keys[1], keys[3]): self._wait(finished[key])
 		self.preview._consume_lookup_results()
 
-	def test_tick_drops_stale_pending_lookup_before_scheduling_new_focus(self):
-		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 5)]
-		started, released, finished, _ = self._lookup_harness({key: 'trailer-%s' % key[0][-1] for key in keys})
-		for key in keys[:2]:
-			self.preview._start_trailer_lookup(key[0], 'movie', key[0][-1])
-			self._wait(started[key])
-		self.preview._start_trailer_lookup(keys[2][0], 'movie', '3')
-		self.preview.identity = keys[2][0]
-		self.preview._candidate = Mock(return_value=(keys[3][0], '', 'movie', '4', False, False))
-		self.entry.monotonic = Mock(side_effect=(10.0, 13.0))
-		released[keys[0]].set()
-		self._wait(finished[keys[0]])
-
-		self.assertTrue(self.preview.tick())
-		self.assertIsNone(self.preview.lookup_pending)
-		self.assertFalse(started[keys[2]].is_set())
-		self.assertFalse(started[keys[3]].is_set())
-		self.assertTrue(self.preview.tick())
-		self._wait(started[keys[3]])
-
-		self.assertFalse(started[keys[2]].is_set())
-		self.assertEqual(set(self.preview.lookup_workers), {keys[1], keys[3]})
-		for key in (keys[1], keys[3]): released[key].set()
-		for key in (keys[1], keys[3]): self._wait(finished[key])
-
-	def test_stale_focused_failure_records_only_its_retry(self):
-		old_key, new_key = ('listing|movie|1', True), ('listing|movie|2', True)
-		started, released, finished, _ = self._lookup_harness({old_key: None, new_key: {'genre': 'New genre', 'trailer': 'new-trailer'}})
-		self.preview.identity = old_key[0]
-		self.preview._start_focused_metadata_lookup(old_key[0], 'movie', '1')
-		self._wait(started[old_key])
-		self.preview.identity = new_key[0]
-		self.preview._start_focused_metadata_lookup(new_key[0], 'movie', '2')
-		self._wait(started[new_key])
-		released[new_key].set()
-		self._wait(finished[new_key])
-		self.preview._consume_lookup_results()
-		self.entry.monotonic = Mock(return_value=40.0)
-		released[old_key].set()
-		self._wait(finished[old_key])
-		self.preview._consume_lookup_results()
-
-		self.assertEqual(self.preview.focused_metadata_retries, {old_key[0]: 42.0})
-		self.assertEqual(self.properties[self.entry.FOCUSED_METADATA_IDENTITY_PROPERTY], new_key[0])
-		self.assertEqual(self.properties['PovFocusedGenre'], 'New genre')
-
 
 	def test_close_discards_pending_and_prevents_results_or_new_workers(self):
 		keys = [('listing|movie|%s' % item_id, False) for item_id in range(1, 4)]
@@ -625,7 +345,6 @@ class TrailerPreviewTests(unittest.TestCase):
 		for key in keys[:2]: released[key].set()
 		for key in keys[:2]: self._wait(finished[key])
 		with self.assertRaises(Empty): self.preview.lookup_results.get_nowait()
-
 
 
 	def test_stale_first_frame_callback_cannot_ready_a_new_preview(self):

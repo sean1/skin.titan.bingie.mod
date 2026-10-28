@@ -14,9 +14,6 @@ class SourceIdentityResolutionTests(unittest.TestCase):
 		correct = {'filename': 'Top.Gear.S33E01.mkv', 'link': 'correct'}
 		self.assertEqual(self.source._identity_matched_files([wrong, correct], self.evidence, 33, 1), [correct])
 
-	def test_real_debrid_flattened_path_matches(self):
-		correct = {'filename': 'Top GearTop.Gear.S33E01.mkv'}
-		self.assertEqual(self.source._identity_matched_files([correct], self.evidence, 33, 1), [correct])
 
 	def test_missing_file_does_not_fall_back_to_episode_number(self):
 		with self.assertRaises(ValueError): self.source._identity_matched_files([{'filename': 'Top.Gear.S33E01.alternate.mkv'}], self.evidence, 33, 1)

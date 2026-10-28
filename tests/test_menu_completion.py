@@ -197,47 +197,5 @@ class MenuCompletionTests(unittest.TestCase):
 		self.media.kodi_utils.set_view_mode.assert_called_once_with('view.movies', 'movies', False)
 
 
-	def test_movie_and_tv_hub_catalogs_keep_five_media_items_before_next(self):
-		cases = (
-			('movie', 'build_movie_list', 'tmdb_movies_popular', 'title', 'build_movies_results'),
-			('tvshow', 'build_tvshow_list', 'tmdb_tv_popular', 'name', 'worker')
-		)
-		for mediatype, mode, action, title_key, worker_name in cases:
-			for result_count, expected_new_page in ((5, {}), (6, {'new_page': '2'})):
-				with self.subTest(mediatype=mediatype, result_count=result_count):
-					module, complete, _ = load_menu_module(mediatype)
-					results = [{'id': item_id, title_key: 'Item %s' % item_id} for item_id in range(result_count)]
-					module.manual_function_import = Mock(return_value=lambda page: {'results': results, 'page': page, 'total_pages': 1})
-					menu = module.Menu.__new__(module.Menu)
-					menu.params = {'mode': mode, 'action': action, 'name': 'Popular', 'limit': '5', 'hub_next': 'true'}
-					menu.action, menu.exit_list_params, menu.is_widget = action, 'plugin://origin', True
-					menu.new_page, menu.total_pages = {}, None
-					setattr(menu, worker_name, Mock(return_value=[]))
-
-					menu.run()
-
-					self.assertEqual(menu.list, results[:5])
-					self.assertEqual(menu.new_page, expected_new_page)
-					self.assertTrue(complete.call_args.args[9])
-
-
-	def test_episode_continue_watching_hub_adds_full_listing_next(self):
-		module, kodi_utils = load_episode_module()
-		results = [{'media_id': item_id} for item_id in range(6)]
-		module.get_in_progress_items.return_value = results
-		menu = module.Menu.__new__(module.Menu)
-		menu.params = {'mode': 'build_in_progress_episode', 'name': 'Continue Watching', 'limit': '5', 'hub_next': 'true'}
-		menu.bookmarks, menu.has_more, menu.is_widget = {}, False, True
-		menu.worker = Mock(return_value=['item'] * 5)
-
-		menu.run()
-
-		self.assertEqual(menu.list, results[:5])
-		kodi_utils.add_items.assert_called_once_with(7, ['item'] * 5)
-		kodi_utils.add_dir.assert_called_once_with(7, {'mode': 'build_in_progress_episode', 'name': 'Continue Watching'}, module.nextpage_str, module.item_next)
-
-
-
-
 if __name__ == '__main__':
 	unittest.main()

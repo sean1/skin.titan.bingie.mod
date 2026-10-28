@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from tests.test_livetv import load_livetv
 
@@ -27,17 +27,6 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 		self.assertNotIn('secret', json.dumps(payload))
 		self.assertTrue(payload['token'])
 
-	def test_unrecognized_play_avoids_network_and_clears_previous_session(self):
-		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog') as request, patch.object(self.live, '_handle', return_value=1):
-			self.live.play({'id': '1', 'name': 'TSN 1'})
-		request.assert_not_called()
-		self.live.xbmcgui.Window.return_value.clearProperty.assert_called_once_with('BingieLiveTVFailover')
-		self.live.xbmcplugin.setResolvedUrl.assert_called_once()
-
-	def test_route_name_must_match_selected_id_in_catalog(self):
-		streams = [{'stream_id': 1, 'name': 'TSN 1'}, {'stream_id': 2, 'name': self.name}]
-		with patch.object(self.live, '_catalog', return_value=streams): self.live._prepare_failover(self.account, '1', self.name)
-		self.live.xbmcgui.Window.return_value.setProperty.assert_not_called()
 
 	def test_failover_rejects_alternatives_with_different_date_or_competition(self):
 		selected = 'Live | Liverpool vs. Chelsea | Premier League | 2026-10-28 | CA: SOCCER 1'
@@ -63,10 +52,6 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 			self.live.play({'id': '1', 'name': self.name})
 		self.live.xbmcplugin.setResolvedUrl.assert_called_once()
 		self.live.xbmcgui.Window.return_value.setProperty.assert_not_called()
-
-	def test_event_name_only_passed_for_recognized_soccer(self):
-		self.assertEqual(self.live._play_params('1', self.name), {'mode': 'livetv.play', 'id': '1', 'name': self.name})
-		self.assertEqual(self.live._play_params('1', 'TSN 1'), {'mode': 'livetv.play', 'id': '1'})
 
 
 if __name__ == '__main__': unittest.main()

@@ -14,12 +14,21 @@ class MainMenuTests(unittest.TestCase):
 
 	def test_combined_search_is_a_main_menu_destination_without_duplicate_submenu_entries(self):
 		items = self.root.findall("include[@name='StaticMainMenu']/item")
-		self.assertEqual([item.findtext('label2') for item in items], ['Home', 'Search', 'Movies', 'TV shows', 'My Videos', 'My List'])
+		self.assertEqual([item.findtext('label2') for item in items], ['Home', 'Search', 'Movies', 'TV shows', 'Live TV', 'My Videos', 'My List'])
 		search = items[1]
 		self.assertEqual(search.findtext("property[@name='hasSubmenu']"), 'False')
 		self.assertIn('RunPlugin(plugin://skin.titan.bingie.lite/?mode=get_search_term)', [action.text for action in search.findall('onclick')])
 		self.assertFalse(any(item.findtext('label') == 'Search' for item in self.root.findall("include[@name='StaticSubmenu']/item")))
 		self.assertEqual(len({item.get('id') for item in items}), len(items))
+
+	def test_live_tv_opens_the_channel_browser(self):
+		item = next(item for item in self.root.findall("include[@name='StaticMainMenu']/item") if item.findtext('label2') == 'Live TV')
+		url = 'plugin://skin.titan.bingie.lite/?mode=livetv.browse'
+		action = 'ActivateWindow(Videos,%s,return)' % url
+		self.assertIn(action, [entry.text for entry in item.findall('onclick')])
+		self.assertEqual(item.findtext("property[@name='path']"), action)
+		self.assertEqual(item.findtext("property[@name='list']"), url)
+		self.assertEqual(item.findtext("property[@name='hasSubmenu']"), 'False')
 
 	def test_movies_and_tv_open_combined_browsing_directly_without_submenu_items(self):
 		for label, mediatype in (('Movies', 'movie'), ('TV shows', 'tvshow')):

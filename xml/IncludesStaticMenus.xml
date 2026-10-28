@@ -88,6 +88,22 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">False</property>
 		</item>
+		<item id="7">
+			<property name="id">$NUMBER[7]</property>
+			<label>Live TV</label>
+			<label2>Live TV</label2>
+			<icon>shortcuts/tv.png</icon>
+			<thumb />
+			<property name="labelID">live-tv</property>
+			<property name="defaultID">live-tv</property>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.browse,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.browse,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.browse</property>
+			<property name="submenuVisibility">live-tv</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
 			<label>My Videos</label>

@@ -10,6 +10,8 @@ addon_file="$project_dir/addon.xml"
 output_dir=${1:-"$project_dir/dist"}
 subtitle_credentials_rel="resources/private/subtitle_providers.json"
 subtitle_credentials="$project_dir/$subtitle_credentials_rel"
+livetv_credentials_rel="resources/private/livetv-account.json"
+livetv_credentials="$project_dir/$livetv_credentials_rel"
 
 addon_id=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*id="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
 addon_version=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*version="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
@@ -67,6 +69,40 @@ if [ -e "$subtitle_credentials" ] || [ -L "$subtitle_credentials" ]; then
 	python3 -m json.tool "$subtitle_credentials" >/dev/null
 	mkdir -p "$temporary_dir/$addon_id/resources/private"
 	install -m 600 "$subtitle_credentials" "$temporary_dir/$addon_id/$subtitle_credentials_rel"
+fi
+
+if [ -e "$livetv_credentials" ] || [ -L "$livetv_credentials" ]; then
+	if [ -L "$livetv_credentials" ] || [ ! -f "$livetv_credentials" ]; then
+		printf '%s\n' "Live TV account file must be a regular file, not a symlink" >&2
+		exit 1
+	fi
+	if [ "$(stat -c '%a' "$livetv_credentials")" != "600" ]; then
+		printf '%s\n' "Live TV account file permissions must be 0600" >&2
+		exit 1
+	fi
+	credential_size=$(wc -c < "$livetv_credentials")
+	if [ "$credential_size" -lt 2 ] || [ "$credential_size" -gt 16384 ]; then
+		printf '%s\n' "Live TV account file has an invalid size" >&2
+		exit 1
+	fi
+	if ! python3 - "$livetv_credentials" <<'PY'
+import json
+import sys
+
+try:
+	with open(sys.argv[1], encoding='utf-8') as account_file:
+		account = json.load(account_file)
+	valid = isinstance(account, dict) and all(isinstance(account.get(key), str) and account[key].strip() for key in ('server', 'username', 'password'))
+except (OSError, ValueError, UnicodeError):
+	valid = False
+sys.exit(0 if valid else 1)
+PY
+	then
+		printf '%s\n' "Live TV account file must contain valid server, username, and password strings" >&2
+		exit 1
+	fi
+	mkdir -p "$temporary_dir/$addon_id/resources/private"
+	install -m 600 "$livetv_credentials" "$temporary_dir/$addon_id/$livetv_credentials_rel"
 fi
 
 (

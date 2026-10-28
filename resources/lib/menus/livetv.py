@@ -1,0 +1,584 @@
+"""Live TV using an Xtream-compatible provider and Kodi's existing video player."""
+import json
+import gzip
+import hashlib
+import heapq
+import os
+import re
+import sys
+import tempfile
+import time
+import uuid
+import xml.etree.ElementTree as ET
+import zlib
+from datetime import datetime, timezone
+from urllib.parse import quote, urlencode, urlsplit
+from urllib.request import Request, urlopen
+
+import xbmc
+import xbmcgui
+import xbmcplugin
+from modules import kodi_utils as ku
+
+_GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
+_GUIDE_XML_LIMIT = 768 * 1024 * 1024
+_GUIDE_FRESH_SECONDS = 2 * 60 * 60
+_GUIDE_STALE_SECONDS = 24 * 60 * 60
+_API_RESPONSE_LIMIT = 128 * 1024 * 1024
+_SEARCH_RESULT_LIMIT = 300
+_SEARCH_GUIDE_LIMIT = 5000
+_FAILOVER_PROPERTY = 'BingieLiveTVFailover'
+_FAILOVER_LIMIT = 8
+
+
+def _soccer_event(name):
+	"""Recognize the provider's explicitly live, event-specific soccer labels."""
+	if not isinstance(name, str): return None
+	parts = [part.strip() for part in name.split('|')]
+	if len(parts) < 3 or parts[0].casefold() != 'live': return None
+	if not re.search(r'\b(?:soccer|football)\b', ' '.join(parts[2:]), re.I): return None
+	if re.search(r'\b(?:end|ended|upcoming|replay|delayed)\b', ' '.join(parts[2:]), re.I): return None
+	match = re.fullmatch(r"([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’\-]{2,80}?)", parts[1], re.I)
+	if not match: return None
+	teams = tuple(' '.join(team.casefold().split()) for team in match.groups())
+	if not all(re.search(r'[^\W\d_]', team) for team in teams) or teams[0] == teams[1]: return None
+	return teams
+
+
+def _play_params(stream_id, name):
+	params = {'mode': 'livetv.play', 'id': stream_id}
+	if _soccer_event(name): params['name'] = name
+	return params
+
+
+def _prepare_failover(account, stream_id, name):
+	event = _soccer_event(name)
+	if not event: return
+	try:
+		streams = _request(account, 'get_live_streams')
+		if not isinstance(streams, list): return
+		if not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event for stream in streams): return
+		alternatives = []
+		for stream in streams:
+			if not isinstance(stream, dict): continue
+			candidate = str(stream.get('stream_id') or '')
+			if not candidate.isdecimal() or candidate == stream_id or candidate in alternatives: continue
+			if _soccer_event(stream.get('name')) != event: continue
+			alternatives.append(candidate)
+			if len(alternatives) >= _FAILOVER_LIMIT: break
+		if alternatives:
+			xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps({'id': stream_id, 'alternatives': alternatives, 'token': uuid.uuid4().hex}))
+	except (OSError, ValueError, TypeError):
+		pass
+
+
+def _credentials_path():
+	return os.path.join(ku.translate_path(ku.profile_path), 'livetv-account.json')
+
+
+def _bundled_credentials_path():
+	return os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', 'livetv-account.json')
+
+
+def _read_account(path):
+	try:
+		with open(path, encoding='utf-8') as account:
+			data = json.load(account)
+		if all(isinstance(data.get(key), str) and data[key] for key in ('server', 'username', 'password')):
+			return data
+	except (OSError, ValueError, AttributeError):
+		pass
+	return None
+
+
+def _account_fingerprint(account):
+	return hashlib.sha256(json.dumps(account, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
+
+
+def _load():
+	path = _bundled_credentials_path()
+	if not os.path.exists(path): return _read_account(_credentials_path())
+	account = _read_account(path)
+	if not account: return None
+	profile = _read_account(_credentials_path())
+	if profile and profile.get('guide_override_base') == _account_fingerprint(account):
+		account['epg_url'] = profile['epg_url'] if isinstance(profile.get('epg_url'), str) else account.get('epg_url', '')
+	return account
+
+
+def _save(data):
+	path = _credentials_path()
+	os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+	fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+	try:
+		os.fchmod(fd, 0o600)
+		with os.fdopen(fd, 'w', encoding='utf-8') as account:
+			fd = None
+			json.dump(data, account)
+	finally:
+		if fd is not None: os.close(fd)
+
+
+def _handle():
+	return int(sys.argv[1])
+
+
+def _item(label, params, folder=True, icon=None, playable=True):
+	item = xbmcgui.ListItem(label=label, offscreen=True)
+	if icon: item.setArt({'thumb': icon, 'icon': icon})
+	if not folder and playable: item.setProperty('IsPlayable', 'true')
+	ku.add_item(_handle(), ku.build_url(params), item, folder)
+
+
+def _finish(success=True):
+	xbmcplugin.endOfDirectory(_handle(), succeeded=success, cacheToDisc=False)
+
+
+def _request(account, action, **params):
+	query = {'username': account['username'], 'password': account['password'], 'action': action, **params}
+	url = account['server'] + '/player_api.php?' + urlencode(query)
+	with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV'}), timeout=20) as response:
+		data = response.read(_API_RESPONSE_LIMIT + 1)
+		if len(data) > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
+		return json.loads(data.decode('utf-8-sig'))
+
+
+def _error(message):
+	ku.dialog.ok('Live TV', message)
+
+
+def settings(params):
+	current = _load() or {}
+	server = ku.dialog.input('Server URL', defaultt=current.get('server', '')).strip().rstrip('/')
+	if not server:
+		return
+	try:
+		parts = urlsplit(server)
+		valid = parts.scheme in ('http', 'https') and parts.hostname and not (parts.username or parts.password or parts.query or parts.fragment)
+	except ValueError:
+		valid = False
+	if not valid:
+		_error('Enter a server URL beginning with http:// or https://, without a username, password, or query string.')
+		return
+	username = ku.dialog.input('Username', defaultt=current.get('username', '')).strip()
+	if not username:
+		return
+	password = ku.dialog.input('Password', option=xbmcgui.ALPHANUM_HIDE_INPUT)
+	if not password:
+		return
+	try:
+		_save({'server': server, 'username': username, 'password': password, **({'epg_url': current['epg_url']} if current.get('epg_url') else {})})
+	except OSError:
+		_error('Could not save the account in the Kodi profile.')
+		return
+	ku.dialog.ok('Live TV', 'Live TV account saved.')
+
+
+def guide_settings(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
+		return
+	url = ku.dialog.input('XMLTV guide URL (leave empty to cancel)', option=xbmcgui.ALPHANUM_HIDE_INPUT).strip()
+	if not url: return
+	try:
+		parts = urlsplit(url)
+		valid = parts.scheme in ('http', 'https') and parts.hostname and not (parts.username or parts.password or parts.fragment)
+	except ValueError:
+		valid = False
+	if not valid:
+		_error('Enter a valid HTTP or HTTPS XMLTV guide URL.')
+		return
+	account['epg_url'] = url
+	bundled = _read_account(_bundled_credentials_path())
+	if bundled: account['guide_override_base'] = _account_fingerprint(bundled)
+	try:
+		_save(account)
+	except OSError:
+		_error('Could not save the guide URL in the Kodi profile.')
+		return
+	ku.dialog.ok('Live TV', 'TV guide URL saved.')
+
+
+def browse(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
+		_finish(False)
+		return
+	try:
+		categories = _request(account, 'get_live_categories')
+		if not isinstance(categories, list): raise ValueError('Invalid response')
+		_item('Search Live TV', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
+		_item('TV guide', {'mode': 'livetv.guide'})
+		_item('All channels', {'mode': 'livetv.channels'})
+		for category in categories:
+			if not isinstance(category, dict) or not category.get('category_id'): continue
+			_item(str(category.get('category_name') or 'Other'), {'mode': 'livetv.channels', 'category': str(category['category_id'])})
+	except (OSError, ValueError, TypeError):
+		_error('Could not load Live TV categories. Check the server URL and account details, then try again.')
+	_finish()
+
+
+def channels(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
+		_finish(False)
+		return
+	try:
+		category = params.get('category', '')
+		streams = _request(account, 'get_live_streams', **({'category_id': category} if category else {}))
+		if not isinstance(streams, list): raise ValueError('Invalid response')
+		if category: _item('TV guide for this category', {'mode': 'livetv.guide_channels', 'category': category})
+		for stream in streams:
+			if not isinstance(stream, dict): continue
+			stream_id = str(stream.get('stream_id') or '')
+			if not stream_id.isdecimal(): continue
+			name = str(stream.get('name') or 'Live channel')
+			_item(name, _play_params(stream_id, name), False, stream.get('stream_icon'))
+	except (OSError, ValueError, TypeError):
+		_error('Could not load channels. Check the account details and try again.')
+		_finish(False)
+		return
+	_finish()
+
+
+def _guide_url(account):
+	return account.get('epg_url') or account['server'] + '/xmltv.php?' + urlencode({'username': account['username'], 'password': account['password']})
+
+
+def _guide_cache_path():
+	return os.path.join(ku.translate_path(ku.profile_path), 'livetv-guide.json')
+
+
+def _guide_timestamp(value):
+	match = re.fullmatch(r'(\d{8}|\d{10}|\d{12}|\d{14})(?:\s+([+-]\d{4}|Z))?', (value or '').strip())
+	if not match: return None
+	digits, offset = match.groups()
+	try:
+		return datetime.strptime(digits + (' +0000' if not offset or offset == 'Z' else ' ' + offset), {8: '%Y%m%d', 10: '%Y%m%d%H', 12: '%Y%m%d%H%M', 14: '%Y%m%d%H%M%S'}[len(digits)] + ' %z').timestamp()
+	except (ValueError, OverflowError):
+		return None
+
+
+def _guide_xml_chunks(source):
+	"""Remove a plain external XMLTV DTD without allowing entities or fetching it."""
+	size = 0
+	previous = b''
+	pending = b''
+	seen_doctype = False
+	while True:
+		chunk = source.read(65536)
+		if not chunk:
+			if pending.upper().startswith(b'<!DOCTYPE'): raise ValueError('Incomplete XML declaration')
+			if pending: yield pending
+			return
+		size += len(chunk)
+		if size > _GUIDE_XML_LIMIT: raise ValueError('Guide too large')
+		if b'\x00' in chunk: raise ValueError('Unsupported XML encoding')
+		check = (previous + chunk).upper()
+		if b'<!ENTITY' in check: raise ValueError('Unsupported XML declaration')
+		previous = check[-16:]
+		data = pending + chunk
+		pending = b''
+		while data:
+			position = data.upper().find(b'<!DOCTYPE')
+			if position < 0:
+				if len(data) > 8: yield data[:-8]
+				pending = data[-8:]
+				break
+			if position: yield data[:position]
+			declaration = data[position:]
+			end = declaration.find(b'>')
+			if end < 0:
+				if len(declaration) > 4096: raise ValueError('Unsupported XML declaration')
+				pending = declaration
+				break
+			declaration, data = declaration[:end + 1], declaration[end + 1:]
+			if seen_doctype or not re.fullmatch(rb'<!DOCTYPE\s+tv\s+SYSTEM\s+(?:"[^"<>\[\]]{1,2048}"|\'[^\'<>\[\]]{1,2048}\')\s*>', declaration, re.I):
+				raise ValueError('Unsupported XML declaration')
+			seen_doctype = True
+
+
+def _parse_guide(source, now, wanted=None, search_term=None):
+	parser = ET.XMLPullParser(events=('start', 'end'))
+	root = None
+	programmes = {}
+	count = 0
+	for chunk in _guide_xml_chunks(source):
+		parser.feed(chunk)
+		for event, node in parser.read_events():
+			if root is None and event == 'start': root = node
+			if event != 'end': continue
+			if node.tag == 'programme':
+				channel = node.get('channel', '')
+				title = (node.findtext('title') or 'Programme')[:300]
+				if channel and (wanted is None or channel in wanted) and (search_term is None or search_term in title.casefold()):
+					start, stop = _guide_timestamp(node.get('start')), _guide_timestamp(node.get('stop'))
+				else:
+					start = stop = None
+				if start is not None and stop is not None and stop > (now if search_term is not None else now - 86400) and start < now + 3 * 86400 and stop > start:
+					count += 1
+					if search_term is None and count > 200000: raise ValueError('Too many programmes')
+					if search_term is None or count <= _SEARCH_GUIDE_LIMIT:
+						programmes.setdefault(channel, []).append([start, stop, title])
+				if root is not None: root.clear()
+			elif node.tag == 'channel' and root is not None: root.clear()
+	parser.close()
+	for entries in programmes.values(): entries.sort(key=lambda entry: entry[0])
+	return programmes
+
+
+def _parse_raw_guide(raw, now, wanted, search_term=None):
+	raw.seek(0)
+	magic = raw.read(2)
+	raw.seek(0)
+	if magic == b'\x1f\x8b':
+		with gzip.GzipFile(fileobj=raw) as decoded: return _parse_guide(decoded, now, wanted, search_term)
+	return _parse_guide(raw, now, wanted, search_term)
+
+
+class _GuideProgrammes(dict):
+	def __init__(self, data, created):
+		super().__init__(data)
+		self.created = created
+
+
+def _download_guide(url, now, wanted=None, search_term=None):
+	profile = ku.translate_path(ku.profile_path)
+	os.makedirs(profile, mode=0o700, exist_ok=True)
+	key = hashlib.sha256(url.encode('utf-8')).hexdigest()
+	path = os.path.join(profile, 'livetv-xmltv-' + key + '.cache')
+	stale_created = None
+	try:
+		stat = os.stat(path)
+		age = time.time() - stat.st_mtime
+		if 0 <= age < _GUIDE_STALE_SECONDS and 0 < stat.st_size <= _GUIDE_DOWNLOAD_LIMIT: stale_created = stat.st_mtime
+		if stale_created is not None and age < _GUIDE_FRESH_SECONDS:
+			try:
+				with open(path, 'rb') as raw: return _GuideProgrammes(_parse_raw_guide(raw, now, wanted, search_term), stat.st_mtime)
+			except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
+				pass
+	except OSError:
+		pass
+	fd, temporary = tempfile.mkstemp(prefix='.livetv-xmltv-', dir=profile)
+	try:
+		with os.fdopen(fd, 'w+b') as raw:
+			with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}), timeout=30) as response:
+				size = 0
+				deadline = time.monotonic() + 180
+				while True:
+					chunk = response.read(65536)
+					if not chunk: break
+					if time.monotonic() > deadline: raise ValueError('Guide download timed out')
+					size += len(chunk)
+					if size > _GUIDE_DOWNLOAD_LIMIT: raise ValueError('Guide too large')
+					raw.write(chunk)
+			programmes = _parse_raw_guide(raw, now, wanted, search_term)
+		os.replace(temporary, path)
+		try:
+			for name in os.listdir(profile):
+				if re.fullmatch(r'livetv-xmltv-[0-9a-f]{64}\.cache', name) and name != os.path.basename(path):
+					try: os.unlink(os.path.join(profile, name))
+					except OSError: pass
+		except OSError:
+			pass
+		return programmes
+	except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
+		if stale_created is not None:
+			try:
+				with open(path, 'rb') as raw: stale = _parse_raw_guide(raw, now, wanted, search_term)
+				ku.dialog.notification('Live TV', 'Showing saved guide data; refresh failed.')
+				return _GuideProgrammes(stale, stale_created)
+			except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
+				pass
+		raise
+	finally:
+		if os.path.exists(temporary): os.unlink(temporary)
+
+
+def _guide_data(account, wanted=None):
+	now = time.time()
+	url = _guide_url(account)
+	key = hashlib.sha256(url.encode('utf-8')).hexdigest()
+	cache = None
+	try:
+		with open(_guide_cache_path(), encoding='utf-8') as f: cache = json.load(f)
+		if not isinstance(cache, dict) or cache.get('key') != key or not isinstance(cache.get('created'), (int, float)) or not isinstance(cache.get('programmes'), dict): cache = None
+		elif wanted is None and cache.get('wanted') is not None: cache = None
+		elif wanted is not None and cache.get('wanted') is not None and not wanted.issubset(cache['wanted']): cache = None
+	except (OSError, ValueError):
+		pass
+	if cache and 0 <= now - cache['created'] < _GUIDE_FRESH_SECONDS: return cache['programmes']
+	try:
+		programmes = _download_guide(url, now, wanted)
+	except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
+		if cache and 0 <= now - cache['created'] < _GUIDE_STALE_SECONDS:
+			ku.dialog.notification('Live TV', 'Showing saved guide data; refresh failed.')
+			return cache['programmes']
+		raise
+	path = _guide_cache_path()
+	try:
+		fd, temporary = tempfile.mkstemp(prefix='.livetv-guide-', dir=os.path.dirname(path))
+		try:
+			with os.fdopen(fd, 'w', encoding='utf-8') as f: json.dump({'key': key, 'created': getattr(programmes, 'created', now), 'wanted': sorted(wanted) if wanted is not None else None, 'programmes': programmes}, f, separators=(',', ':'))
+			os.replace(temporary, path)
+		finally:
+			if os.path.exists(temporary): os.unlink(temporary)
+	except OSError:
+		pass
+	return programmes
+
+
+def _guide_time(timestamp):
+	return datetime.fromtimestamp(timestamp, timezone.utc).astimezone().strftime('%a %H:%M')
+
+
+def search(params):
+	query = (ku.dialog.input('Search Live TV: team, league or channel') or '').strip()
+	if not query: return
+	url = ku.build_url({'mode': 'livetv.search_results', 'query': query})
+	xbmc.executebuiltin('Container.Update(%s)' % url)
+
+
+def search_results(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
+		_finish(False)
+		return
+	query = (params.get('query') or '').strip()
+	if not query:
+		_finish()
+		return
+	needle = query.casefold()
+	try:
+		streams = _request(account, 'get_live_streams')
+		if not isinstance(streams, list): raise ValueError('Invalid response')
+	except (OSError, ValueError, TypeError):
+		_error('Could not search Live TV channels. Check the account and try again.')
+		_finish(False)
+		return
+	streams = [s for s in streams if isinstance(s, dict) and str(s.get('stream_id') or '').isdecimal()]
+	by_epg = {}
+	channel_matches = []
+	for stream in streams:
+		name = str(stream.get('name') or 'Live channel')
+		epg_id = str(stream.get('epg_channel_id') or '')
+		if epg_id: by_epg.setdefault(epg_id, []).append(stream)
+		if needle in name.casefold(): channel_matches.append(stream)
+	channel_matches.sort(key=lambda stream: (0 if str(stream.get('name') or '').casefold().startswith('live |') else 2 if str(stream.get('name') or '').casefold().startswith('end |') else 1))
+	for stream in channel_matches[:_SEARCH_RESULT_LIMIT]:
+		name = str(stream.get('name') or 'Live channel')
+		_item(name + ' (play channel)', _play_params(str(stream['stream_id']), name), False, stream.get('stream_icon'))
+	guide_count = 0
+	guide_truncated = False
+	try:
+		now = time.time()
+		programmes = _download_guide(_guide_url(account), now, set(by_epg), search_term=needle) if by_epg else {}
+		matches = heapq.nsmallest(_SEARCH_RESULT_LIMIT + 1, ((start, stop, title, epg_id, stream) for epg_id, entries in programmes.items() for start, stop, title in entries for stream in by_epg.get(epg_id, [])), key=lambda entry: entry[0])
+		guide_truncated = len(matches) > _SEARCH_RESULT_LIMIT or sum(map(len, programmes.values())) >= _SEARCH_GUIDE_LIMIT
+		for start, stop, title, epg_id, stream in matches[:_SEARCH_RESULT_LIMIT]:
+			name = str(stream.get('name') or 'Live channel')
+			when = 'Now' if start <= now < stop else _guide_time(start)
+			_item('Guide: %s — %s — %s (channel schedule)' % (when, title, name), {'mode': 'livetv.schedule', 'id': str(stream['stream_id']), 'epg': epg_id, 'name': name}, True, stream.get('stream_icon'))
+		guide_count = min(len(matches), _SEARCH_RESULT_LIMIT)
+	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+		ku.dialog.notification('Live TV', 'TV guide unavailable; showing channel name matches only.')
+	if len(channel_matches) > _SEARCH_RESULT_LIMIT or guide_truncated:
+		ku.dialog.notification('Live TV', 'Showing the first search results. Try a more specific name.')
+	elif not channel_matches and not guide_count:
+		ku.dialog.notification('Live TV', 'No matches found.')
+	_finish()
+
+
+def guide(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
+		_finish(False)
+		return
+	try:
+		categories = _request(account, 'get_live_categories')
+		if not isinstance(categories, list): raise ValueError('Invalid response')
+		_item('Search Live TV', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
+		_item('All channels', {'mode': 'livetv.guide_channels'})
+		for category in categories:
+			if isinstance(category, dict) and category.get('category_id'):
+				_item(str(category.get('category_name') or 'Other'), {'mode': 'livetv.guide_channels', 'category': str(category['category_id'])})
+	except (OSError, ValueError, TypeError):
+		_error('Could not load TV guide categories. Check the Live TV account and try again.')
+		_finish(False)
+		return
+	_finish()
+
+
+def guide_channels(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
+		_finish(False)
+		return
+	try:
+		category = params.get('category', '')
+		streams = _request(account, 'get_live_streams', **({'category_id': category} if category else {}))
+		if not isinstance(streams, list): raise ValueError('Invalid response')
+		wanted = {str(stream['epg_channel_id']) for stream in streams if isinstance(stream, dict) and stream.get('epg_channel_id')}
+		programmes = _guide_data(account, wanted) if wanted else {}
+		now = time.time()
+		for stream in streams:
+			if not isinstance(stream, dict): continue
+			stream_id = str(stream.get('stream_id') or '')
+			if not stream_id.isdecimal(): continue
+			name = str(stream.get('name') or 'Live channel')
+			epg_id = str(stream.get('epg_channel_id') or '')
+			entries = programmes.get(epg_id, [])
+			current = next((entry for entry in entries if entry[0] <= now < entry[1]), None)
+			upcoming = next((entry for entry in entries if entry[0] > now), None)
+			if entries:
+				label = name + (' — Now: ' + current[2] if current else ' — No current listing') + (' | Next: ' + _guide_time(upcoming[0]) + ' ' + upcoming[2] if upcoming else '')
+				_item(label, {'mode': 'livetv.schedule', 'id': stream_id, 'epg': epg_id, 'name': name}, True, stream.get('stream_icon'))
+			else:
+				_item(name + ' — No guide data (play channel)', _play_params(stream_id, name), False, stream.get('stream_icon'))
+	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+		_error('Could not load the TV guide. Check the guide URL in Settings or choose a smaller category. Channels remain available in Live TV.')
+		_finish(False)
+		return
+	_finish()
+
+
+def schedule(params):
+	account = _load()
+	stream_id = params.get('id', '')
+	if not account or not stream_id.isdecimal():
+		_error('This channel is unavailable.')
+		_finish(False)
+		return
+	try:
+		epg_id = params.get('epg', '')
+		entries = _guide_data(account, {epg_id}).get(epg_id, [])
+		now = time.time()
+		name = str(params.get('name') or 'channel')
+		_item('Play ' + name, _play_params(stream_id, name), False)
+		for start, stop, title in entries:
+			if stop > now:
+				_item(_guide_time(start) + '–' + _guide_time(stop) + '  ' + title + ' (play live channel)', _play_params(stream_id, name), False)
+	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+		_error('Could not load this channel’s schedule. Check the TV guide URL and try again.')
+		_finish(False)
+		return
+	_finish()
+
+
+def play(params):
+	xbmcgui.Window(10000).clearProperty(_FAILOVER_PROPERTY)
+	account = _load()
+	stream_id = params.get('id', '')
+	if not account or not stream_id.isdecimal():
+		_error('This channel cannot be played. Check your Live TV account.')
+		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
+		return
+	_prepare_failover(account, stream_id, params.get('name', ''))
+	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
+	xbmcplugin.setResolvedUrl(_handle(), True, xbmcgui.ListItem(path=url))

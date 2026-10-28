@@ -1,6 +1,16 @@
 from modules import kodi_utils
 
 POV_ROUTES = {
+	'livetv.browse': lambda p: _import('menus.livetv', 'browse')(p),
+	'livetv.settings': lambda p: _import('menus.livetv', 'settings')(p),
+	'livetv.guide_settings': lambda p: _import('menus.livetv', 'guide_settings')(p),
+	'livetv.guide': lambda p: _import('menus.livetv', 'guide')(p),
+	'livetv.search': lambda p: _import('menus.livetv', 'search')(p),
+	'livetv.search_results': lambda p: _import('menus.livetv', 'search_results')(p),
+	'livetv.guide_channels': lambda p: _import('menus.livetv', 'guide_channels')(p),
+	'livetv.schedule': lambda p: _import('menus.livetv', 'schedule')(p),
+	'livetv.channels': lambda p: _import('menus.livetv', 'channels')(p),
+	'livetv.play': lambda p: _import('menus.livetv', 'play')(p),
 	'play_trailer': lambda p: _import('modules.trailers', 'play')(p),
 	'smart_play_media': lambda p: _import('modules.episode_tools', 'SmartPlay')(p),
 	'play_media': lambda p: _import('modules.sources', 'Sources').factory(p),

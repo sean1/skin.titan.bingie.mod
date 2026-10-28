@@ -2,3 +2,4 @@
 /dist/
 __pycache__/
 /resources/private/subtitle_providers.json
+livetv-account.json

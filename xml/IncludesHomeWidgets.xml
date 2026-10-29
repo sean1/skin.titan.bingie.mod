@@ -193,6 +193,34 @@
         </focusedlayout>
     </include>
 
+    <!-- Channel logos need their original proportions and a visible name. -->
+    <include name="widget_layout_live_channels">
+        <height>212</height>
+        <itemlayout width="364" height="212">
+            <include>LiveChannelCard</include>
+        </itemlayout>
+        <focusedlayout width="364" height="212">
+            <include>LiveChannelCard</include>
+        </focusedlayout>
+    </include>
+
+    <include name="LiveChannelCard">
+        <control type="image">
+            <left>8</left><top>8</top><width>348</width><height>196</height>
+            <texture colordiffuse="ff202020" border="10">bingie/square-rounded.png</texture>
+        </control>
+        <control type="image">
+            <left>40</left><top>20</top><width>284</width><height>120</height>
+            <texture background="true" fallback="DefaultVideo.png">$INFO[ListItem.Art(thumb)]</texture>
+            <aspectratio align="center" aligny="center">keep</aspectratio>
+        </control>
+        <control type="label">
+            <left>20</left><top>150</top><width>324</width><height>45</height>
+            <font>Reg24</font><align>center</align><aligny>center</aligny>
+            <textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label>
+        </control>
+    </include>
+
     <include name="widget_header_multi">
         <control type="group" id="20$PARAM[widgetid]">
             <visible>Container($PARAM[widgetid]).IsUpdating + Control.IsVisible($PARAM[widgetid]) | Integer.IsGreater(Container($PARAM[widgetid]).NumItems,0)</visible>
@@ -272,9 +300,10 @@
     </include>
 
     <include name="WidgetBaseBingieIncludes">
-        <include content="ContainerShowInfoOnclick">
+        <include content="ContainerShowInfoOnclick" condition="!Integer.IsEqual($PARAM[widgetid],2570)">
             <param name="widgetid" value="$PARAM[widgetid]" />
         </include>
+        <onclick condition="Integer.IsEqual($PARAM[widgetid],2570)">PlayMedia($ESCINFO[ListItem.FileNameAndPath])</onclick>
         <include content="SetFixedVerticalNavigationProps">
             <param name="widgetid" value="$PARAM[widgetid]"/>
         </include>

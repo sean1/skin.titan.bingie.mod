@@ -97,9 +97,10 @@
 			<property name="labelID">live-tv</property>
 			<property name="defaultID">live-tv</property>
 			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.browse,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.browse,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.browse</property>
+			<onclick condition="Window.IsActive(Videos)">Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.refine)</onclick>
+			<onclick condition="!Window.IsActive(Videos)">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.refine,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.refine,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.refine</property>
 			<property name="submenuVisibility">live-tv</property>
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">False</property>
@@ -287,6 +288,9 @@
 	<variable name="BingieHomeTrendingTVPath">
 		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
 	</variable>
+	<variable name="BingieHomeLiveChannelsPath">
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=livetv.home_channels&amp;refresh=$INFO[Window(Home).Property(BingieLiveTVFavoritesRefresh)]</value>
+	</variable>
 	<include name="StaticHomeWidgetRows">
 		<include content="widget_header_multi">
 			<param name="widgetid" value="2510" />
@@ -369,6 +373,27 @@
 			<param name="widgetSortBy" value="" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="5" />
+			<param name="widgetInfoPanel" value="top" />
+			<param name="visibility" value="true" />
+		</include>
+		<include content="widget_header_multi">
+			<param name="widgetid" value="2570" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetName" value="Live TV Favorites" />
+		</include>
+		<include content="widget_base" condition="true">
+			<param name="containerType" value="panel" />
+			<param name="contentStyle" value="normal" />
+			<param name="widgetid" value="2570" />
+			<param name="widgetName" value="Live TV Favorites" />
+			<param name="submenuid" value="num-10000" />
+			<param name="widgetTags" value="WidgetTagOverlayAuto" />
+			<param name="widgetTarget" value="videos" />
+			<param name="widgetPath" value="$VAR[BingieHomeLiveChannelsPath]" />
+			<param name="widgetStyle" value="widget_layout_live_channels" />
+			<param name="widgetSortBy" value="playlist" />
+			<param name="widgetSortOrder" value="" />
+			<param name="widgetLimit" value="" />
 			<param name="widgetInfoPanel" value="top" />
 			<param name="visibility" value="true" />
 		</include>

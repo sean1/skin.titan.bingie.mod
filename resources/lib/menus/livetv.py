@@ -20,6 +20,7 @@ import xbmcgui
 import xbmcplugin
 from modules import kodi_utils as ku
 from modules.livetv_catalog import get as _catalog_get
+from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact
 from modules.livetv_guide_search import cached_search as _cached_guide_search
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
@@ -31,6 +32,8 @@ _SEARCH_RESULT_LIMIT = 300
 _SEARCH_GUIDE_LIMIT = 5000
 _FAILOVER_PROPERTY = 'BingieLiveTVFailover'
 _FAILOVER_LIMIT = 8
+_HOME_MAX_CHANNELS = 500
+_home_state_cache = None
 
 
 def _soccer_event(name):
@@ -138,10 +141,116 @@ def _handle():
 	return int(sys.argv[1])
 
 
+def _home_account_key(account):
+	identity = {key: account.get(key, '') for key in ('server', 'username', 'password')}
+	return hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
+
+
+def _home_path(account):
+	return os.path.join(ku.translate_path(ku.profile_path), 'livetv-home-%s.json' % _home_account_key(account))
+
+
+def _home_clean(account, value):
+	if not isinstance(value, dict): return None
+	stream_id, name = value.get('id'), value.get('name')
+	if not isinstance(stream_id, str) or not stream_id.isascii() or not stream_id.isdecimal() or len(stream_id) > 32: return None
+	if not isinstance(name, str) or not name.strip() or len(name) > 500: return None
+	secrets = (account.get('username', ''), account.get('password', ''))
+	if _catalog_redact(name, secrets) != name or _catalog_redact(stream_id, secrets) != stream_id: return None
+	icon = _catalog_icon(value.get('icon'), secrets)
+	return {'id': stream_id, 'name': name, 'icon': icon or ''}
+
+
+def _home_read(account):
+	try:
+		path = _home_path(account)
+		if os.path.getsize(path) > 1024 * 1024: return []
+		with open(path, encoding='utf-8') as source: data = json.load(source)
+		if not isinstance(data, list): return []
+		items, seen = [], set()
+		for value in data[:_HOME_MAX_CHANNELS]:
+			item = _home_clean(account, value)
+			if item and item['id'] not in seen:
+				items.append(item)
+				seen.add(item['id'])
+		return items
+	except (OSError, ValueError, TypeError):
+		return []
+
+
+def _home_write(account, items):
+	path = _home_path(account)
+	os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+	fd, temporary = tempfile.mkstemp(prefix='.livetv-home-', dir=os.path.dirname(path))
+	try:
+		with os.fdopen(fd, 'w', encoding='utf-8') as target:
+			json.dump(items, target, ensure_ascii=False, separators=(',', ':'))
+		os.replace(temporary, path)
+	finally:
+		if os.path.exists(temporary): os.unlink(temporary)
+
+
+def _home_state():
+	global _home_state_cache
+	if _home_state_cache is None:
+		account = _load()
+		_home_state_cache = (account, _home_read(account) if account else [])
+	return _home_state_cache
+
+
+def _home_context(label, params, icon):
+	account, items = _home_state()
+	if not account: return None
+	stream_id = str(params.get('id') or '')
+	name = str(params.get('name') or label)
+	if name.endswith(' (play channel)'): name = name[:-len(' (play channel)')]
+	item = _home_clean(account, {'id': stream_id, 'name': name, 'icon': icon})
+	if not item: return None
+	saved = any(value['id'] == stream_id for value in items)
+	query = {'mode': 'livetv.home_action', 'action': 'remove' if saved else 'add', **item}
+	return ('Remove from Home channels' if saved else 'Add to Home channels', 'RunPlugin(%s)' % ku.build_url(query))
+
+
+def home_action(params):
+	global _home_state_cache
+	account = _load()
+	item = _home_clean(account, params) if account else None
+	choice = params.get('action')
+	if not item or choice not in ('add', 'remove'):
+		ku.dialog.notification('Live TV', 'Could not update Home channels.')
+		return
+	items = _home_read(account)
+	items = [value for value in items if value['id'] != item['id']]
+	if choice == 'add':
+		if len(items) >= _HOME_MAX_CHANNELS:
+			ku.dialog.notification('Live TV', 'Home channels is full.')
+			return
+		items.append(item)
+	try:
+		_home_write(account, items)
+	except (OSError, ValueError, TypeError):
+		ku.dialog.notification('Live TV', 'Could not update Home channels.')
+		return
+	_home_state_cache = (account, items)
+	xbmcgui.Window(10000).setProperty('BingieLiveTVFavoritesRefresh', str(time.time_ns()))
+	ku.dialog.notification('Live TV', 'Added to Home channels.' if choice == 'add' else 'Removed from Home channels.')
+	if xbmc.getCondVisibility('Window.IsActive(Videos)'): xbmc.executebuiltin('Container.Refresh')
+
+
+def home_channels(params):
+	account = _load()
+	if account:
+		for item in _home_read(account): _item(item['name'], _play_params(item['id'], item['name']), False, item['icon'])
+	_finish()
+
+
 def _item(label, params, folder=True, icon=None, playable=True):
 	item = xbmcgui.ListItem(label=label, offscreen=True)
-	if icon: item.setArt({'thumb': icon, 'icon': icon})
+	if icon: item.setArt({'thumb': icon, 'icon': icon, 'poster': icon, 'landscape': icon})
 	if not folder and playable: item.setProperty('IsPlayable', 'true')
+	if not folder and playable and params.get('mode') == 'livetv.play':
+		context = _home_context(label, params, icon)
+		if context: item.addContextMenuItems([context])
 	ku.add_item(_handle(), ku.build_url(params), item, folder)
 
 

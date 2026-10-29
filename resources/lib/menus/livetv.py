@@ -770,4 +770,7 @@ def play(params):
 		return
 	_prepare_failover(account, stream_id, params.get('name', ''))
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
-	xbmcplugin.setResolvedUrl(_handle(), True, xbmcgui.ListItem(path=url))
+	item = xbmcgui.ListItem(path=url)
+	item.setMimeType('video/mp2t')
+	item.setContentLookup(False)
+	xbmcplugin.setResolvedUrl(_handle(), True, item)

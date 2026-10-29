@@ -93,6 +93,8 @@ class LiveTVTests(unittest.TestCase):
 			self.assertEqual(item.call_args.args[:3], ('Soccer', {'mode': 'livetv.play', 'id': '21'}, False))
 			self.live.play({'id': '21'})
 			self.live.xbmcgui.ListItem.assert_called_with(path=account['server'] + '/live/user/pass/21.ts')
+			self.live.xbmcgui.ListItem.return_value.setMimeType.assert_called_once_with('video/mp2t')
+			self.live.xbmcgui.ListItem.return_value.setContentLookup.assert_called_once_with(False)
 			self.assertEqual(finish.call_count, 2)
 		self.assertEqual([request[1]['action'][0] for request in requests], ['get_live_categories', 'get_live_streams'])
 

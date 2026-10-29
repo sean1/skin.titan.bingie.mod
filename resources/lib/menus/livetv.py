@@ -22,6 +22,7 @@ from modules import kodi_utils as ku
 from modules.livetv_catalog import get as _catalog_get
 from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact
 from modules.livetv_guide_search import cached_search as _cached_guide_search
+from modules import livetv_fixtures as _fixture_service
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
@@ -285,6 +286,31 @@ def _error(message):
 def next_feed(params):
 	from modules.livetv_failover import request_manual_switch
 	request_manual_switch()
+
+
+def fixture_settings(params):
+	profile = ku.translate_path(ku.profile_path)
+	bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', _fixture_service.KEY_FILE)
+	profile_key = bool(_fixture_service.read_key(profile))
+	existing = bool(_fixture_service.read_key(profile, bundled))
+	if existing:
+		options = ['Replace API-Football key'] + (['Remove saved API-Football key'] if profile_key else [])
+		choice = ku.dialog.select('Soccer match recognition', options)
+		if choice < 0: return
+		if choice == 1:
+			try: _fixture_service.remove_key(profile)
+			except OSError: return _error('Could not remove the API-Football key.')
+			message = 'Bundled API-Football key restored.' if _fixture_service.read_key(profile, bundled) else 'Soccer match recognition disabled.'
+			ku.dialog.notification('Live TV', message)
+			if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
+			return
+	key = ku.dialog.input('API-Football key', option=xbmcgui.ALPHANUM_HIDE_INPUT)
+	if not key or not key.strip(): return
+	try: _fixture_service.save_key(profile, key.strip())
+	except ValueError: return _error('The API-Football key format is invalid.')
+	except OSError: return _error('Could not save the API-Football key.')
+	ku.dialog.notification('Live TV', 'Soccer match recognition enabled.')
+	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
 
 
 def settings(params):
@@ -576,6 +602,17 @@ def _guide_time(timestamp):
 	return datetime.fromtimestamp(timestamp, timezone.utc).astimezone().strftime('%a %H:%M')
 
 
+def _soccer_kickoff(fixture):
+	if not fixture: return ''
+	try:
+		value = fixture.get('date', '')
+		if not isinstance(value, str): return ''
+		kickoff = datetime.fromisoformat(value.replace('Z', '+00:00'))
+		if kickoff.utcoffset() is None: return ''
+		return 'Kickoff ' + kickoff.astimezone().strftime('%a %H:%M')
+	except (ValueError, OverflowError, OSError): return ''
+
+
 def search(params):
 	query = (ku.dialog.input('Search Live TV: team, league or channel') or '').strip()
 	if not query: return
@@ -731,7 +768,12 @@ def soccer(params):
 		streams = _catalog(account, 'get_live_streams', force_refresh=params.get('refresh') == '1', on_status=status)
 		if not isinstance(streams, list): raise ValueError('Invalid channels')
 		groups = _soccer_groups(streams)
-		leagues = sorted({_soccer_league(next(iter(feeds.values()))['name']) for feeds in groups.values()}, key=str.casefold)
+		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
+		bundled = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private', _fixture_service.KEY_FILE)
+		fixtures, fixture_status = _fixture_service.get(profile, bundled=bundled) if profile else ([], 'not configured')
+		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Match recognition: ' + fixture_status)
+		matches = {key: _fixture_service.match(key[0], key[1], fixtures) for key in groups}
+		leagues = sorted({matches[key]['league'] if matches[key] else _soccer_league(next(iter(feeds.values()))['name']) for key, feeds in groups.items()}, key=str.casefold)
 		if action == 'league':
 			options = ['All'] + leagues
 			choice = ku.dialog.select('Soccer league', options)
@@ -748,17 +790,18 @@ def soccer(params):
 		for (event, scope), feeds in groups.items():
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
 			preferred = ordered[0]
-			match_league = _soccer_league(preferred['name'])
+			matched = matches[(event, scope)]
+			match_league = matched['league'] if matched else _soccer_league(preferred['name'])
 			if league != 'All' and league != match_league: continue
 			title = preferred['name'].split('|')[1].strip()
-			rows.append((title, match_league, preferred, len(feeds), event, scope))
-		for title, match_league, stream, count, event, scope in sorted(rows, key=lambda row: (row[1] == 'Other / unknown', row[1].casefold(), row[0].casefold())):
+			rows.append((title, match_league, preferred, len(feeds), event, scope, matched))
+		for title, match_league, stream, count, event, scope, matched in sorted(rows, key=lambda row: (row[1] == 'Other / unknown', row[1].casefold(), row[0].casefold())):
 			label = '%s — %s — %d %s' % (match_league, title, count, 'feed' if count == 1 else 'feeds')
 			context = []
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
-			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds')})
+			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched)})
 		if not rows: _item('No recognized live soccer matches — browse channels', {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')

@@ -40,6 +40,7 @@
                 <control type="button" id="9303"><include>SideBladeMenuButton</include><label>Browse channels</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.refine)</onclick></control>
                 <control type="button" id="9304"><include>SideBladeMenuButton</include><label>TV guide</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.guide)</onclick></control>
                 <control type="button" id="9305"><include>SideBladeMenuButton</include><label>Refresh matches</label><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;action=refresh)</onclick></control>
+                <control type="button" id="9306"><include>SideBladeMenuButton</include><label>Match recognition setup</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>SetFocus(523)</onclick><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.fixture_settings)</onclick></control>
             </control>
         </control>
 

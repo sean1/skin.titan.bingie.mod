@@ -12,6 +12,8 @@ subtitle_credentials_rel="resources/private/subtitle_providers.json"
 subtitle_credentials="$project_dir/$subtitle_credentials_rel"
 livetv_credentials_rel="resources/private/livetv-account.json"
 livetv_credentials="$project_dir/$livetv_credentials_rel"
+football_key_rel="resources/private/api-football-key.txt"
+football_key="$project_dir/$football_key_rel"
 
 addon_id=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*id="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
 addon_version=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*version="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
@@ -103,6 +105,40 @@ PY
 	fi
 	mkdir -p "$temporary_dir/$addon_id/resources/private"
 	install -m 600 "$livetv_credentials" "$temporary_dir/$addon_id/$livetv_credentials_rel"
+fi
+
+if [ -e "$football_key" ] || [ -L "$football_key" ]; then
+	if [ -L "$football_key" ] || [ ! -f "$football_key" ]; then
+		printf '%s\n' "API-Football key file must be a regular file, not a symlink" >&2
+		exit 1
+	fi
+	if [ "$(stat -c '%a' "$football_key")" != "600" ]; then
+		printf '%s\n' "API-Football key file permissions must be 0600" >&2
+		exit 1
+	fi
+	credential_size=$(wc -c < "$football_key")
+	if [ "$credential_size" -lt 8 ] || [ "$credential_size" -gt 257 ]; then
+		printf '%s\n' "API-Football key file has an invalid size" >&2
+		exit 1
+	fi
+	if ! python3 - "$football_key" <<'PY'
+import re
+import sys
+
+try:
+	with open(sys.argv[1], encoding='utf-8') as key_file:
+		key = key_file.read().strip()
+	valid = bool(re.fullmatch(r'[A-Za-z0-9_-]{8,256}', key))
+except (OSError, UnicodeError, ValueError):
+	valid = False
+sys.exit(0 if valid else 1)
+PY
+	then
+		printf '%s\n' "API-Football key file must contain a valid token" >&2
+		exit 1
+	fi
+	mkdir -p "$temporary_dir/$addon_id/resources/private"
+	install -m 600 "$football_key" "$temporary_dir/$addon_id/$football_key_rel"
 fi
 
 (

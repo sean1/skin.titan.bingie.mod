@@ -2,4 +2,6 @@
 /dist/
 __pycache__/
 /resources/private/subtitle_providers.json
+/resources/private/api-football-key.txt
+/resources/private/sportapi-key.txt
 livetv-account.json

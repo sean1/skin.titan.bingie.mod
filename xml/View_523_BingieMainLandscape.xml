@@ -51,11 +51,6 @@
                 <left>131</left>
                 <top>560</top>
                 <width>1660</width>
-                <control type="label">
-                    <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
-                    <posx>7</posx><top>11</top><width>1100</width><height>40</height><font>Bold31</font><textcolor>ffffffff</textcolor>
-                    <label>LIVE SOCCER  ·  Left for menu</label>
-                </control>
                 <!-- Content Header -->
                 <control type="label">
                     <width>100%</width>

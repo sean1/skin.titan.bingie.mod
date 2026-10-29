@@ -77,15 +77,19 @@ def _prepare_failover(account, stream_id, name):
 		if not isinstance(streams, list): return
 		if not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event and _fixture_scope(stream['name']) == scope for stream in streams): return
 		alternatives = []
+		secrets = (account.get('username', ''), account.get('password', ''))
+		feeds = [{'id': stream_id, 'name': _catalog_redact(name, secrets)}]
+		seen = {stream_id}
 		for stream in streams:
 			if not isinstance(stream, dict): continue
 			candidate = str(stream.get('stream_id') or '')
-			if not candidate.isdecimal() or candidate == stream_id or candidate in alternatives: continue
+			if not candidate.isdecimal() or candidate in seen: continue
 			if _soccer_event(stream.get('name')) != event or _fixture_scope(stream['name']) != scope: continue
-			alternatives.append(candidate)
-			if len(alternatives) >= _FAILOVER_LIMIT: break
+			seen.add(candidate)
+			if len(alternatives) < _FAILOVER_LIMIT: alternatives.append(candidate)
+			feeds.append({'id': candidate, 'name': _catalog_redact(str(stream.get('name') or 'Live channel'), secrets)})
 		if alternatives:
-			xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps({'id': stream_id, 'alternatives': alternatives, 'token': uuid.uuid4().hex}))
+			xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps({'id': stream_id, 'alternatives': alternatives, 'feeds': feeds, 'token': uuid.uuid4().hex}))
 	except (OSError, ValueError, TypeError):
 		pass
 
@@ -244,13 +248,16 @@ def home_channels(params):
 	_finish()
 
 
-def _item(label, params, folder=True, icon=None, playable=True):
+def _item(label, params, folder=True, icon=None, playable=True, extra_context=None, extra_properties=None):
 	item = xbmcgui.ListItem(label=label, offscreen=True)
+	for key, value in (extra_properties or {}).items(): item.setProperty(key, str(value))
 	if icon: item.setArt({'thumb': icon, 'icon': icon, 'poster': icon, 'landscape': icon})
 	if not folder and playable: item.setProperty('IsPlayable', 'true')
+	context = list(extra_context or [])
 	if not folder and playable and params.get('mode') == 'livetv.play':
-		context = _home_context(label, params, icon)
-		if context: item.addContextMenuItems([context])
+		home_context = _home_context(label, params, icon)
+		if home_context: context.append(home_context)
+	if context: item.addContextMenuItems(context)
 	ku.add_item(_handle(), ku.build_url(params), item, folder)
 
 
@@ -267,8 +274,8 @@ def _request(account, action, **params):
 		return json.loads(data.decode('utf-8-sig'))
 
 
-def _catalog(account, action, **params):
-	return _catalog_get(account, action, _request, ku.translate_path(ku.profile_path), on_stale=lambda: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.'), **params)
+def _catalog(account, action, *, force_refresh=False, on_status=None, **params):
+	return _catalog_get(account, action, _request, ku.translate_path(ku.profile_path), on_stale=lambda: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.'), on_status=on_status, force_refresh=force_refresh, **params)
 
 
 def _error(message):
@@ -643,6 +650,124 @@ def search_results(params):
 	elif not channel_matches and not guide_count:
 		ku.dialog.notification('Live TV', 'No matches found.')
 	_finish()
+
+
+_SOCCER_LEAGUES = (
+	('Champions League', r'\b(?:uefa\s+)?champions\s+league\b'),
+	('Europa League', r'\beuropa\s+league\b'),
+	('Conference League', r'\bconference\s+league\b'),
+	('Premier League', r'\bpremier\s+league\b'),
+	('Carabao Cup', r'\bcarabao\s+cup\b'),
+	('FA Cup', r'\bfa\s+cup\b'),
+	('La Liga', r'\bla\s+liga\b'),
+	('Serie A', r'\bserie\s+a\b'),
+	('Ligue 1', r'\bligue\s+1\b'),
+	('Bundesliga', r'\bbundesliga\b'),
+	('Major League Soccer', r'\bmajor\s+league\s+soccer\b'),
+	('World Cup', r'\bworld\s+cup\b'),
+)
+
+
+def _soccer_league(name):
+	metadata = ' | '.join(name.split('|')[2:])
+	matches = [label for label, pattern in _SOCCER_LEAGUES if re.search(pattern, metadata, re.I)]
+	return matches[0] if len(matches) == 1 else 'Other / unknown'
+
+
+def _tennis_fixtures(streams, today):
+	fixtures = set()
+	pattern = re.compile(r'^\s*([^@]+?)\s+vs\.?\s+([^@]+?)\s+@\s+([A-Za-z]{3})\s+(\d{1,2})(?:[ ,]+(\d{4}))?\b', re.I)
+	for item in streams:
+		if not isinstance(item, dict): continue
+		name = str(item.get('name') or '')
+		if not re.search(r'\b(?:tennis|atp|wta)\b', name, re.I): continue
+		match = pattern.search(name)
+		if not match: continue
+		try:
+			date = datetime.strptime('%s %s %s' % (match[3], match[4], match[5] or today.year), '%b %d %Y').date()
+		except ValueError:
+			continue
+		if date != today: continue
+		teams = tuple(' '.join(side.split(',', 1)[0].casefold().split()) for side in match.group(1, 2))
+		if all(teams): fixtures.add(teams)
+	return fixtures
+
+
+def _soccer_groups(streams, now=None):
+	groups = {}
+	# Some provider PPV labels say SOCCER for tennis too. A separate dated,
+	# explicitly tennis-labelled fixture can identify that contradiction.
+	today = (now or datetime.now().astimezone()).date()
+	tennis = _tennis_fixtures(streams, today)
+	for stream in streams:
+		if not isinstance(stream, dict): continue
+		stream_id = str(stream.get('stream_id') or '')
+		name = stream.get('name')
+		event = _soccer_event(name)
+		if not stream_id.isdecimal() or not event: continue
+		if event in tennis: continue
+		key = (event, _fixture_scope(name))
+		groups.setdefault(key, {}).setdefault(stream_id, stream)
+	return groups
+
+
+def soccer(params):
+	account = _load()
+	if not account:
+		_error('No Live TV account is available.')
+		if not params.get('action'): _finish(False)
+		return
+	action = params.get('action', '')
+	league = str(params.get('league') or ku.get_property('LiveTV.Soccer.League') or 'All')
+	if action == 'refresh':
+		xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
+		xbmc.executebuiltin('SetFocus(523)')
+		xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url({'mode': 'livetv.soccer', 'league': league, 'refresh': '1'}))
+		return
+	try:
+		def status(created, stale):
+			when = datetime.fromtimestamp(created).astimezone().strftime('%a %H:%M')
+			ku.set_property('LiveTV.Soccer.Status', ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when)
+		streams = _catalog(account, 'get_live_streams', force_refresh=params.get('refresh') == '1', on_status=status)
+		if not isinstance(streams, list): raise ValueError('Invalid channels')
+		groups = _soccer_groups(streams)
+		leagues = sorted({_soccer_league(next(iter(feeds.values()))['name']) for feeds in groups.values()}, key=str.casefold)
+		if action == 'league':
+			options = ['All'] + leagues
+			choice = ku.dialog.select('Soccer league', options)
+			if choice < 0: return
+			league = options[choice]
+			ku.set_property('LiveTV.Soccer.League', league)
+			xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
+			xbmc.executebuiltin('SetFocus(523)')
+			xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url({'mode': 'livetv.soccer', 'league': league}))
+			return
+		if league not in ['All'] + leagues: league = 'All'
+		ku.set_property('LiveTV.Soccer.League', league)
+		rows = []
+		for (event, scope), feeds in groups.items():
+			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
+			preferred = ordered[0]
+			match_league = _soccer_league(preferred['name'])
+			if league != 'All' and league != match_league: continue
+			title = preferred['name'].split('|')[1].strip()
+			rows.append((title, match_league, preferred, len(feeds), event, scope))
+		for title, match_league, stream, count, event, scope in sorted(rows, key=lambda row: (row[1] == 'Other / unknown', row[1].casefold(), row[0].casefold())):
+			label = '%s — %s — %d %s' % (match_league, title, count, 'feed' if count == 1 else 'feeds')
+			context = []
+			if count > 1:
+				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope})
+				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
+			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds')})
+		if not rows: _item('No recognized live soccer matches — browse channels', {'mode': 'livetv.refine'})
+	except (OSError, ValueError, TypeError):
+		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')
+		_error('Could not load Live TV channels.')
+		if not action: _finish(False)
+		return
+	_finish()
+	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer) + !Control.IsVisible(523)'):
+		xbmc.executebuiltin('Container.SetViewMode(523)')
 
 
 def match_feeds(params):

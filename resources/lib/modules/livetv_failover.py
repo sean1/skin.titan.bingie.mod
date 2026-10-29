@@ -12,6 +12,7 @@ from modules import kodi_utils as ku
 PROPERTY = 'BingieLiveTVFailover'
 SWITCH_REQUEST = 'BingieLiveTVSwitchRequest'
 CAN_SWITCH = 'BingieLiveTVCanSwitch'
+FEED_CHOICES = 'BingieLiveTVFeedChoices'
 START_TIMEOUT = 15.0
 STALL_TIMEOUT = 8.0
 PROBE_DELAY = 2.0
@@ -39,14 +40,20 @@ def _probe_failure(url):
 
 
 def request_manual_switch():
-	"""Request a switch for the session already shown in Live TV, never a new one."""
+	"""Choose a feed for the active session; the service revalidates the request."""
 	try:
-		data = json.loads(ku.get_property(PROPERTY) or '{}')
-		token = data.get('token')
-		if not isinstance(token, str) or not token or not data.get('alternatives') or not ku.get_property(CAN_SWITCH): raise ValueError('No session')
-		ku.set_property(SWITCH_REQUEST, token)
+		data = json.loads(ku.get_property(FEED_CHOICES) or '{}')
+		token, current, feeds = data.get('token'), data.get('current'), data.get('feeds')
+		if not isinstance(token, str) or not token or not isinstance(current, str) or not isinstance(feeds, list) or len(feeds) < 2 or not ku.get_property(CAN_SWITCH): raise ValueError('No session')
+		choice = ku.dialog.select('Switch feed', [str(feed['name']) + (' (current)' if feed['id'] == current else '') for feed in feeds])
+		if choice < 0: return False
+		if choice >= len(feeds): raise ValueError('Invalid choice')
+		selected = feeds[choice]['id']
+		if selected == current: return False
+		if json.loads(ku.get_property(FEED_CHOICES) or '{}') != data or not ku.get_property(CAN_SWITCH): return False
+		ku.set_property(SWITCH_REQUEST, json.dumps({'token': token, 'current': current, 'id': selected}))
 		return True
-	except (TypeError, ValueError, AttributeError):
+	except (TypeError, ValueError, AttributeError, KeyError):
 		ku.dialog.notification('Live TV', 'No matching live stream is available to switch.')
 		return False
 
@@ -71,6 +78,7 @@ class LiveTVFailover(ku.xbmc_player):
 		self.event = None
 		ku.clear_property(SWITCH_REQUEST)
 		ku.clear_property(CAN_SWITCH)
+		ku.clear_property(FEED_CHOICES)
 
 	def close(self):
 		self._clear()
@@ -94,7 +102,16 @@ class LiveTVFailover(ku.xbmc_player):
 			account = _load()
 			if not account: return
 			base = '%s/live/%s/%s/' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''))
-			self.session = {'token': token, 'id': stream_id, 'alternatives': ids[:MAX_ALTERNATIVES], 'base': base, 'started_at': now,
+			allowed = [stream_id] + ids
+			labels = {}
+			for feed in data.get('feeds', []) if isinstance(data.get('feeds', []), list) else []:
+				if not isinstance(feed, dict): continue
+				feed_id, name = feed.get('id'), feed.get('name')
+				if not isinstance(feed_id, str) or not feed_id.isdecimal() or not isinstance(name, str): continue
+				if feed_id not in allowed: allowed.append(feed_id)
+				labels[feed_id] = name or 'Feed'
+			feeds = [{'id': value, 'name': labels.get(value, 'Feed ' + str(index + 1))} for index, value in enumerate(allowed)]
+			self.session = {'token': token, 'id': stream_id, 'alternatives': ids[:MAX_ALTERNATIVES], 'feeds': feeds, 'base': base, 'started_at': now,
 				'active': False, 'last_time': None, 'last_progress': now, 'paused': False, 'switching': False, 'foreign_seen': False, 'observed': False, 'probe_started': False, 'probe_allowed': True}
 			self.event = None
 		except (ValueError, TypeError, KeyError, AttributeError): return
@@ -115,7 +132,7 @@ class LiveTVFailover(ku.xbmc_player):
 			self.session['last_time'] = None
 			self.session['last_progress'] = self.clock()
 			self.event = None
-			if self.session['alternatives']: ku.set_property(CAN_SWITCH, 'true')
+			if len(self.session['feeds']) > 1: ku.set_property(CAN_SWITCH, 'true')
 
 	def onPlayBackError(self):
 		# A delayed callback from the previous feed cannot safely identify the new one.
@@ -142,17 +159,19 @@ class LiveTVFailover(ku.xbmc_player):
 			self.session['last_time'] = None
 			self.session['last_progress'] = self.clock()
 
-	def _next(self, now):
+	def _next(self, now, selected=None):
 		ku.clear_property(CAN_SWITCH)
-		if not self.session['alternatives']:
+		ku.clear_property(FEED_CHOICES)
+		if selected is None and not self.session['alternatives']:
 			ku.dialog.notification('Live TV', 'No more matching streams are available.')
 			self._clear()
 			return False
 		previous_url = self._url(self.session['id'])
-		self.session['id'] = self.session['alternatives'].pop(0)
+		self.session['id'] = selected if selected is not None else self.session['alternatives'].pop(0)
+		if selected is not None: self.session['alternatives'] = [value for value in self.session['alternatives'] if value != selected]
 		self.session.update(started_at=now, active=False, last_time=None, last_progress=now, paused=False, switching=True, outgoing=previous_url, foreign_seen=False, observed=False, probe_started=False, probe_allowed=False)
 		self.event = None
-		ku.dialog.notification('Live TV', 'Stream interrupted. Trying another feed for this match.')
+		ku.dialog.notification('Live TV', 'Switching feed.' if selected is not None else 'Stream interrupted. Trying another feed for this match.')
 		try: self.play(self._url(self.session['id']))
 		except Exception:
 			self.event = ('error', self.session['token'], self.session['id'])
@@ -175,10 +194,12 @@ class LiveTVFailover(ku.xbmc_player):
 			return False
 		playing = self._playing_file()
 		expected = self._url(session['id'])
-		if session['active'] and playing == expected and session['alternatives']:
+		if session['active'] and playing == expected and len(session['feeds']) > 1:
 			ku.set_property(CAN_SWITCH, 'true')
+			ku.set_property(FEED_CHOICES, json.dumps({'token': session['token'], 'current': session['id'], 'feeds': session['feeds']}))
 		else:
 			ku.clear_property(CAN_SWITCH)
+			ku.clear_property(FEED_CHOICES)
 		if playing and playing != expected:
 			if not session['active'] and playing == session.get('outgoing'):
 				if now - session['started_at'] < 3.0: return True
@@ -196,8 +217,11 @@ class LiveTVFailover(ku.xbmc_player):
 		manual = ku.get_property(SWITCH_REQUEST)
 		if manual:
 			ku.clear_property(SWITCH_REQUEST)
-			if manual == session['token'] and session['active'] and playing == expected:
-				return self._next(now)
+			try: request = json.loads(manual)
+			except (ValueError, TypeError): request = {}
+			if isinstance(request, dict) and request.get('token') == session['token'] and request.get('current') == session['id'] and session['active'] and playing == expected:
+				selected = request.get('id')
+				if selected != session['id'] and selected in [feed['id'] for feed in session['feeds']]: return self._next(now, selected)
 		event, self.event = self.event, None
 		if event and event[1:] == (session['token'], session['id']):
 			if event[0] == 'stop' and playing != expected:

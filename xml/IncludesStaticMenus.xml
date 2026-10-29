@@ -97,10 +97,10 @@
 			<property name="labelID">live-tv</property>
 			<property name="defaultID">live-tv</property>
 			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
-			<onclick condition="Window.IsActive(Videos)">Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.refine)</onclick>
-			<onclick condition="!Window.IsActive(Videos)">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.refine,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.refine,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.refine</property>
+			<onclick condition="Window.IsActive(Videos)">Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.soccer)</onclick>
+			<onclick condition="!Window.IsActive(Videos)">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.soccer,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.soccer,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.soccer</property>
 			<property name="submenuVisibility">live-tv</property>
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">False</property>

@@ -678,11 +678,11 @@
                     <include>Top_OSD_Button_Zoom_Anim</include>
                 </control>
 				<control type="button" id="216">
-					<description>Try another feed</description>
+					<description>Switch feed</description>
 					<width>$PARAM[topsize]</width>
 					<height>$PARAM[topsize]</height>
 					<font/>
-					<label>Try another feed</label>
+					<label>Switch feed</label>
 					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]reset_fo.png</texturefocus>
 					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]reset.png</texturenofocus>
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.next)</onclick>

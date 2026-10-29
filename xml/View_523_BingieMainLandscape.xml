@@ -7,9 +7,16 @@
             <visible>Control.IsVisible(523)</visible>
             <include>animation_view_change</include>
 
-            <include content="Bingie_Main_Spotlight_Section">
-                <param name="id" value="523" />
-            </include>
+            <control type="group">
+                <visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
+                <include content="Bingie_Main_Spotlight_Section"><param name="id" value="523" /></include>
+            </control>
+            <control type="group">
+                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
+                <left>138</left><top>105</top><width>1500</width><height>300</height>
+                <control type="textbox"><width>1400</width><height>180</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label></control>
+                <control type="label"><top>190</top><width>1400</width><height>45</height><font>Reg26</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]  $INFO[ListItem.Property(LiveTV.Feeds), · ]</label></control>
+            </control>
 
             <!-- View 523 -->
             <control type="group">
@@ -18,6 +25,16 @@
                 <left>131</left>
                 <top>560</top>
                 <width>1660</width>
+                <control type="label">
+                    <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
+                    <posx>7</posx><top>11</top><width>1100</width><height>40</height><font>Bold31</font><textcolor>ffffffff</textcolor>
+                    <label>LIVE SOCCER  ·  Left for menu</label>
+                </control>
+                <control type="label">
+                    <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
+                    <right>12</right><top>11</top><width>550</width><height>40</height><align>right</align><font>Reg20</font><textcolor>ffbcbcbc</textcolor>
+                    <label>$INFO[Window(Home).Property(LiveTV.Soccer.Status)]</label>
+                </control>
                 <!-- Content Header -->
                 <control type="label">
                     <width>100%</width>
@@ -90,6 +107,8 @@
 			<onleft condition="Container.Content(movies) | Container.Content(tvshows)">9000</onleft>
 			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.refine)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
 			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.refine)">9001</onleft>
+			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.soccer)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
+			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.soccer)">9002</onleft>
 			<onleft>523</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
@@ -101,9 +120,11 @@
                 <control type="group">
                     <width>335</width>
                     <height>195</height>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>ThumbsViewItemBingieLayout</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>ThumbsViewItemBingieLayout</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>BingieLiveChannelGridArt</include></control>
-                    <include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>BingieLiveSoccerCardArt</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include></control>
+                    <include content="BingieLiveSoccerTitle"><param name="focused" value="false" /></include>
                 </control>
             </itemlayout>
             <focusedlayout height="193" width="333">
@@ -123,9 +144,11 @@
 						<bordertexture colordiffuse="ffffffff">diffuse/panel2.png</bordertexture>
 						<include>thumbsborder_focused</include>
 					</control>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>ThumbsViewItemBingieLayout</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>ThumbsViewItemBingieLayout</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>BingieLiveChannelGridArt</include></control>
-                    <include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>BingieLiveSoccerCardArt</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include></control>
+                    <include content="BingieLiveSoccerTitle"><param name="focused" value="true" /></include>
                 </control>
 				<!--Top 250 1-->
 				<control type="image">
@@ -138,6 +161,24 @@
                 <texture>bingie/top250p.png</texture>
 		        </control>
             </focusedlayout>
+        </control>
+    </include>
+
+    <include name="BingieLiveSoccerCardArt">
+        <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>ff30343b</colordiffuse></control>
+        <control type="image"><left>24</left><top>24</top><width>45</width><height>4</height><texture>colors/color_white.png</texture><colordiffuse>ffcc0000</colordiffuse></control>
+        <control type="label"><left>24</left><right>24</right><top>36</top><height>45</height><font>Bold31</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>true</scroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.Match)) + !String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
+        <control type="label"><left>24</left><right>24</right><top>40</top><height>40</height><font>Bold31</font><textcolor>ffffffff</textcolor><label>LIVE SOCCER</label><visible>String.IsEmpty(ListItem.Property(LiveTV.Match)) | String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
+    </include>
+
+    <include name="BingieLiveSoccerTitle">
+        <control type="group">
+            <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
+            <control type="image"><left>8</left><right>8</right><bottom>8</bottom><height>100</height><texture>colors/color_black.png</texture><colordiffuse>ddffffff</colordiffuse></control>
+            <control type="label"><left>16</left><right>16</right><bottom>69</bottom><height>24</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>$PARAM[focused]</scroll></control>
+            <control type="label"><left>16</left><right>16</right><bottom>38</bottom><height>30</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label><scroll>$PARAM[focused]</scroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
+            <control type="label"><left>16</left><right>16</right><bottom>38</bottom><height>30</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><scroll>$PARAM[focused]</scroll><visible>String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
+            <control type="label"><left>16</left><right>16</right><bottom>12</bottom><height>24</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.Feeds)]</label></control>
         </control>
     </include>
 

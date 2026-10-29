@@ -101,7 +101,7 @@
 		String.IsEqual(Container.FolderPath,plugin://skin.titan.bingie.lite/) |
 		String.IsEqual(Container.FolderPath,plugin://skin.titan.bingie.lite) |
 		[String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) +
-		[String.Contains(Container.FolderPath,mode=navigator.) | String.Contains(Container.FolderPath,mode=search_history) | [String.Contains(Container.FolderPath,mode=livetv.) + !String.Contains(Container.FolderPath,mode=livetv.refine)]]]
+		[String.Contains(Container.FolderPath,mode=navigator.) | String.Contains(Container.FolderPath,mode=search_history) | [String.Contains(Container.FolderPath,mode=livetv.) + !String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer)]]]
 	</expression>
 	<expression name="IsMovieOrTvShowListItem">
 		String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.Property(DBTYPE),movie) |

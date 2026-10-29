@@ -111,20 +111,24 @@ def _write(profile, path, payload):
 			except OSError: pass
 
 
-def get(account, action, fetch, profile, *, on_stale=None, now=None, **params):
+def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=None, force_refresh=False, **params):
 	"""Return the catalog; refresh after two minutes, with a one-hour offline fallback."""
 	if action not in _FIELDS: return fetch(account, action, **params)
 	now = time.time() if now is None else now
 	key = _key(account, action, params)
 	path = os.path.join(profile, 'livetv-catalog-' + key + '.json')
 	cached = _read(path, key, now)
-	if cached and cached[1] < FRESH_SECONDS: return cached[0]['items']
+	if cached and cached[1] < FRESH_SECONDS and not force_refresh:
+		if on_status: on_status(cached[0]['created'], False)
+		return cached[0]['items']
 	try:
 		data = fetch(account, action, **params)
 		clean = _clean(data, action, account)
 	except (OSError, ValueError, TypeError):
 		if not cached: raise
 		if on_stale: on_stale()
+		if on_status: on_status(cached[0]['created'], True)
 		return cached[0]['items']
 	if clean is not None: _write(profile, path, {'key': key, 'created': now, 'items': clean})
+	if on_status: on_status(now, False)
 	return data

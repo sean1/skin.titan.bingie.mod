@@ -15,7 +15,7 @@
                 <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
                 <left>138</left><top>105</top><width>1500</width><height>300</height>
                 <control type="textbox"><width>1400</width><height>180</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label></control>
-                <control type="label"><top>190</top><width>1400</width><height>45</height><font>Reg26</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]$INFO[ListItem.Property(LiveTV.Kickoff), · ]$INFO[ListItem.Property(LiveTV.Feeds), · ]$INFO[ListItem.Property(LiveTV.Recognition), · ]</label></control>
+                <control type="label"><top>190</top><width>1400</width><height>45</height><font>Reg26</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]$INFO[ListItem.Property(LiveTV.Kickoff), · ]$INFO[ListItem.Property(LiveTV.Feeds), · ]</label></control>
             </control>
 
             <!-- View 523 -->
@@ -171,19 +171,17 @@
 
     <include name="BingieLiveSoccerCardArt">
         <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>ff30343b</colordiffuse></control>
-        <control type="image"><left>24</left><top>24</top><width>45</width><height>4</height><texture>colors/color_white.png</texture><colordiffuse>ffcc0000</colordiffuse></control>
-        <control type="label"><left>24</left><right>24</right><top>36</top><height>45</height><font>Bold31</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>true</scroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.Match)) + !String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
-        <control type="label"><left>24</left><right>24</right><top>40</top><height>40</height><font>Bold31</font><textcolor>ffffffff</textcolor><label>LIVE SOCCER</label><visible>String.IsEmpty(ListItem.Property(LiveTV.Match)) | String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
     </include>
 
     <include name="BingieLiveSoccerTitle">
         <control type="group">
             <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
-            <control type="image"><left>8</left><right>8</right><bottom>8</bottom><height>100</height><texture>colors/color_black.png</texture><colordiffuse>ddffffff</colordiffuse></control>
-            <control type="label"><left>16</left><right>16</right><bottom>69</bottom><height>24</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]$INFO[ListItem.Property(LiveTV.Kickoff), · ]</label><scroll>$PARAM[focused]</scroll></control>
-            <control type="label"><left>16</left><right>16</right><bottom>38</bottom><height>30</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label><scroll>$PARAM[focused]</scroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
-            <control type="label"><left>16</left><right>16</right><bottom>38</bottom><height>30</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><scroll>$PARAM[focused]</scroll><visible>String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
-            <control type="label"><left>16</left><right>16</right><bottom>12</bottom><height>24</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.Feeds)]$INFO[ListItem.Property(LiveTV.Recognition), · ]</label></control>
+            <control type="label"><left>18</left><right>18</right><top>18</top><height>23</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>$PARAM[focused]</scroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.League)) + !String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
+            <control type="label"><left>18</left><right>18</right><top>18</top><height>23</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>LIVE SOCCER</label><visible>String.IsEmpty(ListItem.Property(LiveTV.League)) | String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
+            <control type="textbox"><left>18</left><right>18</right><top>46</top><height>100</height><font>Reg24</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label><autoscroll delay="4000" time="2000" repeat="6000">$PARAM[focused]</autoscroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
+            <control type="textbox"><left>18</left><right>18</right><top>46</top><height>100</height><font>Reg24</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><autoscroll delay="4000" time="2000" repeat="6000">$PARAM[focused]</autoscroll><visible>String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
+            <control type="label"><left>18</left><width>200</width><top>153</top><height>23</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.Kickoff)]</label></control>
+            <control type="label"><right>18</right><width>78</width><top>153</top><height>23</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>$INFO[ListItem.Property(LiveTV.Feeds)]</label></control>
         </control>
     </include>
 

@@ -148,6 +148,14 @@
                         <icon>special://skin/extras/media/backgrounds/settings_services.jpg</icon>
                         <thumb>special://skin/extras/media/backgrounds/services.png</thumb>
                     </item>
+                    <item id="19">
+                        <description>SportAPI match recognition</description>
+                        <label>SportAPI match recognition</label>
+                        <label2>Set up or change your SportAPI key</label2>
+                        <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.sportapi_settings)</onclick>
+                        <icon>special://skin/extras/media/backgrounds/settings_services.jpg</icon>
+                        <thumb>special://skin/extras/media/backgrounds/services.png</thumb>
+                    </item>
                     <item id="9">
                         <description>System</description>
                         <label>13000</label>

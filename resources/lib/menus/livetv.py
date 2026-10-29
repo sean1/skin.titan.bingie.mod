@@ -23,6 +23,7 @@ from modules.livetv_catalog import get as _catalog_get
 from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact
 from modules.livetv_guide_search import cached_search as _cached_guide_search
 from modules import livetv_fixtures as _fixture_service
+from modules import livetv_sportapi as _sportapi_service
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
@@ -310,6 +311,30 @@ def fixture_settings(params):
 	except ValueError: return _error('The API-Football key format is invalid.')
 	except OSError: return _error('Could not save the API-Football key.')
 	ku.dialog.notification('Live TV', 'Soccer match recognition enabled.')
+	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
+
+
+def sportapi_settings(params):
+	profile = ku.translate_path(ku.profile_path)
+	local_key = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', _sportapi_service.KEY_FILE)
+	profile_key = bool(_sportapi_service.read_key(profile))
+	if _sportapi_service.read_key(profile, local_key):
+		options = ['Replace SportAPI key'] + (['Remove saved SportAPI key'] if profile_key else [])
+		choice = ku.dialog.select('SportAPI match recognition', options)
+		if choice < 0: return
+		if choice == 1:
+			try: _sportapi_service.remove_key(profile)
+			except OSError: return _error('Could not remove the SportAPI key.')
+			message = 'Local SportAPI key restored.' if _sportapi_service.read_key(profile, local_key) else 'SportAPI match recognition disabled.'
+			ku.dialog.notification('Live TV', message)
+			if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
+			return
+	key = ku.dialog.input('SportAPI key', option=xbmcgui.ALPHANUM_HIDE_INPUT)
+	if not key or not key.strip(): return
+	try: _sportapi_service.save_key(profile, key.strip())
+	except ValueError: return _error('The SportAPI key format is invalid.')
+	except OSError: return _error('Could not save the SportAPI key.')
+	ku.dialog.notification('Live TV', 'SportAPI match recognition enabled.')
 	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
 
 
@@ -613,6 +638,135 @@ def _soccer_kickoff(fixture):
 	except (ValueError, OverflowError, OSError): return ''
 
 
+def _fixtures_agree(first, second):
+	"""Only combine independent fixture matches when their competition and kickoff agree."""
+	try:
+		league_a, women_a, youth_a = _fixture_service._team(first['league'])
+		league_b, women_b, youth_b = _fixture_service._team(second['league'])
+		a, b = set(league_a.split()), set(league_b.split())
+		if not a or not b or women_a != women_b or youth_a != youth_b or not (a <= b or b <= a): return False
+		start_a = datetime.fromisoformat(first['date'].replace('Z', '+00:00'))
+		start_b = datetime.fromisoformat(second['date'].replace('Z', '+00:00'))
+		return start_a.utcoffset() is not None and start_b.utcoffset() is not None and start_a == start_b
+	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return False
+
+
+def _fixture_candidates(event, scope, fixtures):
+	"""Keep an ambiguous source distinct from a source with no candidate."""
+	return [item for item in fixtures if _fixture_service.match(event, scope, [item])]
+
+
+_CONTEXT_PROGRAMME = re.compile(r"^\s*([^:|]{1,120}):\s*([\w .&'’\-]{2,80}?)\s+vs\.?\s+([\w .&'’\-]{2,80}?)\s+@\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+(\d{1,2})(?:[ ,]+(\d{4}))?\b", re.I)
+_CONTEXT_CONFLICT = object()
+
+
+def _context_team(name):
+	return _fixture_service._team(name.replace('ø', 'o').replace('Ø', 'O'))
+
+
+def _context_related(event, fixture):
+	"""Include possible abbreviated identities as blockers, not positive matches."""
+	try:
+		given = [_context_team(name)[0] for name in event]
+		other = [_context_team(fixture[key])[0] for key in ('home', 'away')]
+		def compatible(a, b):
+			if a == b: return True
+			a, b = a.split(), b.split()
+			if a and a[-1] in ('ii', 'b', 'reserve', 'reserves'): a = a[:-1]
+			if b and b[-1] in ('ii', 'b', 'reserve', 'reserves'): b = b[:-1]
+			if a == b: return True
+			if _fixture_service._team_alias(' '.join(a), ' '.join(b)) or _fixture_service._team_alias(' '.join(b), ' '.join(a)): return True
+			if len(a) < len(b): a, b = b, a
+			return bool(len(a) == len(b) + 1 and len(a[0]) <= 3 and a[1:] == b and len(''.join(b)) >= 4)
+		return all(given) and all(other) and all(compatible(a, b) for a, b in zip(given, other))
+	except (KeyError, TypeError, AttributeError): return False
+
+
+def _context_has_conflict(event, sources):
+	"""Unqualified team names cannot disambiguate conflicting fixture categories."""
+	try:
+		if any(_context_team(name)[1] for name in event): return False
+		groups = [[item for item in fixtures if _context_related(event, item)] for fixtures in sources]
+		if any(len(group) > 1 for group in groups): return True
+		items = [group[0] for group in groups if group]
+		def reserve(name):
+			words = _context_team(name)[0].split()
+			return words[-1] if words and words[-1] in ('ii', 'b', 'reserve', 'reserves') else ''
+		if any([reserve(item[key]) for key in ('home', 'away')] != [reserve(name) for name in event] for item in items): return True
+		if len(items) != 2: return False
+		def category(item):
+			home, away = (_context_team(item[key]) for key in ('home', 'away'))
+			_, women, youth = _fixture_service._team(item['league'])
+			return bool(home[1] or away[1] or women), home[2] | away[2] | youth
+		return category(items[0]) != category(items[1]) or not _fixtures_agree(*items)
+	except (KeyError, TypeError, ValueError, AttributeError): return True
+
+
+def _context_identity(names):
+	return tuple((base, women, frozenset(youth)) for base, women, youth in map(_context_team, names))
+
+
+def _context_programmes(streams, created, stale, now=None, events=None):
+	"""Index relevant dated programmes once, only for a fresh catalogue."""
+	now = time.time() if now is None else now
+	if stale or not isinstance(created, (int, float)) or not 0 <= now - created <= 120: return {}
+	try:
+		current = datetime.fromtimestamp(created, timezone.utc).date()
+		wanted = {_context_identity(event) for event in events} if events is not None else None
+		programmes = {}
+		for stream in streams:
+			name = stream.get('name') if isinstance(stream, dict) else None
+			match = _CONTEXT_PROGRAMME.match(name) if isinstance(name, str) else None
+			if not match: continue
+			league, home, away, month, day, year = match.groups()
+			identity = _context_identity((home, away))
+			if wanted is not None and identity not in wanted: continue
+			try:
+				date = datetime.strptime('%s %s %s' % (month, day, year or current.year), '%b %d %Y').date()
+			except ValueError: continue
+			if date != current: continue
+			base, women, youth = _fixture_service._team(league)
+			programmes.setdefault(identity, set()).add((base, women, frozenset(youth), date))
+		return programmes
+	except (TypeError, ValueError, AttributeError, OverflowError, OSError): return {}
+
+
+def _context_fixture(event, scope, streams, sources, created, stale, now=None, index=None):
+	"""Corroborate omitted gender only from a fresh, dated, exact-event programme."""
+	try:
+		given = [_context_team(name) for name in event]
+		if len(given) != 2 or any(item[1] for item in given): return None
+		if index is None: index = _context_programmes(streams, created, stale, now)
+		programmes = index.get(_context_identity(event), set())
+		if not programmes: return None
+		if len(programmes) != 1: return _CONTEXT_CONFLICT
+		base, women, youth, programme_day = next(iter(programmes))
+		if not base: return None
+		categories = []
+		for fixtures in sources:
+			related = [item for item in fixtures if _context_related(event, item)]
+			if len(related) > 1: return _CONTEXT_CONFLICT
+			if related: categories.append(related[0])
+		if not categories: return None
+		if len(categories) == 2 and not _fixtures_agree(*categories): return _CONTEXT_CONFLICT
+		confirmed = None
+		for item in categories:
+			if item.get('status') not in _fixture_service.LIVE_STATUSES: return _CONTEXT_CONFLICT
+			home, away = (_context_team(item[key]) for key in ('home', 'away'))
+			league_name, league_women, league_youth = _fixture_service._team(item['league'])
+			if bool(home[1] or away[1] or league_women) != women or (home[2] | away[2] | league_youth) != set(youth): return _CONTEXT_CONFLICT
+			start = datetime.fromisoformat(item['date'].replace('Z', '+00:00'))
+			if start.utcoffset() is None or start.astimezone(timezone.utc).date() != programme_day: return _CONTEXT_CONFLICT
+			context_league = {'league': base + (' women' if women else '') + ''.join(' ' + age for age in sorted(youth)), 'date': item['date']}
+			if not _fixtures_agree(item, context_league): return _CONTEXT_CONFLICT
+			if not women or [_context_team(item[key])[0] for key in ('home', 'away')] != [item[0] for item in given]: continue
+			if not _fixture_service.match((event[0] + ' Women', event[1]), scope, [item]): return _CONTEXT_CONFLICT
+			confirmed = item
+		return confirmed
+	except (KeyError, TypeError, ValueError, AttributeError, OverflowError, OSError): return _CONTEXT_CONFLICT
+	return None
+
+
 def search(params):
 	query = (ku.dialog.input('Search Live TV: team, league or channel') or '').strip()
 	if not query: return
@@ -762,7 +916,9 @@ def soccer(params):
 		xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url({'mode': 'livetv.soccer', 'league': league, 'refresh': '1'}))
 		return
 	try:
+		catalog_status = [None, True]
 		def status(created, stale):
+			catalog_status[:] = [created, stale]
 			when = datetime.fromtimestamp(created).astimezone().strftime('%a %H:%M')
 			ku.set_property('LiveTV.Soccer.Status', ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when)
 		streams = _catalog(account, 'get_live_streams', force_refresh=params.get('refresh') == '1', on_status=status)
@@ -771,8 +927,21 @@ def soccer(params):
 		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 		bundled = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private', _fixture_service.KEY_FILE)
 		fixtures, fixture_status = _fixture_service.get(profile, bundled=bundled) if profile else ([], 'not configured')
-		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Match recognition: ' + fixture_status)
-		matches = {key: _fixture_service.match(key[0], key[1], fixtures) for key in groups}
+		local_sport_key = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private', _sportapi_service.KEY_FILE)
+		sport_fixtures, sport_status = _sportapi_service.get(profile, bundled=local_sport_key) if profile else ([], 'not configured')
+		status_text = 'Match recognition: ' + fixture_status if sport_status == 'not configured' else 'API-Football: %s · SportAPI: %s' % (fixture_status, sport_status)
+		ku.set_property('LiveTV.Soccer.FixtureStatus', status_text)
+		matches = {}
+		context_index = _context_programmes(streams, *catalog_status, events=(key[0] for key in groups))
+		for key in groups:
+			first = _fixture_candidates(key[0], key[1], fixtures)
+			second = _fixture_candidates(key[0], key[1], sport_fixtures)
+			if len(first) > 1 or len(second) > 1: matches[key] = None
+			elif first and second: matches[key] = first[0] if _fixtures_agree(first[0], second[0]) else None
+			else: matches[key] = (first or second or [None])[0]
+			context = _context_fixture(key[0], key[1], streams, (fixtures, sport_fixtures), *catalog_status, index=context_index)
+			if context is _CONTEXT_CONFLICT or _context_has_conflict(key[0], (fixtures, sport_fixtures)): matches[key] = None
+			elif not first and not second: matches[key] = context
 		leagues = sorted({matches[key]['league'] if matches[key] else _soccer_league(next(iter(feeds.values()))['name']) for key, feeds in groups.items()}, key=str.casefold)
 		if action == 'league':
 			options = ['All'] + leagues

@@ -151,7 +151,7 @@ def _team(name):
 
 def _team_alias(provider, fixture):
 	"""Recognize known provider names without merging different clubs or reserve sides."""
-	return (provider, fixture) in {('thionville', 'thionville lusitanos')}
+	return (provider, fixture) in {('thionville', 'thionville lusitanos'), ('newcastle', 'newcastle united')}
 
 
 def match(event, scope, fixtures):

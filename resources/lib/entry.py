@@ -938,6 +938,8 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		self.next_page_prefetch = NextPagePrefetch()
 		from modules.livetv_failover import LiveTVFailover
 		self.livetv_failover = LiveTVFailover()
+		from modules.livetv_standings_focus import FocusedStandings
+		self.focused_standings = FocusedStandings()
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
@@ -945,6 +947,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		if hasattr(self, 'trailer_preview'): self.trailer_preview.close()
 		if hasattr(self, 'next_page_prefetch'): self.next_page_prefetch.cancel()
 		if hasattr(self, 'livetv_failover'): self.livetv_failover.close()
+		if hasattr(self, 'focused_standings'): self.focused_standings.close()
 		for i in getattr(self, 'threads', ()): i.join()
 
 	def run(self):
@@ -961,12 +964,14 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 				if get_property('pov_lite_pause_services'):
 					self.next_page_prefetch.cancel()
 					self.focused_fanart.pause()
+					self.focused_standings.pause()
 					poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.pause() else TRAILER_PREVIEW_IDLE_POLL
 					continue
 				self.next_page_prefetch.tick()
 				fanart_pending = self.focused_fanart.tick()
+				standings_pending = self.focused_standings.tick()
 				preview_active = self.trailer_preview.tick()
-				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active)
+				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending)
 
 	def _deferred_database_maintenance(self):
 		if self.waitForAbort(DATABASE_MAINTENANCE_DELAY): return

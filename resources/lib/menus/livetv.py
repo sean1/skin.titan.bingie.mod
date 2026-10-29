@@ -948,6 +948,8 @@ def soccer(params):
 		status_text = 'Match recognition: ' + fixture_status if sport_status == 'not configured' else 'API-Football: %s · SportAPI: %s' % (fixture_status, sport_status)
 		ku.set_property('LiveTV.Soccer.FixtureStatus', status_text)
 		matches = {}
+		standings_keys = {}
+		standings_teams = {}
 		context_index = _context_programmes(streams, *catalog_status, events=(key[0] for key in groups))
 		for key in groups:
 			first = _fixture_candidates(key[0], key[1], fixtures)
@@ -961,6 +963,15 @@ def soccer(params):
 			context = _context_fixture(key[0], key[1], streams, (fixtures, sport_fixtures), *catalog_status, index=context_index)
 			if context is _CONTEXT_CONFLICT or _context_has_conflict(key[0], (fixtures, sport_fixtures)): matches[key] = None
 			elif not first and not second: matches[key] = context
+			matched = matches[key]
+			sport_match = second[0] if len(second) == 1 else next((item for item in sport_fixtures if item is context), None)
+			if matched and sport_match and _fixtures_agree(matched, sport_match) and (matched.get('status') in _fixture_service.LIVE_STATUSES) == (sport_match.get('status') in _fixture_service.LIVE_STATUSES):
+				league_id = sport_match.get('league_id')
+				if isinstance(league_id, int) and not isinstance(league_id, bool) and league_id > 0:
+					standings_keys[key] = str(league_id)
+					home_id, away_id = sport_match.get('home_id'), sport_match.get('away_id')
+					if all(isinstance(value, int) and not isinstance(value, bool) and 0 < value <= 100000000 for value in (home_id, away_id)) and home_id != away_id:
+						standings_teams[key] = '%d:%d' % (home_id, away_id)
 		leagues = sorted({matches[key]['league'] if matches[key] else _soccer_league(next(iter(feeds.values()))['name']) for key, feeds in groups.items()}, key=str.casefold)
 		if action == 'league':
 			options = ['All'] + leagues
@@ -991,7 +1002,7 @@ def soccer(params):
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
-			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched), 'LiveTV.MatchState': state})
+			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched), 'LiveTV.MatchState': state, 'LiveTV.StandingsKey': standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': standings_teams.get((event, scope), '')})
 		if not rows: _item('No recognized live soccer matches — browse channels', {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')

@@ -90,8 +90,8 @@
 		</item>
 		<item id="7">
 			<property name="id">$NUMBER[7]</property>
-			<label>Live TV</label>
-			<label2>Live TV</label2>
+			<label>Live Soccer</label>
+			<label2>Live Soccer</label2>
 			<icon>shortcuts/tv.png</icon>
 			<thumb />
 			<property name="labelID">live-tv</property>

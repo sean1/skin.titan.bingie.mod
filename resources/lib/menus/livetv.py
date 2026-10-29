@@ -638,6 +638,21 @@ def _soccer_kickoff(fixture):
 	except (ValueError, OverflowError, OSError): return ''
 
 
+def _soccer_match_state(fixture, now):
+	"""Classify only confirmed live fixtures and scheduled kickoffs within two hours."""
+	if not fixture: return '', 0
+	status = fixture.get('status')
+	if status in _fixture_service.LIVE_STATUSES: return 'Live', 0
+	if status != 'Scheduled': return '', 0
+	try:
+		start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+		if start.utcoffset() is None: return '', 0
+		kickoff = start.timestamp()
+		if 0 < kickoff - now <= 2 * 60 * 60: return 'Starting soon', kickoff
+	except (AttributeError, KeyError, TypeError, ValueError, OverflowError, OSError): pass
+	return '', 0
+
+
 def _fixtures_agree(first, second):
 	"""Only combine independent fixture matches when their competition and kickoff agree."""
 	try:
@@ -734,6 +749,7 @@ def _context_programmes(streams, created, stale, now=None, events=None):
 def _context_fixture(event, scope, streams, sources, created, stale, now=None, index=None):
 	"""Corroborate omitted gender only from a fresh, dated, exact-event programme."""
 	try:
+		now = time.time() if now is None else now
 		given = [_context_team(name) for name in event]
 		if len(given) != 2 or any(item[1] for item in given): return None
 		if index is None: index = _context_programmes(streams, created, stale, now)
@@ -748,10 +764,10 @@ def _context_fixture(event, scope, streams, sources, created, stale, now=None, i
 			if len(related) > 1: return _CONTEXT_CONFLICT
 			if related: categories.append(related[0])
 		if not categories: return None
-		if len(categories) == 2 and not _fixtures_agree(*categories): return _CONTEXT_CONFLICT
+		if len(categories) == 2 and (not _fixtures_agree(*categories) or _soccer_match_state(categories[0], now)[0] != _soccer_match_state(categories[1], now)[0]): return _CONTEXT_CONFLICT
 		confirmed = None
 		for item in categories:
-			if item.get('status') not in _fixture_service.LIVE_STATUSES: return _CONTEXT_CONFLICT
+			if item.get('status') not in _fixture_service.LIVE_STATUSES and _soccer_match_state(item, now)[0] != 'Starting soon': return _CONTEXT_CONFLICT
 			home, away = (_context_team(item[key]) for key in ('home', 'away'))
 			league_name, league_women, league_youth = _fixture_service._team(item['league'])
 			if bool(home[1] or away[1] or league_women) != women or (home[2] | away[2] | league_youth) != set(youth): return _CONTEXT_CONFLICT
@@ -937,7 +953,10 @@ def soccer(params):
 			first = _fixture_candidates(key[0], key[1], fixtures)
 			second = _fixture_candidates(key[0], key[1], sport_fixtures)
 			if len(first) > 1 or len(second) > 1: matches[key] = None
-			elif first and second: matches[key] = first[0] if _fixtures_agree(first[0], second[0]) else None
+			elif first and second:
+				first_live = first[0].get('status') in _fixture_service.LIVE_STATUSES
+				second_live = second[0].get('status') in _fixture_service.LIVE_STATUSES
+				matches[key] = first[0] if first_live == second_live and _fixtures_agree(first[0], second[0]) else None
 			else: matches[key] = (first or second or [None])[0]
 			context = _context_fixture(key[0], key[1], streams, (fixtures, sport_fixtures), *catalog_status, index=context_index)
 			if context is _CONTEXT_CONFLICT or _context_has_conflict(key[0], (fixtures, sport_fixtures)): matches[key] = None
@@ -956,6 +975,7 @@ def soccer(params):
 		if league not in ['All'] + leagues: league = 'All'
 		ku.set_property('LiveTV.Soccer.League', league)
 		rows = []
+		now = time.time()
 		for (event, scope), feeds in groups.items():
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
 			preferred = ordered[0]
@@ -963,14 +983,15 @@ def soccer(params):
 			match_league = matched['league'] if matched else _soccer_league(preferred['name'])
 			if league != 'All' and league != match_league: continue
 			title = preferred['name'].split('|')[1].strip()
-			rows.append((title, match_league, preferred, len(feeds), event, scope, matched))
-		for title, match_league, stream, count, event, scope, matched in sorted(rows, key=lambda row: (row[1] == 'Other / unknown', row[1].casefold(), row[0].casefold())):
+			state, kickoff = _soccer_match_state(matched, now)
+			rows.append((title, match_league, preferred, len(feeds), event, scope, matched, state, kickoff))
+		for title, match_league, stream, count, event, scope, matched, state, kickoff in sorted(rows, key=lambda row: ({'Live': 0, 'Starting soon': 1}.get(row[7], 2), row[8] if row[7] == 'Starting soon' else 0, row[1] == 'Other / unknown', row[1].casefold(), row[0].casefold())):
 			label = '%s — %s — %d %s' % (match_league, title, count, 'feed' if count == 1 else 'feeds')
 			context = []
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
-			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched)})
+			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched), 'LiveTV.MatchState': state})
 		if not rows: _item('No recognized live soccer matches — browse channels', {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')

@@ -919,17 +919,20 @@ def _soccer_groups(streams, now=None):
 
 
 def soccer(params):
+	action = params.get('action', '')
+	reload = ku.get_property('LiveTV.Soccer.Reload') if not action else ''
+	if reload: ku.clear_property('LiveTV.Soccer.Reload')
 	account = _load()
 	if not account:
 		_error('No Live TV account is available.')
 		if not params.get('action'): _finish(False)
 		return
-	action = params.get('action', '')
-	league = str(params.get('league') or ku.get_property('LiveTV.Soccer.League') or 'All')
+	league = str(ku.get_property('LiveTV.Soccer.League') or params.get('league') or 'All')
 	if action == 'refresh':
 		xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
 		xbmc.executebuiltin('SetFocus(523)')
-		xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url({'mode': 'livetv.soccer', 'league': league, 'refresh': '1'}))
+		ku.set_property('LiveTV.Soccer.Reload', 'refresh')
+		xbmc.executebuiltin('Container.Refresh')
 		return
 	try:
 		catalog_status = [None, True]
@@ -937,7 +940,7 @@ def soccer(params):
 			catalog_status[:] = [created, stale]
 			when = datetime.fromtimestamp(created).astimezone().strftime('%a %H:%M')
 			ku.set_property('LiveTV.Soccer.Status', ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when)
-		streams = _catalog(account, 'get_live_streams', force_refresh=params.get('refresh') == '1', on_status=status)
+		streams = _catalog(account, 'get_live_streams', force_refresh=reload == 'refresh', on_status=status)
 		if not isinstance(streams, list): raise ValueError('Invalid channels')
 		groups = _soccer_groups(streams)
 		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
@@ -981,7 +984,8 @@ def soccer(params):
 			ku.set_property('LiveTV.Soccer.League', league)
 			xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
 			xbmc.executebuiltin('SetFocus(523)')
-			xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url({'mode': 'livetv.soccer', 'league': league}))
+			ku.set_property('LiveTV.Soccer.Reload', 'league')
+			xbmc.executebuiltin('Container.Refresh')
 			return
 		if league not in ['All'] + leagues: league = 'All'
 		ku.set_property('LiveTV.Soccer.League', league)

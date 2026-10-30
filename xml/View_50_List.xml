@@ -231,8 +231,20 @@
                 <pagecontrol>60</pagecontrol>
                 <viewtype label="31443">list</viewtype>
                 <scrolltime>300</scrolltime>
+                <!-- Live TV directories keep long guide and channel labels readable. -->
+                <itemlayout condition="String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) + String.Contains(Container.FolderPath,mode=livetv.)" width="1900" height="63">
+                    <control type="image"><left>10</left><top>6</top><width>48</width><height>48</height><texture background="true">$INFO[ListItem.Art(thumb)]</texture><aspectratio>keep</aspectratio><visible>!String.IsEmpty(ListItem.Art(thumb))</visible></control>
+                    <control type="label"><left>75</left><top>0</top><width>1660</width><height>63</height><font>Reg28</font><textcolor>ffffffff</textcolor><label>$VAR[ListTitle]</label></control>
+                    <control type="image"><left>10</left><top>61</top><width>1735</width><height>2</height><colordiffuse>list_separator</colordiffuse><texture>common/separator.png</texture></control>
+                </itemlayout>
+                <focusedlayout condition="String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) + String.Contains(Container.FolderPath,mode=livetv.)" width="1900" height="90">
+                    <control type="image"><left>10</left><top>0</top><width>1735</width><height>90</height><texture>colors/color_white.png</texture><colordiffuse>ff303030</colordiffuse></control>
+                    <control type="image"><left>10</left><top>0</top><width>4</width><height>90</height><texture>colors/color_white.png</texture></control>
+                    <control type="image"><left>20</left><top>18</top><width>48</width><height>48</height><texture background="true">$INFO[ListItem.Art(thumb)]</texture><aspectratio>keep</aspectratio><visible>!String.IsEmpty(ListItem.Art(thumb))</visible></control>
+                    <control type="label"><left>75</left><top>0</top><width>1650</width><height>90</height><font>Reg36</font><textcolor>ffffffff</textcolor><scroll>true</scroll><label>$VAR[ListTitle]</label></control>
+                </focusedlayout>
                 <!-- All Other x=570 w=1180 -->
-                <itemlayout condition="![Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)]" width="1900" height="63">
+                <itemlayout condition="![Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)] + ![String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) + String.Contains(Container.FolderPath,mode=livetv.)]" width="1900" height="63">
                     <control type="label">
                         <!--Label 1-->
                         <posx>563</posx>
@@ -253,7 +265,7 @@
                         <texture>common/separator.png</texture>
                     </control>
                 </itemlayout>
-                <focusedlayout condition="![Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)]" width="1900" height="90">
+                <focusedlayout condition="![Container.Content(movies) | Container.Content(tvshows) | Container.Content(seasons) | Container.Content(episodes)] + ![String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) + String.Contains(Container.FolderPath,mode=livetv.)]" width="1900" height="90">
                     <control type="image">
 						<right>95</right>
 						<posy>0</posy>
@@ -433,6 +445,7 @@
             <!-- poster images -->
             <control type="group">
                 <!--Poster-->
+                <visible>![String.Contains(Container.FolderPath,plugin://skin.titan.bingie.lite/) + String.Contains(Container.FolderPath,mode=livetv.)]</visible>
                 <visible>!Container.Content(episodes)</visible>
                 <visible>Integer.IsGreater(Container.NumItems,0)</visible>
 				<posy>3</posy>

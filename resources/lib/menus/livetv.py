@@ -516,7 +516,6 @@ def browse(params):
 		if not isinstance(categories, list): raise ValueError('Invalid response')
 		_item('Search Live TV', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 		_item('Try another feed', {'mode': 'livetv.next', 'isFolder': 'false'}, False, None, False)
-		_item('Browse channels and guide', {'mode': 'livetv.refine'})
 		_item('TV guide', {'mode': 'livetv.guide'})
 		_item('All channels', {'mode': 'livetv.channels'})
 		for category in categories:
@@ -693,7 +692,6 @@ def _download_guide(url, now, wanted=None, search_term=None):
 					if size > _GUIDE_DOWNLOAD_LIMIT: raise ValueError('Guide too large')
 					raw.write(chunk)
 			programmes = _parse_raw_guide(raw, now, wanted, search_term)
-			created = os.fstat(raw.fileno()).st_mtime
 		os.replace(temporary, path)
 		try:
 			for name in os.listdir(profile):
@@ -702,7 +700,7 @@ def _download_guide(url, now, wanted=None, search_term=None):
 					except OSError: pass
 		except OSError:
 			pass
-		return _GuideProgrammes(programmes, created)
+		return programmes
 	except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
 		if stale_created is not None:
 			try:
@@ -724,29 +722,23 @@ def _guide_data(account, wanted=None):
 	try:
 		with open(_guide_cache_path(), encoding='utf-8') as f: cache = json.load(f)
 		if not isinstance(cache, dict) or cache.get('key') != key or not isinstance(cache.get('created'), (int, float)) or not isinstance(cache.get('programmes'), dict): cache = None
+		elif wanted is None and cache.get('wanted') is not None: cache = None
+		elif wanted is not None and cache.get('wanted') is not None and not wanted.issubset(cache['wanted']): cache = None
 	except (OSError, ValueError):
 		pass
-	covered = cache and (cache.get('wanted') is None or wanted is not None and wanted.issubset(cache['wanted']))
-	if covered and 0 <= now - cache['created'] < _GUIDE_FRESH_SECONDS: return cache['programmes']
+	if cache and 0 <= now - cache['created'] < _GUIDE_FRESH_SECONDS: return cache['programmes']
 	try:
 		programmes = _download_guide(url, now, wanted)
 	except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
-		if covered and 0 <= now - cache['created'] < _GUIDE_STALE_SECONDS:
+		if cache and 0 <= now - cache['created'] < _GUIDE_STALE_SECONDS:
 			ku.dialog.notification('Live TV', 'Showing saved guide data; refresh failed.')
 			return cache['programmes']
 		raise
 	path = _guide_cache_path()
-	created = getattr(programmes, 'created', now)
-	if cache and wanted is not None and cache.get('wanted') is not None and cache['created'] == created and 0 <= now - created < _GUIDE_FRESH_SECONDS:
-		merged = dict(cache['programmes'])
-		merged.update(programmes)
-		if sum(len(entries) for entries in merged.values()) <= 200000:
-			programmes = merged
-			wanted = wanted.union(cache['wanted'])
 	try:
 		fd, temporary = tempfile.mkstemp(prefix='.livetv-guide-', dir=os.path.dirname(path))
 		try:
-			with os.fdopen(fd, 'w', encoding='utf-8') as f: json.dump({'key': key, 'created': created, 'wanted': sorted(wanted) if wanted is not None else None, 'programmes': programmes}, f, separators=(',', ':'))
+			with os.fdopen(fd, 'w', encoding='utf-8') as f: json.dump({'key': key, 'created': getattr(programmes, 'created', now), 'wanted': sorted(wanted) if wanted is not None else None, 'programmes': programmes}, f, separators=(',', ':'))
 			os.replace(temporary, path)
 		finally:
 			if os.path.exists(temporary): os.unlink(temporary)

@@ -177,15 +177,6 @@
 			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=basketball</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),live-tv)</visible><property name="group">live-tv</property><property name="isSubmenu">True</property>
 		</item>
-		<item id="5">
-			<property name="id">$NUMBER[5]</property><property name="mainmenuid">7</property>
-			<label>Browse channels and guide</label><label2>Browse channels and guide</label2><icon>DefaultShortcut.png</icon><thumb />
-			<property name="labelID">live-tv-browse</property><property name="defaultID">live-tv-browse</property>
-			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.refine,return)</onclick>
-			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.refine,return)</property>
-			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.refine</property>
-			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),live-tv)</visible><property name="group">live-tv</property><property name="isSubmenu">True</property>
-		</item>
 		<item id="1">
 			<property name="id">$NUMBER[1]</property>
 			<property name="mainmenuid">5</property>

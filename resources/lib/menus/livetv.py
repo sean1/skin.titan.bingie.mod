@@ -25,6 +25,7 @@ from modules.livetv_guide_search import cached_search as _cached_guide_search
 from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
 from modules import livetv_sports as _sports
+from modules import livetv_american_standings as _american_standings
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
@@ -1005,6 +1006,29 @@ def _soccer_groups(streams, now=None):
 
 def _sports_groups(streams, sport):
 	return _sports.groups(streams, sport, evidence=_other_sport_fixtures, matches=_other_sport_match, soccer_event=_soccer_event, scope=_fixture_scope)
+
+
+def all_standings(params):
+	"""Show complete available standings in Kodi's scrollable text viewer."""
+	sport = params.get('sport', '')
+	if sport not in ('hockey', 'football'): return
+	ku.dialog.notification('Live TV', 'Loading standings...')
+	leagues = (('nhl', 'NHL'),) if sport == 'hockey' else (('nfl', 'NFL'), ('ncaa', 'College football'))
+	lines = []
+	def clean(value):
+		return re.sub(r'[\x00-\x1f\x7f\[\]]', '', str(value)).strip()
+	for league, name in leagues:
+		groups, metric = _american_standings.get_all(league)
+		if not groups:
+			lines.append(name + ' standings unavailable.')
+			continue
+		for heading, rows in groups:
+			if lines: lines.append('')
+			lines.append(clean(heading) + '  ·  ' + clean(metric))
+			if not rows: lines.append('Standings unavailable.')
+			for row in rows:
+				lines.append('%s. %s  —  %s' % (clean(row.get('position', '')), clean(row.get('team', '')), clean(row.get('points', ''))))
+	ku.dialog.textviewer('All hockey standings' if sport == 'hockey' else 'All football standings', '\n'.join(lines))
 
 
 def _sports_dashboard(account, sport, reload):

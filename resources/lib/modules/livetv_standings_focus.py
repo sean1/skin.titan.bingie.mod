@@ -52,8 +52,15 @@ class FocusedStandings:
 		ku.clear_property(_PREFIX + 'MatchKey')
 		ku.clear_property(_PREFIX + 'League')
 		ku.clear_property(_PREFIX + 'Metric')
+		ku.clear_property(_PREFIX + 'GroupCount')
+		ku.clear_property(_PREFIX + 'Layout')
+		ku.clear_property(_PREFIX + 'AllText')
 		for index in range(1, _MAX_ROWS + 1):
 			for field in ('Position', 'Team', 'Played', 'Points', 'Highlight'): ku.clear_property('%sRow%d.%s' % (_PREFIX, index, field))
+		for group in range(1, 9):
+			ku.clear_property('%sGroup%d.Name' % (_PREFIX, group))
+			for row in range(1, 9):
+				for field in ('Position', 'Team', 'Points', 'Highlight'): ku.clear_property('%sGroup%d.Row%d.%s' % (_PREFIX, group, row, field))
 		self.published = ''
 		self.published_at = 0.0
 		self.rows = []
@@ -88,7 +95,13 @@ class FocusedStandings:
 			sport = _sports_identity(identity)
 			if sport:
 				from modules import livetv_american_standings
-				rows, heading, metric = livetv_american_standings.get(*sport)
+				if sport[0] in ('nhl', 'nfl'):
+					loader = livetv_american_standings.get_nhl_groups if sport[0] == 'nhl' else livetv_american_standings.get_nfl_groups
+					rows, metric = loader(*sport[1:])
+					heading = sport[0].upper()
+				else:
+					rows, metric = livetv_american_standings.get_ncaa_groups(*sport[1:])
+					heading = 'College football'
 			else:
 				profile = ku.translate_path(ku.profile_path)
 				bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', livetv_sportapi.KEY_FILE)
@@ -111,6 +124,53 @@ class FocusedStandings:
 			try: completed, rows, sports_heading, metric = self.results.get_nowait()
 			except Empty: break
 			if completed != self.identity or self._focused()[0] != completed: continue
+			if completed.startswith('ncaa|'):
+				valid = isinstance(rows, list) and rows and all(isinstance(group, tuple) and len(group) == 2 and isinstance(group[0], str) and group[0] and
+					isinstance(group[1], list) and (group[1] or group[0].endswith(' (unavailable)')) and all(isinstance(row, dict) and isinstance(row.get('position'), int) and not isinstance(row.get('position'), bool) and
+					isinstance(row.get('team'), str) and row.get('team') and isinstance(row.get('points'), str) for row in group[1]) for group in rows)
+				if not valid:
+					self._clear()
+					continue
+				def clean(value): return re.sub(r'[\x00-\x1f\x7f\[\]]', '', str(value)).strip()
+				lines = []
+				for name, items in rows:
+					if lines: lines.append('')
+					lines.append('[B]' + clean(name) + ' · OVERALL[/B]')
+					for row in items:
+						line = '%s. %s  —  %s' % (row['position'], clean(row['team']), clean(row['points']))
+						lines.append('[B]' + line + '[/B]' if row.get('highlight') is True else line)
+				self._clear()
+				ku.set_property(_PREFIX + 'League', sports_heading)
+				ku.set_property(_PREFIX + 'Metric', metric)
+				ku.set_property(_PREFIX + 'Layout', 'ncaa')
+				ku.set_property(_PREFIX + 'AllText', '\n'.join(lines))
+				ku.set_property(_PREFIX + 'MatchKey', completed)
+				self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+				ku.set_property(_PREFIX + 'Key', completed)
+				continue
+			if completed.startswith(('nhl|', 'nfl|')):
+				expected_groups, expected_rows = (4, 8) if completed.startswith('nhl|') else (8, 4)
+				valid = isinstance(rows, list) and len(rows) == expected_groups and all(isinstance(group, tuple) and len(group) == 2 and isinstance(group[0], str) and group[0] and
+					isinstance(group[1], list) and (len(group[1]) == expected_rows or (not group[1] and group[0].endswith(' (unavailable)'))) and all(isinstance(row, dict) and isinstance(row.get('position'), int) and not isinstance(row.get('position'), bool) and
+					isinstance(row.get('team'), str) and row.get('team') and isinstance(row.get('points'), str) for row in group[1]) and
+					[row['position'] for row in group[1]] == list(range(1, len(group[1]) + 1)) for group in rows)
+				if not valid:
+					self._clear()
+					continue
+				self._clear()
+				ku.set_property(_PREFIX + 'League', sports_heading)
+				ku.set_property(_PREFIX + 'Metric', metric)
+				ku.set_property(_PREFIX + 'GroupCount', str(expected_groups))
+				ku.set_property(_PREFIX + 'Layout', 'hockey' if expected_groups == 4 else 'nfl')
+				for group_index, (name, items) in enumerate(rows, 1):
+					ku.set_property('%sGroup%d.Name' % (_PREFIX, group_index), name)
+					for index, row in enumerate(items, 1):
+						for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
+						if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
+				ku.set_property(_PREFIX + 'MatchKey', completed)
+				self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+				ku.set_property(_PREFIX + 'Key', completed)
+				continue
 			if not isinstance(rows, list) or not rows or any(not isinstance(row, dict) or not isinstance(row.get('position'), int) or isinstance(row.get('position'), bool) for row in rows):
 				self._clear()
 				continue

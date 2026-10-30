@@ -1,5 +1,6 @@
 """Load the selected soccer league's standings without blocking navigation."""
 import os
+import re
 from queue import Empty, SimpleQueue
 from threading import Thread
 from time import monotonic
@@ -14,6 +15,14 @@ _SETTLE_SECONDS = 0.4
 _RETRY_SECONDS = 60
 _REFRESH_SECONDS = 30 * 60
 _SOCCER_WINDOW = 'Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'
+
+
+def _sports_identity(key):
+	parts = key.split('|')
+	if len(parts) != 3 or parts[0] not in ('nhl', 'nfl', 'ncaa'): return None
+	if any(not 2 <= len(team) <= 80 or not re.fullmatch(r"[\w .&'’\-]+", team, re.UNICODE) or not any(char.isalpha() for char in team) for team in parts[1:]): return None
+	if parts[1].casefold() == parts[2].casefold(): return None
+	return parts
 
 
 class FocusedStandings:
@@ -33,7 +42,7 @@ class FocusedStandings:
 	def _focused(self):
 		if not ku.get_visibility(_SOCCER_WINDOW): return '', ''
 		key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsKey)').strip()
-		if not key.isascii() or not key.isdecimal() or len(key) > 12 or int(key) <= 0: return '', ''
+		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key): return '', ''
 		league = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.League)').strip()
 		return key, league
 
@@ -42,6 +51,7 @@ class FocusedStandings:
 		ku.clear_property(_PREFIX + 'Key')
 		ku.clear_property(_PREFIX + 'MatchKey')
 		ku.clear_property(_PREFIX + 'League')
+		ku.clear_property(_PREFIX + 'Metric')
 		for index in range(1, _MAX_ROWS + 1):
 			for field in ('Position', 'Team', 'Played', 'Points', 'Highlight'): ku.clear_property('%sRow%d.%s' % (_PREFIX, index, field))
 		self.published = ''
@@ -50,6 +60,7 @@ class FocusedStandings:
 		self.match_key = ''
 
 	def _highlight(self):
+		if _sports_identity(self.identity): return
 		match_key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsMatchKey)').strip()
 		if match_key == self.match_key: return
 		ku.clear_property(_PREFIX + 'MatchKey')
@@ -74,12 +85,18 @@ class FocusedStandings:
 
 	def _load(self, identity):
 		try:
-			profile = ku.translate_path(ku.profile_path)
-			bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', livetv_sportapi.KEY_FILE)
-			rows, _ = livetv_sportapi.get_standings(profile, int(identity), bundled=bundled)
-			self.results.put((identity, rows))
+			sport = _sports_identity(identity)
+			if sport:
+				from modules import livetv_american_standings
+				rows, heading, metric = livetv_american_standings.get(*sport)
+			else:
+				profile = ku.translate_path(ku.profile_path)
+				bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', livetv_sportapi.KEY_FILE)
+				rows, _ = livetv_sportapi.get_standings(profile, int(identity), bundled=bundled)
+				heading, metric = '', 'PTS'
+			self.results.put((identity, rows, heading, metric))
 		except Exception:
-			self.results.put((identity, []))
+			self.results.put((identity, [], '', ''))
 
 	def tick(self):
 		now = monotonic()
@@ -91,7 +108,7 @@ class FocusedStandings:
 		elif identity:
 			self.league = league
 		while True:
-			try: completed, rows = self.results.get_nowait()
+			try: completed, rows, sports_heading, metric = self.results.get_nowait()
 			except Empty: break
 			if completed != self.identity or self._focused()[0] != completed: continue
 			if not isinstance(rows, list) or not rows or any(not isinstance(row, dict) or not isinstance(row.get('position'), int) or isinstance(row.get('position'), bool) for row in rows):
@@ -106,11 +123,14 @@ class FocusedStandings:
 			self._clear()
 			self.rows = rows[:_MAX_ROWS]
 			group = next(iter(groups), '')
-			heading = self.league + (' · ' + group if group else '') + (' · Top 20' if len(rows) > _MAX_ROWS else '')
+			heading = (sports_heading if _sports_identity(completed) else self.league + (' · ' + group if group else '')) + (' · Top 20' if len(rows) > _MAX_ROWS else '')
 			ku.set_property(_PREFIX + 'League', heading)
+			ku.set_property(_PREFIX + 'Metric', metric)
 			for index, row in enumerate(rows[:_MAX_ROWS], 1):
 				for field in ('position', 'team', 'played', 'points'):
 					ku.set_property('%sRow%d.%s' % (_PREFIX, index, field.title()), str(row.get(field, '')))
+				if _sports_identity(completed) and row.get('highlight') is True: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
+			if _sports_identity(completed): ku.set_property(_PREFIX + 'MatchKey', completed)
 			self.published = completed
 			self.published_at = now
 			ku.set_property(_PREFIX + 'Key', completed)

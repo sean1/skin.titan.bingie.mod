@@ -43,5 +43,20 @@ class LiveTVSportsDashboardTests(unittest.TestCase):
 			self.live.match_feeds({'sport': 'hockey', 'home': 'blackhawks', 'away': 'red wings', 'scope': ''})
 			self.assertEqual([call.args[1]['id'] for call in item.call_args_list], ['2', '2', '1'])
 
+	def test_standings_keys_identify_sport_and_match(self):
+		streams = self.streams + [{'stream_id': 4, 'name': 'Live | Florida Atlantic vs North Texas | NCAA Football | US: Sports'}]
+		for sport, expected in (('hockey', {'nhl|blackhawks|red wings'}), ('football', {'nfl|panthers|packers', 'ncaa|florida atlantic|north texas'})):
+			with self.subTest(sport=sport), patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
+				self.live.soccer({'sport': sport})
+				properties = [call.kwargs['extra_properties'] for call in item.call_args_list]
+				self.assertEqual({entry['LiveTV.StandingsKey'] for entry in properties}, expected)
+				self.assertTrue(all(entry['LiveTV.StandingsKey'] == entry['LiveTV.StandingsMatchKey'] for entry in properties))
+
+	def test_empty_section_has_no_standings_identity(self):
+		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=[]), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
+			self.live.soccer({'sport': 'hockey'})
+			self.assertEqual(item.call_args.args[1]['mode'], 'livetv.refine')
+			self.assertNotIn('extra_properties', item.call_args.kwargs)
+
 
 if __name__ == '__main__': unittest.main()

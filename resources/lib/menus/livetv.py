@@ -1017,12 +1017,16 @@ def _sports_dashboard(account, sport, reload):
 			stream = ordered[0]
 			title = stream['name'].split('|')[1].strip()
 			count = len(feeds)
+			standings_sport = 'nhl' if sport == 'hockey' else 'ncaa' if scope.split('|')[0] == 'ncaa football' else 'nfl'
+			standings_event = _sports._event(title) or event
+			standings_key = '|'.join((standings_sport, *standings_event))
 			context = []
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			_item(title, _play_params(str(stream['stream_id']), stream['name'], sport), False, stream.get('stream_icon'), extra_context=context,
-				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'LIVE ' + sport.upper(), 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds')})
+				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'LIVE ' + sport.upper(), 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'),
+					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_key})
 		if not groups: _item('No recognized live %s matches — browse channels' % sport, {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		_error('Could not load Live TV channels.')

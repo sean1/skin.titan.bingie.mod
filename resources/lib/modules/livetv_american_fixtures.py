@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 _SCOREBOARDS = {
 	'hockey': (('nhl', 'hockey/nhl'),),
 	'basketball': (('nba', 'basketball/nba'),),
-	'football': (('nfl', 'football/nfl'), ('ncaa football', 'football/college-football')),
+	'football': (('nfl', 'football/nfl'),),
 }
 _CACHE = {}
 
@@ -50,17 +50,17 @@ def get_live(sport, cache_dir=None):
 	"""Return currently live fixtures, or raise when a scoreboard is unavailable."""
 	if sport not in _SCOREBOARDS: raise ValueError('Unknown sport')
 	cached = _CACHE.get(sport)
-	if cached and time.monotonic() - cached[0] < 30: return cached[1]
+	allowed = {league for league, _ in _SCOREBOARDS[sport]}
+	if cached and time.monotonic() - cached[0] < 30: return [fixture for fixture in cached[1] if fixture.get('league') in allowed]
 	cache_path = os.path.join(cache_dir, 'livetv-scoreboard-' + sport + '.json') if cache_dir else None
 	if cache_path:
 		fixtures = _cached(cache_path)
 		if fixtures is not None:
 			# Do not extend a disk entry's lifetime when copying it into memory.
-			return fixtures
+			return [fixture for fixture in fixtures if fixture.get('league') in allowed]
 	fixtures = []
 	for league, scoreboard_path in _SCOREBOARDS[sport]:
 		url = 'https://site.api.espn.com/apis/site/v2/sports/' + scoreboard_path + '/scoreboard'
-		if league == 'ncaa football': url += '?groups=80&limit=1000'
 		with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV'}), timeout=10) as response:
 			body = response.read(8 * 1024 * 1024 + 1)
 		if len(body) > 8 * 1024 * 1024: raise ValueError('Scoreboard response too large')

@@ -3,7 +3,8 @@ import re
 from datetime import datetime
 
 
-_SPORT_FIELDS = {'hockey': re.compile(r'^(?:NHL|NHL\.TV)$', re.I), 'football': re.compile(r'^(?:NFL|NCAA\s+Football)$', re.I), 'basketball': re.compile(r'^(?:NBA|NBA\.TV)$', re.I)}
+_SPORT_FIELDS = {'hockey': re.compile(r'^(?:NHL|NHL\.TV)$', re.I), 'football': re.compile(r'^NFL$', re.I), 'basketball': re.compile(r'^(?:NBA|NBA\.TV)$', re.I)}
+_SPORT_LEAGUES = {'hockey': 'nhl', 'football': 'nfl', 'basketball': 'nba'}
 _METADATA_DATE = re.compile(r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4}|'
 	r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*)\b', re.I)
 _EVENT = re.compile(r"^([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?|at|@)\s+([\w .&'’\-]{2,80}?)$", re.I)
@@ -20,6 +21,7 @@ def fixture_groups(streams, sport, fixtures):
 	"""Match event-labelled channels to unambiguous live scoreboard fixtures."""
 	if sport not in _SPORT_FIELDS: raise ValueError('Unknown sport')
 	if not isinstance(streams, list) or not isinstance(fixtures, list): return {}
+	fixtures = [fixture for fixture in fixtures if isinstance(fixture, dict) and str(fixture.get('league') or '').casefold() == _SPORT_LEAGUES[sport]]
 	# Ignore nicknames which could identify more than one team in this league.
 	alias_owners = {}
 	for fixture in fixtures:

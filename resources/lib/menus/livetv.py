@@ -1196,7 +1196,7 @@ def all_standings(params):
 	sport = params.get('sport', '')
 	if sport not in ('hockey', 'football', 'basketball'): return
 	ku.dialog.notification('Live TV', 'Loading standings...')
-	leagues = {'hockey': (('nhl', 'NHL'),), 'football': (('nfl', 'NFL'), ('ncaa', 'College football')), 'basketball': (('nba', 'NBA'),)}[sport]
+	leagues = {'hockey': (('nhl', 'NHL'),), 'football': (('nfl', 'NFL'),), 'basketball': (('nba', 'NBA'),)}[sport]
 	lines = []
 	def clean(value):
 		return re.sub(r'[\x00-\x1f\x7f\[\]]', '', str(value)).strip()
@@ -1222,7 +1222,7 @@ def _sports_dashboard(account, sport, reload):
 			stream = ordered[0]
 			title = ' vs '.join(side.title() for side in event)
 			count = len(feeds)
-			standings_sport = 'nhl' if sport == 'hockey' else 'nba' if sport == 'basketball' else 'ncaa' if scope.split('|')[0] == 'ncaa football' else 'nfl'
+			standings_sport = 'nhl' if sport == 'hockey' else 'nba' if sport == 'basketball' else 'nfl'
 			standings_event = _sports._event(title) or event
 			standings_key = '|'.join((standings_sport, *standings_event))
 			context = []

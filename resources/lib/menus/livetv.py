@@ -727,7 +727,7 @@ def _soccer_kickoff(fixture):
 		kickoff = datetime.fromisoformat(value.replace('Z', '+00:00'))
 		if kickoff.utcoffset() is None: return ''
 		from zoneinfo import ZoneInfo
-		return 'Kickoff ' + kickoff.astimezone(ZoneInfo('America/Vancouver')).strftime('%a %H:%M')
+		return kickoff.astimezone(ZoneInfo('America/Vancouver')).strftime('%a %H:%M')
 	except (ValueError, OverflowError, OSError, ImportError, KeyError): return ''
 
 

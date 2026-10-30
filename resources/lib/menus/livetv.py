@@ -75,6 +75,20 @@ def _play_params(stream_id, name, sport=''):
 
 
 def _prepare_failover(account, stream_id, name, sport=''):
+	if ':' in stream_id:
+		provider, _, numeric_id = stream_id.partition(':')
+		if not numeric_id.isdecimal(): return
+		try:
+			groups, _ = _sports_catalog_groups(_load(), sport or 'soccer')
+			matches = [feeds for feeds in groups.values() if stream_id in feeds and feeds[stream_id].get('name') == name]
+			if len(matches) != 1: return
+			feeds = matches[0]
+			ordered = [stream_id] + [ref for ref in feeds if ref != stream_id]
+			if len(ordered) > 1:
+				labels = [{'id': ref, 'name': 'Feed %d' % (index + 1)} for index, ref in enumerate(ordered)]
+				xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps({'id': stream_id, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': labels, 'token': uuid.uuid4().hex}))
+		except (OSError, ValueError, TypeError): pass
+		return
 	event = _soccer_event(name) if not sport else None
 	if not event and sport not in ('hockey', 'football', 'basketball'): return
 	scope = _fixture_scope(name) if event else ''
@@ -105,6 +119,56 @@ def _prepare_failover(account, stream_id, name, sport=''):
 		pass
 
 
+def _sports_accounts(primary):
+	try:
+		from modules.livetv_accounts import load_accounts
+		accounts = load_accounts(primary)
+		primary_id = primary.get('id') if primary else None
+		return [(identity, account) for identity, account in accounts if identity == 'primary' or identity != primary_id]
+	except ModuleNotFoundError:
+		return [('primary', primary)] if primary else []
+
+
+def _sports_primary():
+	accounts = _sports_accounts(_load())
+	return accounts[0][1] if accounts else None
+
+
+def _account_for_feed(provider_id):
+	return next((account for identity, account in _sports_accounts(_load()) if identity == provider_id), None)
+
+
+def _sports_catalog_groups(primary, sport, reload='', on_status=None):
+	from concurrent.futures import ThreadPoolExecutor
+	legacy = _load()
+	accounts = _sports_accounts(legacy)
+	primary_id = accounts[0][0] if accounts else None
+	status_values = []
+	def fetch(entry):
+		identity, account = entry
+		try:
+			kwargs = {'force_refresh': reload == 'refresh'}
+			if on_status and identity == primary_id: kwargs['on_status'] = lambda created, stale: status_values.append((created, stale))
+			streams = _catalog(account, 'get_live_streams', **kwargs)
+			return identity, streams if isinstance(streams, list) else []
+		except (OSError, ValueError, TypeError): return identity, []
+	groups, all_streams = {}, []
+	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
+		for identity, streams in pool.map(fetch, accounts):
+			streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
+			all_streams.extend(streams)
+			local = _sports_groups(streams, sport) if sport in ('hockey', 'football', 'basketball') else _soccer_groups(streams)
+			for key, feeds in local.items():
+				for stream_id, stream in feeds.items(): groups.setdefault(key, {})[identity + ':' + stream_id if stream.get('_provider') else stream_id] = stream
+	if on_status and status_values: on_status(*status_values[-1])
+	return groups, all_streams
+
+
+def _sports_ref(stream):
+	identity = stream.get('_provider')
+	return identity + ':' + str(stream['stream_id']) if identity else str(stream['stream_id'])
+
+
 def _credentials_path():
 	return os.path.join(ku.translate_path(ku.profile_path), 'livetv-account.json')
 
@@ -125,13 +189,21 @@ def _read_account(path):
 
 
 def _account_fingerprint(account):
+	account = {key: value for key, value in account.items() if key not in ('id', 'enabled')}
 	return hashlib.sha256(json.dumps(account, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
 def _load():
 	path = _bundled_credentials_path()
-	if not os.path.exists(path): return _read_account(_credentials_path())
+	if not os.path.exists(path):
+		account = _read_account(_credentials_path())
+		if account: return account
+		accounts = _sports_accounts(None)
+		return accounts[0][1] if accounts else None
 	account = _read_account(path)
+	if not account:
+		accounts = _sports_accounts(None)
+		account = accounts[0][1] if accounts else None
 	if not account: return None
 	profile = _read_account(_credentials_path())
 	if profile and profile.get('guide_override_base') == _account_fingerprint(account):
@@ -1037,9 +1109,7 @@ def all_standings(params):
 
 def _sports_dashboard(account, sport, reload):
 	try:
-		streams = _catalog(account, 'get_live_streams', force_refresh=reload == 'refresh')
-		if not isinstance(streams, list): raise ValueError('Invalid channels')
-		groups = _sports_groups(streams, sport)
+		groups, streams = _sports_catalog_groups(account, sport, reload)
 		for (event, scope), feeds in sorted(groups.items(), key=lambda row: row[0]):
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
 			stream = ordered[0]
@@ -1052,7 +1122,7 @@ def _sports_dashboard(account, sport, reload):
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
-			_item(title, _play_params(str(stream['stream_id']), stream['name'], sport), False, stream.get('stream_icon'), extra_context=context,
+			_item(title, _play_params(_sports_ref(stream), stream['name'], sport), False, stream.get('stream_icon'), extra_context=context,
 				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'LIVE ' + sport.upper(), 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'),
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_key})
 		if not groups: _item('No recognized live %s matches — browse channels' % sport, {'mode': 'livetv.refine'})
@@ -1073,7 +1143,8 @@ def soccer(params):
 	action = params.get('action', '')
 	reload = ku.get_property('LiveTV.Soccer.Reload') if not action else ''
 	if reload: ku.clear_property('LiveTV.Soccer.Reload')
-	account = _load()
+	if params.get('refresh') == '1': reload = 'refresh'
+	account = _sports_primary()
 	if not account:
 		_error('No Live TV account is available.')
 		if not params.get('action'): _finish(False)
@@ -1094,9 +1165,8 @@ def soccer(params):
 			catalog_status[:] = [created, stale]
 			when = datetime.fromtimestamp(created).astimezone().strftime('%a %H:%M')
 			ku.set_property('LiveTV.Soccer.Status', ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when)
-		streams = _catalog(account, 'get_live_streams', force_refresh=reload == 'refresh', on_status=status)
-		if not isinstance(streams, list): raise ValueError('Invalid channels')
-		groups = _soccer_groups(streams)
+		groups, streams = _sports_catalog_groups(account, 'soccer', reload, on_status=status)
+		streams = [stream for stream in streams if stream.get('_primary', True)]
 		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 		bundled = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private', _fixture_service.KEY_FILE)
 		fixtures, fixture_status = _fixture_service.get(profile, bundled=bundled) if profile else ([], 'not configured')
@@ -1160,7 +1230,7 @@ def soccer(params):
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
-			_item(label, _play_params(str(stream['stream_id']), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched), 'LiveTV.MatchState': state, 'LiveTV.StandingsKey': standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': standings_teams.get((event, scope), '')})
+			_item(label, _play_params(_sports_ref(stream), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched), 'LiveTV.MatchState': state, 'LiveTV.StandingsKey': standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': standings_teams.get((event, scope), '')})
 		if not rows: _item('No recognized live soccer matches — browse channels', {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')
@@ -1173,7 +1243,7 @@ def soccer(params):
 
 
 def match_feeds(params):
-	account = _load()
+	account = _sports_primary()
 	if not account:
 		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
 		_finish(False)
@@ -1183,27 +1253,19 @@ def match_feeds(params):
 		_finish(False)
 		return
 	try:
-		streams = _catalog(account, 'get_live_streams')
-		if not isinstance(streams, list): raise ValueError('Invalid response')
 		sport = params.get('sport', '')
-		if sport in ('hockey', 'football', 'basketball'):
-			feeds = _sports_groups(streams, sport).get(((home, away), scope), {})
-		else:
-			feeds = {}
-			for stream in streams:
-				if not isinstance(stream, dict): continue
-				stream_id = str(stream.get('stream_id') or '')
-				if stream_id.isdecimal() and _soccer_event(stream.get('name')) == (home, away) and _fixture_scope(stream['name']) == scope: feeds.setdefault(stream_id, stream)
+		groups, streams = _sports_catalog_groups(account, sport or 'soccer')
+		feeds = groups.get(((home, away), scope), {})
 		choices = list(feeds.items())
 		choices.sort(key=lambda entry: 0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1)
 		if choices:
 			stream_id, first = choices[0]
 			name = str(first.get('name') or 'Live channel')
-			feed_label = name.split('|')[-1].strip()
+			feed_label = 'Feed 1' if ':' in stream_id else name.split('|')[-1].strip()
 			_item('Play first feed — ' + feed_label, _play_params(stream_id, name, sport), False, first.get('stream_icon'))
-			for stream_id, stream in choices:
+			for number, (stream_id, stream) in enumerate(choices, 1):
 				name = str(stream.get('name') or 'Live channel')
-				_item(name.split('|')[-1].strip() + ' (play channel)', _play_params(stream_id, name, sport), False, stream.get('stream_icon'))
+				_item(('Feed %d' % number if ':' in stream_id else name.split('|')[-1].strip()) + ' (play channel)', _play_params(stream_id, name, sport), False, stream.get('stream_icon'))
 		else:
 			ku.dialog.notification('Live TV', 'No matching live feeds are currently available.')
 	except (OSError, ValueError, TypeError):
@@ -1293,13 +1355,15 @@ def schedule(params):
 
 def play(params):
 	xbmcgui.Window(10000).clearProperty(_FAILOVER_PROPERTY)
-	account = _load()
-	stream_id = params.get('id', '')
+	reference = params.get('id', '')
+	provider, separator, stream_id = reference.partition(':')
+	account = _account_for_feed(provider) if separator else _load()
+	if not separator: stream_id = reference
 	if not account or not stream_id.isdecimal():
 		_error('This channel cannot be played. Check your Live TV account.')
 		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 		return
-	_prepare_failover(account, stream_id, params.get('name', ''), params.get('sport', ''))
+	_prepare_failover(account, reference if separator else stream_id, params.get('name', ''), params.get('sport', ''))
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
 	item = xbmcgui.ListItem(path=url)
 	item.setMimeType('video/mp2t')

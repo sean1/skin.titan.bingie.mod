@@ -83,10 +83,11 @@ if [ -e "$livetv_credentials" ] || [ -L "$livetv_credentials" ]; then
 		exit 1
 	fi
 	credential_size=$(wc -c < "$livetv_credentials")
-	if [ "$credential_size" -lt 2 ] || [ "$credential_size" -gt 16384 ]; then
+	if [ "$credential_size" -lt 2 ] || [ "$credential_size" -gt 1048576 ]; then
 		printf '%s\n' "Live TV account file has an invalid size" >&2
 		exit 1
 	fi
+	mkdir -p "$temporary_dir/$addon_id/resources/private"
 	if ! python3 - "$livetv_credentials" <<'PY'
 import json
 import sys
@@ -94,6 +95,8 @@ import sys
 try:
 	with open(sys.argv[1], encoding='utf-8') as account_file:
 		account = json.load(account_file)
+	if isinstance(account, dict) and isinstance(account.get('accounts'), list):
+		account = next((entry for entry in account['accounts'] if isinstance(entry, dict) and entry.get('id') == 'primary' and entry.get('enabled', True) is True), None)
 	valid = isinstance(account, dict) and all(isinstance(account.get(key), str) and account[key].strip() for key in ('server', 'username', 'password'))
 except (OSError, ValueError, UnicodeError):
 	valid = False
@@ -103,7 +106,6 @@ PY
 		printf '%s\n' "Live TV account file must contain valid server, username, and password strings" >&2
 		exit 1
 	fi
-	mkdir -p "$temporary_dir/$addon_id/resources/private"
 	install -m 600 "$livetv_credentials" "$temporary_dir/$addon_id/$livetv_credentials_rel"
 fi
 

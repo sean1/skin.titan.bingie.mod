@@ -66,6 +66,33 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.player.tick()
 
 
+
+	def test_cross_provider_same_stream_id_switches_both_directions_without_secrets_in_properties(self):
+		accounts = {
+			'primary': {'server': 'http://first.test', 'username': 'first-user', 'password': 'first-secret'},
+			'backup': {'server': 'http://second.test', 'username': 'second-user', 'password': 'second-secret'},
+		}
+		self.imports['menus.livetv']._account_for_feed = accounts.get
+		self.properties[self.module.PROPERTY] = json.dumps({'token': 'multi', 'id': 'primary:42', 'alternatives': ['backup:42'], 'feeds': [{'id': 'primary:42', 'name': 'Feed 1'}, {'id': 'backup:42', 'name': 'Feed 2'}]})
+		self.player.tick()
+		self.player.file = self.player._url('primary:42')
+		self.player.onAVStarted()
+		self.player.tick()
+		self.properties[self.module.SWITCH_REQUEST] = json.dumps({'token': 'multi', 'current': 'primary:42', 'id': 'backup:42'})
+		self.player.tick()
+		self.assertEqual(self.player.played[-1], 'http://second.test/live/second-user/second-secret/42.ts')
+		self.player.onAVStarted()
+		self.player.tick()
+		self.properties[self.module.SWITCH_REQUEST] = json.dumps({'token': 'multi', 'current': 'backup:42', 'id': 'primary:42'})
+		self.player.tick()
+		self.assertEqual(self.player.played[-1], 'http://first.test/live/first-user/first-secret/42.ts')
+		self.player.onAVStarted()
+		self.player.tick()
+		public = json.dumps(self.properties)
+		for secret in ('first-user', 'first-secret', 'second-user', 'second-secret', 'http://first.test', 'http://second.test'):
+			self.assertNotIn(secret, public)
+
+
 	def test_error_tries_next_stream(self):
 		self.start()
 		self.now = 3

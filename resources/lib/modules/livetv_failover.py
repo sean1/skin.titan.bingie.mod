@@ -90,34 +90,48 @@ class LiveTVFailover(ku.xbmc_player):
 			token, stream_id, alternatives = data.get('token'), data.get('id'), data.get('alternatives')
 			if not isinstance(token, str) or not token or token == self.ignored_token: return
 			if self.session and token == self.session['token']: return
-			if not isinstance(stream_id, str) or not stream_id.isdecimal() or not isinstance(alternatives, list): return
+			def valid(value):
+				if not isinstance(value, str): return False
+				if value.isdecimal(): return True
+				parts = value.split(':')
+				return len(parts) == 2 and bool(parts[0]) and parts[1].isdecimal()
+			if not valid(stream_id) or not isinstance(alternatives, list): return
 			ids = []
 			for value in alternatives:
-				if isinstance(value, str) and value.isdecimal() and value != stream_id and value not in ids: ids.append(value)
+				if valid(value) and value != stream_id and value not in ids: ids.append(value)
 			if not ids:
 				self.session = {'token': token}
 				self._clear()
 				return
 			from menus.livetv import _load
 			account = _load()
-			if not account: return
-			base = '%s/live/%s/%s/' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''))
+			if not account and ':' not in stream_id: return
+			def base_for(value):
+				if ':' in value:
+					from menus.livetv import _account_for_feed
+					entry = _account_for_feed(value.split(':', 1)[0])
+				else: entry = account
+				if not entry: return None
+				return '%s/live/%s/%s/' % (entry['server'], quote(entry['username'], safe=''), quote(entry['password'], safe=''))
+			base = base_for(stream_id)
+			if not base: return
+			ids = [value for value in ids if base_for(value)]
 			allowed = [stream_id] + ids
 			labels = {}
 			for feed in data.get('feeds', []) if isinstance(data.get('feeds', []), list) else []:
 				if not isinstance(feed, dict): continue
 				feed_id, name = feed.get('id'), feed.get('name')
-				if not isinstance(feed_id, str) or not feed_id.isdecimal() or not isinstance(name, str): continue
+				if not valid(feed_id) or not base_for(feed_id) or not isinstance(name, str): continue
 				if feed_id not in allowed: allowed.append(feed_id)
 				labels[feed_id] = name or 'Feed'
 			feeds = [{'id': value, 'name': labels.get(value, 'Feed ' + str(index + 1))} for index, value in enumerate(allowed)]
-			self.session = {'token': token, 'id': stream_id, 'alternatives': ids[:MAX_ALTERNATIVES], 'feeds': feeds, 'base': base, 'started_at': now,
+			self.session = {'token': token, 'id': stream_id, 'alternatives': ids[:MAX_ALTERNATIVES], 'feeds': feeds, 'base': base, 'bases': {value: base_for(value) for value in allowed}, 'started_at': now,
 				'active': False, 'last_time': None, 'last_progress': now, 'paused': False, 'switching': False, 'foreign_seen': False, 'observed': False, 'probe_started': False, 'probe_allowed': True}
 			self.event = None
 		except (ValueError, TypeError, KeyError, AttributeError): return
 
 	def _url(self, stream_id):
-		return self.session['base'] + stream_id + '.ts'
+		return self.session.get('bases', {}).get(stream_id, self.session['base']) + stream_id.rsplit(':', 1)[-1] + '.ts'
 
 	def _playing_file(self):
 		try: return self.getPlayingFile() if self.isPlaying() else ''

@@ -26,6 +26,10 @@ from modules.livetv_guide_search import cached_search as _cached_guide_search
 from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
 from modules import livetv_sports as _sports
+try:
+	from modules import livetv_feed_speed as _feed_speed
+except ImportError:
+	_feed_speed = None
 from modules import livetv_american_standings as _american_standings
 from modules import livetv_american_fixtures as _american_fixtures
 from modules import livetv_canadian_championship as _canadian_championship
@@ -77,7 +81,7 @@ def _play_params(stream_id, name, sport=''):
 	return params
 
 
-def _prepare_failover(account, stream_id, name, sport=''):
+def _prepare_failover(account, stream_id, name, sport='', defer=False):
 	if ':' in stream_id or sport in ('soccer', 'hockey', 'football', 'basketball'):
 		numeric_id = stream_id.partition(':')[2] if ':' in stream_id else stream_id
 		if not numeric_id.isdecimal(): return
@@ -86,10 +90,12 @@ def _prepare_failover(account, stream_id, name, sport=''):
 			matches = [feeds for feeds in groups.values() if stream_id in feeds and feeds[stream_id].get('name') == name]
 			if len(matches) != 1: return
 			feeds = matches[0]
-			ordered = [stream_id] + [ref for ref in feeds if ref != stream_id]
+			ordered = [stream_id] + _speed_order([ref for ref in feeds if ref != stream_id], _speed_context())
 			if len(ordered) > 1:
 				labels = [{'id': ref, 'name': 'Feed %d' % (index + 1)} for index, ref in enumerate(ordered)]
-				xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps({'id': stream_id, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': labels, 'token': uuid.uuid4().hex}))
+				data = {'id': stream_id, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': labels, 'token': uuid.uuid4().hex}
+				if defer: return data
+				xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(data))
 		except (OSError, ValueError, TypeError): pass
 		return
 	event = _soccer_event(name) if not sport else None
@@ -112,7 +118,9 @@ def _prepare_failover(account, stream_id, name, sport=''):
 			if len(alternatives) < _FAILOVER_LIMIT: alternatives.append(candidate)
 			feeds.append({'id': candidate, 'name': _catalog_redact(str(stream.get('name') or 'Live channel'), secrets)})
 		if alternatives:
-			xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps({'id': stream_id, 'alternatives': alternatives, 'feeds': feeds, 'token': uuid.uuid4().hex}))
+			data = {'id': stream_id, 'alternatives': alternatives, 'feeds': feeds, 'token': uuid.uuid4().hex}
+			if defer: return data
+			xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(data))
 	except (OSError, ValueError, TypeError):
 		pass
 
@@ -173,6 +181,19 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 	ku.set_property('LiveTV.Sports.CatalogUnavailable', 'true' if failed else '')
 	if on_status and status_values: on_status(*status_values[-1])
 	return groups, all_streams
+
+
+def _speed_context():
+	if not _feed_speed: return {}, {}
+	try: return dict(_sports_accounts(_load())), _feed_speed.snapshot()
+	except (OSError, ValueError, TypeError, AttributeError): return {}, {}
+
+
+def _speed_order(refs, context):
+	if not _feed_speed: return refs
+	accounts, values = context
+	keys = {ref: _feed_speed.key(ref, accounts.get(ref.split(':', 1)[0] if ':' in ref else 'primary')) for ref in refs}
+	return _feed_speed.order(refs, keys, values)
 
 
 def _sports_ref(stream):
@@ -1298,6 +1319,7 @@ def _sports_dashboard(account, sport, reload):
 			return
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures updated')
 		groups, streams = _sports_catalog_groups(account, sport, reload, fixtures=fixtures)
+		speed_context = _speed_context()
 		now = time.time()
 		rows = []
 		for fixture in fixtures:
@@ -1312,6 +1334,8 @@ def _sports_dashboard(account, sport, reload):
 		for state, kickoff, event, scope, fixture, feeds in sorted(rows, key=lambda row: (row[0] != 'Live', row[1], row[2])):
 			if (event, scope) in duplicate_keys: feeds = {}
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
+			by_ref = {_sports_ref(stream): stream for stream in ordered}
+			ordered = [by_ref[ref] for ref in _speed_order(list(by_ref), speed_context)]
 			stream = ordered[0] if ordered else None
 			title = '%s vs %s' % (fixture['home']['name'], fixture['away']['name'])
 			count = len(feeds)
@@ -1370,6 +1394,7 @@ def soccer(params):
 			ku.set_property('LiveTV.Soccer.Status', ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when)
 		fixtures, _, sport_fixtures, status_text = _live_soccer_fixtures(include_upcoming=True)
 		groups, streams = _sports_catalog_groups(account, 'soccer', reload, on_status=status, fixtures=fixtures)
+		speed_context = _speed_context()
 		ku.set_property('LiveTV.Soccer.FixtureStatus', status_text)
 		matches = {}
 		standings_keys = {}
@@ -1406,6 +1431,8 @@ def soccer(params):
 		for (event, scope), matched in matches.items():
 			feeds = groups.get((event, scope), {})
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
+			by_ref = {_sports_ref(stream): stream for stream in ordered}
+			ordered = [by_ref[ref] for ref in _speed_order(list(by_ref), speed_context)]
 			preferred = ordered[0] if ordered else None
 			match_league = matched['league']
 			if league != 'All' and league != match_league: continue
@@ -1451,7 +1478,9 @@ def match_feeds(params):
 			groups = _soccer_groups(streams)
 		feeds = groups.get(((home, away), scope), {})
 		choices = list(feeds.items())
-		choices.sort(key=lambda entry: 0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1)
+		choices.sort(key=lambda entry: (0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1, str(entry[1].get('name') or '').casefold(), int(str(entry[1].get('stream_id') or entry[0]).rsplit(':', 1)[-1])))
+		by_ref = dict(choices)
+		choices = [(ref, by_ref[ref]) for ref in _speed_order(list(by_ref), _speed_context())]
 		if choices:
 			stream_id, first = choices[0]
 			name = str(first.get('name') or 'Live channel')
@@ -1557,9 +1586,12 @@ def play(params):
 		_error('This channel cannot be played. Check your Live TV account.')
 		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 		return
-	_prepare_failover(account, reference if separator else stream_id, params.get('name', ''), params.get('sport', ''))
+	failover = _prepare_failover(account, reference if separator else stream_id, params.get('name', ''), params.get('sport', ''), defer=True)
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
 	item = xbmcgui.ListItem(path=url)
 	item.setMimeType('video/mp2t')
 	item.setContentLookup(False)
+	if failover:
+		failover['started_at'] = time.monotonic()
+		xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(failover))
 	xbmcplugin.setResolvedUrl(_handle(), True, item)

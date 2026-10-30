@@ -8,6 +8,10 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from modules import kodi_utils as ku
+try:
+	from modules import livetv_feed_speed
+except ImportError:
+	livetv_feed_speed = None
 
 PROPERTY = 'BingieLiveTVFailover'
 SWITCH_REQUEST = 'BingieLiveTVSwitchRequest'
@@ -125,8 +129,16 @@ class LiveTVFailover(ku.xbmc_player):
 				if feed_id not in allowed: allowed.append(feed_id)
 				labels[feed_id] = name or 'Feed'
 			feeds = [{'id': value, 'name': labels.get(value, 'Feed ' + str(index + 1))} for index, value in enumerate(allowed)]
-			self.session = {'token': token, 'id': stream_id, 'alternatives': ids[:MAX_ALTERNATIVES], 'feeds': feeds, 'base': base, 'bases': {value: base_for(value) for value in allowed}, 'started_at': now,
-				'active': False, 'last_time': None, 'last_progress': now, 'paused': False, 'switching': False, 'foreign_seen': False, 'observed': False, 'probe_started': False, 'probe_allowed': True}
+			def speed_key(value):
+				if not livetv_feed_speed: return ''
+				if ':' in value:
+					from menus.livetv import _account_for_feed
+					entry = _account_for_feed(value.split(':', 1)[0])
+				else: entry = account
+				return livetv_feed_speed.key(value, entry)
+			keys = {value: speed_key(value) for value in allowed}
+			self.session = {'token': token, 'id': stream_id, 'alternatives': ids[:MAX_ALTERNATIVES], 'feeds': feeds, 'base': base, 'bases': {value: base_for(value) for value in allowed}, 'started_at': data.get('started_at', now),
+				'speed_keys': keys, 'timing_valid': isinstance(data.get('started_at'), (int, float)) and 0 <= now - data['started_at'] <= START_TIMEOUT, 'active': False, 'last_time': None, 'last_progress': now, 'paused': False, 'switching': False, 'foreign_seen': False, 'observed': False, 'probe_started': False, 'probe_allowed': True}
 			self.event = None
 		except (ValueError, TypeError, KeyError, AttributeError): return
 
@@ -137,9 +149,12 @@ class LiveTVFailover(ku.xbmc_player):
 		try: return self.getPlayingFile() if self.isPlaying() else ''
 		except Exception: return ''
 
-	def onAVStarted(self):
+	def onAVStarted(self, observed_callback=True):
 		if not self.session: return
 		if self._playing_file() == self._url(self.session['id']):
+			if not self.session['active'] and self.session.get('timing_valid') and livetv_feed_speed:
+				elapsed = self.clock() - self.session['started_at']
+				if 0 <= elapsed <= START_TIMEOUT: livetv_feed_speed.record(self.session['speed_keys'].get(self.session['id'], ''), elapsed)
 			self.session['active'] = True
 			self.session['observed'] = True
 			self.session['switching'] = False
@@ -174,6 +189,7 @@ class LiveTVFailover(ku.xbmc_player):
 			self.session['last_progress'] = self.clock()
 
 	def _next(self, now, selected=None):
+		if selected is None and self.session and livetv_feed_speed: livetv_feed_speed.record(self.session.get('speed_keys', {}).get(self.session['id'], ''), None)
 		ku.clear_property(CAN_SWITCH)
 		ku.clear_property(FEED_CHOICES)
 		if selected is None and not self.session['alternatives']:
@@ -183,7 +199,7 @@ class LiveTVFailover(ku.xbmc_player):
 		previous_url = self._url(self.session['id'])
 		self.session['id'] = selected if selected is not None else self.session['alternatives'].pop(0)
 		if selected is not None: self.session['alternatives'] = [value for value in self.session['alternatives'] if value != selected]
-		self.session.update(started_at=now, active=False, last_time=None, last_progress=now, paused=False, switching=True, outgoing=previous_url, foreign_seen=False, observed=False, probe_started=False, probe_allowed=False)
+		self.session.update(started_at=now, active=False, last_time=None, last_progress=now, paused=False, switching=True, outgoing=previous_url, foreign_seen=False, observed=False, probe_started=False, probe_allowed=False, timing_valid=True)
 		self.event = None
 		ku.dialog.notification('Live TV', 'Switching feed.' if selected is not None else 'Stream interrupted. Trying another feed for this match.')
 		try: self.play(self._url(self.session['id']))
@@ -206,6 +222,9 @@ class LiveTVFailover(ku.xbmc_player):
 		if not isinstance(current, dict) or current.get('token') != session['token']:
 			self._clear()
 			return False
+		if not session['active'] and not session.get('outgoing') and session['id'] == current.get('id') and isinstance(current.get('started_at'), (int, float)):
+			session['started_at'] = current['started_at']
+			session['timing_valid'] = 0 <= now - current['started_at'] <= START_TIMEOUT
 		playing = self._playing_file()
 		expected = self._url(session['id'])
 		if session['active'] and playing == expected and len(session['feeds']) > 1:
@@ -256,7 +275,7 @@ class LiveTVFailover(ku.xbmc_player):
 				session['observed'] = True
 				# Recover if AV started before the service adopted the session.
 				try:
-					if self.isPlayingVideo(): self.onAVStarted()
+					if self.isPlayingVideo(): self.onAVStarted(False)
 				except Exception: pass
 			elif not playing and session['probe_allowed'] and not session['probe_started'] and now - session['started_at'] >= PROBE_DELAY and _playback_error_dialog():
 				session['probe_started'] = True

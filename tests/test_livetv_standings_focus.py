@@ -52,6 +52,42 @@ class StandingsFocusTests(unittest.TestCase):
 		self.focus.tick()
 		self.assertNotIn('LiveTV.Standings.AllText', self.props)
 
+	def test_college_columns_and_fallbacks(self):
+		key = 'ncaa|Troy|Dukes'
+		def row(n, highlight=False): return {'position': n, 'team': 'Team %d' % n, 'points': '5-2', 'highlight': highlight}
+		cases = [
+			([('East', [row(1, True), row(2, True), row(3), row(4)])], 'college', 'East (continued)'),
+			([('East', [row(1, True)]), ('West', [row(2, True)])], 'college', 'West'),
+			([('East', [row(1, True)])], 'ncaa', None),
+			([('East', [row(1, True), row(1, True)])], 'ncaa', None),
+			([('East', [row(1, True), row(2, True), row(3, True)])], 'ncaa', None),
+			([('East', [row(n, n in (1, 2)) for n in range(1, 20)])], 'ncaa', None),
+		]
+		for groups, layout, second in cases:
+			with self.subTest(layout=layout, groups=groups):
+				self.american.get_ncaa_groups = Mock(return_value=(groups, 'OVERALL'))
+				self.selected(key)
+				self.focus.identity = key
+				with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
+				self.focus.tick()
+				self.assertEqual(self.props['LiveTV.Standings.Layout'], layout)
+				if second: self.assertEqual(self.props['LiveTV.Standings.Group2.Name'], second)
+				else: self.assertIn('LiveTV.Standings.AllText', self.props)
+				self.selected('')
+				self.focus.tick()
+				self.assertNotIn('LiveTV.Standings.Group1.Row1.Team', self.props)
+
+	def test_college_columns_retry_when_another_group_is_unavailable(self):
+		key = 'ncaa|Troy|Dukes'
+		groups = [('East', [{'position': 1, 'team': 'Troy', 'points': '5-2', 'highlight': True}, {'position': 2, 'team': 'Dukes', 'points': '4-3', 'highlight': True}]), ('West (unavailable)', [])]
+		self.american.get_ncaa_groups = Mock(return_value=(groups, 'OVERALL'))
+		self.selected(key)
+		self.focus.identity = key
+		with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
+		with patch.object(self.module, 'monotonic', return_value=1000): self.focus.tick()
+		self.assertEqual(self.props['LiveTV.Standings.Layout'], 'college')
+		self.assertEqual(self.focus.published_at, 1000 - self.module._REFRESH_SECONDS + self.module._RETRY_SECONDS)
+
 	def test_nba_conferences_order_rows_and_clear(self):
 		key = 'nba|Lakers|Celtics'
 		rows = [{'position': n, 'team': 'Team %d' % n, 'points': '5-2', 'highlight': n == 15} for n in range(1, 16)]

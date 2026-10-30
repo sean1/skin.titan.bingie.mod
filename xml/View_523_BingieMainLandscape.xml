@@ -17,7 +17,7 @@
                 <control type="textbox"><width>1500</width><height>105</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label></control>
             </control>
             <control type="group">
-                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nfl) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),ncaa) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nba) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Row1.Team))</visible>
+                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nfl) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),ncaa) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nba) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),college) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Row1.Team))</visible>
                 <left>138</left><top>224</top><width>1600</width><height>325</height>
                 <control type="label"><width>1400</width><height>32</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>STANDINGS · $INFO[Window(Home).Property(LiveTV.Standings.League)]</label></control>
                 <control type="label"><left>670</left><top>30</top><width>90</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>$INFO[Window(Home).Property(LiveTV.Standings.Metric)]</label></control>
@@ -85,6 +85,22 @@
                 <include content="BingieBasketballConference"><param name="group" value="2" /><param name="left" value="790" /></include>
             </control>
 
+            <control type="group">
+                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + String.IsEqual(Window(Home).Property(LiveTV.Sport),football) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),college) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Name))</visible>
+                <left>138</left><top>224</top><width>1600</width><height>325</height>
+                <control type="label"><width>1400</width><height>32</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>COLLEGE FOOTBALL STANDINGS · OVERALL</label></control>
+                <control type="group">
+                    <visible>String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Row16.Team)) + String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group2.Row16.Team))</visible>
+                    <include content="BingieBasketballConference"><param name="group" value="1" /><param name="left" value="0" /></include>
+                    <include content="BingieBasketballConference"><param name="group" value="2" /><param name="left" value="790" /></include>
+                </control>
+                <control type="group">
+                    <visible>!String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Row16.Team)) | !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group2.Row16.Team))</visible>
+                    <include content="BingieCollegeConference"><param name="group" value="1" /><param name="left" value="0" /></include>
+                    <include content="BingieCollegeConference"><param name="group" value="2" /><param name="left" value="790" /></include>
+                </control>
+            </control>
+
             <!-- View 523 -->
             <control type="group">
 				<visible>!Window.IsActive(DialogVideoInfo.xml)</visible>
@@ -140,6 +156,42 @@
                     <animation effect="fade" start="0" end="100" time="400" condition="[Control.HasFocus(60) | Container.Scrolling]">Conditional</animation>
                     <animation effect="fade" start="100" end="0" time="400" condition="![Control.HasFocus(60) | Container.Scrolling]">Conditional</animation>
                 </control>
+        </control>
+    </include>
+
+    <include name="BingieCollegeConference">
+        <control type="group">
+            <left>$PARAM[left]</left><top>34</top><width>780</width><height>290</height>
+            <control type="label"><width>600</width><height>20</height><font>Reg18</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Name)]</label></control>
+            <control type="label"><top>20</top><width>600</width><height>18</height><font>Reg14</font><textcolor>ffbcbcbc</textcolor><label>Standings unavailable</label><visible>!String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Name)) + String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row1.Team))</visible></control>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="1" /><param name="top" value="20" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="2" /><param name="top" value="35" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="3" /><param name="top" value="50" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="4" /><param name="top" value="65" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="5" /><param name="top" value="80" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="6" /><param name="top" value="95" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="7" /><param name="top" value="110" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="8" /><param name="top" value="125" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="9" /><param name="top" value="140" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="10" /><param name="top" value="155" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="11" /><param name="top" value="170" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="12" /><param name="top" value="185" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="13" /><param name="top" value="200" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="14" /><param name="top" value="215" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="15" /><param name="top" value="230" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="16" /><param name="top" value="245" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="17" /><param name="top" value="260" /></include>
+            <include content="BingieCollegeStandingsRow"><param name="group" value="$PARAM[group]" /><param name="row" value="18" /><param name="top" value="275" /></include>
+        </control>
+    </include>
+
+    <include name="BingieCollegeStandingsRow">
+        <control type="group">
+            <top>$PARAM[top]</top><width>780</width><height>15</height>
+            <control type="image"><width>760</width><height>15</height><texture>colors/color_white.png</texture><colordiffuse>994b4e55</colordiffuse><visible>!String.IsEmpty(ListItem.Property(LiveTV.StandingsMatchKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.MatchKey),ListItem.Property(LiveTV.StandingsMatchKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row$PARAM[row].Highlight),true)</visible></control>
+            <control type="label"><width>35</width><height>15</height><font>Reg14</font><textcolor>ffbcbcbc</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row$PARAM[row].Position)]</label></control>
+            <control type="label"><left>40</left><width>590</width><height>15</height><font>Reg14</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row$PARAM[row].Team)]</label></control>
+            <control type="label"><left>650</left><width>100</width><height>15</height><font>Reg14</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>$INFO[Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row$PARAM[row].Points)]</label></control>
         </control>
     </include>
 

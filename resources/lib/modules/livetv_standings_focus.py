@@ -59,7 +59,7 @@ class FocusedStandings:
 			for field in ('Position', 'Team', 'Played', 'Points', 'Highlight'): ku.clear_property('%sRow%d.%s' % (_PREFIX, index, field))
 		for group in range(1, 9):
 			ku.clear_property('%sGroup%d.Name' % (_PREFIX, group))
-			for row in range(1, 16):
+			for row in range(1, 19):
 				for field in ('Position', 'Team', 'Points', 'Highlight'): ku.clear_property('%sGroup%d.Row%d.%s' % (_PREFIX, group, row, field))
 		self.published = ''
 		self.published_at = 0.0
@@ -163,6 +163,28 @@ class FocusedStandings:
 				if not valid:
 					self._clear()
 					continue
+				selected = [(name, items) for name, items in rows if any(row.get('highlight') is True for row in items)]
+				highlighted = [row for _, items in selected for row in items if row.get('highlight') is True]
+				if len(highlighted) == 2 and len({' '.join(row['team'].casefold().split()) for row in highlighted}) == 2 and len(selected) in (1, 2) and all(len(items) <= 18 for _, items in selected):
+					if len(selected) == 1:
+						name, items = selected[0]
+						middle = (len(items) + 1) // 2
+						columns = [(name, items[:middle]), (name + ' (continued)', items[middle:])]
+					else: columns = selected
+					if all(len(items) <= 18 for _, items in columns):
+						self._clear()
+						ku.set_property(_PREFIX + 'League', sports_heading)
+						ku.set_property(_PREFIX + 'Metric', metric)
+						ku.set_property(_PREFIX + 'Layout', 'college')
+						for group_index, (name, items) in enumerate(columns, 1):
+							ku.set_property('%sGroup%d.Name' % (_PREFIX, group_index), name)
+							for index, row in enumerate(items, 1):
+								for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
+								if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
+						ku.set_property(_PREFIX + 'MatchKey', completed)
+						self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+						ku.set_property(_PREFIX + 'Key', completed)
+						continue
 				def clean(value): return re.sub(r'[\x00-\x1f\x7f\[\]]', '', str(value)).strip()
 				lines = []
 				for name, items in rows:

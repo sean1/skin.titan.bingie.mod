@@ -44,6 +44,7 @@ _SEARCH_GUIDE_LIMIT = 5000
 _FAILOVER_PROPERTY = 'BingieLiveTVFailover'
 _FAILOVER_LIMIT = 8
 _HOME_MAX_CHANNELS = 500
+_CHANNEL_PAGE_SIZE = 100
 _home_state_cache = None
 
 
@@ -525,6 +526,14 @@ def browse(params):
 	_finish()
 
 
+def _channel_page(streams, params):
+	streams = [stream for stream in streams if isinstance(stream, dict) and str(stream.get('stream_id') or '').isdecimal()]
+	try: page = max(0, int(params.get('page', 0)))
+	except (ValueError, TypeError): page = 0
+	page = min(page, max(0, (len(streams) - 1) // _CHANNEL_PAGE_SIZE))
+	return streams[page * _CHANNEL_PAGE_SIZE:(page + 1) * _CHANNEL_PAGE_SIZE], page, (page + 1) * _CHANNEL_PAGE_SIZE < len(streams)
+
+
 def channels(params):
 	account = _load()
 	if not account:
@@ -535,13 +544,15 @@ def channels(params):
 		category = params.get('category', '')
 		streams = _catalog(account, 'get_live_streams', **({'category_id': category} if category else {}))
 		if not isinstance(streams, list): raise ValueError('Invalid response')
+		streams, page, has_next = _channel_page(streams, params)
+		page_params = {'mode': 'livetv.channels', 'category': category}
 		if category: _item('TV guide for this category', {'mode': 'livetv.guide_channels', 'category': category})
+		if page: _item('Previous page', {**page_params, 'page': str(page - 1)})
 		for stream in streams:
-			if not isinstance(stream, dict): continue
 			stream_id = str(stream.get('stream_id') or '')
-			if not stream_id.isdecimal(): continue
 			name = str(stream.get('name') or 'Live channel')
 			_item(name, _play_params(stream_id, name), False, stream.get('stream_icon'))
+		if has_next: _item('Next page', {**page_params, 'page': str(page + 1)})
 	except (OSError, ValueError, TypeError):
 		_error('Could not load channels. Check the account details and try again.')
 		_finish(False)
@@ -1531,11 +1542,12 @@ def guide_channels(params):
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 		wanted = {str(stream['epg_channel_id']) for stream in streams if isinstance(stream, dict) and stream.get('epg_channel_id')}
 		programmes = _guide_data(account, wanted) if wanted else {}
+		streams, page, has_next = _channel_page(streams, params)
+		page_params = {'mode': 'livetv.guide_channels', 'category': category}
 		now = time.time()
+		if page: _item('Previous page', {**page_params, 'page': str(page - 1)})
 		for stream in streams:
-			if not isinstance(stream, dict): continue
 			stream_id = str(stream.get('stream_id') or '')
-			if not stream_id.isdecimal(): continue
 			name = str(stream.get('name') or 'Live channel')
 			epg_id = str(stream.get('epg_channel_id') or '')
 			entries = programmes.get(epg_id, [])
@@ -1546,6 +1558,7 @@ def guide_channels(params):
 				_item(label, {'mode': 'livetv.schedule', 'id': stream_id, 'epg': epg_id, 'name': name}, True, stream.get('stream_icon'))
 			else:
 				_item(name + ' — No guide data (play channel)', _play_params(stream_id, name), False, stream.get('stream_icon'))
+		if has_next: _item('Next page', {**page_params, 'page': str(page + 1)})
 	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
 		_error('Could not load the TV guide. Check the guide URL in Settings or choose a smaller category. Channels remain available in Live TV.')
 		_finish(False)

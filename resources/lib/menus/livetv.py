@@ -24,6 +24,7 @@ from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_r
 from modules.livetv_guide_search import cached_search as _cached_guide_search
 from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
+from modules import livetv_sports as _sports
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
@@ -64,20 +65,27 @@ def _fixture_scope(name):
 	return '|'.join(sorted(set(' '.join(value.split()) for value in dates + competitions)))
 
 
-def _play_params(stream_id, name):
+def _play_params(stream_id, name, sport=''):
 	params = {'mode': 'livetv.play', 'id': stream_id}
-	if _soccer_event(name): params['name'] = name
+	if sport in ('hockey', 'football'):
+		params.update({'name': name, 'sport': sport})
+	elif _soccer_event(name): params['name'] = name
 	return params
 
 
-def _prepare_failover(account, stream_id, name):
-	event = _soccer_event(name)
-	if not event: return
-	scope = _fixture_scope(name)
+def _prepare_failover(account, stream_id, name, sport=''):
+	event = _soccer_event(name) if not sport else None
+	if not event and sport not in ('hockey', 'football'): return
+	scope = _fixture_scope(name) if event else ''
 	try:
 		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): return
-		if not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event and _fixture_scope(stream['name']) == scope for stream in streams): return
+		if sport in ('hockey', 'football'):
+			groups = _sports_groups(streams, sport)
+			matching = [feeds for feeds in groups.values() if stream_id in feeds and feeds[stream_id].get('name') == name]
+			if len(matching) != 1: return
+			streams = list(matching[0].values())
+		elif not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event and _fixture_scope(stream['name']) == scope for stream in streams): return
 		alternatives = []
 		secrets = (account.get('username', ''), account.get('password', ''))
 		feeds = [{'id': stream_id, 'name': _catalog_redact(name, secrets)}]
@@ -86,7 +94,7 @@ def _prepare_failover(account, stream_id, name):
 			if not isinstance(stream, dict): continue
 			candidate = str(stream.get('stream_id') or '')
 			if not candidate.isdecimal() or candidate in seen: continue
-			if _soccer_event(stream.get('name')) != event or _fixture_scope(stream['name']) != scope: continue
+			if not sport and (_soccer_event(stream.get('name')) != event or _fixture_scope(stream['name']) != scope): continue
 			seen.add(candidate)
 			if len(alternatives) < _FAILOVER_LIMIT: alternatives.append(candidate)
 			feeds.append({'id': candidate, 'name': _catalog_redact(str(stream.get('name') or 'Live channel'), secrets)})
@@ -900,12 +908,84 @@ def _tennis_fixtures(streams, today):
 	return fixtures
 
 
+_OTHER_SPORT_NICKNAMES = {
+	'nhl': {tuple(name.split()) for name in (
+		'ducks', 'bruins', 'sabres', 'flames', 'hurricanes', 'blackhawks', 'avalanche', 'blue jackets', 'stars', 'red wings', 'oilers', 'panthers', 'kings', 'wild',
+		'canadiens', 'predators', 'devils', 'islanders', 'rangers', 'senators', 'flyers', 'penguins', 'sharks', 'kraken', 'blues', 'lightning', 'maple leafs', 'canucks',
+		'golden knights', 'capitals', 'jets', 'mammoth',
+	)},
+	'nfl': {tuple(name.split()) for name in (
+		'cardinals', 'falcons', 'ravens', 'bills', 'panthers', 'bears', 'bengals', 'browns', 'cowboys', 'broncos', 'lions', 'packers', 'texans', 'colts', 'jaguars',
+		'chiefs', 'raiders', 'chargers', 'rams', 'dolphins', 'vikings', 'patriots', 'saints', 'giants', 'jets', 'eagles', 'steelers', '49ers', 'seahawks', 'buccaneers',
+		'titans', 'commanders',
+	)},
+}
+
+
+def _other_sport_fixtures(streams, today):
+	"""Find explicitly identified non-soccer events in the provider catalog."""
+	fixtures = set()
+	event_pattern = r'([^|()]+?)\s+(?:vs\.?|v\.?|at|@)\s+([^|()@]+?)'
+	date_pattern = r'\b(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4}|[A-Za-z]{3}\s+\d{1,2}(?:\s+\d{4})?)\b'
+	for item in streams:
+		if not isinstance(item, dict): continue
+		name = str(item.get('name') or '')
+		parts = [part.strip() for part in name.split('|')]
+		match = None
+		sport = ''
+		date_match = None
+		undated_live = False
+		# Dated channel listings keep the sport, teams and date in one field.
+		for part in parts:
+			candidate = re.search(r'\b(NHL|NFL|NCAA\s+Football)\s*:\s*' + event_pattern + r'(?=\s+@\s+[A-Za-z]{3}\s+\d|\s*\()', part, re.I)
+			if candidate:
+				match, sport, date_match = candidate, candidate.group(1).casefold(), re.search(date_pattern, part[candidate.end():])
+				break
+		if match:
+			teams_raw = match.group(2, 3)
+		elif len(parts) >= 4 and parts[0].casefold() in ('live', 'next'):
+			match = re.fullmatch(event_pattern, parts[1], re.I)
+			sport = next((part.casefold() for part in parts[2:] if re.fullmatch(r'NHL|NFL|NCAA\s+Football|National\s+Squash\s+League', part, re.I)), '')
+			if not match or not sport: continue
+			teams_raw = match.group(1, 2)
+			date_match = next((re.fullmatch(date_pattern, part) for part in parts[2:] if re.fullmatch(date_pattern, part)), None)
+			undated_live = parts[0].casefold() == 'live' and sport == 'national squash league' and not date_match
+		else: continue
+		if not date_match and not undated_live: continue
+		if date_match:
+			value = date_match.group(1)
+			try:
+				if re.match(r'\d{4}-', value): date = datetime.strptime(value, '%Y-%m-%d').date()
+				elif re.match(r'\d{2}-', value): date = datetime.strptime(value, '%d-%m-%Y').date()
+				else:
+					date = datetime.strptime(value if len(value.split()) == 3 else value + ' ' + str(today.year), '%b %d %Y').date()
+					if len(value.split()) == 2 and date.month == 12 and today.month == 1: date = date.replace(year=today.year - 1)
+					elif len(value.split()) == 2 and date.month == 1 and today.month == 12: date = date.replace(year=today.year + 1)
+			except ValueError:
+				continue
+			if abs((date - today).days) > 1: continue
+		teams = tuple(tuple(re.findall(r'[^\W_]+', side.casefold())) for side in teams_raw)
+		if all(teams): fixtures.add((sport, teams))
+	return fixtures
+
+
+def _other_sport_match(event, fixtures):
+	teams = tuple(tuple(re.findall(r'[^\W_]+', side)) for side in event)
+	for sport, (a, b) in fixtures:
+		for first, second in ((a, b), (b, a)):
+			if teams == (first, second): return True
+			nicknames = _OTHER_SPORT_NICKNAMES.get(sport, set())
+			if all(team in nicknames and len(team) <= len(full) and full[-len(team):] == team for team, full in zip(teams, (first, second))): return True
+	return False
+
+
 def _soccer_groups(streams, now=None):
 	groups = {}
 	# Some provider PPV labels say SOCCER for tennis too. A separate dated,
 	# explicitly tennis-labelled fixture can identify that contradiction.
 	today = (now or datetime.now().astimezone()).date()
 	tennis = _tennis_fixtures(streams, today)
+	other_sports = _other_sport_fixtures(streams, today)
 	for stream in streams:
 		if not isinstance(stream, dict): continue
 		stream_id = str(stream.get('stream_id') or '')
@@ -913,12 +993,51 @@ def _soccer_groups(streams, now=None):
 		event = _soccer_event(name)
 		if not stream_id.isdecimal() or not event: continue
 		if event in tennis: continue
+		# Dated soccer listings can refer to a different occurrence than the evidence.
+		metadata = ' | '.join(name.split('|')[2:])
+		date_pattern = (r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4}|'
+			r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*)\b')
+		if not re.search(date_pattern, metadata, re.I) and _other_sport_match(event, other_sports): continue
 		key = (event, _fixture_scope(name))
 		groups.setdefault(key, {}).setdefault(stream_id, stream)
 	return groups
 
 
+def _sports_groups(streams, sport):
+	return _sports.groups(streams, sport, evidence=_other_sport_fixtures, matches=_other_sport_match, soccer_event=_soccer_event, scope=_fixture_scope)
+
+
+def _sports_dashboard(account, sport, reload):
+	try:
+		streams = _catalog(account, 'get_live_streams', force_refresh=reload == 'refresh')
+		if not isinstance(streams, list): raise ValueError('Invalid channels')
+		groups = _sports_groups(streams, sport)
+		for (event, scope), feeds in sorted(groups.items(), key=lambda row: row[0]):
+			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
+			stream = ordered[0]
+			title = stream['name'].split('|')[1].strip()
+			count = len(feeds)
+			context = []
+			if count > 1:
+				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope})
+				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
+			_item(title, _play_params(str(stream['stream_id']), stream['name'], sport), False, stream.get('stream_icon'), extra_context=context,
+				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'LIVE ' + sport.upper(), 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds')})
+		if not groups: _item('No recognized live %s matches — browse channels' % sport, {'mode': 'livetv.refine'})
+	except (OSError, ValueError, TypeError):
+		_error('Could not load Live TV channels.')
+		_finish(False)
+		return
+	_finish()
+	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer) + !Control.IsVisible(523)'):
+		xbmc.executebuiltin('Container.SetViewMode(523)')
+
+
 def soccer(params):
+	sport = params.get('sport', 'soccer')
+	if sport not in ('soccer', 'hockey', 'football'): sport = 'soccer'
+	ku.set_property('LiveTV.Sport', sport)
+	ku.set_property('LiveTV.Sport.Title', 'LIVE ' + sport.upper())
 	action = params.get('action', '')
 	reload = ku.get_property('LiveTV.Soccer.Reload') if not action else ''
 	if reload: ku.clear_property('LiveTV.Soccer.Reload')
@@ -933,6 +1052,9 @@ def soccer(params):
 		xbmc.executebuiltin('SetFocus(523)')
 		ku.set_property('LiveTV.Soccer.Reload', 'refresh')
 		xbmc.executebuiltin('Container.Refresh')
+		return
+	if sport != 'soccer':
+		_sports_dashboard(account, sport, reload)
 		return
 	try:
 		catalog_status = [None, True]
@@ -1031,21 +1153,25 @@ def match_feeds(params):
 	try:
 		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): raise ValueError('Invalid response')
-		feeds = {}
-		for stream in streams:
-			if not isinstance(stream, dict): continue
-			stream_id = str(stream.get('stream_id') or '')
-			if stream_id.isdecimal() and _soccer_event(stream.get('name')) == (home, away) and _fixture_scope(stream['name']) == scope: feeds.setdefault(stream_id, stream)
+		sport = params.get('sport', '')
+		if sport in ('hockey', 'football'):
+			feeds = _sports_groups(streams, sport).get(((home, away), scope), {})
+		else:
+			feeds = {}
+			for stream in streams:
+				if not isinstance(stream, dict): continue
+				stream_id = str(stream.get('stream_id') or '')
+				if stream_id.isdecimal() and _soccer_event(stream.get('name')) == (home, away) and _fixture_scope(stream['name']) == scope: feeds.setdefault(stream_id, stream)
 		choices = list(feeds.items())
 		choices.sort(key=lambda entry: 0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1)
 		if choices:
 			stream_id, first = choices[0]
 			name = str(first.get('name') or 'Live channel')
 			feed_label = name.split('|')[-1].strip()
-			_item('Play first feed — ' + feed_label, _play_params(stream_id, name), False, first.get('stream_icon'))
+			_item('Play first feed — ' + feed_label, _play_params(stream_id, name, sport), False, first.get('stream_icon'))
 			for stream_id, stream in choices:
 				name = str(stream.get('name') or 'Live channel')
-				_item(name.split('|')[-1].strip() + ' (play channel)', _play_params(stream_id, name), False, stream.get('stream_icon'))
+				_item(name.split('|')[-1].strip() + ' (play channel)', _play_params(stream_id, name, sport), False, stream.get('stream_icon'))
 		else:
 			ku.dialog.notification('Live TV', 'No matching live feeds are currently available.')
 	except (OSError, ValueError, TypeError):
@@ -1141,7 +1267,7 @@ def play(params):
 		_error('This channel cannot be played. Check your Live TV account.')
 		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 		return
-	_prepare_failover(account, stream_id, params.get('name', ''))
+	_prepare_failover(account, stream_id, params.get('name', ''), params.get('sport', ''))
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
 	item = xbmcgui.ListItem(path=url)
 	item.setMimeType('video/mp2t')

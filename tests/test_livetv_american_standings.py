@@ -10,6 +10,12 @@ def team(name, location, nickname, abbreviation, record):
 		'stats': [{'name': 'wins', 'value': 99}, {'name': 'overall', 'type': 'total', 'summary': record}]}
 
 
+def nba_entries(first):
+	entries = [first] + [team('Example Team %d' % n, 'City %d' % n, 'Team %d' % n, 'T%d' % n, '5-5') for n in range(2, 16)]
+	for seed, entry in enumerate(entries, 1): entry['stats'].append({'name': 'playoffSeed', 'value': seed})
+	return entries
+
+
 class StandingsTests(unittest.TestCase):
 	def test_nhl_division_and_highlight(self):
 		data = {'standings': [
@@ -33,6 +39,35 @@ class StandingsTests(unittest.TestCase):
 		with patch.object(standings, '_fetch', return_value=data): rows, heading, metric = standings.get('ncaa', 'Troy', 'James Madison')
 		self.assertEqual((heading, metric), ('College football · Sun Belt - West', 'OVERALL'))
 		self.assertEqual([(r['team'], r['highlight']) for r in rows], [('Troy Trojans', True)])
+
+	def test_nba_conferences_show_records_and_highlight_both_teams(self):
+		data = {'children': [{'name': 'Eastern Conference', 'standings': {'entries': nba_entries(team('Boston Celtics', 'Boston', 'Celtics', 'BOS', '8-2'))}},
+			{'name': 'Western Conference', 'standings': {'entries': nba_entries(team('Los Angeles Lakers', 'Los Angeles', 'Lakers', 'LAL', '6-4'))}}]}
+		with patch.object(standings, '_fetch', return_value=data):
+			groups, metric = standings.get_nba_groups('Celtics', 'Lakers')
+			all_groups, all_metric = standings.get_all('nba')
+		self.assertEqual(metric, 'W-L')
+		self.assertEqual([(name, [(row['team'], row['points']) for row in rows if row['highlight']]) for name, rows in groups],
+			[('Eastern Conference', [('Boston Celtics', '8-2')]), ('Western Conference', [('Los Angeles Lakers', '6-4')])])
+		self.assertEqual((all_metric, [name for name, _ in all_groups]), ('W-L', ['NBA · Eastern Conference', 'NBA · Western Conference']))
+
+	def test_nba_partial_conference_is_unavailable(self):
+		data = {'children': [{'name': 'Eastern Conference', 'standings': {'entries': [team('Boston Celtics', 'Boston', 'Celtics', 'BOS', '8-2'), {'team': {}, 'stats': []}]}}]}
+		with patch.object(standings, '_fetch', return_value=data):
+			self.assertEqual(standings.get_nba_groups('Celtics', 'Lakers'), ([('Eastern Conference (unavailable)', []), ('Western Conference (unavailable)', [])], 'W-L'))
+			self.assertEqual(standings.get_all('nba'), ([('NBA · Eastern Conference (unavailable)', []), ('NBA · Western Conference (unavailable)', [])], 'W-L'))
+
+	def test_nba_uses_playoff_seed_instead_of_response_order(self):
+		entries = nba_entries(team('Boston Celtics', 'Boston', 'Celtics', 'BOS', '8-2'))
+		data = {'children': [{'name': 'Eastern Conference', 'standings': {'entries': list(reversed(entries))}}]}
+		with patch.object(standings, '_fetch', return_value=data):
+			for groups in (standings.get_nba_groups('Celtics', 'Nets')[0], standings.get_all('nba')[0]):
+				self.assertEqual([(row['position'], row['team']) for row in groups[0][1]][:2], [(1, 'Boston Celtics'), (2, 'Example Team 2')])
+			entries[1]['stats'][-1]['value'] = 1
+			self.assertEqual(standings.get_nba_groups('Celtics', 'Nets')[0][0], ('Eastern Conference (unavailable)', []))
+			entries[1]['stats'][-1]['value'] = 2
+			data['children'][0]['standings']['entries'].pop(0)
+			self.assertEqual(standings.get_nba_groups('Celtics', 'Nets')[0], [('Eastern Conference (unavailable)', []), ('Western Conference (unavailable)', [])])
 
 	def test_ambiguous_team_does_not_choose_wrong_section(self):
 		data = {'children': [{'name': 'One', 'standings': {'entries': [team('First Eagles', 'First', 'Eagles', 'ONE', '5-2')]}},

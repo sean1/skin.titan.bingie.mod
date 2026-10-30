@@ -19,7 +19,7 @@ _SOCCER_WINDOW = 'Window.IsActive(Videos) + String.Contains(Container.FolderPath
 
 def _sports_identity(key):
 	parts = key.split('|')
-	if len(parts) != 3 or parts[0] not in ('nhl', 'nfl', 'ncaa'): return None
+	if len(parts) != 3 or parts[0] not in ('nhl', 'nfl', 'ncaa', 'nba'): return None
 	if any(not 2 <= len(team) <= 80 or not re.fullmatch(r"[\w .&'’\-]+", team, re.UNICODE) or not any(char.isalpha() for char in team) for team in parts[1:]): return None
 	if parts[1].casefold() == parts[2].casefold(): return None
 	return parts
@@ -59,7 +59,7 @@ class FocusedStandings:
 			for field in ('Position', 'Team', 'Played', 'Points', 'Highlight'): ku.clear_property('%sRow%d.%s' % (_PREFIX, index, field))
 		for group in range(1, 9):
 			ku.clear_property('%sGroup%d.Name' % (_PREFIX, group))
-			for row in range(1, 9):
+			for row in range(1, 16):
 				for field in ('Position', 'Team', 'Points', 'Highlight'): ku.clear_property('%sGroup%d.Row%d.%s' % (_PREFIX, group, row, field))
 		self.published = ''
 		self.published_at = 0.0
@@ -99,6 +99,9 @@ class FocusedStandings:
 					loader = livetv_american_standings.get_nhl_groups if sport[0] == 'nhl' else livetv_american_standings.get_nfl_groups
 					rows, metric = loader(*sport[1:])
 					heading = sport[0].upper()
+				elif sport[0] == 'nba':
+					rows, metric = livetv_american_standings.get_nba_groups(*sport[1:])
+					heading = 'NBA'
 				else:
 					rows, metric = livetv_american_standings.get_ncaa_groups(*sport[1:])
 					heading = 'College football'
@@ -124,6 +127,35 @@ class FocusedStandings:
 			try: completed, rows, sports_heading, metric = self.results.get_nowait()
 			except Empty: break
 			if completed != self.identity or self._focused()[0] != completed: continue
+			if completed.startswith('nba|'):
+				if not isinstance(rows, list) or len(rows) != 2:
+					self._clear()
+					continue
+				ordered = {}
+				for group in rows:
+					if not isinstance(group, tuple) or len(group) != 2 or not isinstance(group[0], str) or not isinstance(group[1], list): break
+					name, items = group
+					match = re.fullmatch(r'(Eastern|Western) Conference(?: \(unavailable\))?', name)
+					if not match or match.group(1) in ordered or (not items and not name.endswith(' (unavailable)')) or len(items) > 15: break
+					if any(not isinstance(row, dict) or not isinstance(row.get('position'), int) or isinstance(row.get('position'), bool) or not isinstance(row.get('team'), str) or not row['team'] or not isinstance(row.get('points'), str) for row in items): break
+					ordered[match.group(1)] = group
+				if set(ordered) != {'Eastern', 'Western'}:
+					self._clear()
+					continue
+				self._clear()
+				ku.set_property(_PREFIX + 'League', sports_heading)
+				ku.set_property(_PREFIX + 'Metric', metric)
+				ku.set_property(_PREFIX + 'Layout', 'nba')
+				for group_index, side in enumerate(('Eastern', 'Western'), 1):
+					name, items = ordered[side]
+					ku.set_property('%sGroup%d.Name' % (_PREFIX, group_index), name)
+					for index, row in enumerate(items, 1):
+						for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
+						if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
+				ku.set_property(_PREFIX + 'MatchKey', completed)
+				self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+				ku.set_property(_PREFIX + 'Key', completed)
+				continue
 			if completed.startswith('ncaa|'):
 				valid = isinstance(rows, list) and rows and all(isinstance(group, tuple) and len(group) == 2 and isinstance(group[0], str) and group[0] and
 					isinstance(group[1], list) and (group[1] or group[0].endswith(' (unavailable)')) and all(isinstance(row, dict) and isinstance(row.get('position'), int) and not isinstance(row.get('position'), bool) and
@@ -135,7 +167,7 @@ class FocusedStandings:
 				lines = []
 				for name, items in rows:
 					if lines: lines.append('')
-					lines.append('[B]' + clean(name) + ' · OVERALL[/B]')
+					lines.append('[B]' + clean(name) + ' · ' + clean(metric) + '[/B]')
 					for row in items:
 						line = '%s. %s  —  %s' % (row['position'], clean(row['team']), clean(row['points']))
 						lines.append('[B]' + line + '[/B]' if row.get('highlight') is True else line)

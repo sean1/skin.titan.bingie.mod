@@ -52,6 +52,33 @@ class StandingsFocusTests(unittest.TestCase):
 		self.focus.tick()
 		self.assertNotIn('LiveTV.Standings.AllText', self.props)
 
+	def test_nba_conferences_order_rows_and_clear(self):
+		key = 'nba|Lakers|Celtics'
+		rows = [{'position': n, 'team': 'Team %d' % n, 'points': '5-2', 'highlight': n == 15} for n in range(1, 16)]
+		self.american.get_nba_groups = Mock(return_value=([('Western Conference', rows), ('Eastern Conference', rows)], 'W-L'))
+		self.selected(key)
+		self.focus.identity = key
+		with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
+		self.focus.tick()
+		self.american.get_nba_groups.assert_called_once_with('Lakers', 'Celtics')
+		self.assertEqual(self.props['LiveTV.Standings.Layout'], 'nba')
+		self.assertEqual(self.props['LiveTV.Standings.Group1.Name'], 'Eastern Conference')
+		self.assertEqual(self.props['LiveTV.Standings.Group2.Name'], 'Western Conference')
+		self.assertEqual(self.props['LiveTV.Standings.Group2.Row15.Team'], 'Team 15')
+		self.assertEqual(self.props['LiveTV.Standings.Group1.Row15.Highlight'], 'true')
+		self.selected('')
+		self.focus.tick()
+		self.assertNotIn('LiveTV.Standings.Group2.Row15.Team', self.props)
+
+	def test_nba_unavailable_conference_is_published(self):
+		key = 'nba|Lakers|Celtics'
+		self.american.get_nba_groups = Mock(return_value=([('Eastern Conference (unavailable)', []), ('Western Conference', [{'position': 1, 'team': 'Lakers', 'points': '4-3'}])], 'W-L'))
+		self.selected(key)
+		self.focus.identity = key
+		with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
+		self.focus.tick()
+		self.assertEqual(self.props['LiveTV.Standings.Group1.Name'], 'Eastern Conference (unavailable)')
+
 	def test_nhl_publishes_four_groups_and_clears_on_focus_change(self):
 		key = 'nhl|Jets|Lightning'
 		groups = [('Division %d' % g, [{'position': i, 'team': 'Team %d %d' % (g, i), 'points': str(i), 'highlight': g == 4 and i == 8} for i in range(1, 9)]) for g in range(1, 5)]

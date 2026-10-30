@@ -17,10 +17,12 @@ class LiveTVSportsDashboardTests(unittest.TestCase):
 			{'stream_id': 1, 'name': 'Live | Blackhawks vs Red Wings | NHL | US: Sports'},
 			{'stream_id': 2, 'name': 'Live | Blackhawks vs Red Wings | NHL | CA: Sports'},
 			{'stream_id': 3, 'name': 'Live | Panthers vs Packers | NFL | US: Sports'},
+			{'stream_id': 4, 'name': 'Live | Lakers vs Celtics | NBA | US: Sports'},
+			{'stream_id': 5, 'name': 'Live | Celtics vs Lakers | NBA | CA: Sports'},
 		]
 
 	def test_sections_only_show_the_requested_sport(self):
-		for sport, expected in (('hockey', 'Blackhawks vs Red Wings'), ('football', 'Panthers vs Packers')):
+		for sport, expected in (('hockey', 'Blackhawks vs Red Wings'), ('football', 'Panthers vs Packers'), ('basketball', 'Celtics vs Lakers')):
 			with self.subTest(sport=sport), patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=self.streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
 				self.live.soccer({'sport': sport})
 				self.assertEqual([call.args[0] for call in item.call_args_list], [expected])
@@ -43,9 +45,17 @@ class LiveTVSportsDashboardTests(unittest.TestCase):
 			self.live.match_feeds({'sport': 'hockey', 'home': 'blackhawks', 'away': 'red wings', 'scope': ''})
 			self.assertEqual([call.args[1]['id'] for call in item.call_args_list], ['2', '2', '1'])
 
+	def test_basketball_feed_picker_preserves_both_feeds(self):
+		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=self.streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
+			self.live.soccer({'sport': 'basketball'})
+			self.assertIn("'sport': 'basketball'", item.call_args.kwargs['extra_context'][0][1])
+			item.reset_mock()
+			self.live.match_feeds({'sport': 'basketball', 'home': 'celtics', 'away': 'lakers', 'scope': ''})
+			self.assertEqual([call.args[1]['id'] for call in item.call_args_list], ['5', '5', '4'])
+
 	def test_standings_keys_identify_sport_and_match(self):
-		streams = self.streams + [{'stream_id': 4, 'name': 'Live | Florida Atlantic vs North Texas | NCAA Football | US: Sports'}]
-		for sport, expected in (('hockey', {'nhl|blackhawks|red wings'}), ('football', {'nfl|panthers|packers', 'ncaa|florida atlantic|north texas'})):
+		streams = self.streams + [{'stream_id': 6, 'name': 'Live | Florida Atlantic vs North Texas | NCAA Football | US: Sports'}]
+		for sport, expected in (('hockey', {'nhl|blackhawks|red wings'}), ('football', {'nfl|panthers|packers', 'ncaa|florida atlantic|north texas'}), ('basketball', {'nba|celtics|lakers'})):
 			with self.subTest(sport=sport), patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
 				self.live.soccer({'sport': sport})
 				properties = [call.kwargs['extra_properties'] for call in item.call_args_list]

@@ -1,5 +1,6 @@
-"""Bounded read-only standings for NHL and American football."""
+"""Bounded read-only standings for NHL, NBA and American football."""
 import json
+import math
 import re
 import threading
 import time
@@ -11,6 +12,7 @@ _URLS = {
 	'nfl_nfc': 'https://site.api.espn.com/apis/v2/sports/football/nfl/standings?group=7',
 	'nfl_afc': 'https://site.api.espn.com/apis/v2/sports/football/nfl/standings?group=8',
 	'ncaa': 'https://site.api.espn.com/apis/v2/sports/football/college-football/standings',
+	'nba': 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings',
 }
 _LIMIT = 4 * 1024 * 1024
 _CACHE_SECONDS = 300
@@ -45,9 +47,10 @@ def _fetch(sport):
 		if sport in ('nfl_afc', 'nfl_nfc'):
 			sections = {item['section'] for item in parsed}
 			if len(sections) != 4 or any(len([item for item in parsed if item['section'] == section]) != 4 or len({_key(item['team']) for item in parsed if item['section'] == section}) != 4 for section in sections): raise ValueError('Incomplete divisions')
-		if sport in ('ncaa', 'nfl'):
+		if sport in ('ncaa', 'nfl', 'nba'):
 			counts = _raw_sections(payload)
 			if any(not count or sum(item.get('section_path') == path for item in parsed) != count for path, count in counts.items()): return payload
+			if sport == 'nba' and (set(counts) != {('Eastern Conference',), ('Western Conference',)} or any(not _nba_order([item for item in parsed if item.get('section_path') == path]) for path in counts)): return payload
 		if sport == 'nhl':
 			sections = {item['section'] for item in parsed}
 			if len(parsed) != len(payload['standings']) or len(sections) != 4 or any(sorted(item['rank'] for item in parsed if item['section'] == section) != list(range(1, 9)) for section in sections): return payload
@@ -74,7 +77,7 @@ def _nhl(data):
 	return entries
 
 
-def _espn(data):
+def _espn(data, sport=''):
 	entries = []
 	pending = [(item, ()) for item in data.get('children', [])]
 	while pending:
@@ -91,12 +94,22 @@ def _espn(data):
 			name = _text(team.get('displayName'))
 			stats = [item for item in raw['stats'] if isinstance(item, dict)]
 			overall = next((item for item in stats if item.get('name') == 'overall' and item.get('type') == 'total'), {})
+			seed = next((item.get('value') for item in stats if item.get('name') == 'playoffSeed'), None)
 			record = re.fullmatch(r'(\d+)-(\d+)(?:-(\d+))?', str(overall.get('summary') or overall.get('displayValue') or ''))
 			if not name or not record: continue
 			wins, losses, ties = (int(record.group(1)), int(record.group(2)), int(record.group(3) or 0))
 			aliases = {_key(team.get(field)) for field in ('displayName', 'shortDisplayName', 'name', 'abbreviation', 'location')}
-			entries.append({'team': name, 'section': section, 'section_path': parents + (section,), 'aliases': aliases - {''}, 'points': '%d-%d-%d' % (wins, losses, ties)})
+			points = '%d-%d' % (wins, losses) if sport == 'nba' else '%d-%d-%d' % (wins, losses, ties)
+			entries.append({'team': name, 'section': section, 'section_path': parents + (section,), 'aliases': aliases - {''}, 'points': points, 'seed': seed})
 	return entries
+
+
+def _nba_order(items):
+	"""Use ESPN's playoff seed; omit incomplete or ambiguous rankings."""
+	seeds = [item.get('seed') for item in items]
+	if len(seeds) != 15 or any(not isinstance(seed, (int, float)) or isinstance(seed, bool) or not math.isfinite(seed) or seed != int(seed) for seed in seeds): return []
+	if sorted(seeds) != list(range(1, len(items) + 1)) or len({_key(item['team']) for item in items}) != 15: return []
+	return sorted(items, key=lambda item: item['seed'])
 
 
 def _raw_sections(data):
@@ -117,21 +130,22 @@ def _raw_sections(data):
 
 def get(sport, team_a, team_b):
 	"""Return (rows, heading, metric), or empty rows when no reliable match exists."""
-	metric = 'PTS' if sport == 'nhl' else 'OVERALL' if sport == 'ncaa' else 'W-L-T'
-	if sport not in ('nhl', 'nfl', 'ncaa'): return [], '', metric
+	metric = 'PTS' if sport == 'nhl' else 'OVERALL' if sport == 'ncaa' else 'W-L' if sport == 'nba' else 'W-L-T'
+	if sport not in ('nhl', 'nfl', 'ncaa', 'nba'): return [], '', metric
 	try:
 		data = _fetch(sport)
 		if not isinstance(data, dict): return [], '', metric
-		entries = _nhl(data) if sport == 'nhl' else _espn(data)
+		entries = _nhl(data) if sport == 'nhl' else _espn(data, sport)
 		first, second = _match(entries, team_a), _match(entries, team_b)
 		selected = first or second
 		if not selected: return [], '', metric
 		section = selected['section']
 		items = [entry for entry in entries if entry['section'] == section]
+		if sport == 'nba': items = _nba_order(items)
 		if sport == 'nhl': items.sort(key=lambda item: (item['rank'], item['team']))
 		# ESPN returns its own tie-break order, which record sorting would lose.
 		rows = [{'position': index, 'team': item['team'], 'points': item['points'], 'group': '', 'highlight': item is first or item is second} for index, item in enumerate(items, 1)]
-		prefix = {'nhl': 'NHL', 'nfl': 'NFL', 'ncaa': 'College football'}[sport]
+		prefix = {'nhl': 'NHL', 'nfl': 'NFL', 'ncaa': 'College football', 'nba': 'NBA'}[sport]
 		return rows, prefix + ' · ' + section + (' Division' if sport == 'nhl' and not section.casefold().endswith('division') else ''), metric
 	except (OSError, ValueError, TypeError, AttributeError, KeyError):
 		return [], '', metric
@@ -139,13 +153,13 @@ def get(sport, team_a, team_b):
 
 def get_all(sport):
 	"""Return every available (heading, rows) section and its record metric."""
-	metric = 'PTS' if sport == 'nhl' else 'OVERALL' if sport == 'ncaa' else 'W-L-T'
-	if sport not in ('nhl', 'nfl', 'ncaa'): return [], metric
+	metric = 'PTS' if sport == 'nhl' else 'OVERALL' if sport == 'ncaa' else 'W-L' if sport == 'nba' else 'W-L-T'
+	if sport not in ('nhl', 'nfl', 'ncaa', 'nba'): return [], metric
 	try:
 		data = _fetch(sport)
-		entries = _nhl(data) if sport == 'nhl' else _espn(data)
+		entries = _nhl(data) if sport == 'nhl' else _espn(data, sport)
 		if not entries and sport != 'nhl': return [], metric
-		prefix = {'nhl': 'NHL', 'nfl': 'NFL', 'ncaa': 'College football'}[sport]
+		prefix = {'nhl': 'NHL', 'nfl': 'NFL', 'ncaa': 'College football', 'nba': 'NBA'}[sport]
 		division_entries = []
 		unavailable = set()
 		if sport == 'nfl':
@@ -160,19 +174,23 @@ def get_all(sport):
 		groups = []
 		for source in (entries, division_entries):
 			sections = list(dict.fromkeys(entry.get('section_path', (entry['section'],)) for entry in source))
-			if sport in ('nfl', 'ncaa') and source is entries: sections = list(_raw_sections(data))
+			if sport in ('nfl', 'ncaa', 'nba') and source is entries: sections = list(_raw_sections(data))
+			if sport == 'nba' and source is entries:
+				for path in (('Eastern Conference',), ('Western Conference',)):
+					if path not in sections: sections.append(path)
 			if sport == 'nhl' and source is entries:
 				sections = list(dict.fromkeys((_text(item.get('divisionName')),) for item in data['standings'] if isinstance(item, dict) and _text(item.get('divisionName'))))
 			for path in sections:
 				section = path[-1]
 				items = [entry for entry in source if entry.get('section_path', (entry['section'],)) == path]
+				if sport == 'nba': items = _nba_order(items)
 				if sport == 'nhl':
 					items.sort(key=lambda item: (item['rank'], item['team']))
 					raw_count = sum(isinstance(item, dict) and _text(item.get('divisionName')) == section for item in data['standings'])
 					if raw_count != 8 or len(items) != 8 or [item['rank'] for item in items] != list(range(1, 9)):
 						groups.append((prefix + ' · ' + section + (' Division' if not section.casefold().endswith('division') else '') + ' (unavailable)', []))
 						continue
-				if sport in ('nfl', 'ncaa') and source is entries and (not _raw_sections(data).get(path) or _raw_sections(data)[path] != len(items)):
+				if sport in ('nfl', 'ncaa', 'nba') and source is entries and (not _raw_sections(data).get(path) or _raw_sections(data)[path] != len(items)):
 					groups.append((prefix + ' · ' + section + ' (unavailable)', []))
 					continue
 				display = ' · '.join(path) if sum(other[-1] == section for other in sections) > 1 else section
@@ -249,3 +267,26 @@ def get_ncaa_groups(team_a, team_b):
 		return groups, 'OVERALL'
 	except (OSError, ValueError, TypeError, AttributeError, KeyError):
 		return [], 'OVERALL'
+
+
+def get_nba_groups(team_a, team_b):
+	"""Return NBA conferences with both game teams highlighted when recognized."""
+	try:
+		data = _fetch('nba')
+		entries = _espn(data, 'nba')
+		first, second = _match(entries, team_a), _match(entries, team_b)
+		counts = _raw_sections(data)
+		for path in (('Eastern Conference',), ('Western Conference',)): counts.setdefault(path, 0)
+		groups = []
+		for path, count in counts.items():
+			items = [entry for entry in entries if entry.get('section_path') == path]
+			name = ' · '.join(path) if sum(other[-1] == path[-1] for other in counts) > 1 else path[-1]
+			items = _nba_order(items)
+			if not count or count != len(items):
+				groups.append((name + ' (unavailable)', []))
+				continue
+			rows = [{'position': index, 'team': item['team'], 'points': item['points'], 'highlight': item is first or item is second} for index, item in enumerate(items, 1)]
+			groups.append((name, rows))
+		return groups, 'W-L'
+	except (OSError, ValueError, TypeError, AttributeError, KeyError):
+		return [], 'W-L'

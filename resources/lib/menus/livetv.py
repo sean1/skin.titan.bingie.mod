@@ -68,7 +68,7 @@ def _fixture_scope(name):
 
 def _play_params(stream_id, name, sport=''):
 	params = {'mode': 'livetv.play', 'id': stream_id}
-	if sport in ('hockey', 'football'):
+	if sport in ('hockey', 'football', 'basketball'):
 		params.update({'name': name, 'sport': sport})
 	elif _soccer_event(name): params['name'] = name
 	return params
@@ -76,12 +76,12 @@ def _play_params(stream_id, name, sport=''):
 
 def _prepare_failover(account, stream_id, name, sport=''):
 	event = _soccer_event(name) if not sport else None
-	if not event and sport not in ('hockey', 'football'): return
+	if not event and sport not in ('hockey', 'football', 'basketball'): return
 	scope = _fixture_scope(name) if event else ''
 	try:
 		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): return
-		if sport in ('hockey', 'football'):
+		if sport in ('hockey', 'football', 'basketball'):
 			groups = _sports_groups(streams, sport)
 			matching = [feeds for feeds in groups.values() if stream_id in feeds and feeds[stream_id].get('name') == name]
 			if len(matching) != 1: return
@@ -915,6 +915,10 @@ _OTHER_SPORT_NICKNAMES = {
 		'canadiens', 'predators', 'devils', 'islanders', 'rangers', 'senators', 'flyers', 'penguins', 'sharks', 'kraken', 'blues', 'lightning', 'maple leafs', 'canucks',
 		'golden knights', 'capitals', 'jets', 'mammoth',
 	)},
+	'nba': {tuple(name.split()) for name in (
+		'hawks', 'celtics', 'nets', 'hornets', 'bulls', 'cavaliers', 'mavericks', 'nuggets', 'pistons', 'warriors', 'rockets', 'pacers', 'clippers', 'lakers',
+		'grizzlies', 'heat', 'bucks', 'timberwolves', 'pelicans', 'knicks', 'thunder', 'magic', '76ers', 'suns', 'trail blazers', 'kings', 'spurs', 'raptors', 'jazz', 'wizards',
+	)},
 	'nfl': {tuple(name.split()) for name in (
 		'cardinals', 'falcons', 'ravens', 'bills', 'panthers', 'bears', 'bengals', 'browns', 'cowboys', 'broncos', 'lions', 'packers', 'texans', 'colts', 'jaguars',
 		'chiefs', 'raiders', 'chargers', 'rams', 'dolphins', 'vikings', 'patriots', 'saints', 'giants', 'jets', 'eagles', 'steelers', '49ers', 'seahawks', 'buccaneers',
@@ -938,7 +942,7 @@ def _other_sport_fixtures(streams, today):
 		undated_live = False
 		# Dated channel listings keep the sport, teams and date in one field.
 		for part in parts:
-			candidate = re.search(r'\b(NHL|NFL|NCAA\s+Football)\s*:\s*' + event_pattern + r'(?=\s+@\s+[A-Za-z]{3}\s+\d|\s*\()', part, re.I)
+			candidate = re.search(r'\b(NHL|NFL|NBA|NCAA\s+Football)\s*:\s*' + event_pattern + r'(?=\s+@\s+[A-Za-z]{3}\s+\d|\s*\()', part, re.I)
 			if candidate:
 				match, sport, date_match = candidate, candidate.group(1).casefold(), re.search(date_pattern, part[candidate.end():])
 				break
@@ -946,7 +950,7 @@ def _other_sport_fixtures(streams, today):
 			teams_raw = match.group(2, 3)
 		elif len(parts) >= 4 and parts[0].casefold() in ('live', 'next'):
 			match = re.fullmatch(event_pattern, parts[1], re.I)
-			sport = next((part.casefold() for part in parts[2:] if re.fullmatch(r'NHL|NFL|NCAA\s+Football|National\s+Squash\s+League', part, re.I)), '')
+			sport = next((part.casefold() for part in parts[2:] if re.fullmatch(r'NHL|NFL|NBA|NCAA\s+Football|National\s+Squash\s+League', part, re.I)), '')
 			if not match or not sport: continue
 			teams_raw = match.group(1, 2)
 			date_match = next((re.fullmatch(date_pattern, part) for part in parts[2:] if re.fullmatch(date_pattern, part)), None)
@@ -1011,9 +1015,9 @@ def _sports_groups(streams, sport):
 def all_standings(params):
 	"""Show complete available standings in Kodi's scrollable text viewer."""
 	sport = params.get('sport', '')
-	if sport not in ('hockey', 'football'): return
+	if sport not in ('hockey', 'football', 'basketball'): return
 	ku.dialog.notification('Live TV', 'Loading standings...')
-	leagues = (('nhl', 'NHL'),) if sport == 'hockey' else (('nfl', 'NFL'), ('ncaa', 'College football'))
+	leagues = {'hockey': (('nhl', 'NHL'),), 'football': (('nfl', 'NFL'), ('ncaa', 'College football')), 'basketball': (('nba', 'NBA'),)}[sport]
 	lines = []
 	def clean(value):
 		return re.sub(r'[\x00-\x1f\x7f\[\]]', '', str(value)).strip()
@@ -1028,7 +1032,7 @@ def all_standings(params):
 			if not rows: lines.append('Standings unavailable.')
 			for row in rows:
 				lines.append('%s. %s  —  %s' % (clean(row.get('position', '')), clean(row.get('team', '')), clean(row.get('points', ''))))
-	ku.dialog.textviewer('All hockey standings' if sport == 'hockey' else 'All football standings', '\n'.join(lines))
+	ku.dialog.textviewer('All %s standings' % sport, '\n'.join(lines))
 
 
 def _sports_dashboard(account, sport, reload):
@@ -1041,7 +1045,7 @@ def _sports_dashboard(account, sport, reload):
 			stream = ordered[0]
 			title = stream['name'].split('|')[1].strip()
 			count = len(feeds)
-			standings_sport = 'nhl' if sport == 'hockey' else 'ncaa' if scope.split('|')[0] == 'ncaa football' else 'nfl'
+			standings_sport = 'nhl' if sport == 'hockey' else 'nba' if sport == 'basketball' else 'ncaa' if scope.split('|')[0] == 'ncaa football' else 'nfl'
 			standings_event = _sports._event(title) or event
 			standings_key = '|'.join((standings_sport, *standings_event))
 			context = []
@@ -1063,7 +1067,7 @@ def _sports_dashboard(account, sport, reload):
 
 def soccer(params):
 	sport = params.get('sport', 'soccer')
-	if sport not in ('soccer', 'hockey', 'football'): sport = 'soccer'
+	if sport not in ('soccer', 'hockey', 'football', 'basketball'): sport = 'soccer'
 	ku.set_property('LiveTV.Sport', sport)
 	ku.set_property('LiveTV.Sport.Title', 'LIVE ' + sport.upper())
 	action = params.get('action', '')
@@ -1182,7 +1186,7 @@ def match_feeds(params):
 		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 		sport = params.get('sport', '')
-		if sport in ('hockey', 'football'):
+		if sport in ('hockey', 'football', 'basketball'):
 			feeds = _sports_groups(streams, sport).get(((home, away), scope), {})
 		else:
 			feeds = {}

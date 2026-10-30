@@ -35,6 +35,17 @@ class LiveTVSportsTests(unittest.TestCase):
 		self.assertEqual(list(next(iter(groups.values()))), ['1'])
 		self.assertFalse(livetv_sports.groups(streams, 'hockey', self.now, **self.callbacks))
 
+	def test_basketball_explicit_and_evidenced_feeds_group_together(self):
+		streams = [
+			{'stream_id': 1, 'name': 'Live | Los Angeles Lakers vs Portland Trail Blazers | NBA | US'},
+			{'stream_id': 2, 'name': 'Live | Trail Blazers vs Lakers | all | CA: SOCCER PPV'},
+			{'name': 'NBA: Portland Trail Blazers @ Los Angeles Lakers @ Oct 29 23:25'},
+			{'stream_id': 3, 'name': 'Live | Bulls vs Celtics | NBA | REPLAY'},
+		]
+		groups = livetv_sports.groups(streams, 'basketball', self.now, **self.callbacks)
+		self.assertEqual(set(groups[(('lakers', 'trail blazers'), '')]), {'1', '2'})
+		self.assertFalse(livetv_sports.groups(streams, 'hockey', self.now, **self.callbacks))
+
 	def test_dated_soccer_event_is_not_reassigned(self):
 		streams = [{'stream_id': 1, 'name': 'Live | Jets vs. Lightning | 2026-10-25 | SOCCER'}, {'name': 'NHL: Jets @ Lightning @ Oct 29 23:25'}]
 		self.assertFalse(livetv_sports.groups(streams, 'hockey', self.now, **self.callbacks))

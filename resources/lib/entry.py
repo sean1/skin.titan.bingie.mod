@@ -940,6 +940,8 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		self.livetv_failover = LiveTVFailover()
 		from modules.livetv_standings_focus import FocusedStandings
 		self.focused_standings = FocusedStandings()
+		from modules.livetv_sports_refresh import SportsRefresh
+		self.sports_refresh = SportsRefresh()
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
@@ -968,6 +970,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 					poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.pause() else TRAILER_PREVIEW_IDLE_POLL
 					continue
 				self.next_page_prefetch.tick()
+				self.sports_refresh.tick()
 				fanart_pending = self.focused_fanart.tick()
 				standings_pending = self.focused_standings.tick()
 				preview_active = self.trailer_preview.tick()

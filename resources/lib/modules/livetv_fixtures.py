@@ -6,7 +6,7 @@ import re
 import tempfile
 import time
 import unicodedata
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http.client import HTTPException
 from urllib.request import Request, urlopen
 
@@ -90,9 +90,49 @@ def _clean(payload, key):
 			home, away, name = teams['home']['name'], teams['away']['name'], league['name']
 			status = fixture['status']['short']
 			if status not in LIVE_STATUSES or not all(isinstance(value, str) and 0 < len(value) <= 200 and key not in value for value in (home, away, name)): continue
-			items.append({'home': home, 'away': away, 'league': name, 'status': status, 'date': str(fixture.get('date') or '')[:40]})
+			entry = {'home': home, 'away': away, 'league': name, 'status': status, 'date': str(fixture.get('date') or '')[:40]}
+			if isinstance(league.get('country'), str): entry['league_country'] = league['country'][:100]
+			if isinstance(league.get('id'), int) and not isinstance(league['id'], bool): entry['api_football_league_id'] = league['id']
+			items.append(entry)
 		except (KeyError, TypeError, AttributeError): continue
 	return items
+
+
+def get_canadian_premier(profile, now=None):
+	"""Return current CPL fixtures from CanadaSoccerAPI's public CPL data."""
+	now = time.time() if now is None else now
+	path = os.path.join(profile, 'canadian-premier-fixtures.json')
+	cache = _read(path)
+	created = cache.get('created', 0)
+	if isinstance(created, (int, float)) and 0 <= now - created < 120 and isinstance(cache.get('fixtures'), list):
+		return cache['fixtures'], 'updated'
+	try:
+		utc = datetime.fromtimestamp(now, timezone.utc)
+		first = (utc - timedelta(days=1)).date().isoformat()
+		last = (utc + timedelta(days=1)).date().isoformat()
+		url = 'https://canadasoccerapi.com/api/v1/matches?from=%s&to=%s&limit=100' % (first, last)
+		with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept': 'application/json'}), timeout=10) as response: payload = response.read(MAX_RESPONSE + 1)
+		if len(payload) > MAX_RESPONSE: raise ValueError('Fixture response too large')
+		data = json.loads(payload.decode('utf-8-sig'))
+		if not isinstance(data, dict) or not isinstance(data.get('matches'), list) or data.get('has_more'): raise ValueError('Invalid fixture response')
+		fixtures = []
+		for match in data['matches']:
+			if not isinstance(match, dict) or match.get('competition') != 'cpl': continue
+			status = match.get('status')
+			if status not in ('UPCOMING', 'LIVE', 'IN_PLAY', 'HALF_TIME'): continue
+			home, away, date = (match.get(key) for key in ('home_team', 'away_team', 'kickoff_utc'))
+			if not all(isinstance(value, str) and 0 < len(value) <= 200 for value in (home, away, date)): continue
+			try: start = datetime.fromisoformat(date.replace('Z', '+00:00'))
+			except ValueError: continue
+			if start.utcoffset() is None: continue
+			if status == 'UPCOMING' and not 0 < start.timestamp() - now <= 24 * 3600: continue
+			if status != 'UPCOMING' and not -8 * 3600 <= start.timestamp() - now <= 300: continue
+			fixtures.append({'home': home, 'away': away, 'league': 'Canadian Premier League', 'status': 'Scheduled' if status == 'UPCOMING' else 'LIVE', 'date': date})
+		os.makedirs(profile, mode=0o700, exist_ok=True)
+		_write(path, {'created': now, 'fixtures': fixtures})
+		return fixtures, 'updated'
+	except (OSError, HTTPException, ValueError, TypeError, UnicodeError, OverflowError):
+		return [], 'unavailable'
 
 
 def get(profile, *, bundled=None, now=None, fetch=None):

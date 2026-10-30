@@ -20,8 +20,8 @@ KEY_FILE = 'sportapi-key.txt'
 CACHE_FILE = 'sportapi-live.json'
 FRESH_SECONDS = 300
 MAX_UPDATE_AGE = 900
-UPCOMING_SECONDS = 2 * 3600
-CACHE_VERSION = 4
+UPCOMING_SECONDS = 24 * 3600
+CACHE_VERSION = 5
 STANDINGS_SECONDS = 1800
 DAILY_LIMIT = 350
 MONTHLY_LIMIT = 12000
@@ -90,7 +90,9 @@ def _calendar_days(now):
 	today = _calendar_date(now)
 	days = [today.isoformat(), (today - timedelta(days=1)).isoformat()]
 	future = _calendar_date(now + UPCOMING_SECONDS + FRESH_SECONDS)
-	if future != today: days.append(future.isoformat())
+	while today < future:
+		today += timedelta(days=1)
+		days.append(today.isoformat())
 	return tuple(days)
 
 

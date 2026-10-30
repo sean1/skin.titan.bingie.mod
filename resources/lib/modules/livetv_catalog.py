@@ -118,11 +118,18 @@ def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=N
 	key = _key(account, action, params)
 	path = os.path.join(profile, 'livetv-catalog-' + key + '.json')
 	cached = _read(path, key, now)
+	full_live_catalog = action == 'get_live_streams' and not params
+	# An earlier empty response is not a known-good full catalogue.
+	if full_live_catalog and cached and not cached[0]['items']: cached = None
 	if cached and cached[1] < FRESH_SECONDS and not force_refresh:
 		if on_status: on_status(cached[0]['created'], False)
 		return cached[0]['items']
 	try:
 		data = fetch(account, action, **params)
+		if full_live_catalog and data == []:
+			# Some providers transiently return an empty list despite having channels.
+			data = fetch(account, action, **params)
+			if data == []: raise ValueError('Empty live channel catalog')
 		clean = _clean(data, action, account)
 	except (OSError, ValueError, TypeError):
 		if not cached: raise

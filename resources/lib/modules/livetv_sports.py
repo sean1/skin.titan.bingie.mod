@@ -8,37 +8,6 @@ _METADATA_DATE = re.compile(r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2
 	r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*)\b', re.I)
 _EVENT = re.compile(r"^([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?|at|@)\s+([\w .&'’\-]{2,80}?)$", re.I)
 
-_FRANCHISES = {
-	'hockey': ('anaheim ducks', 'boston bruins', 'buffalo sabres', 'calgary flames', 'carolina hurricanes', 'chicago blackhawks', 'colorado avalanche', 'columbus blue jackets',
-		'dallas stars', 'detroit red wings', 'edmonton oilers', 'florida panthers', 'los angeles kings', 'minnesota wild', 'montreal canadiens', 'nashville predators',
-		'new jersey devils', 'new york islanders', 'new york rangers', 'ottawa senators', 'philadelphia flyers', 'pittsburgh penguins', 'san jose sharks', 'seattle kraken',
-		'st louis blues', 'tampa bay lightning', 'toronto maple leafs', 'vancouver canucks', 'vegas golden knights', 'washington capitals', 'winnipeg jets', 'utah mammoth'),
-	'basketball': ('atlanta hawks', 'boston celtics', 'brooklyn nets', 'charlotte hornets', 'chicago bulls', 'cleveland cavaliers', 'dallas mavericks', 'denver nuggets',
-		'detroit pistons', 'golden state warriors', 'houston rockets', 'indiana pacers', 'los angeles clippers', 'los angeles lakers', 'memphis grizzlies', 'miami heat',
-		'milwaukee bucks', 'minnesota timberwolves', 'new orleans pelicans', 'new york knicks', 'oklahoma city thunder', 'orlando magic', 'philadelphia 76ers',
-		'phoenix suns', 'portland trail blazers', 'sacramento kings', 'san antonio spurs', 'toronto raptors', 'utah jazz', 'washington wizards'),
-	'football': ('arizona cardinals', 'atlanta falcons', 'baltimore ravens', 'buffalo bills', 'carolina panthers', 'chicago bears', 'cincinnati bengals', 'cleveland browns',
-		'dallas cowboys', 'denver broncos', 'detroit lions', 'green bay packers', 'houston texans', 'indianapolis colts', 'jacksonville jaguars', 'kansas city chiefs',
-		'las vegas raiders', 'los angeles chargers', 'los angeles rams', 'miami dolphins', 'minnesota vikings', 'new england patriots', 'new orleans saints', 'new york giants',
-		'new york jets', 'philadelphia eagles', 'pittsburgh steelers', 'san francisco 49ers', 'seattle seahawks', 'tampa bay buccaneers', 'tennessee titans', 'washington commanders'),
-}
-_MULTIWORD_NICKNAMES = ('blue jackets', 'red wings', 'maple leafs', 'golden knights', 'trail blazers')
-
-
-def _nickname_event(event, sport):
-	"""Canonicalize only recognized franchise names and their exact nicknames."""
-	result = []
-	for side in event:
-		normalized = ' '.join(re.findall(r'[^\W_]+', side))
-		matches = []
-		for franchise in _FRANCHISES[sport]:
-			nickname = next((name for name in _MULTIWORD_NICKNAMES if franchise.endswith(' ' + name)), franchise.rsplit(' ', 1)[-1])
-			if normalized in (franchise, nickname): matches.append(nickname)
-		if len(matches) != 1: return event
-		result.append(matches[0])
-	return tuple(sorted(result)) if result[0] != result[1] else event
-
-
 def _event(name):
 	match = _EVENT.fullmatch(name)
 	if not match: return None
@@ -47,40 +16,62 @@ def _event(name):
 	return teams
 
 
-def groups(streams, sport, now=None, *, evidence=None, matches=None, soccer_event=None, scope=None):
-	"""Return live event feeds; optional callbacks identify mislabeled PPV feeds.
-
-	Evidence is the set returned by the existing catalog evidence helper. All
-	callbacks are supplied together, keeping this module independent of menus.
-	"""
+def fixture_groups(streams, sport, fixtures):
+	"""Match event-labelled channels to unambiguous live scoreboard fixtures."""
 	if sport not in _SPORT_FIELDS: raise ValueError('Unknown sport')
-	if not isinstance(streams, list): return {}
-	today = (now or datetime.now().astimezone()).date()
-	fixtures = evidence(streams, today) if evidence and matches and soccer_event and scope else set()
-	allowed = {'hockey': {'nhl'}, 'football': {'nfl', 'ncaa football'}, 'basketball': {'nba'}}[sport]
-	fixtures = {fixture for fixture in fixtures if fixture[0] in allowed}
+	if not isinstance(streams, list) or not isinstance(fixtures, list): return {}
+	# Ignore nicknames which could identify more than one team in this league.
+	alias_owners = {}
+	for fixture in fixtures:
+		for side in ('home', 'away'):
+			team = fixture.get(side, {})
+			owner = team.get('name', '').casefold()
+			for alias in team.get('aliases', []):
+				alias = ' '.join(alias.casefold().split())
+				if len(alias) >= 3: alias_owners.setdefault(alias, set()).add(owner)
+	alias_teams = {}
+	for index, fixture in enumerate(fixtures):
+		for side in ('home', 'away'):
+			team = fixture.get(side, {})
+			owner = team.get('name', '').casefold()
+			for alias in team.get('aliases', []):
+				alias = ' '.join(alias.casefold().split())
+				if len(alias) >= 3 and alias_owners.get(alias) == {owner}: alias_teams.setdefault(alias, set()).add((index, side))
+	if not alias_teams: return {}
+	pattern = re.compile(r'(?<!\w)(?:' + '|'.join(re.escape(alias).replace(r'\ ', r'\s+') for alias in sorted(alias_teams, key=len, reverse=True)) + r')(?!\w)', re.I)
+	separator = re.compile(r'\b(?:vs?\.?|at)\b|@', re.I)
 	result = {}
 	for stream in streams:
 		if not isinstance(stream, dict): continue
-		stream_id = str(stream.get('stream_id') or '')
-		name = stream.get('name')
-		if not stream_id.isdecimal() or not isinstance(name, str): continue
-		parts = [part.strip() for part in name.split('|')]
-		if len(parts) < 3 or parts[0].casefold() != 'live': continue
-		if re.search(r'\b(?:end|ended|upcoming|replay|delayed)\b', ' '.join(parts[2:]), re.I): continue
-		event = _event(parts[1])
-		if not event: continue
-		explicit = any(_SPORT_FIELDS[sport].fullmatch(part) for part in parts[2:])
-		if not explicit:
-			candidate = soccer_event(name) if soccer_event else None
-			if _METADATA_DATE.search(' | '.join(parts[2:])) or not candidate or not matches(candidate, fixtures): continue
-			event = candidate
-		league_evidence = explicit and not any(re.fullmatch(r'NCAA\s+Football', part, re.I) for part in parts[2:])
-		if not explicit: league_evidence = matches(event, {fixture for fixture in fixtures if fixture[0] == {'hockey': 'nhl', 'football': 'nfl', 'basketball': 'nba'}[sport]})
-		fixture_scope = scope(name) if scope else ''
-		if sport == 'football' and not league_evidence: fixture_scope = '|'.join(filter(None, ('ncaa football', fixture_scope)))
-		date = _METADATA_DATE.search(' | '.join(parts[2:]))
-		if date and date.group().casefold() not in fixture_scope.casefold(): fixture_scope = '|'.join(filter(None, (fixture_scope, date.group().casefold())))
-		key = (_nickname_event(event, sport) if league_evidence else event, fixture_scope)
+		stream_id, name = str(stream.get('stream_id') or ''), stream.get('name')
+		if not stream_id.isdecimal() or not isinstance(name, str) or not separator.search(name): continue
+		if re.search(r'\b(?:end|ended|upcoming|replay|delayed)\b', name, re.I): continue
+		found = {}
+		for match in pattern.finditer(name):
+			alias = ' '.join(match.group().casefold().split())
+			for index, side in alias_teams.get(alias, ()):
+				found.setdefault(index, {}).setdefault(side, []).append((match.start(), match.end()))
+		candidates = []
+		for index, sides in found.items():
+			if 'home' not in sides or 'away' not in sides: continue
+			if not any(separator.search(name[min(a[1], b[1]):max(a[0], b[0])]) for a in sides['home'] for b in sides['away'] if a[1] <= b[0] or b[1] <= a[0]): continue
+			fixture = fixtures[index]
+			# Ignore clearly different calendar dates, while allowing timezone differences.
+			date_match = _METADATA_DATE.search(name)
+			if date_match:
+				try:
+					fixture_date = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')).date()
+					value = date_match.group()
+					parsed = []
+					for fmt in ('%Y-%m-%d', '%Y/%m/%d', '%d-%m-%Y', '%d/%m/%Y', '%m-%d-%Y', '%m/%d/%Y', '%b %d %Y', '%B %d %Y', '%d %b %Y', '%d %B %Y'):
+						try: parsed.append(datetime.strptime(value if re.search(r'\d{4}', value) else value + ' ' + str(fixture_date.year), fmt).date())
+						except ValueError: pass
+					if not parsed or all(abs((date - fixture_date).days) > 1 for date in parsed): continue
+				except (ValueError, KeyError): continue
+			candidates.append(fixture)
+		if len(candidates) != 1: continue
+		fixture = candidates[0]
+		event = tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away'))
+		key = (event, str(fixture.get('league') or ''))
 		result.setdefault(key, {}).setdefault(stream_id, stream)
 	return result

@@ -26,6 +26,7 @@ from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
 from modules import livetv_sports as _sports
 from modules import livetv_american_standings as _american_standings
+from modules import livetv_american_fixtures as _american_fixtures
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
@@ -68,15 +69,15 @@ def _fixture_scope(name):
 
 def _play_params(stream_id, name, sport=''):
 	params = {'mode': 'livetv.play', 'id': stream_id}
-	if sport in ('hockey', 'football', 'basketball'):
+	if sport in ('soccer', 'hockey', 'football', 'basketball'):
 		params.update({'name': name, 'sport': sport})
 	elif _soccer_event(name): params['name'] = name
 	return params
 
 
 def _prepare_failover(account, stream_id, name, sport=''):
-	if ':' in stream_id:
-		provider, _, numeric_id = stream_id.partition(':')
+	if ':' in stream_id or sport in ('soccer', 'hockey', 'football', 'basketball'):
+		numeric_id = stream_id.partition(':')[2] if ':' in stream_id else stream_id
 		if not numeric_id.isdecimal(): return
 		try:
 			groups, _ = _sports_catalog_groups(_load(), sport or 'soccer')
@@ -95,12 +96,7 @@ def _prepare_failover(account, stream_id, name, sport=''):
 	try:
 		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): return
-		if sport in ('hockey', 'football', 'basketball'):
-			groups = _sports_groups(streams, sport)
-			matching = [feeds for feeds in groups.values() if stream_id in feeds and feeds[stream_id].get('name') == name]
-			if len(matching) != 1: return
-			streams = list(matching[0].values())
-		elif not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event and _fixture_scope(stream['name']) == scope for stream in streams): return
+		if not any(isinstance(stream, dict) and str(stream.get('stream_id') or '') == stream_id and _soccer_event(stream.get('name')) == event and _fixture_scope(stream['name']) == scope for stream in streams): return
 		alternatives = []
 		secrets = (account.get('username', ''), account.get('password', ''))
 		feeds = [{'id': stream_id, 'name': _catalog_redact(name, secrets)}]
@@ -138,12 +134,23 @@ def _account_for_feed(provider_id):
 	return next((account for identity, account in _sports_accounts(_load()) if identity == provider_id), None)
 
 
-def _sports_catalog_groups(primary, sport, reload='', on_status=None):
+def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None):
 	from concurrent.futures import ThreadPoolExecutor
 	legacy = _load()
 	accounts = _sports_accounts(legacy)
 	primary_id = accounts[0][0] if accounts else None
 	status_values = []
+	if sport == 'soccer' and fixtures is None:
+		fixtures, _, _, _ = _live_soccer_fixtures()
+	elif sport in ('hockey', 'football', 'basketball') and fixtures is None:
+		try:
+			profile = ku.translate_path(getattr(ku, 'profile_path', ''))
+			fixtures = _american_fixtures.get_live(sport, cache_dir=profile or None)
+			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures updated')
+		except (OSError, ValueError, TypeError):
+			fixtures = []
+			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
+	if not fixtures: return {}, []
 	def fetch(entry):
 		identity, account = entry
 		try:
@@ -157,7 +164,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None):
 		for identity, streams in pool.map(fetch, accounts):
 			streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
 			all_streams.extend(streams)
-			local = _sports_groups(streams, sport) if sport in ('hockey', 'football', 'basketball') else _soccer_groups(streams)
+			local = _sports.fixture_groups(streams, sport, fixtures) if sport in ('hockey', 'football', 'basketball') else _soccer_fixture_groups(streams, fixtures)
 			for key, feeds in local.items():
 				for stream_id, stream in feeds.items(): groups.setdefault(key, {})[identity + ':' + stream_id if stream.get('_provider') else stream_id] = stream
 	if on_status and status_values: on_status(*status_values[-1])
@@ -189,7 +196,7 @@ def _read_account(path):
 
 
 def _account_fingerprint(account):
-	account = {key: value for key, value in account.items() if key not in ('id', 'enabled')}
+	account = {key: value for key, value in account.items() if key not in ('id', 'enabled', 'label', 'expires_at')}
 	return hashlib.sha256(json.dumps(account, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
@@ -1080,8 +1087,108 @@ def _soccer_groups(streams, now=None):
 	return groups
 
 
-def _sports_groups(streams, sport):
-	return _sports.groups(streams, sport, evidence=_other_sport_fixtures, matches=_other_sport_match, soccer_event=_soccer_event, scope=_fixture_scope)
+def _live_soccer_fixtures():
+	"""Get one authoritative live-fixture set, falling back when SportAPI is unavailable."""
+	profile = ku.translate_path(getattr(ku, 'profile_path', ''))
+	base = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private')
+	sport, sport_status = _sportapi_service.get(profile, bundled=os.path.join(base, _sportapi_service.KEY_FILE)) if profile else ([], 'not configured')
+	football, football_status = ([], 'not needed') if sport_status.startswith('updated ') else (_fixture_service.get(profile, bundled=os.path.join(base, _fixture_service.KEY_FILE)) if profile else ([], 'not configured'))
+	available = sport_status.startswith('updated ') or football_status.startswith('updated ')
+	selected = sport if sport_status.startswith('updated ') else football if football_status.startswith('updated ') else []
+	live = [item for item in selected if isinstance(item, dict) and item.get('status') in _fixture_service.LIVE_STATUSES]
+	status = ('API-Football: %s · SportAPI: %s' % (football_status, sport_status)) if available else 'Live fixtures unavailable'
+	return live, football, sport, status
+
+
+def _soccer_feed_event(name):
+	"""Extract two teams from a provider event label, never a team-only channel."""
+	if not isinstance(name, str) or re.search(r'\b(?:end|ended|replay|delayed)\b', name, re.I): return None
+	known = _soccer_event(name)
+	if known: return known
+	for part in name.split('|')[:2]:
+		part = part.strip()
+		ending = re.search(r'\s*\(([^()]*)\)\s*$', part)
+		if ending:
+			# Keep identity markers when removing a parenthesized time or feed label.
+			markers = re.findall(r'\b(?:women|womens|ladies|wfc|w|reserve|reserves|ii|iii|b|(?:u|under)\s*[- ]?\s*\d{1,2})\b', ending.group(1), re.I)
+			part = part[:ending.start()] + (' ' + ' '.join(markers) if markers else '')
+		match = re.fullmatch(r"([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’\-]{2,80}?)", part, re.I)
+		if match:
+			event = tuple(' '.join(side.casefold().split()) for side in match.groups())
+			if event[0] != event[1] and all(re.search(r'[^\W\d_]', side) for side in event): return event
+	return None
+
+
+def _soccer_schedule_agrees(name, fixture):
+	"""Reject explicitly scheduled labels that conflict with the fixture kickoff."""
+	daytime = re.search(r'\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s+(\d{1,2}):(\d{2})\s*(UK|UTC|GMT)\b', name, re.I)
+	date = re.search(r'\b(\d{4}-\d{2}-\d{2})\b', name)
+	if date and date.group(1) != str(fixture.get('date', ''))[:10]: return False
+	# Dates without a defined timezone/format cannot safely establish an occurrence.
+	if re.search(r'\b\d{4}[/.]\d{1,2}[/.]\d{1,2}\b|(?<![\d/.-])\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?(?![\d/.-])|\b(?:\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2})\b', name, re.I): return False
+	if not daytime:
+		return not re.search(r'\b\d{1,2}:\d{2}\b', name)
+	try:
+		start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+		if start.utcoffset() is None: return False
+		if daytime.group(4).upper() == 'UK':
+			from zoneinfo import ZoneInfo
+			start = start.astimezone(ZoneInfo('Europe/London'))
+		else: start = start.astimezone(timezone.utc)
+		return start.strftime('%a').casefold() == daytime.group(1).casefold() and start.hour == int(daytime.group(2)) and start.minute == int(daytime.group(3))
+	except (KeyError, TypeError, ValueError, OSError, ImportError): return False
+
+
+def _soccer_fixture_groups(streams, fixtures):
+	"""Join provider event labels to a unique live fixture using both team identities."""
+	index = {}
+	owners = {}
+	for fixture in fixtures or []:
+		if not isinstance(fixture, dict) or fixture.get('status') not in _fixture_service.LIVE_STATUSES: continue
+		for side in ('home', 'away'):
+			try:
+				name = fixture[side]
+				canonical = _fixture_service._team(name)[0]
+				for key in _fixture_service.team_keys(name): owners.setdefault(key, set()).add(canonical)
+			except (KeyError, TypeError, AttributeError): continue
+	def keys(name):
+		canonical = _fixture_service._team(name)[0]
+		return {key for key in _fixture_service.team_keys(name) if key == canonical or len(owners.get(key, ())) == 1}
+	for fixture in fixtures or []:
+		if not isinstance(fixture, dict) or fixture.get('status') not in _fixture_service.LIVE_STATUSES: continue
+		try:
+			home, away = (keys(fixture[side]) for side in ('home', 'away'))
+			if home and away and fixture['league'] and fixture['date']:
+				for home_key in home:
+					for away_key in away: index.setdefault((home_key, away_key), []).append(fixture)
+		except (KeyError, TypeError, AttributeError): continue
+	groups = {}
+	for stream in streams:
+		if not isinstance(stream, dict) or not str(stream.get('stream_id') or '').isdecimal(): continue
+		name = stream.get('name')
+		event = _soccer_feed_event(name)
+		if not event: continue
+		scope = _fixture_scope('||' + name)
+		home, away = (keys(side) for side in event)
+		candidates = {}
+		for home_key in home:
+			for away_key in away:
+				for fixture in index.get((home_key, away_key), []): candidates[(id(fixture), False)] = fixture
+				for fixture in index.get((away_key, home_key), []): candidates[(id(fixture), True)] = fixture
+		matched = []
+		for (_, reverse), fixture in candidates.items():
+			oriented = event[::-1] if reverse else event
+			if re.search(r'\bWSL\b', name, re.I): oriented = (oriented[0] + ' Women', oriented[1])
+			if _fixture_service.match(oriented, scope, [fixture]) and _soccer_schedule_agrees(name, fixture): matched.append(fixture)
+		if len(matched) != 1: continue
+		fixture = matched[0]
+		groups.setdefault(_soccer_fixture_key(fixture), {}).setdefault(str(stream['stream_id']), stream)
+	return groups
+
+
+def _soccer_fixture_key(fixture):
+	canonical = tuple(' '.join(fixture[side].casefold().split()) for side in ('home', 'away'))
+	return canonical, fixture['date'][:10] + '|' + fixture['league'].casefold() + '|' + fixture['date'][11:16]
 
 
 def all_standings(params):
@@ -1113,7 +1220,7 @@ def _sports_dashboard(account, sport, reload):
 		for (event, scope), feeds in sorted(groups.items(), key=lambda row: row[0]):
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
 			stream = ordered[0]
-			title = stream['name'].split('|')[1].strip()
+			title = ' vs '.join(side.title() for side in event)
 			count = len(feeds)
 			standings_sport = 'nhl' if sport == 'hockey' else 'nba' if sport == 'basketball' else 'ncaa' if scope.split('|')[0] == 'ncaa football' else 'nfl'
 			standings_event = _sports._event(title) or event
@@ -1125,7 +1232,9 @@ def _sports_dashboard(account, sport, reload):
 			_item(title, _play_params(_sports_ref(stream), stream['name'], sport), False, stream.get('stream_icon'), extra_context=context,
 				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'LIVE ' + sport.upper(), 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'),
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_key})
-		if not groups: _item('No recognized live %s matches — browse channels' % sport, {'mode': 'livetv.refine'})
+		if not groups:
+			message = 'Live fixtures unavailable — browse channels' if ku.get_property('LiveTV.Soccer.FixtureStatus') == 'Live fixtures unavailable' else 'No recognized live %s matches — browse channels' % sport
+			_item(message, {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		_error('Could not load Live TV channels.')
 		_finish(False)
@@ -1165,33 +1274,18 @@ def soccer(params):
 			catalog_status[:] = [created, stale]
 			when = datetime.fromtimestamp(created).astimezone().strftime('%a %H:%M')
 			ku.set_property('LiveTV.Soccer.Status', ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when)
-		groups, streams = _sports_catalog_groups(account, 'soccer', reload, on_status=status)
-		streams = [stream for stream in streams if stream.get('_primary', True)]
-		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
-		bundled = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private', _fixture_service.KEY_FILE)
-		fixtures, fixture_status = _fixture_service.get(profile, bundled=bundled) if profile else ([], 'not configured')
-		local_sport_key = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private', _sportapi_service.KEY_FILE)
-		sport_fixtures, sport_status = _sportapi_service.get(profile, bundled=local_sport_key) if profile else ([], 'not configured')
-		status_text = 'Match recognition: ' + fixture_status if sport_status == 'not configured' else 'API-Football: %s · SportAPI: %s' % (fixture_status, sport_status)
+		fixtures, _, sport_fixtures, status_text = _live_soccer_fixtures()
+		groups, streams = _sports_catalog_groups(account, 'soccer', reload, on_status=status, fixtures=fixtures)
 		ku.set_property('LiveTV.Soccer.FixtureStatus', status_text)
 		matches = {}
 		standings_keys = {}
 		standings_teams = {}
-		context_index = _context_programmes(streams, *catalog_status, events=(key[0] for key in groups))
+		fixtures_by_key = {_soccer_fixture_key(fixture): fixture for fixture in fixtures}
 		for key in groups:
-			first = _fixture_candidates(key[0], key[1], fixtures)
-			second = _fixture_candidates(key[0], key[1], sport_fixtures)
-			if len(first) > 1 or len(second) > 1: matches[key] = None
-			elif first and second:
-				first_live = first[0].get('status') in _fixture_service.LIVE_STATUSES
-				second_live = second[0].get('status') in _fixture_service.LIVE_STATUSES
-				matches[key] = first[0] if first_live == second_live and _fixtures_agree(first[0], second[0]) else None
-			else: matches[key] = (first or second or [None])[0]
-			context = _context_fixture(key[0], key[1], streams, (fixtures, sport_fixtures), *catalog_status, index=context_index)
-			if context is _CONTEXT_CONFLICT or _context_has_conflict(key[0], (fixtures, sport_fixtures)): matches[key] = None
-			elif not first and not second: matches[key] = context
+			matches[key] = fixtures_by_key.get(key)
 			matched = matches[key]
-			sport_match = second[0] if len(second) == 1 else next((item for item in sport_fixtures if item is context), None)
+			second = [item for item in sport_fixtures if item.get('status') in _fixture_service.LIVE_STATUSES and _soccer_fixture_key(item) == key]
+			sport_match = second[0] if len(second) == 1 else None
 			if matched and sport_match and _fixtures_agree(matched, sport_match) and (matched.get('status') in _fixture_service.LIVE_STATUSES) == (sport_match.get('status') in _fixture_service.LIVE_STATUSES):
 				league_id = sport_match.get('league_id')
 				if isinstance(league_id, int) and not isinstance(league_id, bool) and league_id > 0:
@@ -1221,17 +1315,17 @@ def soccer(params):
 			matched = matches[(event, scope)]
 			match_league = matched['league'] if matched else _soccer_league(preferred['name'])
 			if league != 'All' and league != match_league: continue
-			title = preferred['name'].split('|')[1].strip()
+			title = '%s vs %s' % (matched['home'], matched['away']) if matched else ' vs '.join(event)
 			state, kickoff = _soccer_match_state(matched, now)
 			rows.append((title, match_league, preferred, len(feeds), event, scope, matched, state, kickoff))
 		for title, match_league, stream, count, event, scope, matched, state, kickoff in sorted(rows, key=lambda row: ({'Live': 0, 'Starting soon': 1}.get(row[7], 2), row[8] if row[7] == 'Starting soon' else 0, row[1] == 'Other / unknown', row[1].casefold(), row[0].casefold())):
 			label = '%s — %s — %d %s' % (match_league, title, count, 'feed' if count == 1 else 'feeds')
 			context = []
 			if count > 1:
-				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope})
+				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': 'soccer', 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
-			_item(label, _play_params(_sports_ref(stream), stream['name']), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched), 'LiveTV.MatchState': state, 'LiveTV.StandingsKey': standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': standings_teams.get((event, scope), '')})
-		if not rows: _item('No recognized live soccer matches — browse channels', {'mode': 'livetv.refine'})
+			_item(label, _play_params(_sports_ref(stream), stream['name'], 'soccer'), False, stream.get('stream_icon'), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': '%d %s' % (count, 'feed' if count == 1 else 'feeds'), 'LiveTV.Recognition': 'Fixture matched' if matched else 'Unverified', 'LiveTV.Kickoff': _soccer_kickoff(matched), 'LiveTV.MatchState': state, 'LiveTV.StandingsKey': standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': standings_teams.get((event, scope), '')})
+		if not rows: _item('Live fixtures unavailable — browse channels' if status_text == 'Live fixtures unavailable' else 'No recognized live soccer matches — browse channels', {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')
 		_error('Could not load Live TV channels.')
@@ -1254,7 +1348,11 @@ def match_feeds(params):
 		return
 	try:
 		sport = params.get('sport', '')
-		groups, streams = _sports_catalog_groups(account, sport or 'soccer')
+		if sport:
+			groups, streams = _sports_catalog_groups(account, sport)
+		else:
+			streams = _catalog(account, 'get_live_streams')
+			groups = _soccer_groups(streams)
 		feeds = groups.get(((home, away), scope), {})
 		choices = list(feeds.items())
 		choices.sort(key=lambda entry: 0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1)

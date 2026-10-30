@@ -141,17 +141,40 @@ def _team(name):
 	name = unicodedata.normalize('NFKD', name.casefold())
 	name = ''.join(c for c in name if not unicodedata.combining(c))
 	name = re.sub(r'\bu[\s-]+(\d{1,2})\b', r'u\1', name)
+	name = re.sub(r'\bunder[\s-]+(\d{1,2})\b', r'u\1', name)
 	name = re.sub(r"\bwomen['’]s\b", 'womens', name)
-	words = re.findall(r'[a-z0-9]+', name)
+	words = re.findall(r'[^\W_]+', name)
 	women = any(word in ('w', 'wfc', 'women', 'womens', 'ladies') for word in words)
 	youth = {word for word in words if re.fullmatch(r'u\d{1,2}', word)}
 	words = [word for word in words if word not in ('fc', 'sc', 'cf', 'afc', 'w', 'wfc', 'women', 'womens', 'ladies') and not re.fullmatch(r'u\d{1,2}', word)]
+	if len(words) > 2 and words[:2] in (['football', 'club'], ['soccer', 'club']): words = words[2:]
+	# Generic club designators are not the identity of the club. Keep a
+	# leading or standalone "club", which can be part of the actual name.
+	if len(words) > 1 and words[-1] == 'club':
+		words.pop()
+		if len(words) > 1 and words[-1] in ('football', 'soccer'): words.pop()
 	return ' '.join(words), women, youth
 
 
+def team_keys(name):
+	"""Return exact normalized names and, where safe, their derived initials."""
+	words = _team(name)[0].split()
+	if not words: return set()
+	keys = {' '.join(words)}
+	# An initials alias is derived from this name, never from a club list.
+	# Reserve sides retain exact matching so their identity cannot disappear.
+	if len(words) >= 3 and all(word.isalpha() for word in words) and words[-1] not in ('b', 'ii', 'iii', 'reserve', 'reserves'):
+		keys.add(''.join(word[0] for word in words))
+	return keys
+
+
 def _team_alias(provider, fixture):
-	"""Recognize known provider names without merging different clubs or reserve sides."""
-	return (provider, fixture) in {('thionville', 'thionville lusitanos'), ('newcastle', 'newcastle united')}
+	"""Compare normalized names or initials derived from those names."""
+	left, right = _team(provider)[0], _team(fixture)[0]
+	if not left or not right: return False
+	if left == right: return True
+	# A shared generated initialism alone must never equate two full names.
+	return (' ' not in left and left in team_keys(fixture)) or (' ' not in right and right in team_keys(provider))
 
 
 def match(event, scope, fixtures):
@@ -165,9 +188,7 @@ def match(event, scope, fixtures):
 	for fixture in fixtures:
 		try:
 			home, away = _team(fixture['home']), _team(fixture['away'])
-			home_exact = provider[0][0] == home[0]
-			away_exact = provider[1][0] == away[0]
-			if not ((home_exact and (away_exact or _team_alias(provider[1][0], away[0]))) or (away_exact and _team_alias(provider[0][0], home[0]))): continue
+			if not (_team_alias(provider[0][0], home[0]) and _team_alias(provider[1][0], away[0])): continue
 			league = fixture['league']
 			league_identity = _team(league)
 			if p_women != (home[1] or away[1] or league_identity[1]) or p_youth != (home[2] | away[2] | league_identity[2]): continue

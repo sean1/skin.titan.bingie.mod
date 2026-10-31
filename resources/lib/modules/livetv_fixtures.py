@@ -217,8 +217,9 @@ def _team_alias(provider, fixture):
 	return (' ' not in left and left in team_keys(fixture)) or (' ' not in right and right in team_keys(provider))
 
 
-def match(event, scope, fixtures):
+def match(event, scope, fixtures, team_match=None):
 	"""Return a league only for one unambiguous, identity-preserving live fixture."""
+	team_match = team_match or _team_alias
 	if len(event) != 2: return None
 	provider = [_team(name) for name in event]
 	if not all(item[0] for item in provider): return None
@@ -228,7 +229,7 @@ def match(event, scope, fixtures):
 	for fixture in fixtures:
 		try:
 			home, away = _team(fixture['home']), _team(fixture['away'])
-			if not (_team_alias(provider[0][0], home[0]) and _team_alias(provider[1][0], away[0])): continue
+			if not (team_match(provider[0][0], home[0]) and team_match(provider[1][0], away[0])): continue
 			league = fixture['league']
 			league_identity = _team(league)
 			if p_women != (home[1] or away[1] or league_identity[1]) or p_youth != (home[2] | away[2] | league_identity[2]): continue

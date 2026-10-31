@@ -1337,6 +1337,50 @@ def _soccer_schedule_agrees(name, fixture):
 
 def _soccer_fixture_groups(streams, fixtures):
 	"""Join provider event labels to a unique live fixture using both team identities."""
+	# Artwork IDs are only used within the bundled league catalog; they are not
+	# comparable with IDs from a fixture provider.
+	aliases = ({'bayer 04', 'bayer leverkusen'}, {'monchengladbach', 'borussia m gladbach'}, {'leipzig', 'rb leipzig'}, {'bremen', 'werder bremen'})
+	curated = {'131': ('bayer leverkusen', aliases[0]), '268': ('borussia monchengladbach', aliases[1]), '11420': ('rb leipzig', aliases[2]), '137': ('werder bremen', aliases[3])}
+	def base_keys(name):
+		keys = _fixture_service.team_keys(name)
+		canonical = _fixture_service._team(name)[0]
+		for group in aliases:
+			if canonical in group: keys.update(group)
+		return keys
+	catalogs, full_names, global_names = {}, {}, {}
+	items = _soccer_logos._catalog()
+	ids = [item.get('id') for item in items if isinstance(item, dict) and isinstance(item.get('id'), str)]
+	duplicate_ids = {identity for identity in ids if ids.count(identity) > 1}
+	for item in items:
+		if not isinstance(item, dict) or not isinstance(item.get('id'), str) or not item['id'].isdecimal(): continue
+		if item['id'] in duplicate_ids or not isinstance(item.get('leagues'), list): continue
+		names = [item.get('name'), item.get('short_name')]
+		if isinstance(item.get('aliases'), list): names.extend(item['aliases'])
+		curated_team = curated.get(item['id'])
+		if curated_team and isinstance(item.get('name'), str) and _fixture_service._team(item['name'])[0] == curated_team[0]: names.extend(curated_team[1])
+		for name in names:
+			if isinstance(name, str) and name:
+				key = _fixture_service._team(name)[0]
+				if key: global_names.setdefault(key, set()).add(item['id'])
+		for league in item.get('leagues', []):
+			if not isinstance(league, str): continue
+			if isinstance(item.get('name'), str):
+				full_name = _soccer_logos._normalize(item['name'])
+				if full_name: full_names.setdefault(league, {}).setdefault(full_name, set()).add(item['id'])
+			for name in names:
+				if isinstance(name, str) and name:
+					key = _fixture_service._team(name)[0]
+					if key: catalogs.setdefault(league, {}).setdefault(key, set()).add(item['id'])
+	def league_catalog(fixture):
+		league = _soccer_logos._LEAGUES.get(_soccer_logos._normalize(fixture.get('league')))
+		countries = {'eng.1': {'england'}, 'esp.1': {'spain'}, 'ger.1': {'germany'}, 'ita.1': {'italy'}, 'fra.1': {'france'},
+			'usa.1': {'usa', 'united states', 'united states of america'}, 'ksa.1': {'saudi arabia'}, 'can.1': {'canada'}, 'can.championship': {'canada'}}
+		country = _soccer_logos._normalize(fixture.get('league_country'))
+		if country and league in countries and country not in countries[league]: return None, {}
+		return league, catalogs.get(league, {})
+	def catalog_keys(name, league, catalog):
+		ids = catalog.get(_fixture_service._team(name)[0], set())
+		return {('catalog', league, next(iter(ids)))} if len(ids) == 1 else set()
 	index = {}
 	owners = {}
 	for fixture in fixtures or []:
@@ -1345,15 +1389,22 @@ def _soccer_fixture_groups(streams, fixtures):
 			try:
 				name = fixture[side]
 				canonical = _fixture_service._team(name)[0]
-				for key in _fixture_service.team_keys(name): owners.setdefault(key, set()).add(canonical)
+				league, catalog = league_catalog(fixture)
+				for key in base_keys(name) | catalog_keys(name, league, catalog): owners.setdefault(key, set()).add(canonical)
 			except (KeyError, TypeError, AttributeError): continue
-	def keys(name):
+	def keys(name, fixture=None):
 		canonical = _fixture_service._team(name)[0]
-		return {key for key in _fixture_service.team_keys(name) if key == canonical or len(owners.get(key, ())) == 1}
+		keys = base_keys(name)
+		if fixture:
+			league, catalog = league_catalog(fixture)
+			keys |= catalog_keys(name, league, catalog)
+		else:
+			for league, catalog in catalogs.items(): keys |= catalog_keys(name, league, catalog)
+		return {key for key in keys if (key == canonical and not any(key in group for group in aliases)) or len(owners.get(key, ())) == 1}
 	for fixture in fixtures or []:
 		if not isinstance(fixture, dict) or not _schedule_state(fixture, time.time())[0]: continue
 		try:
-			home, away = (keys(fixture[side]) for side in ('home', 'away'))
+			home, away = (keys(fixture[side], fixture) for side in ('home', 'away'))
 			if home and away and fixture['league'] and fixture['date']:
 				for home_key in home:
 					for away_key in away: index.setdefault((home_key, away_key), []).append(fixture)
@@ -1375,7 +1426,32 @@ def _soccer_fixture_groups(streams, fixtures):
 		for (_, reverse), fixture in candidates.items():
 			oriented = event[::-1] if reverse else event
 			if re.search(r'\bWSL\b', name, re.I): oriented = (oriented[0] + ' Women', oriented[1])
-			if _fixture_service.match(oriented, scope, [fixture]) and _soccer_schedule_agrees(name, fixture): matched.append(fixture)
+			provider_sides = [_fixture_service._team(side) for side in oriented]
+			fixture_sides = [_fixture_service._team(fixture[side]) for side in ('home', 'away')]
+			_, league_women, league_youth = _fixture_service._team(fixture['league'])
+			if not league_women and any(provider[1] != expected[1] for provider, expected in zip(provider_sides, fixture_sides)): continue
+			if any((provider[2] - league_youth) != (expected[2] - league_youth) for provider, expected in zip(provider_sides, fixture_sides)): continue
+			league, catalog = league_catalog(fixture)
+			exact_pairs = set()
+			for position, (provider, side) in enumerate(zip(oriented, ('home', 'away'))):
+				expected = fixture[side]
+				raw = _soccer_logos._normalize(provider)
+				if raw and raw == _soccer_logos._normalize(expected) and len(full_names.get(league, {}).get(raw, set())) == 1:
+					exact_pairs.add(position)
+			if any((len(catalog.get(provider[0], set())) > 1 or len(catalog.get(expected[0], set())) > 1) and position not in exact_pairs for position, (provider, expected) in enumerate(zip(provider_sides, fixture_sides))): continue
+			def team_match(left, right):
+				left_ids, right_ids = catalog.get(left, set()), catalog.get(right, set())
+				if len(left_ids) > 1 or len(right_ids) > 1: return True
+				if left_ids and right_ids: return left_ids == right_ids
+				if any(left in group and right in group for group in aliases):
+					left_global, right_global = global_names.get(left, set()), global_names.get(right, set())
+					if len(left_global) > 1 or len(right_global) > 1: return False
+					if left_ids and len(right_global) == 1 and left_ids != right_global: return False
+					if right_ids and len(left_global) == 1 and right_ids != left_global: return False
+					if left_global and right_global and left_global != right_global: return False
+					return True
+				return _fixture_service._team_alias(left, right)
+			if _fixture_service.match(oriented, scope, [fixture], team_match=team_match) and _soccer_schedule_agrees(name, fixture): matched.append(fixture)
 		if len(matched) != 1: continue
 		fixture = matched[0]
 		groups.setdefault(_soccer_fixture_key(fixture), {}).setdefault(str(stream['stream_id']), stream)

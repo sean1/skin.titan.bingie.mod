@@ -403,7 +403,6 @@
         <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>$PARAM[color]</colordiffuse></control>
         <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/tennis-card-court.jpg</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),tennis) + !String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
         <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/f1-card-circuit.jpg</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),f1) + !String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
-        <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>bb020911</colordiffuse><visible>[String.IsEqual(Window(Home).Property(LiveTV.Sport),tennis) | String.IsEqual(Window(Home).Property(LiveTV.Sport),f1)] + !String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
     </include>
 
     <include name="BingieLiveSoccerTitle">
@@ -431,7 +430,6 @@
             <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/basketball-card-court.jpg</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball)</visible></control>
             <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/football-card-turf.jpg</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),football)</visible></control>
             <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/soccer-card-pitch.jpg</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),soccer)</visible></control>
-            <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>8c020911</colordiffuse></control>
             <control type="image"><left>8</left><right>8</right><bottom>8</bottom><height>128</height><texture>overlays/gradient_episodes.png</texture><aspectratio>stretch</aspectratio></control>
             <control type="label"><left>18</left><right>152</right><top>18</top><height>23</height><font>Reg20</font><textcolor>ffdddddd</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>$PARAM[focused]</scroll></control>
             <control type="image"><right>18</right><width>124</width><top>16</top><height>27</height><texture>colors/color_white.png</texture><colordiffuse>ffe50914</colordiffuse><visible>String.IsEqual(ListItem.Property(LiveTV.MatchState),Live)</visible></control>

@@ -235,7 +235,7 @@ class LiveTVFailover(ku.xbmc_player):
 			ku.clear_property(FEED_CHOICES)
 		if playing and playing != expected:
 			if not session['active'] and playing == session.get('outgoing'):
-				if now - session['started_at'] < 3.0: return True
+				if now - session['started_at'] < START_TIMEOUT: return True
 				self._clear()
 				return False
 			session['foreign_seen'] = True

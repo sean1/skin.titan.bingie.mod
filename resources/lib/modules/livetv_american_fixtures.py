@@ -88,17 +88,21 @@ def _get(sport, cache_dir, schedule):
 			if not isinstance(event, dict): continue
 			event_id = str(event.get('id') or '')
 			if event_id and event_id in seen: continue
-			state = event.get('status', {}).get('type', {}).get('state')
+			status = event.get('status')
+			if not isinstance(status, dict) or not isinstance(status.get('type'), dict): continue
+			event_type = status['type']
+			state = event_type.get('state')
 			if state != 'in':
 				if not schedule or state != 'pre': continue
-				if event.get('status', {}).get('type', {}).get('name') in ('STATUS_POSTPONED', 'STATUS_CANCELED', 'STATUS_CANCELLED'): continue
+				if event_type.get('name') in ('STATUS_POSTPONED', 'STATUS_CANCELED', 'STATUS_CANCELLED'): continue
 				try:
 					start = datetime.fromisoformat(str(event.get('date') or '').replace('Z', '+00:00'))
 					if start.utcoffset() is None or not 0 < (start - now).total_seconds() <= 24 * 3600: continue
 				except (ValueError, TypeError, OverflowError): continue
 			competitions = event.get('competitions') or []
-			if not competitions or not isinstance(competitions[0], dict): continue
+			if not isinstance(competitions, list) or not competitions or not isinstance(competitions[0], dict): continue
 			competitors = competitions[0].get('competitors') or []
+			if not isinstance(competitors, list): continue
 			sides = {}
 			for competitor in competitors:
 				if not isinstance(competitor, dict): continue

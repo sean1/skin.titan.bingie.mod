@@ -98,7 +98,7 @@ def _prepare_failover(account, stream_id, name, sport='', defer=False):
 				data = {'id': stream_id, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': labels, 'token': uuid.uuid4().hex}
 				if defer: return data
 				xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(data))
-		except (OSError, ValueError, TypeError): pass
+		except (OSError, HTTPException, ValueError, TypeError): pass
 		return
 	event = _soccer_event(name) if not sport else None
 	if not event and sport not in ('hockey', 'football', 'basketball'): return
@@ -123,7 +123,7 @@ def _prepare_failover(account, stream_id, name, sport='', defer=False):
 			data = {'id': stream_id, 'alternatives': alternatives, 'feeds': feeds, 'token': uuid.uuid4().hex}
 			if defer: return data
 			xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(data))
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		pass
 
 
@@ -159,7 +159,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 			fixtures = _american_fixtures.get_schedule(sport, cache_dir=profile or None)
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures updated')
-		except (OSError, ValueError, TypeError):
+		except (OSError, HTTPException, ValueError, TypeError):
 			fixtures = []
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
 	if not fixtures: return {}, []
@@ -170,7 +170,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			if on_status and identity == primary_id: kwargs['on_status'] = lambda created, stale: status_values.append((created, stale))
 			streams = _catalog(account, 'get_live_streams', **kwargs)
 			return identity, streams if isinstance(streams, list) else [], isinstance(streams, list)
-		except (OSError, ValueError, TypeError): return identity, [], False
+		except (OSError, HTTPException, ValueError, TypeError): return identity, [], False
 	groups, all_streams, failed = {}, [], False
 	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
 		for identity, streams, available in pool.map(fetch, accounts):
@@ -522,7 +522,7 @@ def browse(params):
 		for category in categories:
 			if not isinstance(category, dict) or not category.get('category_id'): continue
 			_item(str(category.get('category_name') or 'Other'), {'mode': 'livetv.channels', 'category': str(category['category_id'])})
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load Live TV categories. Check the server URL and account details, then try again.')
 	_finish()
 
@@ -554,7 +554,7 @@ def channels(params):
 			name = str(stream.get('name') or 'Live channel')
 			_item(name, _play_params(stream_id, name), False, stream.get('stream_icon'))
 		if has_next: _item('Next page', {**page_params, 'page': str(page + 1)})
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load channels. Check the account details and try again.')
 		_finish(False)
 		return
@@ -702,7 +702,7 @@ def _download_guide(url, now, wanted=None, search_term=None):
 		except OSError:
 			pass
 		return programmes
-	except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
+	except (OSError, HTTPException, ValueError, ET.ParseError, EOFError, zlib.error):
 		if stale_created is not None:
 			try:
 				with open(path, 'rb') as raw: stale = _parse_raw_guide(raw, now, wanted, search_term)
@@ -730,7 +730,7 @@ def _guide_data(account, wanted=None):
 	if cache and 0 <= now - cache['created'] < _GUIDE_FRESH_SECONDS: return cache['programmes']
 	try:
 		programmes = _download_guide(url, now, wanted)
-	except (OSError, ValueError, ET.ParseError, EOFError, zlib.error):
+	except (OSError, HTTPException, ValueError, ET.ParseError, EOFError, zlib.error):
 		if cache and 0 <= now - cache['created'] < _GUIDE_STALE_SECONDS:
 			ku.dialog.notification('Live TV', 'Showing saved guide data; refresh failed.')
 			return cache['programmes']
@@ -940,7 +940,7 @@ def search_results(params):
 	try:
 		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): raise ValueError('Invalid response')
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not search Live TV channels. Check the account and try again.')
 		_finish(False)
 		return
@@ -986,7 +986,7 @@ def search_results(params):
 			when = 'Now' if start <= now < stop else _guide_time(start)
 			_item('Guide: %s — %s — %s (channel schedule)' % (when, title, name), {'mode': 'livetv.schedule', 'id': str(stream['stream_id']), 'epg': epg_id, 'name': name}, True, stream.get('stream_icon'))
 		guide_count = min(len(matches), _SEARCH_RESULT_LIMIT)
-	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+	except (OSError, HTTPException, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
 		ku.dialog.notification('Live TV', 'TV guide unavailable; showing channel name matches only.')
 	if len(rows) > _SEARCH_RESULT_LIMIT or guide_truncated:
 		ku.dialog.notification('Live TV', 'Showing the first search results. Try a more specific name.')
@@ -1322,7 +1322,7 @@ def _sports_dashboard(account, sport, reload):
 		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 		try:
 			fixtures = _american_fixtures.get_schedule(sport, cache_dir=profile or None)
-		except (OSError, ValueError, TypeError):
+		except (OSError, HTTPException, ValueError, TypeError):
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
 			_item('Fixtures unavailable — browse channels', {'mode': 'livetv.refine'})
 			_finish()
@@ -1363,7 +1363,7 @@ def _sports_dashboard(account, sport, reload):
 		if not rows:
 			message = 'Fixtures unavailable — browse channels' if ku.get_property('LiveTV.Soccer.FixtureStatus') == 'Live fixtures unavailable' else 'No live or upcoming %s matches — browse channels' % sport
 			_item(message, {'mode': 'livetv.refine'})
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load Live TV channels.')
 		_finish(False)
 		return
@@ -1501,7 +1501,7 @@ def match_feeds(params):
 				_item(('Feed %d' % number if ':' in stream_id else name.split('|')[-1].strip()) + ' (play channel)', _play_params(stream_id, name, sport), False, stream.get('stream_icon'))
 		else:
 			ku.dialog.notification('Live TV', 'No matching live feeds are currently available.')
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load matching feeds. Try again.')
 		_finish(False)
 		return
@@ -1522,7 +1522,7 @@ def guide(params):
 		for category in categories:
 			if isinstance(category, dict) and category.get('category_id'):
 				_item(str(category.get('category_name') or 'Other'), {'mode': 'livetv.guide_channels', 'category': str(category['category_id'])})
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load TV guide categories. Check the Live TV account and try again.')
 		_finish(False)
 		return
@@ -1540,7 +1540,10 @@ def guide_channels(params):
 		streams = _catalog(account, 'get_live_streams', **({'category_id': category} if category else {}))
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 		wanted = {str(stream['epg_channel_id']) for stream in streams if isinstance(stream, dict) and stream.get('epg_channel_id')}
-		programmes = _guide_data(account, wanted) if wanted else {}
+		try: programmes = _guide_data(account, wanted) if wanted else {}
+		except (OSError, HTTPException, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+			ku.dialog.notification('Live TV', 'TV guide unavailable; channels remain playable.')
+			programmes = {}
 		streams, page, has_next = _channel_page(streams, params)
 		page_params = {'mode': 'livetv.guide_channels', 'category': category}
 		now = time.time()
@@ -1558,7 +1561,7 @@ def guide_channels(params):
 			else:
 				_item(name + ' — No guide data (play channel)', _play_params(stream_id, name), False, stream.get('stream_icon'))
 		if has_next: _item('Next page', {**page_params, 'page': str(page + 1)})
-	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+	except (OSError, HTTPException, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
 		_error('Could not load the TV guide. Check the guide URL in Settings or choose a smaller category. Channels remain available in Live TV.')
 		_finish(False)
 		return
@@ -1574,14 +1577,17 @@ def schedule(params):
 		return
 	try:
 		epg_id = params.get('epg', '')
-		entries = _guide_data(account, {epg_id}).get(epg_id, [])
-		now = time.time()
 		name = str(params.get('name') or 'channel')
 		_item('Play ' + name, _play_params(stream_id, name), False)
+		try: entries = _guide_data(account, {epg_id}).get(epg_id, [])
+		except (OSError, HTTPException, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+			ku.dialog.notification('Live TV', 'TV guide unavailable; channel remains playable.')
+			entries = []
+		now = time.time()
 		for start, stop, title in entries:
 			if stop > now:
 				_item(_guide_time(start) + '–' + _guide_time(stop) + '  ' + title + ' (play live channel)', _play_params(stream_id, name), False)
-	except (OSError, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
+	except (OSError, HTTPException, ValueError, TypeError, ET.ParseError, EOFError, zlib.error):
 		_error('Could not load this channel’s schedule. Check the TV guide URL and try again.')
 		_finish(False)
 		return

@@ -5,6 +5,7 @@ import os
 import re
 import tempfile
 import time
+from http.client import HTTPException
 from urllib.parse import parse_qsl, unquote, urlsplit
 
 FRESH_SECONDS = 120
@@ -131,7 +132,7 @@ def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=N
 			data = fetch(account, action, **params)
 			if data == []: raise ValueError('Empty live channel catalog')
 		clean = _clean(data, action, account)
-	except (OSError, ValueError, TypeError):
+	except (OSError, HTTPException, ValueError, TypeError):
 		if not cached: raise
 		if on_stale: on_stale()
 		if on_status: on_status(cached[0]['created'], True)

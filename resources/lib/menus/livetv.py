@@ -1794,12 +1794,12 @@ def _f1_startup(reference, account, failover):
 						valid = bool(first) and first not in (b'<', b'{')
 			except (OSError, HTTPException, ValueError, TypeError, AttributeError): pass
 			if valid:
-				results.put([(ref, url)])
+				results.put((ref, url))
 				return
-		results.put([])
+		results.put(None)
 	threading.Thread(target=probe, daemon=True).start()
 	try: return results.get(timeout=9)
-	except queue.Empty: return []
+	except queue.Empty: return None
 
 
 def play(params):
@@ -1815,17 +1815,14 @@ def play(params):
 	failover = _cached_failover(params) if params.get('sport') else None if separator or _soccer_event(params.get('name', '')) else _prepare_failover(account, stream_id, params.get('name', ''), defer=True)
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
 	if params.get('sport') == 'f1':
-		passed = _f1_startup(reference, account, failover)
-		if not passed:
-			_error('No Formula 1 feed responded. Please try again or choose another channel.')
+		selected = _f1_startup(reference, account, failover)
+		if not selected:
+			ku.dialog.notification('Live TV', 'No Formula 1 feed responded. Try again or choose another channel.')
 			xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 			return
-		selected_ref, url = passed[0]
-		if failover:
-			ordered = [ref for ref, _ in passed]
-			failover['id'], failover['alternatives'] = selected_ref, ordered[1:_FAILOVER_LIMIT + 1]
-			failover['feeds'] = [feed for feed in failover['feeds'] if feed['id'] in ordered]
-			if not failover['alternatives']: failover = None
+		_, url = selected
+		# Unchecked alternatives can block Kodi, so keep them in the feed picker only.
+		failover = None
 	item = xbmcgui.ListItem(path=url)
 	item.setMimeType('video/mp2t')
 	item.setContentLookup(False)

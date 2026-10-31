@@ -1510,7 +1510,7 @@ def _sports_dashboard(account, sport, reload):
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			matched_feeds = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			team_properties = {}
-			if sport in ('hockey', 'basketball'):
+			if sport in ('hockey', 'basketball', 'football'):
 				for side in ('home', 'away'):
 					team_properties['LiveTV.%sTeam' % side.title()] = fixture[side]['name']
 					team_properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.team_logo(sport, fixture[side].get('abbreviation'))

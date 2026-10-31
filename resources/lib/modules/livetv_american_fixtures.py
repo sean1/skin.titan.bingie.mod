@@ -17,7 +17,7 @@ _CACHE = {}
 
 def team_logo(sport, value):
 	"""Map a team abbreviation to a bundled image, if present."""
-	league = {'hockey': 'nhl', 'basketball': 'nba'}.get(sport)
+	league = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
 	if not league or not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9]+', value): return ''
 	filename = value.lower() + '.png'
 	asset = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'media', 'livetv', league, filename)
@@ -123,7 +123,7 @@ def _get(sport, cache_dir, schedule):
 				if not isinstance(name, str) or side not in ('home', 'away'): continue
 				names = [team.get(k) for k in ('displayName', 'shortDisplayName', 'name')]
 				sides[side] = {'name': name, 'aliases': [n for n in names if isinstance(n, str) and n.strip()]}
-				if sport in ('hockey', 'basketball') and team_logo(sport, team.get('abbreviation')): sides[side]['abbreviation'] = team['abbreviation']
+				if sport in ('hockey', 'basketball', 'football') and team_logo(sport, team.get('abbreviation')): sides[side]['abbreviation'] = team['abbreviation']
 			if len(sides) != 2: continue
 			fixture = {'league': league, 'date': str(event.get('date') or ''), 'id': str(event.get('id') or ''), 'home': sides['home'], 'away': sides['away']}
 			if schedule: fixture['status'] = 'LIVE' if state == 'in' else 'Scheduled'

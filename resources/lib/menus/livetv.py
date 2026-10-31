@@ -1510,10 +1510,10 @@ def _sports_dashboard(account, sport, reload):
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			matched_feeds = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			team_properties = {}
-			if sport == 'hockey':
+			if sport in ('hockey', 'basketball'):
 				for side in ('home', 'away'):
 					team_properties['LiveTV.%sTeam' % side.title()] = fixture[side]['name']
-					team_properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.hockey_logo(fixture[side].get('abbreviation'))
+					team_properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.team_logo(sport, fixture[side].get('abbreviation'))
 			_item(title + (' — ' + feed_label if not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], sport, matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
 				extra_properties={'LiveTV.Match': title, 'LiveTV.League': fixture.get('league_label', scope.upper()), 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_key, **team_properties})

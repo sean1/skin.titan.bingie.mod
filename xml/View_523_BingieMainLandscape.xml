@@ -358,7 +358,7 @@
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="BingieLiveSoccerCardArt"><param name="color" value="ff202020" /></include></control>
                     <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include></control>
                     <include content="BingieLiveSoccerTitle"><param name="focused" value="false" /></include>
-                    <include content="BingieHockeyCard"><param name="focused" value="false" /></include>
+                    <include content="BingieSportsMatchupCard"><param name="focused" value="false" /></include>
                 </control>
             </itemlayout>
             <focusedlayout height="193" width="333">
@@ -383,7 +383,7 @@
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="BingieLiveSoccerCardArt"><param name="color" value="ff303030" /></include></control>
                     <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include></control>
                     <include content="BingieLiveSoccerTitle"><param name="focused" value="true" /></include>
-                    <include content="BingieHockeyCard"><param name="focused" value="true" /></include>
+                    <include content="BingieSportsMatchupCard"><param name="focused" value="true" /></include>
                 </control>
 				<!--Top 250 1-->
 				<control type="image">
@@ -405,7 +405,7 @@
 
     <include name="BingieLiveSoccerTitle">
         <control type="group">
-            <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey)</visible>
+            <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball)</visible>
             <control type="label"><left>18</left><right>18</right><top>18</top><height>23</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>$PARAM[focused]</scroll><visible>String.IsEmpty(ListItem.Property(LiveTV.MatchState)) + !String.IsEmpty(ListItem.Property(LiveTV.League)) + !String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
             <control type="label"><left>18</left><right>152</right><top>18</top><height>23</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>$PARAM[focused]</scroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.MatchState)) + !String.IsEmpty(ListItem.Property(LiveTV.League)) + !String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)</visible></control>
             <control type="label"><left>18</left><right>18</right><top>18</top><height>23</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>UNVERIFIED MATCH</label><visible>String.IsEmpty(ListItem.Property(LiveTV.MatchState)) + String.IsEqual(ListItem.Property(LiveTV.Recognition),Unverified) + [String.IsEmpty(ListItem.Property(LiveTV.League)) | String.IsEqual(ListItem.Property(LiveTV.League),Other / unknown)]</visible></control>
@@ -421,10 +421,11 @@
         </control>
     </include>
 
-    <include name="BingieHockeyCard">
+    <include name="BingieSportsMatchupCard">
         <control type="group">
-            <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey)</visible>
-            <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/hockey-card-ice.jpg</texture><aspectratio>scale</aspectratio></control>
+            <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + [String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) | String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball)]</visible>
+            <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/hockey-card-ice.jpg</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey)</visible></control>
+            <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture background="true">livetv/basketball-card-court.jpg</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball)</visible></control>
             <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>8c020911</colordiffuse></control>
             <control type="image"><left>8</left><right>8</right><bottom>8</bottom><height>128</height><texture>overlays/gradient_episodes.png</texture><aspectratio>stretch</aspectratio></control>
             <control type="label"><left>18</left><right>152</right><top>18</top><height>23</height><font>Reg20</font><textcolor>ffdddddd</textcolor><label>$INFO[ListItem.Property(LiveTV.League)]</label><scroll>$PARAM[focused]</scroll></control>

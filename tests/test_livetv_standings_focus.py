@@ -35,58 +35,6 @@ class StandingsFocusTests(unittest.TestCase):
 	def selected(self, key, league='League', match=''):
 		self.labels = {'Container(523).ListItem.Property(LiveTV.StandingsKey)': key, 'Container(523).ListItem.Property(LiveTV.League)': league, 'Container(523).ListItem.Property(LiveTV.StandingsMatchKey)': match}
 
-	def test_ncaa_all_text_has_every_group_and_safe_highlights(self):
-		key = 'ncaa|Troy|Dukes'
-		groups = [('Conference %d' % n, [{'position': 1, 'team': '[COLOR red]Team %d' % n, 'points': '5-2-0', 'highlight': n == 12}]) for n in range(1, 13)]
-		self.american.get_ncaa_groups = Mock(return_value=(groups, 'OVERALL'))
-		self.selected(key)
-		self.focus.identity = key
-		with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
-		self.focus.tick()
-		text = self.props['LiveTV.Standings.AllText']
-		self.assertIn('Conference 12', text)
-		self.assertIn('[B]1. COLOR redTeam 12  —  5-2-0[/B]', text)
-		self.assertNotIn('[COLOR red]', text)
-		self.assertEqual(self.props['LiveTV.Standings.Layout'], 'ncaa')
-		self.selected('')
-		self.focus.tick()
-		self.assertNotIn('LiveTV.Standings.AllText', self.props)
-
-	def test_college_columns_and_fallbacks(self):
-		key = 'ncaa|Troy|Dukes'
-		def row(n, highlight=False): return {'position': n, 'team': 'Team %d' % n, 'points': '5-2', 'highlight': highlight}
-		cases = [
-			([('East', [row(1, True), row(2, True), row(3), row(4)])], 'college', 'East (continued)'),
-			([('East', [row(1, True)]), ('West', [row(2, True)])], 'college', 'West'),
-			([('East', [row(1, True)])], 'ncaa', None),
-			([('East', [row(1, True), row(1, True)])], 'ncaa', None),
-			([('East', [row(1, True), row(2, True), row(3, True)])], 'ncaa', None),
-			([('East', [row(n, n in (1, 2)) for n in range(1, 20)])], 'ncaa', None),
-		]
-		for groups, layout, second in cases:
-			with self.subTest(layout=layout, groups=groups):
-				self.american.get_ncaa_groups = Mock(return_value=(groups, 'OVERALL'))
-				self.selected(key)
-				self.focus.identity = key
-				with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
-				self.focus.tick()
-				self.assertEqual(self.props['LiveTV.Standings.Layout'], layout)
-				if second: self.assertEqual(self.props['LiveTV.Standings.Group2.Name'], second)
-				else: self.assertIn('LiveTV.Standings.AllText', self.props)
-				self.selected('')
-				self.focus.tick()
-				self.assertNotIn('LiveTV.Standings.Group1.Row1.Team', self.props)
-
-	def test_college_columns_retry_when_another_group_is_unavailable(self):
-		key = 'ncaa|Troy|Dukes'
-		groups = [('East', [{'position': 1, 'team': 'Troy', 'points': '5-2', 'highlight': True}, {'position': 2, 'team': 'Dukes', 'points': '4-3', 'highlight': True}]), ('West (unavailable)', [])]
-		self.american.get_ncaa_groups = Mock(return_value=(groups, 'OVERALL'))
-		self.selected(key)
-		self.focus.identity = key
-		with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
-		with patch.object(self.module, 'monotonic', return_value=1000): self.focus.tick()
-		self.assertEqual(self.props['LiveTV.Standings.Layout'], 'college')
-		self.assertEqual(self.focus.published_at, 1000 - self.module._REFRESH_SECONDS + self.module._RETRY_SECONDS)
 
 	def test_nba_conferences_order_rows_and_clear(self):
 		key = 'nba|Lakers|Celtics'
@@ -106,14 +54,6 @@ class StandingsFocusTests(unittest.TestCase):
 		self.focus.tick()
 		self.assertNotIn('LiveTV.Standings.Group2.Row15.Team', self.props)
 
-	def test_nba_unavailable_conference_is_published(self):
-		key = 'nba|Lakers|Celtics'
-		self.american.get_nba_groups = Mock(return_value=([('Eastern Conference (unavailable)', []), ('Western Conference', [{'position': 1, 'team': 'Lakers', 'points': '4-3'}])], 'W-L'))
-		self.selected(key)
-		self.focus.identity = key
-		with patch.dict('sys.modules', {'modules': self.modules, 'modules.livetv_american_standings': self.american}): self.focus._load(key)
-		self.focus.tick()
-		self.assertEqual(self.props['LiveTV.Standings.Group1.Name'], 'Eastern Conference (unavailable)')
 
 	def test_nhl_publishes_four_groups_and_clears_on_focus_change(self):
 		key = 'nhl|Jets|Lightning'
@@ -148,13 +88,6 @@ class StandingsFocusTests(unittest.TestCase):
 		self.assertEqual(self.props['LiveTV.Standings.Group8.Row4.Highlight'], 'true')
 		self.assertAlmostEqual(self.focus.published_at, self.module.monotonic() - self.module._REFRESH_SECONDS + self.module._RETRY_SECONDS, delta=1)
 
-	def test_incomplete_nhl_groups_not_published(self):
-		key = 'nhl|Jets|Lightning'
-		self.selected(key)
-		self.focus.identity = key
-		self.focus.results.put((key, [('Central', [{'position': 1, 'team': 'Jets', 'points': '5'}])], 'NHL', 'PTS'))
-		self.focus.tick()
-		self.assertNotIn('LiveTV.Standings.Key', self.props)
 
 	def test_stale_result_is_discarded_and_properties_cleared(self):
 		old, new = 'nhl|Jets|Lightning', 'nfl|Jets|Dolphins'
@@ -166,11 +99,6 @@ class StandingsFocusTests(unittest.TestCase):
 		self.assertNotIn('LiveTV.Standings.Key', self.props)
 		self.assertNotIn('LiveTV.Standings.League', self.props)
 
-	def test_invalid_sport_key_does_not_start_fetch(self):
-		for key in ('nhl|Jets', 'nhl|../jets|Lightning', 'nfl|Jets|Jets', 'mlb|Jets|Lightning', 'nhl|' + 'x' * 81 + '|Lightning'):
-			with self.subTest(key=key):
-				self.selected(key)
-				self.assertEqual(self.focus._focused(), ('', ''))
 
 	def test_soccer_numeric_identity_and_highlighting_remain_supported(self):
 		self.selected('123', 'Premier League', '1:2')

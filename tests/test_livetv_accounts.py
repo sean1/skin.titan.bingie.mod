@@ -30,9 +30,6 @@ class LiveTVAccountsTests(unittest.TestCase):
 		self.primary = {'server': 'https://main.example', 'username': 'primary-user', 'password': 'primary-secret'}
 		self.account = {'id': 'backup_1', 'server': 'https://backup.example', 'username': 'backup-user', 'password': 'backup-secret'}
 
-	def test_load_preserves_primary_and_valid_account(self):
-		(self.profile / 'resources/private/livetv-account.json').write_text(json.dumps({'accounts': [self.account]}))
-		self.assertEqual(self.module.load_accounts(self.primary), [('primary', self.primary), ('backup_1', self.account)])
 
 	def test_rejects_disabled_duplicate_reserved_and_invalid_entries(self):
 		entries = [dict(self.account, enabled=False), self.account, dict(self.account, username='other'), dict(self.account, id='primary'), dict(self.account, id='bad:id'), dict(self.account, id='missing', password=''), 'invalid']

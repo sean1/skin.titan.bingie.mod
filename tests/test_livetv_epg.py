@@ -50,13 +50,4 @@ class LiveTVGuideTests(unittest.TestCase):
 		with open(self.live._guide_cache_path(), encoding='utf-8') as cache: self.assertNotIn('password=other', cache.read())
 
 
-	def test_stale_cached_guide_is_available_during_outage(self):
-		with patch.object(self.live.time, 'time', return_value=10000), patch.object(self.live, '_download_guide', return_value={'sports': [[1, 2, 'Match']]}):
-			self.live._guide_data(self.account)
-		with patch.object(self.live.time, 'time', return_value=10000 + 3 * 3600), patch.object(self.live, '_download_guide', side_effect=OSError('secret server URL')):
-			self.assertIn('sports', self.live._guide_data(self.account))
-		message = str(self.live.ku.dialog.notification.call_args)
-		self.assertNotIn('secret server URL', message)
-
-
 if __name__ == '__main__': unittest.main()

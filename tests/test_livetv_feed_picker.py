@@ -4,7 +4,7 @@ import unittest
 from tests import test_livetv_failover as failover_tests
 
 
-class LiveTVFeedPickerTests(failover_tests.LiveTVFailoverTests):
+class LiveTVFeedPickerTests(failover_tests.LiveTVFailoverFixture, unittest.TestCase):
 	def setUp(self):
 		super().setUp()
 		self.properties[self.module.PROPERTY] = json.dumps({'token': 'one', 'id': '1', 'alternatives': ['2', '3', '4'], 'feeds': [{'id': str(i), 'name': 'Broadcast %d' % i} for i in range(1, 13)]})

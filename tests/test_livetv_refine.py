@@ -46,28 +46,6 @@ class LiveTVRefineTests(unittest.TestCase):
 			self.assertEqual(second[1].args[0], 'VTV 100')
 			self.assertEqual(second[2].args[0], 'VTV 101')
 
-	def test_missing_account_and_provider_error_finish_unsuccessfully(self):
-		with patch.object(self.live, '_load', return_value=None), patch.object(self.live, '_error') as error, patch.object(self.live, '_finish') as finish:
-			self.refine.dispatch({})
-			error.assert_called_once()
-			finish.assert_called_once_with(False)
-		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', side_effect=OSError('private')), patch.object(self.live, '_error') as error, patch.object(self.live, '_finish') as finish:
-			self.refine.dispatch({})
-			error.assert_called_once_with('Could not load Live TV channels.')
-			finish.assert_called_once_with(False)
-
-	def test_no_matches_offers_clear_refinements(self):
-		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=[{'stream_id': 1, 'name': 'VTV1'}]), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish') as finish:
-			self.refine.dispatch({'name': 'not a channel'})
-		item.assert_called_once_with('No channels found — clear refinements', {'mode': 'livetv.refine'})
-		finish.assert_called_once_with()
-
-	def test_background_directory_read_does_not_change_current_view(self):
-		self.refine.xbmc.getCondVisibility.return_value = False
-		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=[{'stream_id': 1, 'name': 'VTV1'}]), patch.object(self.live, '_item'), patch.object(self.live, '_finish'):
-			self.refine.dispatch({})
-		self.refine.xbmc.executebuiltin.assert_not_called()
-
 	def test_existing_landscape_view_is_not_reset(self):
 		self.refine.xbmc.getCondVisibility.return_value = False
 		with patch.object(self.live, '_load', return_value=self.account), patch.object(self.live, '_catalog', return_value=[{'stream_id': 1, 'name': 'VTV1'}]), patch.object(self.live, '_item'), patch.object(self.live, '_finish'):

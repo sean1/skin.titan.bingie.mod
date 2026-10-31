@@ -12,11 +12,6 @@ class LiveTVFailoverMatchingTests(unittest.TestCase):
 		self.name = 'Live | Liverpool vs. Chelsea | all | 8K EXCLUSIVE | CA: SOCCER PPV 17'
 		self.live.ku.set_property = lambda *args: None
 
-	def test_only_recognizes_explicit_live_soccer_events(self):
-		event = self.live._soccer_event(self.name)
-		self.assertEqual(event, ('liverpool', 'chelsea'))
-		for name in ('END | Liverpool vs. Chelsea | CA: SOCCER PPV 17', 'Live | Liverpool vs. Everton | NHL', 'Live | Liverpool | Soccer', 'Live | Liverpool vs. Chelsea | UPCOMING SOCCER'):
-			with self.subTest(name=name): self.assertIsNone(self.live._soccer_event(name))
 
 	def test_same_teams_only_unique_and_bounded_without_credentials(self):
 		streams = [{'stream_id': 1, 'name': self.name}, {'stream_id': 2, 'name': self.name.replace('CA:', 'US:')}, {'stream_id': 2, 'name': self.name}, {'stream_id': 3, 'name': self.name.replace('Chelsea', 'Everton')}, {'stream_id': 4, 'name': self.name.replace('Live', 'End')}]

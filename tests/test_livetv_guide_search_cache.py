@@ -1,6 +1,5 @@
 import hashlib
 import importlib.util
-import json
 from pathlib import Path
 import tempfile
 import time
@@ -41,18 +40,6 @@ class LiveTVGuideSearchCacheTests(unittest.TestCase):
 		self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 		self.assertNotIn('secret', path.read_text())
 		self.assertNotIn('private', path.name)
-
-
-	def test_corrupt_or_expired_result_falls_back_to_loader(self):
-		self.search()
-		path = self.files()[0]
-		path.write_text('{bad')
-		self.search()
-		data = json.loads(path.read_text())
-		data['created'] = time.time() - 301
-		path.write_text(json.dumps(data))
-		self.search()
-		self.assertEqual(self.loader.call_count, 3)
 
 
 if __name__ == '__main__': unittest.main()

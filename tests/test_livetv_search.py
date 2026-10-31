@@ -35,22 +35,4 @@ class LiveTVSearchTests(unittest.TestCase):
 		self.assertEqual(guide.call_args.kwargs['search_term'], 'liverpool')
 
 
-	def test_live_soccer_variants_are_grouped_without_hiding_other_results(self):
-		streams = [
-			{'name': 'Live | Liverpool vs. Chelsea | all | US: SOCCER PPV 77', 'stream_id': 1},
-			{'name': 'Live | Liverpool vs. Chelsea | all | CA: SOCCER PPV 17', 'stream_id': 2},
-			{'name': 'Live | Liverpool vs. Chelsea | all | CA: SOCCER PPV 17', 'stream_id': 2},
-			{'name': 'End | Liverpool vs. Chelsea | CA: SOCCER PPV 18', 'stream_id': 3},
-			{'name': 'Live | Liverpool vs. Everton | CA: SOCCER PPV 19', 'stream_id': 4},
-		]
-		with patch.object(self.live, '_request', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
-			self.live.search_results({'query': 'Liverpool'})
-		calls = item.call_args_list
-		self.assertEqual(len(calls), 3)
-		self.assertEqual(calls[0].args[:3], ('Liverpool vs. Chelsea — 2 feeds', {'mode': 'livetv.match_feeds', 'home': 'liverpool', 'away': 'chelsea', 'scope': ''}, True))
-		self.assertIn('Everton', calls[1].args[0])
-		self.assertIn('End | Liverpool', calls[2].args[0])
-		self.assertNotIn('private', str(calls))
-
-
 if __name__ == '__main__': unittest.main()

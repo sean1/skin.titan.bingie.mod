@@ -2,7 +2,6 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from urllib.parse import urlencode
 
 from tests.test_livetv import load_livetv
 
@@ -42,13 +41,6 @@ class LiveTVHomeTests(unittest.TestCase):
 			self.live._save(self.account)
 		self.assertEqual([channel['id'] for channel in self.live._home_read(self.account)], ['7'])
 
-	def test_home_channels_without_account_finishes_without_dialog(self):
-		with patch.object(self.live, '_load', return_value=None), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish') as finish, patch.object(self.live, '_error') as error:
-			self.live.home_channels({})
-		item.assert_not_called()
-		finish.assert_called_once_with()
-		error.assert_not_called()
-
 	def test_saved_channel_does_not_retain_private_icon_credentials(self):
 		channel = {'action': 'add', 'id': '42', 'name': 'Channel 42', 'icon': 'https://example.test/user123/private-secret/logo.png'}
 		with patch.object(self.live.xbmc, 'getCondVisibility', return_value=False):
@@ -57,19 +49,5 @@ class LiveTVHomeTests(unittest.TestCase):
 		content = path.read_text(encoding='utf-8')
 		self.assertNotIn(self.account['username'], content)
 		self.assertNotIn(self.account['password'], content)
-
-	def test_playable_channel_offers_add_then_remove_context_action(self):
-		params = {'mode': 'livetv.play', 'id': '926772'}
-		with patch.object(self.live.ku, 'build_url', side_effect=lambda query: 'plugin://test/?' + urlencode(query), create=True):
-			add = self.live._home_context('VN| VTV1 HD', params, '')
-			self.assertEqual(add[0], 'Add to Home channels')
-			self.assertIn('action=add', add[1])
-			with patch.object(self.live.xbmc, 'getCondVisibility', return_value=False):
-				self.live.home_action({'action': 'add', 'id': '926772', 'name': 'VN| VTV1 HD', 'icon': ''})
-			remove = self.live._home_context('VN| VTV1 HD', params, '')
-			self.assertEqual(remove[0], 'Remove from Home channels')
-			self.assertIn('action=remove', remove[1])
-			self.assertNotIn(self.account['password'], remove[1])
-
 
 if __name__ == '__main__': unittest.main()

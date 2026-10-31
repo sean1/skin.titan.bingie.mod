@@ -25,7 +25,7 @@ class FakePlayer:
 		self.file = url
 
 
-class LiveTVFailoverTests(unittest.TestCase):
+class LiveTVFailoverFixture:
 	@classmethod
 	def setUpClass(cls):
 		cls.ku = types.SimpleNamespace(xbmc_player=FakePlayer, dialog=types.SimpleNamespace(notification=lambda *args: None))
@@ -66,6 +66,7 @@ class LiveTVFailoverTests(unittest.TestCase):
 		self.player.tick()
 
 
+class LiveTVFailoverTests(LiveTVFailoverFixture, unittest.TestCase):
 
 	def test_cross_provider_same_stream_id_switches_both_directions_without_secrets_in_properties(self):
 		accounts = {

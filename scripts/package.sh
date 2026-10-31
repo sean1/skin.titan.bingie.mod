@@ -30,6 +30,27 @@ case "$addon_id$addon_version" in
 		;;
 esac
 
+tag_name="v$addon_version"
+tag_ref="refs/tags/$tag_name"
+if ! git -C "$project_dir" check-ref-format "$tag_ref"; then
+	printf '%s\n' "Invalid Git tag name: $tag_name" >&2
+	exit 1
+fi
+package_commit=$(git -C "$project_dir" rev-parse --verify 'HEAD^{commit}')
+check_package_source() {
+	if [ "$(git -C "$project_dir" rev-parse --verify 'HEAD^{commit}')" != "$package_commit" ] || ! git -C "$project_dir" diff --quiet HEAD -- . ':(exclude).gitignore' ':(exclude)scripts/**' ':(exclude)tests/**'; then
+		printf '%s\n' 'Commit changes to packaged files before creating a release tag.' >&2
+		exit 1
+	fi
+}
+check_package_source
+if git -C "$project_dir" show-ref --verify --quiet "$tag_ref"; then
+	if [ "$(git -C "$project_dir" rev-parse "$tag_ref^{commit}" 2>/dev/null || :)" != "$package_commit" ]; then
+		printf '%s\n' "Git tag $tag_name already points to a different commit." >&2
+		exit 1
+	fi
+fi
+
 mkdir -p "$output_dir"
 output_dir=$(CDPATH= cd -- "$output_dir" && pwd)
 package_name="$addon_id-$addon_version.zip"
@@ -180,5 +201,16 @@ done
 	zip -q -r "$package_name" "$addon_id"
 )
 
+check_package_source
 mv -f -- "$temporary_dir/$package_name" "$package_path"
 printf '%s\n' "Created $package_path"
+if git -C "$project_dir" show-ref --verify --quiet "$tag_ref"; then
+	if [ "$(git -C "$project_dir" rev-parse "$tag_ref^{commit}" 2>/dev/null || :)" != "$package_commit" ]; then
+		printf '%s\n' "Git tag $tag_name already points to a different commit." >&2
+		exit 1
+	fi
+	printf '%s\n' "Git tag $tag_name already exists at $package_commit"
+else
+	git -C "$project_dir" tag "$tag_name" "$package_commit"
+	printf '%s\n' "Created Git tag $tag_name at $package_commit"
+fi

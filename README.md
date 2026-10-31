@@ -11,6 +11,7 @@ Build BINGIE Lite from this source tree, then install the generated ZIP through 
 ```
 
 The package is written to `dist/skin.titan.bingie.lite-<version>.zip`. It contains one installable Kodi add-on and does not require POV Lite, YouTube, or separately installed Python module add-ons.
+The build also creates a local Git tag named `v<version>` at the current commit. Commit changes to packaged files first so the tag matches the source in the ZIP; rebuilding reuses an existing tag only when it points to the same commit. Private credentials included in the ZIP are not tracked by the tag. The tag is not pushed automatically.
 Streaming still requires network access and a configured Real-Debrid account.
 
 Join the official thread for updates: https://forum.kodi.tv/showthread.php?tid=355993

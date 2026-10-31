@@ -10,6 +10,7 @@ POV_ROUTES = {
 	'livetv.match_feeds': lambda p: _import('menus.livetv', 'match_feeds')(p),
 	'livetv.all_standings': lambda p: _import('menus.livetv', 'all_standings')(p),
 	'livetv.soccer': lambda p: _import('menus.livetv', 'soccer')(p),
+	'livetv.f1_channels': lambda p: _import('menus.livetv', 'f1_channels')(p),
 	'livetv.fixture_settings': lambda p: _import('menus.livetv', 'fixture_settings')(p),
 	'livetv.sportapi_settings': lambda p: _import('menus.livetv', 'sportapi_settings')(p),
 	'livetv.guide_channels': lambda p: _import('menus.livetv', 'guide_channels')(p),

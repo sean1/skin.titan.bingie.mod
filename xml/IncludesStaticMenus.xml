@@ -159,6 +159,15 @@
 			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=tennis</property>
 			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),live-tv)</visible><property name="group">live-tv</property><property name="isSubmenu">True</property>
 		</item>
+		<item id="6">
+			<property name="id">$NUMBER[6]</property><property name="mainmenuid">7</property>
+			<label>Formula 1</label><label2>Formula 1</label2><icon>DefaultShortcut.png</icon><thumb />
+			<property name="labelID">live-sports-f1</property><property name="defaultID">live-sports-f1</property>
+			<onclick>ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=f1,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=f1,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=f1</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),live-tv)</visible><property name="group">live-tv</property><property name="isSubmenu">True</property>
+		</item>
 		<item id="2">
 			<property name="id">$NUMBER[2]</property><property name="mainmenuid">7</property>
 			<label>Hockey</label><label2>Hockey</label2><icon>DefaultShortcut.png</icon><thumb />

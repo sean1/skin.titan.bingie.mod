@@ -13,6 +13,8 @@
                 <control type="image"><width>1920</width><height>240</height><texture background="true">livetv/hockey.png</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey)</visible></control>
                 <control type="image"><width>1920</width><height>240</height><texture background="true">livetv/basketball.png</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball)</visible></control>
                 <control type="image"><width>1920</width><height>240</height><texture background="true">livetv/football.png</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),football)</visible></control>
+                <control type="image"><width>1920</width><height>240</height><texture background="true">livetv/tennis.png</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),tennis)</visible></control>
+                <control type="image"><width>1920</width><height>240</height><texture background="true">livetv/f1.png</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),f1)</visible></control>
                 <control type="group">
                     <visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),soccer) | String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) | String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball) | String.IsEqual(Window(Home).Property(LiveTV.Sport),football)</visible>
                     <control type="image"><width>1920</width><height>240</height><texture>colors/color_black.png</texture><colordiffuse>66000000</colordiffuse></control>

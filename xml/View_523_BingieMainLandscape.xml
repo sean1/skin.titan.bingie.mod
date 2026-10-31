@@ -16,7 +16,7 @@
                 <control type="image"><width>1920</width><height>240</height><texture background="true">livetv/tennis.png</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),tennis)</visible></control>
                 <control type="image"><width>1920</width><height>240</height><texture background="true">livetv/f1.png</texture><aspectratio>scale</aspectratio><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),f1)</visible></control>
                 <control type="group">
-                    <visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),soccer) | String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) | String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball) | String.IsEqual(Window(Home).Property(LiveTV.Sport),football) | String.IsEqual(Window(Home).Property(LiveTV.Sport),tennis)</visible>
+                    <visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),soccer) | String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) | String.IsEqual(Window(Home).Property(LiveTV.Sport),basketball) | String.IsEqual(Window(Home).Property(LiveTV.Sport),football) | String.IsEqual(Window(Home).Property(LiveTV.Sport),tennis) | String.IsEqual(Window(Home).Property(LiveTV.Sport),f1)</visible>
                     <control type="image"><width>1920</width><height>240</height><texture>colors/color_black.png</texture><colordiffuse>66000000</colordiffuse></control>
                     <control type="image"><top>100</top><width>1920</width><height>140</height><texture>overlays/gradient_episodes.png</texture><aspectratio>stretch</aspectratio></control>
                 </control>
@@ -37,7 +37,7 @@
                 </control>
             </control>
             <control type="group">
-                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nfl) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),ncaa) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nba) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),college) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Row1.Team))</visible>
+                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nfl) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),ncaa) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nba) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),college) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),f1) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Row1.Team))</visible>
                 <left>138</left><top>224</top><width>1600</width><height>325</height>
                 <control type="image"><left>-12</left><top>-8</top><width>1600</width><height>341</height><texture>colors/color_white.png</texture><colordiffuse>ff000000</colordiffuse></control>
                 <control type="label"><width>1400</width><height>32</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>STANDINGS · $INFO[Window(Home).Property(LiveTV.Standings.League)]</label><visible>!String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),tennis)</visible></control>
@@ -65,6 +65,128 @@
                 <include content="BingieLiveSoccerStandingsRow"><param name="row" value="18" /><param name="left" value="790" /><param name="top" value="241" /></include>
                 <include content="BingieLiveSoccerStandingsRow"><param name="row" value="19" /><param name="left" value="790" /><param name="top" value="268" /></include>
                 <include content="BingieLiveSoccerStandingsRow"><param name="row" value="20" /><param name="left" value="790" /><param name="top" value="295" /></include>
+            </control>
+
+            <control type="group">
+                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),f1) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Row1.Team))</visible>
+                <left>138</left><top>224</top><width>1600</width><height>325</height>
+                <control type="image"><left>-12</left><top>-8</top><width>1600</width><height>341</height><texture>colors/color_white.png</texture><colordiffuse>ff000000</colordiffuse></control>
+                <control type="label"><width>1400</width><height>26</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>F1 DRIVERS’ &amp; CONSTRUCTORS’ STANDINGS</label></control>
+                <control type="group">
+                    <visible>!String.IsEqual(Window(Home).Property(LiveTV.Standings.F1.Overflow),true)</visible>
+                    <control type="label"><left>0</left><top>28</top><width>250</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><label>DRIVERS</label></control>
+                    <control type="label"><left>1050</left><top>28</top><width>300</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><label>CONSTRUCTORS</label></control>
+                    <control type="label"><left>1050</left><top>50</top><width>500</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><label>Constructor standings unavailable</label><visible>String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Row1.Team))</visible></control>
+                    <control type="label"><left>435</left><top>28</top><width>70</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                    <control type="label"><left>960</left><top>28</top><width>70</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                    <control type="label"><left>1485</left><top>28</top><width>70</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="1" /><param name="left" value="0" /><param name="top" value="50" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="2" /><param name="left" value="0" /><param name="top" value="73" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="3" /><param name="left" value="0" /><param name="top" value="96" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="4" /><param name="left" value="0" /><param name="top" value="119" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="5" /><param name="left" value="0" /><param name="top" value="142" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="6" /><param name="left" value="0" /><param name="top" value="165" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="7" /><param name="left" value="0" /><param name="top" value="188" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="8" /><param name="left" value="0" /><param name="top" value="211" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="9" /><param name="left" value="0" /><param name="top" value="234" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="10" /><param name="left" value="0" /><param name="top" value="257" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="11" /><param name="left" value="0" /><param name="top" value="280" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="12" /><param name="left" value="0" /><param name="top" value="303" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="13" /><param name="left" value="525" /><param name="top" value="50" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="14" /><param name="left" value="525" /><param name="top" value="73" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="15" /><param name="left" value="525" /><param name="top" value="96" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="16" /><param name="left" value="525" /><param name="top" value="119" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="17" /><param name="left" value="525" /><param name="top" value="142" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="18" /><param name="left" value="525" /><param name="top" value="165" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="19" /><param name="left" value="525" /><param name="top" value="188" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="20" /><param name="left" value="525" /><param name="top" value="211" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="21" /><param name="left" value="525" /><param name="top" value="234" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="22" /><param name="left" value="525" /><param name="top" value="257" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="23" /><param name="left" value="525" /><param name="top" value="280" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Row" /><param name="row" value="24" /><param name="left" value="525" /><param name="top" value="303" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="1" /><param name="left" value="1050" /><param name="top" value="50" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="2" /><param name="left" value="1050" /><param name="top" value="73" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="3" /><param name="left" value="1050" /><param name="top" value="96" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="4" /><param name="left" value="1050" /><param name="top" value="119" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="5" /><param name="left" value="1050" /><param name="top" value="142" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="6" /><param name="left" value="1050" /><param name="top" value="165" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="7" /><param name="left" value="1050" /><param name="top" value="188" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="8" /><param name="left" value="1050" /><param name="top" value="211" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="9" /><param name="left" value="1050" /><param name="top" value="234" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="10" /><param name="left" value="1050" /><param name="top" value="257" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="11" /><param name="left" value="1050" /><param name="top" value="280" /></include>
+                    <include content="BingieF1StandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="12" /><param name="left" value="1050" /><param name="top" value="303" /></include>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(Window(Home).Property(LiveTV.Standings.F1.Overflow),true)</visible>
+                    <control type="label"><left>0</left><top>27</top><width>250</width><height>16</height><font>Reg16</font><textcolor>ffbcbcbc</textcolor><label>DRIVERS</label></control>
+                    <control type="label"><left>1050</left><top>27</top><width>300</width><height>16</height><font>Reg16</font><textcolor>ffbcbcbc</textcolor><label>CONSTRUCTORS</label></control>
+                    <control type="label"><left>1050</left><top>50</top><width>500</width><height>18</height><font>Reg16</font><textcolor>ffbcbcbc</textcolor><label>Constructor standings unavailable</label><visible>String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Row1.Team))</visible></control>
+                    <control type="label"><left>435</left><top>27</top><width>70</width><height>16</height><font>Reg16</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                    <control type="label"><left>960</left><top>27</top><width>70</width><height>16</height><font>Reg16</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                    <control type="label"><left>1485</left><top>27</top><width>70</width><height>16</height><font>Reg16</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="1" /><param name="left" value="0" /><param name="top" value="45" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="2" /><param name="left" value="0" /><param name="top" value="59" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="3" /><param name="left" value="0" /><param name="top" value="73" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="4" /><param name="left" value="0" /><param name="top" value="87" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="5" /><param name="left" value="0" /><param name="top" value="101" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="6" /><param name="left" value="0" /><param name="top" value="115" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="7" /><param name="left" value="0" /><param name="top" value="129" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="8" /><param name="left" value="0" /><param name="top" value="143" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="9" /><param name="left" value="0" /><param name="top" value="157" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="10" /><param name="left" value="0" /><param name="top" value="171" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="11" /><param name="left" value="0" /><param name="top" value="185" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="12" /><param name="left" value="0" /><param name="top" value="199" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="13" /><param name="left" value="0" /><param name="top" value="213" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="14" /><param name="left" value="0" /><param name="top" value="227" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="15" /><param name="left" value="0" /><param name="top" value="241" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="16" /><param name="left" value="0" /><param name="top" value="255" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="17" /><param name="left" value="0" /><param name="top" value="269" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="18" /><param name="left" value="0" /><param name="top" value="283" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="19" /><param name="left" value="0" /><param name="top" value="297" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="20" /><param name="left" value="0" /><param name="top" value="311" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="21" /><param name="left" value="525" /><param name="top" value="45" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="22" /><param name="left" value="525" /><param name="top" value="59" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="23" /><param name="left" value="525" /><param name="top" value="73" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="24" /><param name="left" value="525" /><param name="top" value="87" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="25" /><param name="left" value="525" /><param name="top" value="101" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="26" /><param name="left" value="525" /><param name="top" value="115" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="27" /><param name="left" value="525" /><param name="top" value="129" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="28" /><param name="left" value="525" /><param name="top" value="143" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="29" /><param name="left" value="525" /><param name="top" value="157" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="30" /><param name="left" value="525" /><param name="top" value="171" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="31" /><param name="left" value="525" /><param name="top" value="185" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="32" /><param name="left" value="525" /><param name="top" value="199" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="33" /><param name="left" value="525" /><param name="top" value="213" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="34" /><param name="left" value="525" /><param name="top" value="227" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="35" /><param name="left" value="525" /><param name="top" value="241" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="36" /><param name="left" value="525" /><param name="top" value="255" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="37" /><param name="left" value="525" /><param name="top" value="269" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="38" /><param name="left" value="525" /><param name="top" value="283" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="39" /><param name="left" value="525" /><param name="top" value="297" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Row" /><param name="row" value="40" /><param name="left" value="525" /><param name="top" value="311" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="1" /><param name="left" value="1050" /><param name="top" value="45" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="2" /><param name="left" value="1050" /><param name="top" value="59" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="3" /><param name="left" value="1050" /><param name="top" value="73" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="4" /><param name="left" value="1050" /><param name="top" value="87" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="5" /><param name="left" value="1050" /><param name="top" value="101" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="6" /><param name="left" value="1050" /><param name="top" value="115" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="7" /><param name="left" value="1050" /><param name="top" value="129" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="8" /><param name="left" value="1050" /><param name="top" value="143" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="9" /><param name="left" value="1050" /><param name="top" value="157" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="10" /><param name="left" value="1050" /><param name="top" value="171" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="11" /><param name="left" value="1050" /><param name="top" value="185" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="12" /><param name="left" value="1050" /><param name="top" value="199" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="13" /><param name="left" value="1050" /><param name="top" value="213" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="14" /><param name="left" value="1050" /><param name="top" value="227" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="15" /><param name="left" value="1050" /><param name="top" value="241" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="16" /><param name="left" value="1050" /><param name="top" value="255" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="17" /><param name="left" value="1050" /><param name="top" value="269" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="18" /><param name="left" value="1050" /><param name="top" value="283" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="19" /><param name="left" value="1050" /><param name="top" value="297" /></include>
+                    <include content="BingieF1DenseStandingsRow"><param name="prefix" value="Group1.Row" /><param name="row" value="20" /><param name="left" value="1050" /><param name="top" value="311" /></include>
+                </control>
+                <control type="label"><left>700</left><top>0</top><width>850</width><height>28</height><font>Reg16</font><textcolor>ffe0b050</textcolor><align>right</align><label>Standings exceed display capacity</label><visible>String.IsEqual(Window(Home).Property(LiveTV.Standings.F1.ExceedsLayout),true)</visible></control>
             </control>
 
             <control type="group">
@@ -307,6 +429,24 @@
             <control type="label"><left>7</left><width>28</width><height>26</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row$PARAM[row].Position)]</label></control>
             <control type="label"><left>30</left><width>265</width><height>26</height><font>Reg18</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row$PARAM[row].Team)]</label></control>
             <control type="label"><right>32</right><width>45</width><height>26</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>$INFO[Window(Home).Property(LiveTV.Standings.Group$PARAM[group].Row$PARAM[row].Points)]</label></control>
+        </control>
+    </include>
+
+    <include name="BingieF1StandingsRow">
+        <control type="group">
+            <left>$PARAM[left]</left><top>$PARAM[top]</top><width>510</width><height>22</height>
+            <control type="label"><left>5</left><width>35</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.$PARAM[prefix]$PARAM[row].Position)]</label></control>
+            <control type="label"><left>42</left><width>385</width><height>22</height><font>Reg18</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.$PARAM[prefix]$PARAM[row].Team)]</label></control>
+            <control type="label"><right>5</right><width>70</width><height>22</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>$INFO[Window(Home).Property(LiveTV.Standings.$PARAM[prefix]$PARAM[row].Points)]</label></control>
+        </control>
+    </include>
+
+    <include name="BingieF1DenseStandingsRow">
+        <control type="group">
+            <left>$PARAM[left]</left><top>$PARAM[top]</top><width>510</width><height>14</height>
+            <control type="label"><left>5</left><width>35</width><height>14</height><font>Reg14</font><textcolor>ffbcbcbc</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.$PARAM[prefix]$PARAM[row].Position)]</label></control>
+            <control type="label"><left>42</left><width>385</width><height>14</height><font>Reg14</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.Standings.$PARAM[prefix]$PARAM[row].Team)]</label></control>
+            <control type="label"><right>5</right><width>70</width><height>14</height><font>Reg14</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>$INFO[Window(Home).Property(LiveTV.Standings.$PARAM[prefix]$PARAM[row].Points)]</label></control>
         </control>
     </include>
 

@@ -26,6 +26,14 @@ _failure_until = {}
 _locks = {'wta': threading.Lock(), 'atp|singles': threading.Lock(), 'atp|doubles': threading.Lock()}
 
 
+class _StaleRankings(list):
+	stale = True
+
+
+def _copy_rankings(rows):
+	return _StaleRankings(rows) if getattr(rows, 'stale', False) else list(rows)
+
+
 def name_key(value):
 	"""Compare complete names only, normalizing case and Unicode presentation."""
 	if not isinstance(value, str) or len(value) > 160 or any(ord(char) < 32 for char in value): return ''
@@ -237,16 +245,21 @@ def _set_provider_retry(cache_dir, provider, retry_at):
 	if cache_dir: _save_snapshot(os.path.join(cache_dir, 'livetv-tennis-%s-backoff.json' % provider), {'retry_at': retry_at})
 
 
-def _snapshot_is_fresh(asof, saved, now):
+def _cache_day_is_current(saved, now, refresh_after=0):
 	try:
-		asof_time = datetime.fromisoformat(asof.replace('Z', '+00:00')).timestamp()
 		saved = float(saved)
-		if saved > now + 86400 or saved < 0: return False
-		return now < max(asof_time + 7 * 86400 + 12 * 3600, saved + 12 * 3600)
-	except (TypeError, ValueError, OverflowError): return False
+		if not math.isfinite(saved) or saved > now or saved < refresh_after: return False
+		return datetime.fromtimestamp(saved).astimezone().date() == datetime.fromtimestamp(now).astimezone().date()
+	except (OSError, TypeError, ValueError, OverflowError): return False
 
 
-def _wta_rankings(discipline, cache_dir):
+def _snapshot_is_fresh(asof, saved, now, refresh_after=0):
+	try: datetime.fromisoformat(asof.replace('Z', '+00:00'))
+	except (AttributeError, TypeError, ValueError, OverflowError): return False
+	return _cache_day_is_current(saved, now, refresh_after)
+
+
+def _wta_rankings(discipline, cache_dir, force_refresh=False, refresh_after=0):
 	path = os.path.join(cache_dir, 'livetv-tennis-wta-%s-rankings.json' % discipline) if cache_dir else None
 	payload, rows = {}, None
 	try:
@@ -259,11 +272,11 @@ def _wta_rankings(discipline, cache_dir):
 			rows[0]['asof'] = asof[:10]
 	except (OSError, ValueError, TypeError, KeyError): payload, rows = {}, None
 	now = time.time()
-	if rows and _snapshot_is_fresh(asof, payload.get('saved'), now): return rows
+	if rows and not force_refresh and _snapshot_is_fresh(asof, payload.get('saved'), now, refresh_after): return rows
 	retry_at = payload.get('retry_at', 0)
 	if not isinstance(retry_at, (int, float)) or isinstance(retry_at, bool) or not math.isfinite(retry_at): retry_at = 0
 	if now < max(retry_at, _failure_until.get(discipline, 0), _provider_retry(cache_dir, 'wta')):
-		if rows: return rows
+		if rows: return _StaleRankings(rows)
 		raise ValueError('Tennis rankings refresh delayed')
 	try:
 		ranks = []
@@ -288,11 +301,11 @@ def _wta_rankings(discipline, cache_dir):
 		if not payload: payload = {'version': 1, 'discipline': discipline, 'complete': False}
 		payload['retry_at'] = retry_at
 		_save_snapshot(path, payload)
-		if rows: return rows
+		if rows: return _StaleRankings(rows)
 		raise
 
 
-def _atp_rankings(discipline, cache_dir):
+def _atp_rankings(discipline, cache_dir, force_refresh=False, refresh_after=0):
 	path = os.path.join(cache_dir, 'livetv-tennis-atp-%s-rankings.json' % discipline) if cache_dir else None
 	key = 'atp|' + discipline
 	payload, rows, asof = {}, None, ''
@@ -306,11 +319,11 @@ def _atp_rankings(discipline, cache_dir):
 			rows[0]['asof'] = asof
 	except (OSError, ValueError, TypeError, KeyError, IndexError): payload, rows = {}, None
 	now = time.time()
-	if rows and _snapshot_is_fresh(asof + 'T00:00:00Z', payload.get('saved'), now): return rows
+	if rows and not force_refresh and _snapshot_is_fresh(asof + 'T00:00:00Z', payload.get('saved'), now, refresh_after): return rows
 	retry_at = payload.get('retry_at', 0)
 	if not isinstance(retry_at, (int, float)) or isinstance(retry_at, bool) or not math.isfinite(retry_at): retry_at = 0
 	if now < max(retry_at, _failure_until.get(key, 0)):
-		if rows: return rows
+		if rows: return _StaleRankings(rows)
 		raise ValueError('Tennis rankings refresh delayed')
 	try:
 		if discipline == 'singles':
@@ -333,18 +346,28 @@ def _atp_rankings(discipline, cache_dir):
 		if not payload: payload = {'version': 1, 'discipline': discipline, 'usable': False}
 		payload['retry_at'] = retry_at
 		_save_snapshot(path, payload)
-		if rows: return rows
+		if rows: return _StaleRankings(rows)
 		raise
 
 
-def get_rankings(tour, discipline='singles', cache_dir=None):
-	"""Return verified rankings, cached separately per tour and discipline."""
+def get_rankings(tour, discipline='singles', cache_dir=None, force_refresh=False):
+	"""Return verified rankings, optionally refreshing while respecting provider backoff."""
+	from modules.livetv_standings_generation import get_refresh_time
 	if tour not in ('atp', 'wta') or discipline not in ('singles', 'doubles'): raise ValueError('Unknown tennis ranking')
 	key = (tour, discipline)
+	requested = time.monotonic()
 	with _locks['wta' if tour == 'wta' else 'atp|' + discipline]:
+		refresh_after = get_refresh_time(cache_dir, 'tennis')
 		now = time.monotonic()
+		wall_now = time.time()
 		cached = _cache.get(key)
-		if cached and 0 <= now - cached[0] < _CACHE_SECONDS: return list(cached[1])
-		rows = _wta_rankings(discipline, cache_dir) if tour == 'wta' else _atp_rankings(discipline, cache_dir)
-		_cache[key] = (time.monotonic(), rows)
-		return list(rows)
+		cache_current = cached and len(cached) > 2 and _cache_day_is_current(cached[2], wall_now, refresh_after)
+		if cache_current and not getattr(cached[1], 'stale', False) and ((not force_refresh and 0 <= now - cached[0] < _CACHE_SECONDS) or (force_refresh and requested <= cached[0] <= now)): return _copy_rankings(cached[1])
+		try:
+			rows = _wta_rankings(discipline, cache_dir, force_refresh, refresh_after) if tour == 'wta' else _atp_rankings(discipline, cache_dir, force_refresh, refresh_after)
+		except Exception:
+			if cached and cached[1] and _fresh(str(cached[1][0].get('asof', '')) + 'T00:00:00Z', 30): return _StaleRankings(cached[1])
+			raise
+		cache_saved = (cached[2] if cached and len(cached) > 2 else 0) if getattr(rows, 'stale', False) else wall_now
+		_cache[key] = (time.monotonic(), rows, cache_saved)
+		return _copy_rankings(rows)

@@ -2,6 +2,7 @@
 import os
 import re
 import json
+from datetime import date
 from queue import Empty, SimpleQueue
 from threading import Thread
 from time import monotonic
@@ -12,6 +13,8 @@ from modules import livetv_sportapi
 
 _PREFIX = 'LiveTV.Standings.'
 _MAX_ROWS = 20
+_F1_DRIVER_ROWS = 40
+_F1_CONSTRUCTOR_ROWS = 20
 _SETTLE_SECONDS = 0.4
 _RETRY_SECONDS = 60
 _REFRESH_SECONDS = 30 * 60
@@ -30,6 +33,14 @@ def _tennis_identity(key):
 	return key in ('tennis|atp', 'tennis|wta', 'tennis|atp|doubles', 'tennis|wta|doubles')
 
 
+def _identity_sport(key):
+	if key == 'f1': return 'f1'
+	if _tennis_identity(key): return 'tennis'
+	parts = _sports_identity(key)
+	if parts: return {'nhl': 'hockey', 'nfl': 'football', 'ncaa': 'football', 'nba': 'basketball'}[parts[0]]
+	return 'soccer' if key.isascii() and key.isdecimal() else ''
+
+
 class FocusedStandings:
 	def __init__(self):
 		self.identity = ''
@@ -44,12 +55,14 @@ class FocusedStandings:
 		self.worker = None
 		self.tennis_workers = {}
 		self.results = SimpleQueue()
+		self.refresh_token = getattr(ku, 'get_property', lambda key: '')(_PREFIX + 'Refresh')
+		self.pending_refresh = ''
 		self._clear()
 
 	def _focused(self):
 		if not ku.get_visibility(_SOCCER_WINDOW): return '', ''
 		key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsKey)').strip()
-		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key) and not _tennis_identity(key): return '', ''
+		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key) and not _tennis_identity(key) and key != 'f1': return '', ''
 		league = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.League)').strip()
 		return key, league
 
@@ -64,19 +77,30 @@ class FocusedStandings:
 		ku.clear_property(_PREFIX + 'GroupCount')
 		ku.clear_property(_PREFIX + 'Layout')
 		ku.clear_property(_PREFIX + 'AllText')
-		for index in range(1, _MAX_ROWS + 1):
+		ku.clear_property(_PREFIX + 'F1.Overflow')
+		ku.clear_property(_PREFIX + 'F1.ExceedsLayout')
+		for index in range(1, max(_MAX_ROWS, _F1_DRIVER_ROWS) + 1):
 			for field in ('Position', 'Team', 'Played', 'Points', 'Highlight'): ku.clear_property('%sRow%d.%s' % (_PREFIX, index, field))
 		for group in range(1, 9):
 			ku.clear_property('%sGroup%d.Name' % (_PREFIX, group))
-			for row in range(1, 19):
+			for row in range(1, max(18, _F1_CONSTRUCTOR_ROWS) + 1):
 				for field in ('Position', 'Team', 'Points', 'Highlight'): ku.clear_property('%sGroup%d.Row%d.%s' % (_PREFIX, group, row, field))
 		self.published = ''
 		self.published_at = 0.0
+		self.published_day = None
+		self.published_partial = False
 		self.rows = []
 		self.tennis_rows = []
 		self.match_key = ''
 
+	def _remember(self, identity, now, partial=False):
+		self.published = identity
+		self.published_at = now - _REFRESH_SECONDS + _RETRY_SECONDS if partial else now
+		self.published_day = date.today()
+		self.published_partial = partial
+
 	def _highlight(self):
+		if self.identity == 'f1': return
 		if _sports_identity(self.identity): return
 		if _tennis_identity(self.identity):
 			self._highlight_tennis()
@@ -134,36 +158,47 @@ class FocusedStandings:
 			self.identity = ''
 			self._clear()
 
-	def _load(self, identity):
+	def _load(self, identity, force=False, generation=None, started_day=None):
 		try:
 			sport = _sports_identity(identity)
 			if _tennis_identity(identity):
 				from modules import livetv_tennis_rankings
-				rows = livetv_tennis_rankings.get_rankings(identity.split('|')[1], 'doubles' if identity.endswith('|doubles') else 'singles', ku.translate_path(ku.profile_path))
+				rows = livetv_tennis_rankings.get_rankings(identity.split('|')[1], 'doubles' if identity.endswith('|doubles') else 'singles', ku.translate_path(ku.profile_path), **({'force_refresh': True} if force else {}))
 				heading, metric = identity.split('|')[1].upper(), 'PTS'
+			elif identity == 'f1':
+				from modules import livetv_f1
+				rows = livetv_f1.get_driver_standings(ku.translate_path(ku.profile_path), **({'force_refresh': True} if force else {}))
+				heading, metric = 'F1 DRIVERS', 'PTS'
 			elif sport:
 				from modules import livetv_american_standings
 				if sport[0] in ('nhl', 'nfl'):
 					loader = livetv_american_standings.get_nhl_groups if sport[0] == 'nhl' else livetv_american_standings.get_nfl_groups
-					rows, metric = loader(*sport[1:])
+					rows, metric = loader(*sport[1:], **({'force': True} if force else {}))
 					heading = sport[0].upper()
 				elif sport[0] == 'nba':
-					rows, metric = livetv_american_standings.get_nba_groups(*sport[1:])
+					rows, metric = livetv_american_standings.get_nba_groups(*sport[1:], **({'force': True} if force else {}))
 					heading = 'NBA'
 				else:
-					rows, metric = livetv_american_standings.get_ncaa_groups(*sport[1:])
+					rows, metric = livetv_american_standings.get_ncaa_groups(*sport[1:], **({'force': True} if force else {}))
 					heading = 'College football'
 			else:
 				profile = ku.translate_path(ku.profile_path)
 				bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', livetv_sportapi.KEY_FILE)
-				rows, _ = livetv_sportapi.get_standings(profile, int(identity), bundled=bundled)
+				rows, _ = livetv_sportapi.get_standings(profile, int(identity), bundled=bundled, **({'force': True} if force else {}))
 				heading, metric = '', 'PTS'
-			self.results.put((identity, rows, heading, metric))
+			result = (identity, rows, heading, metric)
+			self.results.put(result if generation is None else result + (generation, started_day, bool(getattr(rows, 'stale', False))))
 		except Exception:
-			self.results.put((identity, [], '', ''))
+			result = (identity, [], '', '')
+			self.results.put(result if generation is None else result + (generation, started_day, False))
 
 	def tick(self):
 		now = monotonic()
+		token = getattr(ku, 'get_property', lambda key: '')(_PREFIX + 'Refresh')
+		if token != self.refresh_token:
+			self.refresh_token = token
+			self.pending_refresh = token.partition(':')[0]
+			self.last_attempt = 0.0
 		identity, league = self._focused()
 		if identity != self.identity:
 			self.identity, self.league = identity, league
@@ -172,8 +207,11 @@ class FocusedStandings:
 		elif identity:
 			self.league = league
 		while True:
-			try: completed, rows, sports_heading, metric = self.results.get_nowait()
+			try: result = self.results.get_nowait()
 			except Empty: break
+			completed, rows, sports_heading, metric = result[:4]
+			if len(result) >= 6 and (result[4] != self.refresh_token or result[5] != date.today()): continue
+			stale = len(result) >= 7 and result[6]
 			if completed != self.identity or self._focused()[0] != completed: continue
 			if completed.startswith('nba|'):
 				if not isinstance(rows, list) or len(rows) != 2:
@@ -201,7 +239,7 @@ class FocusedStandings:
 						for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
 						if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
 				ku.set_property(_PREFIX + 'MatchKey', completed)
-				self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+				self._remember(completed, now, partial=any(not group[1] for group in rows))
 				ku.set_property(_PREFIX + 'Key', completed)
 				continue
 			if completed.startswith('ncaa|'):
@@ -230,7 +268,7 @@ class FocusedStandings:
 								for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
 								if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
 						ku.set_property(_PREFIX + 'MatchKey', completed)
-						self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+						self._remember(completed, now, partial=any(not group[1] for group in rows))
 						ku.set_property(_PREFIX + 'Key', completed)
 						continue
 				def clean(value): return re.sub(r'[\x00-\x1f\x7f\[\]]', '', str(value)).strip()
@@ -247,7 +285,7 @@ class FocusedStandings:
 				ku.set_property(_PREFIX + 'Layout', 'ncaa')
 				ku.set_property(_PREFIX + 'AllText', '\n'.join(lines))
 				ku.set_property(_PREFIX + 'MatchKey', completed)
-				self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+				self._remember(completed, now, partial=any(not group[1] for group in rows))
 				ku.set_property(_PREFIX + 'Key', completed)
 				continue
 			if completed.startswith(('nhl|', 'nfl|')):
@@ -270,7 +308,29 @@ class FocusedStandings:
 						for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
 						if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
 				ku.set_property(_PREFIX + 'MatchKey', completed)
-				self.published, self.published_at = completed, now - _REFRESH_SECONDS + _RETRY_SECONDS if any(not group[1] for group in rows) else now
+				self._remember(completed, now, partial=any(not group[1] for group in rows))
+				ku.set_property(_PREFIX + 'Key', completed)
+				continue
+			if completed == 'f1':
+				constructors = getattr(rows, 'constructors', None)
+				def valid_f1(items):
+					return isinstance(items, list) and all(isinstance(row, dict) and isinstance(row.get('position'), int) and not isinstance(row.get('position'), bool) and row['position'] > 0 and isinstance(row.get('team'), str) and row['team'] and isinstance(row.get('points'), str) for row in items) and len({row['position'] for row in items}) == len(items)
+				if not valid_f1(rows) or not rows or not valid_f1(constructors) or (not constructors and not stale):
+					self._clear()
+					continue
+				rows = sorted(rows, key=lambda row: row['position'])
+				constructors = sorted(constructors, key=lambda row: row['position'])
+				self._clear()
+				ku.set_property(_PREFIX + 'League', sports_heading)
+				ku.set_property(_PREFIX + 'Metric', metric)
+				ku.set_property(_PREFIX + 'Layout', 'f1')
+				if len(rows) > 24 or len(constructors) > 12: ku.set_property(_PREFIX + 'F1.Overflow', 'true')
+				if len(rows) > _F1_DRIVER_ROWS or len(constructors) > _F1_CONSTRUCTOR_ROWS: ku.set_property(_PREFIX + 'F1.ExceedsLayout', 'true')
+				for index, row in enumerate(rows[:_F1_DRIVER_ROWS], 1):
+					for field in ('position', 'team', 'points'): ku.set_property('%sRow%d.%s' % (_PREFIX, index, field.title()), str(row[field]))
+				for index, row in enumerate(constructors[:_F1_CONSTRUCTOR_ROWS], 1):
+					for field in ('position', 'team', 'points'): ku.set_property('%sGroup1.Row%d.%s' % (_PREFIX, index, field.title()), str(row[field]))
+				self._remember(completed, now, partial=stale or not constructors)
 				ku.set_property(_PREFIX + 'Key', completed)
 				continue
 			if not isinstance(rows, list) or not rows or any(not isinstance(row, dict) or not isinstance(row.get('position'), int) or isinstance(row.get('position'), bool) for row in rows):
@@ -286,7 +346,7 @@ class FocusedStandings:
 			self.rows = rows[:_MAX_ROWS]
 			if _tennis_identity(completed): self.tennis_rows = rows
 			group = next(iter(groups), '')
-			heading = (sports_heading if _sports_identity(completed) or _tennis_identity(completed) else self.league + (' · ' + group if group else '')) + (' · Top 20' if len(rows) > _MAX_ROWS and not _tennis_identity(completed) else '')
+			heading = (sports_heading if _sports_identity(completed) or _tennis_identity(completed) or completed == 'f1' else self.league + (' · ' + group if group else '')) + (' · Top 20' if len(rows) > _MAX_ROWS and not _tennis_identity(completed) else '')
 			ku.set_property(_PREFIX + 'League', heading)
 			ku.set_property(_PREFIX + 'Metric', metric)
 			if _tennis_identity(completed):
@@ -298,23 +358,25 @@ class FocusedStandings:
 					ku.set_property('%sRow%d.%s' % (_PREFIX, index, field.title()), str(row.get('rank_label', row.get(field, '')) if field == 'position' else row.get(field, '')))
 				if _sports_identity(completed) and row.get('highlight') is True: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
 			if _sports_identity(completed): ku.set_property(_PREFIX + 'MatchKey', completed)
-			self.published = completed
-			self.published_at = now
+			self._remember(completed, now, partial=stale)
 			ku.set_property(_PREFIX + 'Key', completed)
 		if self.published == identity and identity: self._highlight()
 		if self.worker is not None and not self.worker.is_alive(): self.worker = None
 		self.tennis_workers = {key: worker for key, worker in self.tennis_workers.items() if worker.is_alive()}
-		if not identity or (self.published == identity and now - self.published_at < _REFRESH_SECONDS): return False
+		force = bool(identity and self.pending_refresh == _identity_sport(identity))
+		if not identity or (not force and self.published == identity and self.published_day == date.today() and (not self.published_partial or now - self.published_at < _REFRESH_SECONDS)): return False
 		if _tennis_identity(identity):
 			worker = self.tennis_workers.get(identity)
 			if worker is None and now - self.changed_at >= _SETTLE_SECONDS and (not self.last_attempt or now - self.last_attempt >= _RETRY_SECONDS):
 				self.last_attempt = now
-				worker = Thread(target=self._load, args=(identity,), daemon=True)
+				worker = Thread(target=self._load, args=(identity, force, self.refresh_token, date.today()), daemon=True)
 				self.tennis_workers[identity] = worker
+				if force: self.pending_refresh = ''
 				worker.start()
 			return worker is not None or now - self.changed_at < _SETTLE_SECONDS
 		if self.worker is None and now - self.changed_at >= _SETTLE_SECONDS and (not self.last_attempt or now - self.last_attempt >= _RETRY_SECONDS):
 			self.last_attempt = now
-			self.worker = Thread(target=self._load, args=(identity,), daemon=True)
+			self.worker = Thread(target=self._load, args=(identity, force, self.refresh_token, date.today()), daemon=True)
+			if force: self.pending_refresh = ''
 			self.worker.start()
 		return self.worker is not None or now - self.changed_at < _SETTLE_SECONDS

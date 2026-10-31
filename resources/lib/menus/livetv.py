@@ -1471,7 +1471,7 @@ def _f1_dashboard(account, reload):
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			matched = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			_item(title + (' — ' + feed_label if not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], 'f1', matched, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
-				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'Formula 1', 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture)})
+				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'Formula 1', 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture), 'LiveTV.StandingsKey': 'f1'})
 		_save_feed_matches(feed_cache)
 		if not fixtures: _item('No upcoming Formula 1 sessions', {}, False, playable=False)
 	except (OSError, HTTPException, ValueError, TypeError):
@@ -1611,6 +1611,12 @@ def soccer(params):
 		return
 	league = str(ku.get_property('LiveTV.Soccer.League') or params.get('league') or 'All')
 	if action == 'refresh':
+		from modules.livetv_standings_generation import mark_refresh
+		try:
+			marker = mark_refresh(ku.translate_path(ku.profile_path), sport)
+			ku.set_property('LiveTV.Standings.Refresh', sport + ':' + repr(marker))
+		except (OSError, ValueError, TypeError):
+			ku.dialog.notification('Live TV', 'Could not refresh saved standings.')
 		xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
 		xbmc.executebuiltin('SetFocus(523)')
 		ku.set_property('LiveTV.Soccer.Reload', 'refresh')
@@ -1643,7 +1649,8 @@ def soccer(params):
 		for key in fixtures_by_key:
 			matches[key] = fixtures_by_key.get(key)
 			matched = matches[key]
-			second = [item for item in sport_fixtures if item.get('status') in _fixture_service.LIVE_STATUSES and _soccer_fixture_key(item) == key]
+			statuses = _fixture_service.LIVE_STATUSES if matched.get('status') in _fixture_service.LIVE_STATUSES else {'Scheduled'} if matched.get('status') == 'Scheduled' else set()
+			second = [item for item in sport_fixtures if item.get('status') in statuses and _soccer_fixture_key(item) == key]
 			sport_match = second[0] if len(second) == 1 else None
 			if matched and sport_match and _fixtures_agree(matched, sport_match) and (matched.get('status') in _fixture_service.LIVE_STATUSES) == (sport_match.get('status') in _fixture_service.LIVE_STATUSES):
 				league_id = sport_match.get('league_id')

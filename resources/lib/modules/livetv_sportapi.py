@@ -22,7 +22,6 @@ FRESH_SECONDS = 300
 MAX_UPDATE_AGE = 900
 UPCOMING_SECONDS = 24 * 3600
 CACHE_VERSION = 5
-STANDINGS_SECONDS = 1800
 DAILY_LIMIT = 350
 MONTHLY_LIMIT = 12000
 MAX_RESPONSE = 8 * 1024 * 1024
@@ -221,7 +220,7 @@ def _clean_standings(payload, key):
 	return sorted(rows, key=lambda row: (row.get('group', '').casefold(), row['position']))
 
 
-def get_standings(profile, league_id, *, bundled=None, now=None, fetch=None):
+def get_standings(profile, league_id, *, bundled=None, now=None, fetch=None, force=False):
 	"""Return a cached current league table, sharing fixture request limits."""
 	if not isinstance(league_id, int) or isinstance(league_id, bool) or not 0 < league_id <= 100000000: return [], 'invalid league'
 	key = read_key(profile, bundled)
@@ -248,7 +247,9 @@ def get_standings(profile, league_id, *, bundled=None, now=None, fetch=None):
 			entry = tables.get(str(league_id))
 			if not isinstance(entry, dict): entry = {}
 			created = entry.get('created', 0)
-			if isinstance(created, (int, float)) and not isinstance(created, bool) and 0 <= now - created < STANDINGS_SECONDS and isinstance(entry.get('rows'), list):
+			from .livetv_standings_generation import get_refresh_time
+			refreshed = get_refresh_time(profile, 'soccer')
+			if not force and isinstance(created, (int, float)) and not isinstance(created, bool) and refreshed <= created <= now and datetime.fromtimestamp(created).date() == datetime.fromtimestamp(now).date() and isinstance(entry.get('rows'), list):
 				cached = entry['rows']
 				if len(cached) <= 1000 and all(isinstance(row, dict) and isinstance(row.get('team'), str) for row in cached):
 					checked = _clean_standings({'success': True, 'data': [dict(row, team={'name': row['team'], 'id': row.get('team_id')}) for row in cached]}, key)
@@ -259,7 +260,7 @@ def get_standings(profile, league_id, *, bundled=None, now=None, fetch=None):
 			month_count = _counter(cache.get('month_count')) if cache.get('month') == month else 0
 			if count + 1 > DAILY_LIMIT or month_count + 1 > MONTHLY_LIMIT: return [], 'daily or monthly limit reached'
 			if len(tables) >= 100 and str(league_id) not in tables: tables = {}
-			tables[str(league_id)] = {'attempt': now}
+			tables[str(league_id)] = dict(entry, attempt=now)
 			cache.update(key=fingerprint, version=CACHE_VERSION, day=day, count=count + 1, month=month, month_count=month_count + 1, standings=tables)
 			_write(path, cache)
 			try: rows = _clean_standings((fetch or _fetch_standings)(key, league_id), key)

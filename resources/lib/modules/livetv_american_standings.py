@@ -1,9 +1,15 @@
 """Bounded read-only standings for NHL, NBA and American football."""
 import json
 import math
+import os
 import re
+import tempfile
 import threading
 import time
+from datetime import datetime
+from email.utils import parsedate_to_datetime
+from http.client import HTTPException
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 _URLS = {
@@ -15,9 +21,9 @@ _URLS = {
 	'nba': 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings',
 }
 _LIMIT = 4 * 1024 * 1024
-_CACHE_SECONDS = 300
 _cache = {}
 _cache_lock = threading.Lock()
+_retry_until = {}
 
 
 def _text(value):
@@ -29,33 +35,119 @@ def _key(value):
 	return ' '.join(re.findall(r'[^\W_]+', _text(value).casefold()))
 
 
-def _fetch(sport):
-	"""Cache each successful league payload in memory for five minutes."""
+def _cacheable(sport, payload):
+	"""Validate a complete payload before reusing it across matches or restarts."""
+	field = 'standings' if sport == 'nhl' else 'children'
+	if not isinstance(payload, dict) or not isinstance(payload.get(field), list) or not payload[field]: raise ValueError('Invalid standings response')
+	parsed = _nhl(payload) if sport == 'nhl' else _espn(payload)
+	if not parsed: raise ValueError('No usable standings entries')
+	if sport in ('nfl_afc', 'nfl_nfc'):
+		sections = {item['section'] for item in parsed}
+		if len(sections) != 4 or any(len([item for item in parsed if item['section'] == section]) != 4 or len({_key(item['team']) for item in parsed if item['section'] == section}) != 4 for section in sections): raise ValueError('Incomplete divisions')
+	if sport in ('ncaa', 'nfl', 'nba'):
+		counts = _raw_sections(payload)
+		if any(not count or sum(item.get('section_path') == path for item in parsed) != count for path, count in counts.items()): return False
+		if sport == 'nba' and (set(counts) != {('Eastern Conference',), ('Western Conference',)} or any(not _nba_order([item for item in parsed if item.get('section_path') == path]) for path in counts)): return False
+	if sport == 'nhl':
+		sections = {item['section'] for item in parsed}
+		if len(parsed) != len(payload['standings']) or len(sections) != 4 or any(sorted(item['rank'] for item in parsed if item['section'] == section) != list(range(1, 9)) for section in sections): return False
+	return True
+
+
+def _same_day(created, now):
+	try:
+		return isinstance(created, (int, float)) and not isinstance(created, bool) and math.isfinite(created) and 0 <= created <= now and datetime.fromtimestamp(created).date() == datetime.fromtimestamp(now).date()
+	except (OverflowError, OSError, ValueError): return False
+
+
+def _cache_path(sport):
+	try:
+		from modules import kodi_utils as ku
+		profile = ku.translate_path(ku.profile_path)
+		return os.path.join(profile, 'livetv-%s-standings.json' % sport) if profile else None
+	except (ImportError, AttributeError, OSError, TypeError): return None
+
+
+def _save_cache(path, created, payload):
+	if not path: return
+	temporary = None
+	try:
+		os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+		fd, temporary = tempfile.mkstemp(prefix='.livetv-standings-', dir=os.path.dirname(path))
+		with os.fdopen(fd, 'w', encoding='utf-8') as output: json.dump({'created': created, 'payload': payload}, output, ensure_ascii=False, separators=(',', ':'))
+		os.replace(temporary, path)
+	except (OSError, TypeError, ValueError): pass
+	finally:
+		if temporary:
+			try: os.unlink(temporary)
+			except OSError: pass
+
+
+def _backoff_path(path, provider):
+	return os.path.join(os.path.dirname(path), 'livetv-standings-%s-backoff.json' % provider) if path else None
+
+
+def _retry_at(path, provider, now):
+	key = (os.path.dirname(path) if path else '', provider)
+	if key not in _retry_until:
+		retry = 0
+		backoff = _backoff_path(path, provider)
+		try:
+			if not backoff or not 0 < os.path.getsize(backoff) <= 2048: raise ValueError('Invalid backoff')
+			with open(backoff, encoding='utf-8') as source: value = json.load(source)
+			retry = value['payload']['retry_at']
+			if not isinstance(retry, (int, float)) or isinstance(retry, bool) or not math.isfinite(retry) or not 0 <= retry <= now + 7 * 86400: raise ValueError('Invalid backoff')
+		except (OSError, ValueError, TypeError, KeyError, RecursionError): retry = 0
+		_retry_until[key] = retry
+	return _retry_until[key]
+
+
+def _set_retry(path, provider, now, error):
+	delay = 60
+	if isinstance(error, HTTPError) and error.code == 429:
+		delay = 3600
+		header = error.headers.get('Retry-After', '') if error.headers else ''
+		try:
+			if header.isdecimal(): delay = max(delay, min(int(header), 7 * 86400))
+			elif header: delay = max(delay, min(int(parsedate_to_datetime(header).timestamp() - now), 7 * 86400))
+		except (AttributeError, TypeError, ValueError, OverflowError): pass
+	retry = now + delay
+	_retry_until[(os.path.dirname(path) if path else '', provider)] = retry
+	_save_cache(_backoff_path(path, provider), now, {'retry_at': retry})
+
+
+def _fetch(sport, force=False):
+	"""Reuse validated standings through the local day, including across restarts."""
 	with _cache_lock:
-		now = time.monotonic()
+		now = time.time()
+		path = _cache_path(sport)
+		provider = 'nhl' if sport == 'nhl' else 'espn'
+		from .livetv_standings_generation import get_refresh_time
+		refreshed = get_refresh_time(os.path.dirname(path), {'nhl': 'hockey', 'nba': 'basketball', 'nfl': 'football', 'nfl_afc': 'football', 'nfl_nfc': 'football', 'ncaa': 'football'}[sport]) if path else 0
 		cached = _cache.get(sport)
-		if cached and 0 <= now - cached[0] < _CACHE_SECONDS: return cached[1]
-		request = Request(_URLS[sport], headers={'User-Agent': 'Kodi/21.0', 'Accept': 'application/json'})
-		with urlopen(request, timeout=6) as response:
-			data = response.read(_LIMIT + 1)
-		if len(data) > _LIMIT: raise ValueError('Standings response too large')
-		payload = json.loads(data)
-		field = 'standings' if sport == 'nhl' else 'children'
-		if not isinstance(payload, dict) or not isinstance(payload.get(field), list) or not payload[field]: raise ValueError('Invalid standings response')
-		parsed = _nhl(payload) if sport == 'nhl' else _espn(payload)
-		if not parsed: raise ValueError('No usable standings entries')
-		if sport in ('nfl_afc', 'nfl_nfc'):
-			sections = {item['section'] for item in parsed}
-			if len(sections) != 4 or any(len([item for item in parsed if item['section'] == section]) != 4 or len({_key(item['team']) for item in parsed if item['section'] == section}) != 4 for section in sections): raise ValueError('Incomplete divisions')
-		if sport in ('ncaa', 'nfl', 'nba'):
-			counts = _raw_sections(payload)
-			if any(not count or sum(item.get('section_path') == path for item in parsed) != count for path, count in counts.items()): return payload
-			if sport == 'nba' and (set(counts) != {('Eastern Conference',), ('Western Conference',)} or any(not _nba_order([item for item in parsed if item.get('section_path') == path]) for path in counts)): return payload
-		if sport == 'nhl':
-			sections = {item['section'] for item in parsed}
-			if len(parsed) != len(payload['standings']) or len(sections) != 4 or any(sorted(item['rank'] for item in parsed if item['section'] == section) != list(range(1, 9)) for section in sections): return payload
-		_cache[sport] = (time.monotonic(), payload)
-		return payload
+		if not force and cached and cached[0] >= refreshed and _same_day(cached[0], now): return cached[1]
+		if not force and path:
+			try:
+				if os.path.getsize(path) > _LIMIT + 1024: raise ValueError('Cache too large')
+				with open(path, encoding='utf-8') as source: saved = json.load(source)
+				created, payload = saved['created'], saved['payload']
+				if _same_day(created, now) and created >= refreshed and _cacheable(sport, payload):
+					_cache[sport] = (created, payload)
+					return payload
+			except (OSError, ValueError, TypeError, KeyError, AttributeError, RecursionError): pass
+		if now < _retry_at(path, provider, now): raise ValueError('Standings refresh delayed')
+		try:
+			request = Request(_URLS[sport], headers={'User-Agent': 'Kodi/21.0', 'Accept': 'application/json'})
+			with urlopen(request, timeout=6) as response: data = response.read(_LIMIT + 1)
+			if len(data) > _LIMIT: raise ValueError('Standings response too large')
+			payload = json.loads(data)
+			if _cacheable(sport, payload):
+				_cache[sport] = (now, payload)
+				_save_cache(path, now, payload)
+			return payload
+		except (OSError, HTTPException, ValueError, TypeError, RecursionError) as error:
+			_set_retry(path, provider, now, error)
+			raise
 
 
 def _match(entries, name):
@@ -203,10 +295,10 @@ def get_all(sport):
 		return [], metric
 
 
-def get_nhl_groups(team_a, team_b):
+def get_nhl_groups(team_a, team_b, force=False):
 	"""Return the complete four-division NHL table with selected teams marked."""
 	try:
-		data = _fetch('nhl')
+		data = _fetch('nhl', force=True) if force else _fetch('nhl')
 		entries = _nhl(data)
 		first, second = _match(entries, team_a), _match(entries, team_b)
 		sections = list(dict.fromkeys(_text(item.get('divisionName')) for item in data['standings'] if isinstance(item, dict) and _text(item.get('divisionName'))))
@@ -225,12 +317,12 @@ def get_nhl_groups(team_a, team_b):
 		return [], 'PTS'
 
 
-def get_nfl_groups(team_a, team_b):
+def get_nfl_groups(team_a, team_b, force=False):
 	"""Return eight NFL division tables, marking unavailable divisions explicitly."""
 	groups = []
 	by_conference = []
 	for key in ('nfl_afc', 'nfl_nfc'):
-		try: by_conference.append(_espn(_fetch(key)))
+		try: by_conference.append(_espn(_fetch(key, force=True) if force else _fetch(key)))
 		except (OSError, ValueError, TypeError, AttributeError, KeyError): by_conference.append([])
 	entries = [entry for conference in by_conference for entry in conference]
 	first, second = _match(entries, team_a), _match(entries, team_b)
@@ -246,10 +338,10 @@ def get_nfl_groups(team_a, team_b):
 	return groups, 'W-L-T'
 
 
-def get_ncaa_groups(team_a, team_b):
+def get_ncaa_groups(team_a, team_b, force=False):
 	"""Return all college sections with unambiguous game teams highlighted."""
 	try:
-		data = _fetch('ncaa')
+		data = _fetch('ncaa', force=True) if force else _fetch('ncaa')
 		entries = _espn(data)
 		first, second = _match(entries, team_a), _match(entries, team_b)
 		sections = list(dict.fromkeys(entry.get('section_path', (entry['section'],)) for entry in entries))
@@ -269,10 +361,10 @@ def get_ncaa_groups(team_a, team_b):
 		return [], 'OVERALL'
 
 
-def get_nba_groups(team_a, team_b):
+def get_nba_groups(team_a, team_b, force=False):
 	"""Return NBA conferences with both game teams highlighted when recognized."""
 	try:
-		data = _fetch('nba')
+		data = _fetch('nba', force=True) if force else _fetch('nba')
 		entries = _espn(data, 'nba')
 		first, second = _match(entries, team_a), _match(entries, team_b)
 		counts = _raw_sections(data)

@@ -222,6 +222,16 @@ def _account_for_feed(provider_id):
 
 def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 	"""Match current programmes from a fresh, provider-specific guide cache."""
+	live = set()
+	for fixture in fixtures:
+		try:
+			if not isinstance(fixture, dict) or _schedule_state(fixture, now)[0] != 'Live': continue
+			if sport == 'f1': key = fixture['id']
+			elif sport == 'soccer': key = _soccer_fixture_key(fixture)
+			else: key = (tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away')), str(fixture.get('league') or ''))
+			live.add(key)
+		except (KeyError, TypeError, AttributeError): continue
+	if not live: return {}
 	try:
 		key = hashlib.sha256(_guide_url(account).encode('utf-8')).hexdigest()
 		paths = [_sports_guide_cache_path(account), _guide_cache_path()] if sport == 'soccer' else [_guide_cache_path()]
@@ -256,15 +266,6 @@ def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 		if _sports.non_live_title(current[0][2]): continue
 		candidates.append(dict(stream, name=current[0][2]))
 	matched = _f1.fixture_groups(candidates, fixtures) if sport == 'f1' else _soccer_fixture_groups(candidates, fixtures) if sport == 'soccer' else _sports.fixture_groups(candidates, sport, fixtures)
-	live = set()
-	for fixture in fixtures:
-		try:
-			if not isinstance(fixture, dict) or _schedule_state(fixture, now)[0] != 'Live': continue
-			if sport == 'f1': key = fixture['id']
-			elif sport == 'soccer': key = _soccer_fixture_key(fixture)
-			else: key = (tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away')), str(fixture.get('league') or ''))
-			live.add(key)
-		except (KeyError, TypeError, AttributeError): continue
 	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True) for stream_id in feeds} for event, feeds in matched.items() if event in live}
 
 
@@ -1279,7 +1280,18 @@ def _live_soccer_fixtures(include_upcoming=False):
 	selected = sport if sport_status.startswith('updated ') else football if football_status.startswith('updated ') else []
 	source = 'sportapi' if sport_status.startswith('updated ') else 'api-football'
 	live = [item for item in selected if isinstance(item, dict) and _selected_soccer_fixture(item, source) and (item.get('status') in _fixture_service.LIVE_STATUSES or (include_upcoming and _schedule_state(item, time.time())[0] == 'Upcoming'))]
-	canadian, canadian_status = _fixture_service.get_canadian_premier(profile) if profile else ([], 'unavailable')
+	from concurrent.futures import ThreadPoolExecutor
+	with ThreadPoolExecutor(max_workers=3) as pool:
+		canadian_future = pool.submit(_fixture_service.get_canadian_premier, profile) if profile else None
+		live_future = pool.submit(_canadian_championship.get_live, cache_dir=profile or None)
+		schedule_future = pool.submit(_canadian_championship.get_schedule, cache_dir=profile or None) if include_upcoming else None
+		canadian, canadian_status = canadian_future.result() if canadian_future else ([], 'unavailable')
+		championship_live_status = 'updated'
+		try: championship_live = live_future.result()
+		except (OSError, HTTPException, ValueError, TypeError): championship_live, championship_live_status = [], 'unavailable'
+		championship_status = 'updated'
+		try: championship_schedule = schedule_future.result() if schedule_future else []
+		except (OSError, HTTPException, ValueError, TypeError, KeyError): championship_schedule, championship_status = [], 'unavailable'
 	seen = {_soccer_fixture_key(item) for item in live}
 	def add_fixture(item):
 		if not _valid_soccer_fixture(item): return
@@ -1293,14 +1305,12 @@ def _live_soccer_fixtures(include_upcoming=False):
 		if not _valid_soccer_fixture(item): continue
 		if not include_upcoming and item.get('status') not in _fixture_service.LIVE_STATUSES: continue
 		add_fixture(item)
-	championship_live_status = 'updated'
 	try:
-		for item in _canadian_championship.get_live(cache_dir=profile or None): add_fixture(item)
+		for item in championship_live: add_fixture(item)
 	except (OSError, HTTPException, ValueError, TypeError): championship_live_status = 'unavailable'
-	championship_status = 'updated'
 	if include_upcoming:
 		try:
-			for item in _canadian_championship.get_schedule(cache_dir=profile or None): add_fixture(item)
+			for item in championship_schedule: add_fixture(item)
 		except (OSError, HTTPException, ValueError, TypeError, KeyError): championship_status = 'unavailable'
 	status = ('API-Football: %s · SportAPI: %s' % (football_status, sport_status)) if available else 'Live fixtures unavailable'
 	if canadian_status != 'updated' and available: status += ' · Canadian Premier League unavailable'

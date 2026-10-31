@@ -32,6 +32,7 @@ except ImportError:
 	_feed_speed = None
 from modules import livetv_american_standings as _american_standings
 from modules import livetv_american_fixtures as _american_fixtures
+from modules import livetv_tennis_fixtures as _tennis_fixtures_service
 from modules import livetv_canadian_championship as _canadian_championship
 from modules.livetv_timezone import get_timezone
 
@@ -81,7 +82,7 @@ def _fixture_scope(name):
 
 def _play_params(stream_id, name, sport=''):
 	params = {'mode': 'livetv.play', 'id': stream_id}
-	if sport in ('soccer', 'hockey', 'football', 'basketball'):
+	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis'):
 		params.update({'name': name, 'sport': sport})
 	elif _soccer_event(name): params['name'] = name
 	return params
@@ -151,7 +152,7 @@ def _cached_failover(params):
 
 
 def _prepare_failover(account, stream_id, name, sport='', defer=False):
-	if ':' in stream_id or sport in ('soccer', 'hockey', 'football', 'basketball'):
+	if ':' in stream_id or sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis'):
 		numeric_id = stream_id.partition(':')[2] if ':' in stream_id else stream_id
 		if not numeric_id.isdecimal(): return
 		try:
@@ -221,10 +222,10 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 	status_values = []
 	if sport == 'soccer' and fixtures is None:
 		fixtures, _, _, _ = _live_soccer_fixtures(include_upcoming=True)
-	elif sport in ('hockey', 'football', 'basketball') and fixtures is None:
+	elif sport in ('hockey', 'football', 'basketball', 'tennis') and fixtures is None:
 		try:
 			profile = ku.translate_path(getattr(ku, 'profile_path', ''))
-			fixtures = _american_fixtures.get_schedule(sport, cache_dir=profile or None)
+			fixtures = _tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else _american_fixtures.get_schedule(sport, cache_dir=profile or None)
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures updated')
 		except (OSError, HTTPException, ValueError, TypeError):
 			fixtures = []
@@ -249,7 +250,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			status_values.extend(account_status)
 			streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
 			all_streams.extend(streams)
-			local = _sports.fixture_groups(streams, sport, fixtures) if sport in ('hockey', 'football', 'basketball') else _soccer_fixture_groups(streams, fixtures)
+			local = _sports.fixture_groups(streams, sport, fixtures) if sport in ('hockey', 'football', 'basketball', 'tennis') else _soccer_fixture_groups(streams, fixtures)
 			for key, feeds in local.items():
 				for stream_id, stream in feeds.items(): groups.setdefault(key, {})[identity + ':' + stream_id if stream.get('_provider') else stream_id] = stream
 	ku.set_property('LiveTV.Sports.CatalogUnavailable', 'true' if failed else '')
@@ -1401,7 +1402,7 @@ def _sports_dashboard(account, sport, reload):
 	try:
 		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 		try:
-			fixtures = _american_fixtures.get_schedule(sport, cache_dir=profile or None)
+			fixtures = _tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else _american_fixtures.get_schedule(sport, cache_dir=profile or None)
 		except (OSError, HTTPException, ValueError, TypeError):
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
 			_item('Fixtures unavailable — browse channels', {'mode': 'livetv.refine'})
@@ -1419,7 +1420,7 @@ def _sports_dashboard(account, sport, reload):
 			event = tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away'))
 			scope = str(fixture.get('league') or '')
 			rows.append((state, kickoff, event, scope, fixture, groups.get((event, scope), {})))
-		# The American feed key has no kickoff. Do not attach a feed to the wrong
+		# The feed key has no kickoff. Do not attach a feed to the wrong
 		# game if the same teams meet twice in the schedule window.
 		duplicate_keys = {key for key in groups if sum((row[2], row[3]) == key for row in rows) > 1}
 		for state, kickoff, event, scope, fixture, feeds in sorted(rows, key=lambda row: (row[0] != 'Live', row[1], row[2])):
@@ -1431,16 +1432,16 @@ def _sports_dashboard(account, sport, reload):
 			title = '%s vs %s' % (fixture['home']['name'], fixture['away']['name'])
 			count = len(feeds)
 			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else 'No feeds found yet')
-			standings_sport = 'nhl' if sport == 'hockey' else 'nba' if sport == 'basketball' else 'nfl'
+			standings_sport = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
 			standings_event = _sports._event(title) or event
-			standings_key = '|'.join((standings_sport, *standings_event))
+			standings_key = '|'.join((standings_sport, *standings_event)) if standings_sport else ''
 			context = []
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			matched_feeds = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			_item(title + (' — ' + feed_label if not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], sport, matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
-				extra_properties={'LiveTV.Match': title, 'LiveTV.League': scope.upper(), 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
+				extra_properties={'LiveTV.Match': title, 'LiveTV.League': fixture.get('league_label', scope.upper()), 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_key})
 		_save_feed_matches(feed_cache)
 		if not rows:
@@ -1457,7 +1458,7 @@ def _sports_dashboard(account, sport, reload):
 
 def soccer(params):
 	sport = params.get('sport', 'soccer')
-	if sport not in ('soccer', 'hockey', 'football', 'basketball'): sport = 'soccer'
+	if sport not in ('soccer', 'hockey', 'football', 'basketball', 'tennis'): sport = 'soccer'
 	ku.set_property('LiveTV.Sport', sport)
 	ku.set_property('LiveTV.Sport.Title', 'LIVE ' + sport.upper())
 	action = params.get('action', '')

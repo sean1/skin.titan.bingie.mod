@@ -11,15 +11,20 @@ class AllStandingsTests(unittest.TestCase):
 		self.live = load_livetv()
 		self.live.ku.dialog.textviewer = Mock()
 
-	def test_football_lists_every_section_and_labels_unavailable_league(self):
+	def test_football_lists_nfl_sections(self):
 		groups = [('NFL · NFC', [{'position': 1, 'team': 'Packers', 'points': '5-2-0'}]), ('NFL · AFC', [{'position': 1, 'team': 'Bills', 'points': '6-1-0'}])]
-		with patch.object(self.live._american_standings, 'get_all', side_effect=[(groups, 'W-L-T'), ([], 'OVERALL')]) as get:
+		with patch.object(self.live._american_standings, 'get_all', return_value=(groups, 'W-L-T')) as get:
 			self.live.all_standings({'sport': 'football'})
-		self.assertEqual([call.args[0] for call in get.call_args_list], ['nfl', 'ncaa'])
+		get.assert_called_once_with('nfl')
 		heading, body = self.live.ku.dialog.textviewer.call_args.args
 		self.assertEqual(heading, 'All football standings')
-		for text in ('NFL · NFC  ·  W-L-T', 'Packers  —  5-2-0', 'NFL · AFC', 'Bills  —  6-1-0', 'College football standings unavailable.'):
+		for text in ('NFL · NFC  ·  W-L-T', 'Packers  —  5-2-0', 'NFL · AFC', 'Bills  —  6-1-0'):
 			self.assertIn(text, body)
+
+	def test_football_labels_unavailable_nfl_standings(self):
+		with patch.object(self.live._american_standings, 'get_all', return_value=([], 'W-L-T')):
+			self.live.all_standings({'sport': 'football'})
+		self.assertIn('NFL standings unavailable.', self.live.ku.dialog.textviewer.call_args.args[1])
 
 	def test_hockey_sanitizes_provider_markup_and_invalid_sport_does_nothing(self):
 		groups = [('NHL · Central', [{'position': 1, 'team': '[B]Wild[/B]', 'points': '20'}])]

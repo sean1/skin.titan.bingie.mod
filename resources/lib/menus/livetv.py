@@ -1463,7 +1463,7 @@ def _f1_dashboard(account, reload):
 			by_ref = {_sports_ref(stream): stream for stream in ordered}
 			ordered = [by_ref[ref] for ref in _speed_order(list(by_ref), speed_context)]
 			stream, count = (ordered[0] if ordered else None), len(feeds)
-			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Session finished' if state == 'Finished' else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else 'No feeds found yet')
+			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Session finished' if state == 'Finished' else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			title = fixture['event'] + ' — ' + fixture['session_label']
 			context = []
 			if count > 1:
@@ -1546,7 +1546,7 @@ def _sports_dashboard(account, sport, reload):
 			stream = ordered[0] if ordered else None
 			title = '%s vs %s' % (fixture['home']['name'], fixture['away']['name'])
 			count = len(feeds)
-			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else 'No feeds found yet')
+			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			standings_sport = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
 			standings_event = _sports._event(title) or event
 			standings_key = '|'.join((standings_sport, *standings_event)) if standings_sport else ''
@@ -1681,7 +1681,7 @@ def soccer(params):
 			if not state: continue
 			rows.append((title, match_league, preferred, len(feeds), event, scope, matched, state, kickoff))
 		for title, match_league, stream, count, event, scope, matched, state, kickoff in sorted(rows, key=lambda row: (row[7] != 'Live', row[8], row[1].casefold(), row[0].casefold())):
-			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else 'No feeds found yet')
+			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			label = '%s — %s — %s' % (match_league, title, feed_label)
 			context = []
 			if count > 1:

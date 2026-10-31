@@ -33,6 +33,7 @@ except ImportError:
 from modules import livetv_american_standings as _american_standings
 from modules import livetv_american_fixtures as _american_fixtures
 from modules import livetv_canadian_championship as _canadian_championship
+from modules.livetv_timezone import get_timezone
 
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
@@ -758,8 +759,7 @@ def _soccer_kickoff(fixture):
 		if not isinstance(value, str): return ''
 		kickoff = datetime.fromisoformat(value.replace('Z', '+00:00'))
 		if kickoff.utcoffset() is None: return ''
-		from zoneinfo import ZoneInfo
-		return kickoff.astimezone(ZoneInfo('America/Vancouver')).strftime('%a %H:%M')
+		return kickoff.astimezone(get_timezone('America/Vancouver')).strftime('%a %H:%M')
 	except (ValueError, OverflowError, OSError, ImportError, KeyError): return ''
 
 
@@ -1196,7 +1196,7 @@ def _live_soccer_fixtures(include_upcoming=False):
 	if include_upcoming:
 		try:
 			for item in _canadian_championship.get_schedule(cache_dir=profile or None): add_fixture(item)
-		except (OSError, HTTPException, ValueError, TypeError): championship_status = 'unavailable'
+		except (OSError, HTTPException, ValueError, TypeError, KeyError): championship_status = 'unavailable'
 	status = ('API-Football: %s · SportAPI: %s' % (football_status, sport_status)) if available else 'Live fixtures unavailable'
 	if canadian_status != 'updated' and available: status += ' · Canadian Premier League unavailable'
 	if championship_live_status != 'updated' and available: status += ' · Canadian Championship live status unavailable'
@@ -1236,8 +1236,7 @@ def _soccer_schedule_agrees(name, fixture):
 		start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 		if start.utcoffset() is None: return False
 		if daytime.group(4).upper() == 'UK':
-			from zoneinfo import ZoneInfo
-			start = start.astimezone(ZoneInfo('Europe/London'))
+			start = start.astimezone(get_timezone('Europe/London'))
 		else: start = start.astimezone(timezone.utc)
 		return start.strftime('%a').casefold() == daytime.group(1).casefold() and start.hour == int(daytime.group(2)) and start.minute == int(daytime.group(3))
 	except (KeyError, TypeError, ValueError, OSError, ImportError): return False

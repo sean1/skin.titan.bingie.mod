@@ -9,7 +9,7 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 from xml.etree import ElementTree
-from zoneinfo import ZoneInfo
+from modules.livetv_timezone import get_timezone
 
 
 _URL = 'https://cs-data-production.azurewebsites.net/api/teamplayer/GetChampionshipScheduleByYear/?champCode=canchamp&year=%d&lang=en'
@@ -50,7 +50,7 @@ def _parse(body):
 					day, clock = float(row['B']), float(row['E'])
 					if not 1 <= day <= 100000 or not 0 <= clock < 1: continue
 					local = datetime(1899, 12, 30) + timedelta(days=int(day), seconds=round(clock * 86400))
-					start = local.replace(tzinfo=ZoneInfo('America/Toronto')).astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+					start = local.replace(tzinfo=get_timezone('America/Toronto')).astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
 					key = (home.casefold(), away.casefold(), start)
 					if key in seen: continue
 					seen.add(key)
@@ -93,7 +93,7 @@ def get_schedule(now=None, cache_dir=None):
 	"""Return only scheduled games kicking off in the next 24 hours."""
 	now = time.time() if now is None else now
 	start = datetime.fromtimestamp(now, timezone.utc)
-	zone = ZoneInfo('America/Toronto')
+	zone = get_timezone('America/Toronto')
 	years = {start.astimezone(zone).year, (start + timedelta(days=1)).astimezone(zone).year}
 	result = []
 	for year in sorted(years):

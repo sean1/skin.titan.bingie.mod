@@ -5,6 +5,7 @@ import os
 import re
 import tempfile
 import time
+from functools import lru_cache
 from http.client import HTTPException
 from urllib.parse import parse_qsl, unquote, urlsplit
 
@@ -49,6 +50,8 @@ def _icon(value, secrets):
 def _clean(data, action, account):
 	if not isinstance(data, list) or len(data) > MAX_ENTRIES: raise ValueError('Invalid channel catalog')
 	secrets = (str(account.get('username') or ''), str(account.get('password') or ''))
+	@lru_cache(maxsize=8192)
+	def clean_icon(value): return _icon(value, secrets)
 	cleaned = []
 	for entry in data:
 		if not isinstance(entry, dict): continue
@@ -56,7 +59,7 @@ def _clean(data, action, account):
 		for field in _FIELDS[action]:
 			value = entry.get(field)
 			if field == 'stream_icon':
-				value = _icon(value, secrets)
+				value = clean_icon(value) if type(value) is str else _icon(value, secrets)
 			elif field in ('stream_id', 'category_id', 'epg_channel_id') and isinstance(value, (str, int)) and not isinstance(value, bool):
 				# IDs must stay byte-for-byte intact; skip caching rather than alter one that contains a credential.
 				if _redact(str(value), secrets) != str(value): return None

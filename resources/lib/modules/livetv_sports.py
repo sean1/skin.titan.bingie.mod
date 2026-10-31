@@ -6,10 +6,14 @@ from datetime import datetime
 
 _SPORT_FIELDS = {'hockey': re.compile(r'^(?:NHL|NHL\.TV)$', re.I), 'football': re.compile(r'^NFL$', re.I), 'basketball': re.compile(r'^(?:NBA|NBA\.TV)$', re.I)}
 _SPORT_LEAGUES = {'hockey': 'nhl', 'football': 'nfl', 'basketball': 'nba'}
+_MONTHS = ('january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december')
+_MONTH_NUMBERS = {name: index for index, name in enumerate(_MONTHS, 1)}
+_MONTH_NUMBERS.update({name[:3]: index for index, name in enumerate(_MONTHS, 1)})
 _METADATA_DATE = re.compile(r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4}|'
 	r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*)\b', re.I)
 _EVENT = re.compile(r"^([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?|at|@)\s+([\w .&'’\-]{2,80}?)$", re.I)
 _NON_LIVE_TITLE = re.compile(r'\b(?:end|ended|highlights?|recaps?|previews?|replays?|delayed|encore|re-?runs?|repeats?|recorded)\b', re.I)
+_WORD = re.compile(r'\w+')
 
 
 def non_live_title(name):
@@ -50,6 +54,29 @@ def _event(name):
 	teams = tuple(' '.join(side.casefold().split()) for side in match.groups())
 	if teams[0] == teams[1] or not all(re.search(r'[^\W\d_]', team) for team in teams): return None
 	return teams
+
+
+def _metadata_dates(value, year):
+	"""Parse a channel date without datetime.strptime."""
+	parts = re.fullmatch(r'(\d{4})([-/])(\d{1,2})\2(\d{1,2})', value)
+	if parts:
+		candidates = [(int(parts[1]), int(parts[3]), int(parts[4]))]
+	else:
+		parts = re.fullmatch(r'(\d{1,2})([-/])(\d{1,2})\2(\d{4})', value)
+		if parts:
+			first, second, match_year = int(parts[1]), int(parts[3]), int(parts[4])
+			candidates = [(match_year, first, second), (match_year, second, first)]
+		else:
+			parts = value.casefold().split()
+			if len(parts) != 2: return []
+			if parts[0] in _MONTH_NUMBERS and parts[1].isdigit(): candidates = [(year, _MONTH_NUMBERS[parts[0]], int(parts[1]))]
+			elif parts[1] in _MONTH_NUMBERS and parts[0].isdigit(): candidates = [(year, _MONTH_NUMBERS[parts[1]], int(parts[0]))]
+			else: return []
+	parsed = []
+	for candidate in candidates:
+		try: parsed.append(datetime(*candidate).date())
+		except (ValueError, OverflowError): pass
+	return parsed
 
 
 def fixture_groups(streams, sport, fixtures):
@@ -101,6 +128,11 @@ def fixture_groups(streams, sport, fixtures):
 					alias_teams.setdefault(a + '/' + b, set()).add((index, side))
 					alias_teams.setdefault(b + '/' + a, set()).add((index, side))
 	if not alias_teams: return {}
+	alias_heads = None
+	if sport == 'tennis':
+		# Every word-starting alias needs its first word in the title; keep the full regex as the final match.
+		heads = [_WORD.match(alias) for alias in alias_teams]
+		if all(heads): alias_heads = {head.group().casefold().replace('ı', 'i') for head in heads}
 	pattern = re.compile(r'(?<!\w)(?:' + '|'.join(re.escape(alias).replace(r'\ ', r'\s+').replace('/', r'\s*/\s*') if sport == 'tennis' else re.escape(alias).replace(r'\ ', r'\s+') for alias in sorted(alias_teams, key=len, reverse=True)) + r')(?!\w)', re.I)
 	separator = re.compile(r'\b(?:vs?\.?|at)\b|@' + (r'|\s+-\s+' if sport == 'tennis' else ''), re.I)
 	result = {}
@@ -110,6 +142,7 @@ def fixture_groups(streams, sport, fixtures):
 		if not stream_id.isdecimal() or not isinstance(name, str) or not separator.search(name): continue
 		if non_live_title(name): continue
 		if sport == 'tennis': name = _tennis_text(name)
+		if alias_heads is not None and not any(word.group().casefold().replace('ı', 'i') in alias_heads for word in _WORD.finditer(name)): continue
 		found = {}
 		for match in pattern.finditer(name):
 			alias = _tennis_alias(match.group()) if sport == 'tennis' else ' '.join(match.group().casefold().split())
@@ -151,10 +184,7 @@ def fixture_groups(streams, sport, fixtures):
 				try:
 					fixture_date = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')).date()
 					value = date_match.group()
-					parsed = []
-					for fmt in ('%Y-%m-%d', '%Y/%m/%d', '%d-%m-%Y', '%d/%m/%Y', '%m-%d-%Y', '%m/%d/%Y', '%b %d %Y', '%B %d %Y', '%d %b %Y', '%d %B %Y'):
-						try: parsed.append(datetime.strptime(value if re.search(r'\d{4}', value) else value + ' ' + str(fixture_date.year), fmt).date())
-						except ValueError: pass
+					parsed = _metadata_dates(value, fixture_date.year)
 					if not parsed or all(abs((date - fixture_date).days) > 1 for date in parsed): continue
 				except (ValueError, KeyError): continue
 			candidates.append(fixture)

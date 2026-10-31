@@ -1,15 +1,19 @@
-"""Use bundled time zone data when the host has no IANA database."""
+"""Load bundled time zone data without Kodi's native ZoneInfo implementation."""
 import os
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from functools import lru_cache
+from zoneinfo import ZoneInfo
 
 
 _BUNDLED = {'America/Toronto', 'America/Vancouver', 'Europe/London'}
 
 
+@lru_cache(maxsize=3)
+def _bundled_timezone(name):
+	from zoneinfo._zoneinfo import ZoneInfo as PythonZoneInfo
+	path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'timezones', *name.split('/'))
+	with open(path, 'rb') as data: return PythonZoneInfo.from_file(data, key=name)
+
+
 def get_timezone(name):
-	try:
-		return ZoneInfo(name)
-	except ZoneInfoNotFoundError:
-		if name not in _BUNDLED: raise
-		path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'timezones', *name.split('/'))
-		with open(path, 'rb') as data: return ZoneInfo.from_file(data, key=name)
+	if name in _BUNDLED: return _bundled_timezone(name)
+	return ZoneInfo(name)

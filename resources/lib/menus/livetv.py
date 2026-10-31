@@ -3,6 +3,7 @@ import json
 import gzip
 import hashlib
 import heapq
+import io
 import os
 import queue
 import re
@@ -509,10 +510,19 @@ def _finish(success=True):
 def _request(account, action, **params):
 	query = {'username': account['username'], 'password': account['password'], 'action': action, **params}
 	url = account['server'] + '/player_api.php?' + urlencode(query)
-	with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV'}), timeout=20) as response:
+	headers = {'User-Agent': 'BINGIE Live TV'}
+	if action == 'get_live_streams': headers['Accept-Encoding'] = 'gzip'
+	with urlopen(Request(url, headers=headers), timeout=20) as response:
+		encoding = response.headers.get('Content-Encoding', '').strip().lower() if action == 'get_live_streams' else ''
+		if encoding not in ('', 'identity', 'gzip'): raise ValueError('Unsupported response encoding')
 		data = response.read(_API_RESPONSE_LIMIT + 1)
 		if len(data) > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
-		return json.loads(data.decode('utf-8-sig'))
+	if encoding == 'gzip':
+		try:
+			with gzip.GzipFile(fileobj=io.BytesIO(data)) as compressed: data = compressed.read(_API_RESPONSE_LIMIT + 1)
+		except (EOFError, zlib.error) as error: raise ValueError('Invalid compressed response') from error
+		if len(data) > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
+	return json.loads(data.decode('utf-8-sig'))
 
 
 def _catalog(account, action, *, force_refresh=False, on_status=None, **params):

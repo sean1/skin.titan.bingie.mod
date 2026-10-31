@@ -7,6 +7,18 @@ umask 077
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 addon_file="$project_dir/addon.xml"
+diagnostic=false
+if [ "${BINGIE_DIAGNOSTIC+x}" = x ]; then
+	if [ "$BINGIE_DIAGNOSTIC" != 1 ]; then
+		printf '%s\n' 'BINGIE_DIAGNOSTIC must be unset or 1.' >&2
+		exit 1
+	fi
+	diagnostic=true
+fi
+if [ "$#" -gt 1 ]; then
+	printf '%s\n' 'Usage: package.sh [output-directory]' >&2
+	exit 1
+fi
 output_dir=${1:-"$project_dir/dist"}
 subtitle_credentials_rel="resources/private/subtitle_providers.json"
 subtitle_credentials="$project_dir/$subtitle_credentials_rel"
@@ -43,8 +55,10 @@ check_package_source() {
 		exit 1
 	fi
 }
-check_package_source
-if git -C "$project_dir" show-ref --verify --quiet "$tag_ref"; then
+if [ "$diagnostic" = false ]; then
+	check_package_source
+fi
+if [ "$diagnostic" = false ] && git -C "$project_dir" show-ref --verify --quiet "$tag_ref"; then
 	if [ "$(git -C "$project_dir" rev-parse "$tag_ref^{commit}" 2>/dev/null || :)" != "$package_commit" ]; then
 		printf '%s\n' "Git tag $tag_name already points to a different commit." >&2
 		exit 1
@@ -53,9 +67,15 @@ fi
 
 mkdir -p "$output_dir"
 output_dir=$(CDPATH= cd -- "$output_dir" && pwd)
-package_name="$addon_id-$addon_version.zip"
+if [ "$diagnostic" = true ]; then
+	diagnostic_version="$addon_version"
+	package_name="$addon_id-$diagnostic_version-diagnostic.zip"
+else
+	package_name="$addon_id-$addon_version.zip"
+fi
 package_path="$output_dir/$package_name"
-temporary_dir=$(mktemp -d "${TMPDIR:-/tmp}/bingie-lite-package.XXXXXX")
+mkdir -p "$project_dir/tmp"
+temporary_dir=$(mktemp -d "$project_dir/tmp/bingie-lite-package.XXXXXX")
 trap 'rm -rf -- "$temporary_dir"' EXIT HUP INT TERM
 tracked_manifest="$temporary_dir/tracked-files"
 untracked_manifest="$temporary_dir/untracked-files"
@@ -74,6 +94,21 @@ tar -C "$project_dir" \
 	--verbatim-files-from \
 	--files-from="$tracked_manifest" \
 	-cf - | tar -C "$temporary_dir/$addon_id" -xf -
+
+if [ "$diagnostic" = true ]; then
+	python3 - "$temporary_dir/$addon_id/addon.xml" "$addon_version" "$diagnostic_version" <<'PY'
+import sys
+
+path, version, diagnostic_version = sys.argv[1:]
+with open(path, encoding='utf-8') as source:
+	content = source.read()
+old = 'version="%s"' % version
+if content.count(old) != 1:
+	raise SystemExit('Unable to identify the add-on version in staged addon.xml')
+with open(path, 'w', encoding='utf-8') as target:
+	target.write(content.replace(old, 'version="%s"' % diagnostic_version, 1))
+PY
+fi
 
 if [ ! -e "$subtitle_credentials" ] && [ ! -L "$subtitle_credentials" ]; then
 	printf '%s\n' "Subtitle credential file is required to build a complete package: $subtitle_credentials_rel" >&2
@@ -201,10 +236,14 @@ done
 	zip -q -r "$package_name" "$addon_id"
 )
 
-check_package_source
+if [ "$diagnostic" = false ]; then
+	check_package_source
+fi
 mv -f -- "$temporary_dir/$package_name" "$package_path"
 printf '%s\n' "Created $package_path"
-if git -C "$project_dir" show-ref --verify --quiet "$tag_ref"; then
+if [ "$diagnostic" = true ]; then
+	printf '%s\n' 'Diagnostic package: no Git tag created.'
+elif git -C "$project_dir" show-ref --verify --quiet "$tag_ref"; then
 	if [ "$(git -C "$project_dir" rev-parse "$tag_ref^{commit}" 2>/dev/null || :)" != "$package_commit" ]; then
 		printf '%s\n' "Git tag $tag_name already points to a different commit." >&2
 		exit 1

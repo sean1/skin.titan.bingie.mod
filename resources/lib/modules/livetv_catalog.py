@@ -9,7 +9,7 @@ from http.client import HTTPException
 from urllib.parse import parse_qsl, unquote, urlsplit
 
 FRESH_SECONDS = 120
-STALE_SECONDS = 60 * 60
+STALE_SECONDS = 24 * 60 * 60
 MAX_BYTES = 32 * 1024 * 1024
 MAX_ENTRIES = 150000
 MAX_FILES = 16
@@ -112,25 +112,29 @@ def _write(profile, path, payload):
 			except OSError: pass
 
 
+def _usable_streams(items):
+	return isinstance(items, list) and any(isinstance(item, dict) and str(item.get('stream_id') or '').isdecimal() for item in items)
+
+
 def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=None, force_refresh=False, **params):
-	"""Return the catalog; refresh after two minutes, with a one-hour offline fallback."""
+	"""Return the catalog; refresh after two minutes, with a 24-hour offline fallback."""
 	if action not in _FIELDS: return fetch(account, action, **params)
 	now = time.time() if now is None else now
 	key = _key(account, action, params)
 	path = os.path.join(profile, 'livetv-catalog-' + key + '.json')
 	cached = _read(path, key, now)
 	full_live_catalog = action == 'get_live_streams' and not params
-	# An earlier empty response is not a known-good full catalogue.
-	if full_live_catalog and cached and not cached[0]['items']: cached = None
+	# A full catalogue without playable stream IDs is not a known-good fallback.
+	if full_live_catalog and cached and not _usable_streams(cached[0]['items']): cached = None
 	if cached and cached[1] < FRESH_SECONDS and not force_refresh:
 		if on_status: on_status(cached[0]['created'], False)
 		return cached[0]['items']
 	try:
 		data = fetch(account, action, **params)
-		if full_live_catalog and data == []:
-			# Some providers transiently return an empty list despite having channels.
+		if full_live_catalog and not _usable_streams(data):
+			# Some providers transiently return an empty or unusable catalogue.
 			data = fetch(account, action, **params)
-			if data == []: raise ValueError('Empty live channel catalog')
+			if not _usable_streams(data): raise ValueError('Unusable live channel catalog')
 		clean = _clean(data, action, account)
 	except (OSError, HTTPException, ValueError, TypeError):
 		if not cached: raise

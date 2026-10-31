@@ -14,6 +14,16 @@ The package is written to `dist/skin.titan.bingie.lite-<version>.zip`. It contai
 The build also creates a local Git tag named `v<version>` at the current commit. Commit changes to packaged files first so the tag matches the source in the ZIP; rebuilding reuses an existing tag only when it points to the same commit. Private credentials included in the ZIP are not tracked by the tag. The tag is not pushed automatically.
 Streaming still requires network access and a configured Real-Debrid account.
 
+To deploy an existing package to the Google TV Streamer, SHIELD, or TCL TV over ADB, use an explicit device name and ZIP path:
+
+```sh
+./scripts/deploy.py googletv dist/skin.titan.bingie.lite-2.4.2.zip
+./scripts/deploy.py shield dist/skin.titan.bingie.lite-2.4.2.zip
+./scripts/deploy.py tcl dist/skin.titan.bingie.lite-2.4.2.zip
+```
+
+ADB must be installed and authorized on the selected device. The script connects to the device, checks the archive, opens Kodi, installs the ZIP through Kodi's add-on browser, and verifies the installed files and Kodi log. It stops active Kodi playback when an update is needed, and skips installation when all packaged files already match. The ZIP contains private credentials; the script removes its temporary copy after verifying the installation. If the installation outcome cannot be confirmed, the script leaves the ZIP in place to avoid interrupting Kodi and prints recovery instructions. The TCL target also checks its Android and Kodi setup before transfer.
+
 Join the official thread for updates: https://forum.kodi.tv/showthread.php?tid=355993
 
 Special thanks to @marcelveldt and @cartman.dos for their work on Titan and the original Titan BINGIE skin and add-ons, to kodifitzwell for POV Lite, and to everyone else who has contributed.

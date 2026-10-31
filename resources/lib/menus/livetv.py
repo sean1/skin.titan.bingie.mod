@@ -10,6 +10,7 @@ import sys
 import tempfile
 import threading
 import time
+import unicodedata
 import uuid
 import xml.etree.ElementTree as ET
 import zlib
@@ -1505,19 +1506,38 @@ def _sports_dashboard(account, sport, reload):
 			standings_sport = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
 			standings_event = _sports._event(title) or event
 			standings_key = '|'.join((standings_sport, *standings_event)) if standings_sport else ''
+			standings_match_key = standings_key
+			tennis_names = ''
+			if sport == 'tennis':
+				tour = str(fixture.get('tour') or scope.partition(':')[0]).casefold()
+				discipline = fixture.get('discipline')
+				standings_key = 'tennis|' + tour + ('|doubles' if discipline == 'doubles' else '') if tour in ('atp', 'wta') and discipline in ('singles', 'doubles') else ''
+				standings_match_key = ''
+				if standings_key and discipline == 'singles':
+					player_ids = [fixture[side].get('player_ids', []) for side in ('home', 'away')]
+					if all(isinstance(ids, list) and len(ids) == 1 and isinstance(ids[0], str) and re.fullmatch(r'[0-9]{1,12}', ids[0]) and int(ids[0]) > 0 for ids in player_ids) and player_ids[0][0] != player_ids[1][0]:
+						standings_match_key = ':'.join(ids[0] for ids in player_ids)
+				if standings_key:
+					rosters = [fixture[side].get('player_names', []) for side in ('home', 'away')]
+					expected = 2 if discipline == 'doubles' else 1
+					if all(isinstance(names, list) and len(names) == expected and all(isinstance(name, str) and 1 < len(name.split()) and len(name) <= 160 and all(ord(char) >= 32 for char in name) for name in names) for names in rosters):
+						names = [name for roster in rosters for name in roster]
+						normalized = [' '.join(unicodedata.normalize('NFKC', name).casefold().split()) for name in names]
+						if len(set(normalized)) == 2 * expected: tennis_names = json.dumps(names, ensure_ascii=False)
 			context = []
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			matched_feeds = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			team_properties = {}
+			if sport == 'tennis': team_properties['LiveTV.Tennis.PlayerNames'] = tennis_names
 			if sport in ('hockey', 'basketball', 'football', 'tennis'):
 				for side in ('home', 'away'):
 					team_properties['LiveTV.%sTeam' % side.title()] = fixture[side]['name']
 					if sport != 'tennis': team_properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.team_logo(sport, fixture[side].get('abbreviation'))
 			_item(title + (' — ' + feed_label if not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], sport, matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
 				extra_properties={'LiveTV.Match': title, 'LiveTV.League': fixture.get('league_label', scope.upper()), 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
-					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_key, **team_properties})
+					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_match_key, **team_properties})
 		_save_feed_matches(feed_cache)
 		if not rows:
 			message = 'Fixtures unavailable — browse channels' if ku.get_property('LiveTV.Soccer.FixtureStatus') == 'Live fixtures unavailable' else 'No live or upcoming %s matches — browse channels' % sport

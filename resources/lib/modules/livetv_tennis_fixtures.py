@@ -52,6 +52,9 @@ def get_schedule(cache_dir=None):
 			if not isinstance(groupings, list): continue
 			for grouping in groupings:
 				if not isinstance(grouping, dict) or not isinstance(grouping.get('competitions'), list): continue
+				group_info = grouping.get('grouping')
+				slug = group_info.get('slug') if isinstance(group_info, dict) else ''
+				discipline = {'mens-singles': 'singles', 'womens-singles': 'singles', 'mens-doubles': 'doubles', 'womens-doubles': 'doubles'}.get(slug, '')
 				for match in grouping['competitions']:
 					if not isinstance(match, dict): continue
 					identity = str(match.get('id') or '')
@@ -83,9 +86,19 @@ def get_schedule(cache_dir=None):
 						short = person.get('shortName') or person.get('shortDisplayName')
 						if isinstance(short, str) and short.strip(): aliases.append(short)
 						if isinstance(competitor.get('athlete'), dict): aliases.extend(_singles_aliases(name, short))
-						sides[side] = {'name': name, 'aliases': aliases}
+						player_ids = []
+						player_names = []
+						if discipline == 'singles' and isinstance(competitor.get('athlete'), dict):
+							player_id = str(competitor.get('id') or '')
+							if re.fullmatch(r'[0-9]{1,12}', player_id) and int(player_id) > 0: player_ids.append(player_id)
+							player_names = [name]
+						elif discipline == 'doubles' and isinstance(competitor.get('roster'), dict):
+							athletes = person.get('athletes')
+							if isinstance(athletes, list) and len(athletes) == 2 and all(isinstance(athlete, dict) and isinstance(athlete.get('displayName'), str) for athlete in athletes):
+								player_names = [athlete['displayName'] for athlete in athletes]
+						sides[side] = {'name': name, 'aliases': aliases, 'player_ids': player_ids, 'player_names': player_names}
 					if len(sides) != 2: continue
-					fixtures.append({'league': '%s:%s' % (tour, tournament_id), 'league_label': '%s · %s' % (tour.upper(), tournament.strip()), 'date': date, 'id': identity, 'home': sides['home'], 'away': sides['away'], 'status': 'LIVE' if state == 'in' else 'Scheduled'})
+					fixtures.append({'league': '%s:%s' % (tour, tournament_id), 'league_label': '%s · %s' % (tour.upper(), tournament.strip()), 'tour': tour, 'discipline': discipline, 'date': date, 'id': identity, 'home': sides['home'], 'away': sides['away'], 'status': 'LIVE' if state == 'in' else 'Scheduled'})
 					seen.add((tour, identity))
 	_CACHE = (time.monotonic(), fixtures)
 	if path: _scoreboard._save(path, fixtures)

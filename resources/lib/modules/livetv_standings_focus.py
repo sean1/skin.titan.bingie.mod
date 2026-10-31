@@ -1,6 +1,7 @@
 """Load the selected soccer league's standings without blocking navigation."""
 import os
 import re
+import json
 from queue import Empty, SimpleQueue
 from threading import Thread
 from time import monotonic
@@ -25,6 +26,10 @@ def _sports_identity(key):
 	return parts
 
 
+def _tennis_identity(key):
+	return key in ('tennis|atp', 'tennis|wta', 'tennis|atp|doubles', 'tennis|wta|doubles')
+
+
 class FocusedStandings:
 	def __init__(self):
 		self.identity = ''
@@ -34,15 +39,17 @@ class FocusedStandings:
 		self.published = ''
 		self.published_at = 0.0
 		self.rows = []
+		self.tennis_rows = []
 		self.match_key = ''
 		self.worker = None
+		self.tennis_workers = {}
 		self.results = SimpleQueue()
 		self._clear()
 
 	def _focused(self):
 		if not ku.get_visibility(_SOCCER_WINDOW): return '', ''
 		key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsKey)').strip()
-		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key): return '', ''
+		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key) and not _tennis_identity(key): return '', ''
 		league = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.League)').strip()
 		return key, league
 
@@ -52,6 +59,8 @@ class FocusedStandings:
 		ku.clear_property(_PREFIX + 'MatchKey')
 		ku.clear_property(_PREFIX + 'League')
 		ku.clear_property(_PREFIX + 'Metric')
+		ku.clear_property(_PREFIX + 'Discipline')
+		ku.clear_property(_PREFIX + 'AsOf')
 		ku.clear_property(_PREFIX + 'GroupCount')
 		ku.clear_property(_PREFIX + 'Layout')
 		ku.clear_property(_PREFIX + 'AllText')
@@ -64,22 +73,57 @@ class FocusedStandings:
 		self.published = ''
 		self.published_at = 0.0
 		self.rows = []
+		self.tennis_rows = []
 		self.match_key = ''
 
 	def _highlight(self):
 		if _sports_identity(self.identity): return
+		if _tennis_identity(self.identity):
+			self._highlight_tennis()
+			return
 		match_key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsMatchKey)').strip()
 		if match_key == self.match_key: return
 		ku.clear_property(_PREFIX + 'MatchKey')
 		for index in range(1, _MAX_ROWS + 1): ku.clear_property('%sRow%d.Highlight' % (_PREFIX, index))
 		self.match_key = match_key
 		parts = match_key.split(':')
-		if len(parts) != 2 or any(not part.isascii() or not part.isdecimal() or not 0 < int(part) <= 100000000 for part in parts) or parts[0] == parts[1]: return
+		maximum = 999999999999 if _tennis_identity(self.identity) else 100000000
+		if len(parts) != 2 or any(not part.isascii() or not part.isdecimal() or not 0 < int(part) <= maximum for part in parts) or parts[0] == parts[1]: return
 		wanted = {int(part) for part in parts}
 		ids = [row.get('team_id') for row in self.rows]
 		for index, team_id in enumerate(ids, 1):
 			if team_id in wanted and ids.count(team_id) == 1: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
 		ku.set_property(_PREFIX + 'MatchKey', match_key)
+
+	def _highlight_tennis(self):
+		from modules.livetv_tennis_rankings import name_key
+		doubles = self.identity.endswith('|doubles')
+		match_key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.Tennis.PlayerNames)').strip()
+		if match_key == self.match_key: return
+		self.match_key = match_key
+		wanted = set()
+		if len(match_key) <= 1024:
+			try: names = json.loads(match_key)
+			except (ValueError, TypeError): names = None
+			if isinstance(names, list) and len(names) == (4 if doubles else 2):
+				keys = [name_key(name) for name in names]
+				if all(keys) and len(set(keys)) == len(keys): wanted = set(keys)
+		matched = [row for row in self.tennis_rows if (row.get('name_key') and row['name_key'] in wanted) or any(key in wanted for key in row.get('name_keys', []))]
+		outside = [row for row in matched if row not in self.tennis_rows[:_MAX_ROWS]]
+		self.rows = list(self.tennis_rows[:_MAX_ROWS])
+		for row in outside[:2]:
+			replaceable = next((index for index in range(min(_MAX_ROWS, len(self.rows)) - 1, _MAX_ROWS - 3, -1) if self.rows[index] not in matched), None)
+			if replaceable is None: break
+			self.rows.pop(replaceable)
+			self.rows.append(row)
+		ku.clear_property(_PREFIX + 'MatchKey')
+		for index, row in enumerate(self.rows, 1):
+			for field_name in ('position', 'team', 'played', 'points'):
+				value = row.get('rank_label', row.get(field_name, '')) if field_name == 'position' else row.get(field_name, '')
+				ku.set_property('%sRow%d.%s' % (_PREFIX, index, field_name.title()), str(value))
+			ku.clear_property('%sRow%d.Highlight' % (_PREFIX, index))
+			if row in matched: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
+		if wanted: ku.set_property(_PREFIX + 'MatchKey', match_key)
 
 	def close(self):
 		self.identity = ''
@@ -93,7 +137,11 @@ class FocusedStandings:
 	def _load(self, identity):
 		try:
 			sport = _sports_identity(identity)
-			if sport:
+			if _tennis_identity(identity):
+				from modules import livetv_tennis_rankings
+				rows = livetv_tennis_rankings.get_rankings(identity.split('|')[1], 'doubles' if identity.endswith('|doubles') else 'singles', ku.translate_path(ku.profile_path))
+				heading, metric = identity.split('|')[1].upper(), 'PTS'
+			elif sport:
 				from modules import livetv_american_standings
 				if sport[0] in ('nhl', 'nfl'):
 					loader = livetv_american_standings.get_nhl_groups if sport[0] == 'nhl' else livetv_american_standings.get_nfl_groups
@@ -230,19 +278,24 @@ class FocusedStandings:
 				continue
 			groups = {str(row.get('group') or '') for row in rows}
 			positions = [row.get('position') for row in rows]
-			if len(groups) > 1 or len(set(positions)) != len(positions):
+			if len(groups) > 1 or (not _tennis_identity(completed) and len(set(positions)) != len(positions)):
 				self._clear()
 				continue
 			rows = sorted(rows, key=lambda row: row['position'])
 			self._clear()
 			self.rows = rows[:_MAX_ROWS]
+			if _tennis_identity(completed): self.tennis_rows = rows
 			group = next(iter(groups), '')
-			heading = (sports_heading if _sports_identity(completed) else self.league + (' · ' + group if group else '')) + (' · Top 20' if len(rows) > _MAX_ROWS else '')
+			heading = (sports_heading if _sports_identity(completed) or _tennis_identity(completed) else self.league + (' · ' + group if group else '')) + (' · Top 20' if len(rows) > _MAX_ROWS and not _tennis_identity(completed) else '')
 			ku.set_property(_PREFIX + 'League', heading)
 			ku.set_property(_PREFIX + 'Metric', metric)
+			if _tennis_identity(completed):
+				ku.set_property(_PREFIX + 'Layout', 'tennis')
+				ku.set_property(_PREFIX + 'Discipline', 'DOUBLES' if completed.endswith('|doubles') else 'SINGLES')
+				if rows[0].get('asof'): ku.set_property(_PREFIX + 'AsOf', rows[0]['asof'])
 			for index, row in enumerate(rows[:_MAX_ROWS], 1):
 				for field in ('position', 'team', 'played', 'points'):
-					ku.set_property('%sRow%d.%s' % (_PREFIX, index, field.title()), str(row.get(field, '')))
+					ku.set_property('%sRow%d.%s' % (_PREFIX, index, field.title()), str(row.get('rank_label', row.get(field, '')) if field == 'position' else row.get(field, '')))
 				if _sports_identity(completed) and row.get('highlight') is True: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
 			if _sports_identity(completed): ku.set_property(_PREFIX + 'MatchKey', completed)
 			self.published = completed
@@ -250,7 +303,16 @@ class FocusedStandings:
 			ku.set_property(_PREFIX + 'Key', completed)
 		if self.published == identity and identity: self._highlight()
 		if self.worker is not None and not self.worker.is_alive(): self.worker = None
+		self.tennis_workers = {key: worker for key, worker in self.tennis_workers.items() if worker.is_alive()}
 		if not identity or (self.published == identity and now - self.published_at < _REFRESH_SECONDS): return False
+		if _tennis_identity(identity):
+			worker = self.tennis_workers.get(identity)
+			if worker is None and now - self.changed_at >= _SETTLE_SECONDS and (not self.last_attempt or now - self.last_attempt >= _RETRY_SECONDS):
+				self.last_attempt = now
+				worker = Thread(target=self._load, args=(identity,), daemon=True)
+				self.tennis_workers[identity] = worker
+				worker.start()
+			return worker is not None or now - self.changed_at < _SETTLE_SECONDS
 		if self.worker is None and now - self.changed_at >= _SETTLE_SECONDS and (not self.last_attempt or now - self.last_attempt >= _RETRY_SECONDS):
 			self.last_attempt = now
 			self.worker = Thread(target=self._load, args=(identity,), daemon=True)

@@ -8,7 +8,7 @@ from menus import images, people
 from modules import settings, dialogs
 from modules.meta_lists import networks as meta_networks
 from modules.utils import get_datetime
-from modules.kodi_utils import media_path, notification, close_all_dialog, hide_busy_dialog, ok_dialog, fetch_kodi_imagecache, local_string as ls
+from modules.kodi_utils import media_path, notification, close_all_dialog, hide_busy_dialog, fetch_kodi_imagecache, local_string as ls
 # from modules.kodi_utils import logger
 
 fanart_empty = BaseDialog.fanart
@@ -91,7 +91,7 @@ class Extras(BaseDialog):
 				self.close()
 			elif chosen_var == trailer_id:
 				chosen = dialogs.trailer_choice(self.mediatype, self.poster, self.tmdb_id, self.meta['trailer'], self.meta['all_trailers'])
-				if not chosen: return ok_dialog()
+				if not chosen: return notification(32760)
 				if chosen == 'canceled': return
 				kwargs = {'meta': self.meta, 'is_widget': self.is_widget, 'is_home': self.is_home}
 				return videoplayer(chosen, self.close, type(self)('extras.xml', location, **kwargs).run)

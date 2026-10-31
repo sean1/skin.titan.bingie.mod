@@ -1,7 +1,7 @@
 import json
 from windows import BaseDialog
 from modules.debrid import Source
-from modules.kodi_utils import media_path, hide_busy_dialog, dialog, select_dialog, ok_dialog, local_string as ls
+from modules.kodi_utils import media_path, hide_busy_dialog, dialog, select_dialog, notification, local_string as ls
 from modules.settings import get_art_provider, info_icons, provider_sort_ranks
 # from modules.kodi_utils import logger
 
@@ -251,7 +251,7 @@ class SourceResults(BaseDialog):
 			choice = select_dialog(provider_choices, **kwargs)
 			if choice is None: return
 			filtered_list = [i for i in self.item_list if any(x in i.getProperty(filter_property) for x in choice)]
-		if not filtered_list: return ok_dialog(text=32760)
+		if not filtered_list: return notification(32760)
 		self.filter_applied = True
 		self.win.reset()
 		self.win.addItems(filtered_list)

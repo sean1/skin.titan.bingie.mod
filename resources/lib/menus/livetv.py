@@ -520,7 +520,7 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, **params):
 
 
 def _error(message):
-	ku.dialog.ok('Live TV', message)
+	ku.dialog.notification('Live TV', message, time=max(5000, min(60000, 2000 + 200 * len(message))))
 
 
 def next_feed(params):
@@ -552,7 +552,7 @@ def settings(params):
 	except OSError:
 		_error('Could not save the account in the Kodi profile.')
 		return
-	ku.dialog.ok('Live TV', 'Live TV account saved.')
+	ku.dialog.notification('Live TV', 'Live TV account saved.', time=5000)
 
 
 def guide_settings(params):
@@ -578,7 +578,7 @@ def guide_settings(params):
 	except OSError:
 		_error('Could not save the guide URL in the Kodi profile.')
 		return
-	ku.dialog.ok('Live TV', 'TV guide URL saved.')
+	ku.dialog.notification('Live TV', 'TV guide URL saved.', time=5000)
 
 
 def browse(params):

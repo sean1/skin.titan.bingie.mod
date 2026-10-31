@@ -182,14 +182,6 @@ def widget_refresh():
 def container_refresh():
 	return execute_builtin('Container.Refresh')
 
-def ok_dialog(heading=None, text='', highlight='dodgerblue', ok_label=local_string(32839), top_space=True):
-	heading = heading or get_addoninfo('name')
-	if isinstance(heading, int): heading = local_string(heading)
-	if isinstance(text, int): text = local_string(text)
-	if not text: top_space, text = True, local_string(32760)
-	if top_space: text = '[CR]%s' % text
-	return dialog.ok(heading, text)
-
 def confirm_dialog(heading=None, text='', highlight='dodgerblue', ok_label=local_string(32839), cancel_label=local_string(32840), top_space=True, default_control=11):
 	heading = heading or get_addoninfo('name')
 	if isinstance(heading, int): heading = local_string(heading)
@@ -546,7 +538,7 @@ def set_setting(setting_id, value):
 def upload_logfile():
 	# Thanks 123Venom
 	log_file, url = 'special://logpath/kodi.log', 'https://paste.kodi.tv/'
-	if not path_exists(log_file): return ok_dialog(text='Error. Log File Not Found.')
+	if not path_exists(log_file): return notification('Error. Log File Not Found.', time=5000)
 	from platform import python_version
 	text = f"Kodi: {get_infolabel('System.BuildVersion')}[CR]Python: {python_version()}[CR]{local_string(32580)}"
 	if not confirm_dialog(text=text, top_space=False): return
@@ -555,8 +547,10 @@ def upload_logfile():
 	try:
 		with open_file(log_file) as f: text = f.readBytes().decode('utf-8-sig')
 		response = requests.post('%s%s' % (url, 'documents'), data=text, timeout=10.0).json()
-		if 'key' in response: ok_dialog(text=url + response['key'])
-		else: ok_dialog(text='Error. Log Upload Failed')
+		if 'key' in response:
+			message = url + response['key']
+			notification(message, time=max(5000, min(60000, 2000 + 200 * len(message))))
+		else: notification('Error. Log Upload Failed', time=5000)
 	except: notification(32574, 1500)
 	hide_busy_dialog()
 

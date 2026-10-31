@@ -9,7 +9,7 @@ from modules import kodi_utils, settings
 
 ls, get_setting, notification = kodi_utils.local_string, kodi_utils.get_setting, kodi_utils.notification
 show_busy_dialog, hide_busy_dialog = kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog
-ok_dialog, confirm_dialog, select_dialog = kodi_utils.ok_dialog, kodi_utils.confirm_dialog, kodi_utils.select_dialog
+confirm_dialog, select_dialog = kodi_utils.confirm_dialog, kodi_utils.select_dialog
 default_internal_scrapers, enabled_debrids_check = settings.default_internal_scrapers, settings.enabled_debrids_check
 default_external_scrapers = ('external',)
 plswait_str, checking_debrid_str, remaining_debrid_str = ls(32577), ls(32578), ls(32579)
@@ -166,10 +166,10 @@ class Source:
 		api = import_debrid(self.debrid)
 		result = api.parse_magnet_pack(self.url, self.hash)
 		hide_busy_dialog()
-		if not result: return ok_dialog(text='Not Cached at [B]%s[/B]' % self.debrid.upper())
+		if not result: return notification('Not Cached at [B]%s[/B]' % self.debrid.upper())
 		torrent_id = next((i['torrent_id'] for i in result if 'torrent_id' in i), None)
 		if torrent_id: Thread(target=api.delete_torrent, args=(torrent_id,)).start()
-		ok_dialog(text='Cached at [B]%s[/B]' % self.debrid.upper())
+		notification('Cached at [B]%s[/B]' % self.debrid.upper())
 
 class DebridCheck:
 	_debrid_dict = {i[0]: i for i in debrid_list}

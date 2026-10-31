@@ -122,5 +122,6 @@ class Menu(Debrid):
 			append(ls(32759) % points_available)
 			kodi_utils.hide_busy_dialog()
 #			return kodi_utils.show_text(ls(32054).upper(), '\n\n'.join(body), font_size='large')
-			return kodi_utils.ok_dialog(ls(32054).upper(), '[CR]'.join(body), top_space=False)
+			message = ' · '.join(body)
+			return kodi_utils.dialog.notification(ls(32054).upper(), message, time=max(5000, min(60000, 2000 + 200 * len(message))))
 		except: kodi_utils.hide_busy_dialog()

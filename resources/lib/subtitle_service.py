@@ -110,8 +110,7 @@ def _search(handle):
 	diagnostics = client.subtitle_diagnostics() if hasattr(client, 'subtitle_diagnostics') else {}
 	message = _diagnostic_message(diagnostics)
 	if message:
-		if diagnostics.get('config') in config_issue_names: kodi_utils.ok_dialog('Subtitle search', message)
-		else: kodi_utils.notification(message)
+		kodi_utils.notification(message, time=max(5000, min(60000, 2000 + 200 * len(message))))
 	kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=search outcome=complete count=%s' % len(subtitles))
 	updated_context = client._set_context(subtitles)
 	if isinstance(updated_context, dict): context, subtitles = updated_context, updated_context.get('subtitles', ())

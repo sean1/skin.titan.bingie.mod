@@ -6,6 +6,8 @@ import unicodedata
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
+from modules.livetv_sports import non_live_title
+
 _CACHE = None
 _SESSIONS = {'FP1': 'Practice 1', 'FP2': 'Practice 2', 'FP3': 'Practice 3', 'SS': 'Sprint Qualifying', 'SR': 'Sprint Race', 'QUAL': 'Qualifying', 'RACE': 'Race'}
 _SESSION_PATTERNS = {
@@ -17,7 +19,7 @@ _SESSION_PATTERNS = {
 	'QUAL': re.compile(r'(?<!sprint )\b(?:qual|qualifying)\b', re.I),
 	'RACE': re.compile(r'(?<!sprint )\brace\b', re.I),
 }
-_REJECT = re.compile(r'\b(?:replay|repeat|delayed|ended|end|highlights|archive|on[ -]demand)\b', re.I)
+_REJECT = re.compile(r'\b(?:archive|on[ -]demand)\b', re.I)
 _LABEL_DATE = re.compile(r'\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*(?:\s+(\d{4}))?\b', re.I)
 _MONTH_FIRST = re.compile(r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:,?\s+(\d{4}))?\b', re.I)
 _NUMERIC_DATE = re.compile(r'\b\d{1,4}[-/]\d{1,2}[-/]\d{1,4}\b')
@@ -135,7 +137,7 @@ def fixture_groups(streams, fixtures):
 	for stream in streams:
 		if not isinstance(stream, dict): continue
 		identity, name = str(stream.get('stream_id') or ''), stream.get('name')
-		if not identity.isdecimal() or not isinstance(name, str) or _REJECT.search(name): continue
+		if not identity.isdecimal() or not isinstance(name, str) or non_live_title(name) or _REJECT.search(name): continue
 		codes = [code for code, pattern in _SESSION_PATTERNS.items() if pattern.search(name)]
 		if len(codes) != 1: continue
 		candidates = []

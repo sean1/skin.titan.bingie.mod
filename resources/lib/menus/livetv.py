@@ -61,7 +61,7 @@ _home_state_cache = None
 
 def _soccer_event(name):
 	"""Recognize the provider's explicitly live, event-specific soccer labels."""
-	if not isinstance(name, str): return None
+	if not isinstance(name, str) or _sports.non_live_title(name): return None
 	parts = [part.strip() for part in name.split('|')]
 	if len(parts) < 3 or parts[0].casefold() != 'live': return None
 	if not re.search(r'\b(?:soccer|football)\b', ' '.join(parts[2:]), re.I): return None
@@ -95,7 +95,7 @@ def _play_params(stream_id, name, sport=''):
 
 def _matched_play_params(stream_id, name, sport, feeds, cache):
 	params = _play_params(stream_id, name, sport)
-	if not sport or len(feeds) < 2 or len(cache) >= 500: return params
+	if not sport or len(feeds) < 2 or len(cache) >= 500 or any(feed.get('_guide_match') for _, feed in feeds): return params
 	token = uuid.uuid4().hex
 	cache[token] = {'sport': sport, 'feeds': [[ref, hashlib.sha256(str(feed.get('name') or '').encode('utf-8')).hexdigest()] for ref, feed in feeds[:100]]}
 	params['feeds_token'] = token
@@ -219,6 +219,48 @@ def _account_for_feed(provider_id):
 	return next((account for identity, account in _sports_accounts(_load()) if identity == provider_id), None)
 
 
+def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
+	"""Match current programmes from a fresh, provider-specific guide cache."""
+	try:
+		path = _guide_cache_path()
+		if not 0 < os.path.getsize(path) <= 16 * 1024 * 1024: return {}
+		with open(path, encoding='utf-8') as source: cache = json.load(source)
+		key = hashlib.sha256(_guide_url(account).encode('utf-8')).hexdigest()
+		created = cache.get('created')
+		if cache.get('key') != key or not isinstance(created, (int, float)) or isinstance(created, bool) or not 0 <= now - created < _GUIDE_FRESH_SECONDS: return {}
+		programmes = cache.get('programmes')
+		if not isinstance(programmes, dict): return {}
+	except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError): return {}
+	by_id = {}
+	for stream in streams:
+		stream_id = str(stream.get('stream_id') or '')
+		if stream_id.isdecimal(): by_id.setdefault(stream_id, []).append(stream)
+	named_ids = {stream_id for feeds in direct.values() for stream_id in feeds}
+	candidates = []
+	for stream_id, options in by_id.items():
+		if len(options) != 1 or stream_id in named_ids: continue
+		stream = options[0]
+		epg_id = str(stream.get('epg_channel_id') or '')
+		if not epg_id: continue
+		entries = programmes.get(epg_id)
+		if not isinstance(entries, list): continue
+		current = [entry for entry in entries if isinstance(entry, list) and len(entry) == 3 and isinstance(entry[0], (int, float)) and not isinstance(entry[0], bool) and isinstance(entry[1], (int, float)) and not isinstance(entry[1], bool) and isinstance(entry[2], str) and entry[0] <= now < entry[1]]
+		if len(current) != 1: continue
+		if _sports.non_live_title(current[0][2]): continue
+		candidates.append(dict(stream, name=current[0][2]))
+	matched = _f1.fixture_groups(candidates, fixtures) if sport == 'f1' else _soccer_fixture_groups(candidates, fixtures) if sport == 'soccer' else _sports.fixture_groups(candidates, sport, fixtures)
+	live = set()
+	for fixture in fixtures:
+		try:
+			if not isinstance(fixture, dict) or _schedule_state(fixture, now)[0] != 'Live': continue
+			if sport == 'f1': key = fixture['id']
+			elif sport == 'soccer': key = _soccer_fixture_key(fixture)
+			else: key = (tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away')), str(fixture.get('league') or ''))
+			live.add(key)
+		except (KeyError, TypeError, AttributeError): continue
+	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True) for stream_id in feeds} for event, feeds in matched.items() if event in live}
+
+
 def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None):
 	from concurrent.futures import ThreadPoolExecutor
 	legacy = _load()
@@ -251,6 +293,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
 		except (OSError, HTTPException, ValueError, TypeError): return identity, [], False, account_status
 	groups, all_streams, failed = {}, [], False
+	account_map = dict(accounts)
 	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
 		for identity, streams, available, account_status in pool.map(fetch, accounts):
 			if not available: failed = True
@@ -258,6 +301,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
 			all_streams.extend(streams)
 			local = _f1.fixture_groups(streams, fixtures) if sport == 'f1' else _sports.fixture_groups(streams, sport, fixtures) if sport in ('hockey', 'football', 'basketball', 'tennis') else _soccer_fixture_groups(streams, fixtures)
+			for event, feeds in _sports_guide_groups(account_map[identity], streams, sport, fixtures, local, time.time()).items(): local.setdefault(event, {}).update(feeds)
 			for key, feeds in local.items():
 				for stream_id, stream in feeds.items(): groups.setdefault(key, {})[identity + ':' + stream_id if stream.get('_provider') else stream_id] = stream
 	ku.set_property('LiveTV.Sports.CatalogUnavailable', 'true' if failed else '')
@@ -1294,7 +1338,7 @@ def _live_soccer_fixtures(include_upcoming=False):
 
 def _soccer_feed_event(name):
 	"""Extract two teams from a provider event label, never a team-only channel."""
-	if not isinstance(name, str) or re.search(r'\b(?:end|ended|replay|delayed)\b', name, re.I): return None
+	if not isinstance(name, str) or _sports.non_live_title(name): return None
 	known = _soccer_event(name)
 	if known: return known
 	for part in name.split('|')[:2]:

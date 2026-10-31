@@ -528,55 +528,6 @@ def next_feed(params):
 	request_manual_switch()
 
 
-def fixture_settings(params):
-	profile = ku.translate_path(ku.profile_path)
-	bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', _fixture_service.KEY_FILE)
-	profile_key = bool(_fixture_service.read_key(profile))
-	existing = bool(_fixture_service.read_key(profile, bundled))
-	if existing:
-		options = ['Replace API-Football key'] + (['Remove saved API-Football key'] if profile_key else [])
-		choice = ku.dialog.select('Soccer match recognition', options)
-		if choice < 0: return
-		if choice == 1:
-			try: _fixture_service.remove_key(profile)
-			except OSError: return _error('Could not remove the API-Football key.')
-			message = 'Bundled API-Football key restored.' if _fixture_service.read_key(profile, bundled) else 'Soccer match recognition disabled.'
-			ku.dialog.notification('Live TV', message)
-			if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
-			return
-	key = ku.dialog.input('API-Football key', option=xbmcgui.ALPHANUM_HIDE_INPUT)
-	if not key or not key.strip(): return
-	try: _fixture_service.save_key(profile, key.strip())
-	except ValueError: return _error('The API-Football key format is invalid.')
-	except OSError: return _error('Could not save the API-Football key.')
-	ku.dialog.notification('Live TV', 'Soccer match recognition enabled.')
-	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
-
-
-def sportapi_settings(params):
-	profile = ku.translate_path(ku.profile_path)
-	local_key = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', _sportapi_service.KEY_FILE)
-	profile_key = bool(_sportapi_service.read_key(profile))
-	if _sportapi_service.read_key(profile, local_key):
-		options = ['Replace SportAPI key'] + (['Remove saved SportAPI key'] if profile_key else [])
-		choice = ku.dialog.select('SportAPI match recognition', options)
-		if choice < 0: return
-		if choice == 1:
-			try: _sportapi_service.remove_key(profile)
-			except OSError: return _error('Could not remove the SportAPI key.')
-			message = 'Local SportAPI key restored.' if _sportapi_service.read_key(profile, local_key) else 'SportAPI match recognition disabled.'
-			ku.dialog.notification('Live TV', message)
-			if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
-			return
-	key = ku.dialog.input('SportAPI key', option=xbmcgui.ALPHANUM_HIDE_INPUT)
-	if not key or not key.strip(): return
-	try: _sportapi_service.save_key(profile, key.strip())
-	except ValueError: return _error('The SportAPI key format is invalid.')
-	except OSError: return _error('Could not save the SportAPI key.')
-	ku.dialog.notification('Live TV', 'SportAPI match recognition enabled.')
-	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): xbmc.executebuiltin('Container.Refresh')
-
-
 def settings(params):
 	current = _load() or {}
 	server = ku.dialog.input('Server URL', defaultt=current.get('server', '')).strip().rstrip('/')

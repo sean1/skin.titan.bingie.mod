@@ -13,7 +13,7 @@ subtitle_credentials="$project_dir/$subtitle_credentials_rel"
 livetv_credentials_rel="resources/private/livetv-account.json"
 livetv_credentials="$project_dir/$livetv_credentials_rel"
 football_key_rel="resources/private/api-football-key.txt"
-football_key="$project_dir/$football_key_rel"
+sportapi_key_rel="resources/private/sportapi-key.txt"
 
 addon_id=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*id="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
 addon_version=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*version="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
@@ -54,6 +54,10 @@ tar -C "$project_dir" \
 	--files-from="$tracked_manifest" \
 	-cf - | tar -C "$temporary_dir/$addon_id" -xf -
 
+if [ ! -e "$subtitle_credentials" ] && [ ! -L "$subtitle_credentials" ]; then
+	printf '%s\n' "Subtitle credential file is required to build a complete package: $subtitle_credentials_rel" >&2
+	exit 1
+fi
 if [ -e "$subtitle_credentials" ] || [ -L "$subtitle_credentials" ]; then
 	if [ -L "$subtitle_credentials" ] || [ ! -f "$subtitle_credentials" ]; then
 		printf '%s\n' "Subtitle credential file must be a regular file, not a symlink" >&2
@@ -68,11 +72,34 @@ if [ -e "$subtitle_credentials" ] || [ -L "$subtitle_credentials" ]; then
 		printf '%s\n' "Subtitle credential file has an invalid size" >&2
 		exit 1
 	fi
-	python3 -m json.tool "$subtitle_credentials" >/dev/null
+	if ! python3 - "$subtitle_credentials" <<'PY'
+import json
+import sys
+
+try:
+	with open(sys.argv[1], encoding='utf-8-sig') as source:
+		config = json.load(source)
+	valid = isinstance(config, dict)
+	for provider in ('opensubtitles', 'subdl', 'subsource'):
+		entry = config.get(provider) if valid else None
+		fields = ('api_key', 'user_agent') if provider == 'opensubtitles' else ('api_key',)
+		valid = valid and isinstance(entry, dict) and all(isinstance(entry.get(field), str) and entry[field].strip() and not entry[field].startswith('YOUR_') for field in fields)
+except (OSError, ValueError, UnicodeError):
+	valid = False
+sys.exit(0 if valid else 1)
+PY
+	then
+		printf '%s\n' "Subtitle credential file must configure all provider API keys and the OpenSubtitles user agent" >&2
+		exit 1
+	fi
 	mkdir -p "$temporary_dir/$addon_id/resources/private"
 	install -m 600 "$subtitle_credentials" "$temporary_dir/$addon_id/$subtitle_credentials_rel"
 fi
 
+if [ ! -e "$livetv_credentials" ] && [ ! -L "$livetv_credentials" ]; then
+	printf '%s\n' "Live TV account file is required to build a complete package: $livetv_credentials_rel" >&2
+	exit 1
+fi
 if [ -e "$livetv_credentials" ] || [ -L "$livetv_credentials" ]; then
 	if [ -L "$livetv_credentials" ] || [ ! -f "$livetv_credentials" ]; then
 		printf '%s\n' "Live TV account file must be a regular file, not a symlink" >&2
@@ -109,21 +136,26 @@ PY
 	install -m 600 "$livetv_credentials" "$temporary_dir/$addon_id/$livetv_credentials_rel"
 fi
 
-if [ -e "$football_key" ] || [ -L "$football_key" ]; then
-	if [ -L "$football_key" ] || [ ! -f "$football_key" ]; then
-		printf '%s\n' "API-Football key file must be a regular file, not a symlink" >&2
+for key_rel in "$football_key_rel" "$sportapi_key_rel"; do
+	key_file="$project_dir/$key_rel"
+	if [ ! -e "$key_file" ] && [ ! -L "$key_file" ]; then
+		printf '%s\n' "Key file is required to build a complete package: $key_rel" >&2
 		exit 1
 	fi
-	if [ "$(stat -c '%a' "$football_key")" != "600" ]; then
-		printf '%s\n' "API-Football key file permissions must be 0600" >&2
+	if [ -L "$key_file" ] || [ ! -f "$key_file" ]; then
+		printf '%s\n' "Key file must be a regular file, not a symlink: $key_rel" >&2
 		exit 1
 	fi
-	credential_size=$(wc -c < "$football_key")
+	if [ "$(stat -c '%a' "$key_file")" != "600" ]; then
+		printf '%s\n' "Key file permissions must be 0600: $key_rel" >&2
+		exit 1
+	fi
+	credential_size=$(wc -c < "$key_file")
 	if [ "$credential_size" -lt 8 ] || [ "$credential_size" -gt 257 ]; then
-		printf '%s\n' "API-Football key file has an invalid size" >&2
+		printf '%s\n' "Key file has an invalid size: $key_rel" >&2
 		exit 1
 	fi
-	if ! python3 - "$football_key" <<'PY'
+	if ! python3 - "$key_file" <<'PY'
 import re
 import sys
 
@@ -136,12 +168,12 @@ except (OSError, UnicodeError, ValueError):
 sys.exit(0 if valid else 1)
 PY
 	then
-		printf '%s\n' "API-Football key file must contain a valid token" >&2
+		printf '%s\n' "Key file must contain a valid token: $key_rel" >&2
 		exit 1
 	fi
 	mkdir -p "$temporary_dir/$addon_id/resources/private"
-	install -m 600 "$football_key" "$temporary_dir/$addon_id/$football_key_rel"
-fi
+	install -m 600 "$key_file" "$temporary_dir/$addon_id/$key_rel"
+done
 
 (
 	cd "$temporary_dir"

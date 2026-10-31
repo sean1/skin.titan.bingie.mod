@@ -39,7 +39,7 @@ def _read_key(path):
 
 
 def read_key(profile, bundled=None):
-	return _read_key(os.path.join(profile, KEY_FILE)) or (_read_key(bundled) if bundled else '')
+	return (_read_key(bundled) if bundled else '') or _read_key(os.path.join(profile, KEY_FILE))
 
 
 def save_key(profile, key):

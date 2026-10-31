@@ -950,6 +950,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		if hasattr(self, 'next_page_prefetch'): self.next_page_prefetch.cancel()
 		if hasattr(self, 'livetv_failover'): self.livetv_failover.close()
 		if hasattr(self, 'focused_standings'): self.focused_standings.close()
+		if hasattr(self, 'sports_refresh'): self.sports_refresh.close()
 		for i in getattr(self, 'threads', ()): i.join()
 
 	def run(self):

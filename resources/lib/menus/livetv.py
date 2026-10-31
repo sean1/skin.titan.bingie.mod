@@ -223,15 +223,21 @@ def _account_for_feed(provider_id):
 def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 	"""Match current programmes from a fresh, provider-specific guide cache."""
 	try:
-		path = _guide_cache_path()
-		if not 0 < os.path.getsize(path) <= 16 * 1024 * 1024: return {}
-		with open(path, encoding='utf-8') as source: cache = json.load(source)
 		key = hashlib.sha256(_guide_url(account).encode('utf-8')).hexdigest()
-		created = cache.get('created')
-		if cache.get('key') != key or not isinstance(created, (int, float)) or isinstance(created, bool) or not 0 <= now - created < _GUIDE_FRESH_SECONDS: return {}
-		programmes = cache.get('programmes')
-		if not isinstance(programmes, dict): return {}
-	except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError): return {}
+		paths = [_sports_guide_cache_path(account), _guide_cache_path()] if sport == 'soccer' else [_guide_cache_path()]
+	except (OSError, ValueError, TypeError, AttributeError, KeyError): return {}
+	programmes = None
+	for path in paths:
+		try:
+			if not 0 < os.path.getsize(path) <= 16 * 1024 * 1024: continue
+			with open(path, encoding='utf-8') as source: cache = json.load(source)
+			created = cache.get('created')
+			if cache.get('key') != key or not isinstance(created, (int, float)) or isinstance(created, bool) or not 0 <= now - created < _GUIDE_FRESH_SECONDS: continue
+			if not isinstance(cache.get('programmes'), dict): continue
+			programmes = cache['programmes']
+			break
+		except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError): continue
+	if programmes is None: return {}
 	by_id = {}
 	for stream in streams:
 		stream_id = str(stream.get('stream_id') or '')
@@ -654,6 +660,11 @@ def _guide_cache_path():
 	return os.path.join(ku.translate_path(ku.profile_path), 'livetv-guide.json')
 
 
+def _sports_guide_cache_path(account):
+	key = hashlib.sha256((_guide_url(account) + '\0' + _account_fingerprint(account)).encode('utf-8')).hexdigest()
+	return os.path.join(ku.translate_path(ku.profile_path), 'livetv-sports-guide-' + key + '.json')
+
+
 def _guide_timestamp(value):
 	match = re.fullmatch(r'(\d{8}|\d{10}|\d{12}|\d{14})(?:\s+([+-]\d{4}|Z))?', (value or '').strip())
 	if not match: return None
@@ -703,7 +714,7 @@ def _guide_xml_chunks(source):
 			seen_doctype = True
 
 
-def _parse_guide(source, now, wanted=None, search_term=None):
+def _parse_guide(source, now, wanted=None, search_term=None, sports_window=False):
 	parser = ET.XMLPullParser(events=('start', 'end'))
 	root = None
 	programmes = {}
@@ -716,11 +727,12 @@ def _parse_guide(source, now, wanted=None, search_term=None):
 			if node.tag == 'programme':
 				channel = node.get('channel', '')
 				title = (node.findtext('title') or 'Programme')[:300]
-				if channel and (wanted is None or channel in wanted) and (search_term is None or search_term in title.casefold()):
+				zoned = not sports_window or all(re.search(r'\s(?:[+-]\d{4}|Z)$', node.get(field, '')) for field in ('start', 'stop'))
+				if zoned and channel and (wanted is None or channel in wanted) and (search_term is None or search_term in title.casefold()):
 					start, stop = _guide_timestamp(node.get('start')), _guide_timestamp(node.get('stop'))
 				else:
 					start = stop = None
-				if start is not None and stop is not None and stop > (now if search_term is not None else now - 86400) and start < now + 3 * 86400 and stop > start:
+				if start is not None and stop is not None and stop > (now if search_term is not None or sports_window else now - 86400) and start < now + (7200 if sports_window else 3 * 86400) and stop > start:
 					count += 1
 					if search_term is None and count > 200000: raise ValueError('Too many programmes')
 					if search_term is None or count <= _SEARCH_GUIDE_LIMIT:
@@ -732,13 +744,13 @@ def _parse_guide(source, now, wanted=None, search_term=None):
 	return programmes
 
 
-def _parse_raw_guide(raw, now, wanted, search_term=None):
+def _parse_raw_guide(raw, now, wanted, search_term=None, sports_window=False):
 	raw.seek(0)
 	magic = raw.read(2)
 	raw.seek(0)
 	if magic == b'\x1f\x8b':
-		with gzip.GzipFile(fileobj=raw) as decoded: return _parse_guide(decoded, now, wanted, search_term)
-	return _parse_guide(raw, now, wanted, search_term)
+		with gzip.GzipFile(fileobj=raw) as decoded: return _parse_guide(decoded, now, wanted, search_term, sports_window)
+	return _parse_guide(raw, now, wanted, search_term, sports_window)
 
 
 class _GuideProgrammes(dict):
@@ -1310,6 +1322,8 @@ def _soccer_feed_event(name):
 			markers = re.findall(r'\b(?:women|womens|ladies|wfc|w|reserve|reserves|ii|iii|b|(?:u|under)\s*[- ]?\s*\d{1,2})\b', ending.group(1), re.I)
 			part = part[:ending.start()] + (' ' + ' '.join(markers) if markers else '')
 		match = re.fullmatch(r"([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’\-]{2,80}?)", part, re.I)
+		if not match and len(re.findall(r'\s+-\s+', part)) == 1:
+			match = re.fullmatch(r"([\w .&'’\-]{2,80}?)\s+-\s+([\w .&'’\-]{2,80}?)", part, re.I)
 		if match:
 			event = tuple(' '.join(side.casefold().split()) for side in match.groups())
 			if event[0] != event[1] and all(re.search(r'[^\W\d_]', side) for side in event): return event
@@ -1340,7 +1354,8 @@ def _soccer_fixture_groups(streams, fixtures):
 	# Artwork IDs are only used within the bundled league catalog; they are not
 	# comparable with IDs from a fixture provider.
 	aliases = ({'bayer 04', 'bayer leverkusen'}, {'monchengladbach', 'borussia m gladbach'}, {'leipzig', 'rb leipzig'}, {'bremen', 'werder bremen'})
-	curated = {'131': ('bayer leverkusen', aliases[0]), '268': ('borussia monchengladbach', aliases[1]), '11420': ('rb leipzig', aliases[2]), '137': ('werder bremen', aliases[3])}
+	curated = {'131': ('bayer leverkusen', aliases[0]), '268': ('borussia monchengladbach', aliases[1]), '11420': ('rb leipzig', aliases[2]), '137': ('werder bremen', aliases[3]),
+		'110': ('internazionale', {'inter', 'inter milan', 'internazionale'})}
 	def base_keys(name):
 		keys = _fixture_service.team_keys(name)
 		canonical = _fixture_service._team(name)[0]

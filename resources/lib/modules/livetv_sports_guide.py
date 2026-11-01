@@ -1,4 +1,4 @@
-"""Refresh provider-specific soccer guide snapshots without blocking navigation."""
+"""Refresh provider-specific sports programme snapshots without blocking navigation."""
 import hashlib
 import json
 import os
@@ -34,8 +34,8 @@ def _fresh(path, key, now):
 	except (OSError, ValueError, TypeError, AttributeError): return False
 
 
-def refresh(canceled, on_update):
-	"""Fetch each enabled provider once; never alter the ordinary TV guide caches."""
+def refresh(canceled, on_update, permissive=False):
+	"""Refresh a separate sports programme snapshot for each enabled provider."""
 	from menus import livetv
 	from modules import kodi_utils as ku
 	profile = ku.translate_path(ku.profile_path)
@@ -46,7 +46,7 @@ def refresh(canceled, on_update):
 		try:
 			url = livetv._guide_url(account)
 			key = hashlib.sha256(url.encode('utf-8')).hexdigest()
-			path = livetv._sports_guide_cache_path(account)
+			path = livetv._sports_guide_cache_path(account, permissive)
 			if _fresh(path, key, time.time()): continue
 			deadline = time.monotonic() + _DEADLINE_SECONDS
 			with tempfile.TemporaryFile(mode='w+b', dir=profile) as raw:
@@ -60,7 +60,7 @@ def refresh(canceled, on_update):
 						if size > livetv._GUIDE_DOWNLOAD_LIMIT: raise ValueError('Sports guide too large')
 						raw.write(chunk)
 				created = time.time()
-				programmes = livetv._parse_raw_guide(_CancelableFile(raw, canceled, deadline), created, None, sports_window=True)
+				programmes = livetv._parse_raw_guide(_CancelableFile(raw, canceled, deadline), created, None, sports_window=True, require_zone=not permissive)
 			if canceled.is_set() or time.monotonic() >= deadline: continue
 			encoded = json.dumps({'key': key, 'created': created, 'programmes': programmes}, separators=(',', ':')).encode('utf-8')
 			if len(encoded) > _CACHE_LIMIT: continue

@@ -31,13 +31,19 @@ class SportsRefresh:
 		self.guide_results = SimpleQueue()
 		self.guide_next_attempt = 0
 		self.guide_pending = False
+		self.guide_mode = None
 
 	def close(self):
 		self.progress.close()
 		self.feed_selection.close()
 		if self.guide_cancel: self.guide_cancel.set()
 
-	def _guide_tick(self, active, now):
+	def _guide_tick(self, active, now, permissive=False):
+		if active and self.guide_mode != permissive:
+			if self.guide_cancel: self.guide_cancel.set()
+			self.guide_mode = permissive
+			self.guide_pending = False
+			self.guide_next_attempt = 0
 		while True:
 			try: self.guide_results.get_nowait()
 			except Empty: break
@@ -50,7 +56,7 @@ class SportsRefresh:
 		if (self.guide_worker is None or not self.guide_worker.is_alive()) and now >= self.guide_next_attempt:
 			from modules.livetv_sports_guide import refresh
 			self.guide_cancel = Event()
-			self.guide_worker = Thread(target=refresh, args=(self.guide_cancel, lambda: self.guide_results.put(True)), daemon=True)
+			self.guide_worker = Thread(target=refresh, args=(self.guide_cancel, lambda: self.guide_results.put(True), permissive), daemon=True)
 			self.guide_worker.start()
 			self.guide_next_attempt = now + _GUIDE_RETRY
 		if not self.guide_pending or progress.pending(): return
@@ -65,7 +71,8 @@ class SportsRefresh:
 		self.feed_selection.tick()
 		visible = ku.get_visibility(_SPORTS_WINDOW)
 		now = monotonic()
-		self._guide_tick(visible and ku.get_property('LiveTV.Sport') == 'soccer' and progress.has_live('soccer'), now)
+		sport = ku.get_property('LiveTV.Sport')
+		self._guide_tick(visible and bool(sport) and progress.has_live(sport) and not ku.get_visibility('Player.HasMedia'), now, sport != 'soccer')
 		if not visible:
 			if self.sport:
 				if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
@@ -75,7 +82,6 @@ class SportsRefresh:
 			self.sport = ''
 			self.start_checks = {}
 			return
-		sport = ku.get_property('LiveTV.Sport')
 		wall = time()
 		if sport != self.sport:
 			self.sport = sport

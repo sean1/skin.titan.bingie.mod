@@ -77,7 +77,6 @@
                 <control type="button" id="9203"><include>SideBladeMenuButton</include><label>SHOW RESULTS</label><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.refine&amp;action=apply)</onclick></control>
                 <control type="button" id="9204"><include>SideBladeMenuButton</include><label>CLEAR REFINEMENTS</label><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.refine&amp;action=clear)</onclick></control>
                 <control type="button" id="9205"><include>SideBladeMenuButton</include><label>Live TV menu and search</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>SetFocus(523)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.browse)</onclick></control>
-                <control type="button" id="9206"><include>SideBladeMenuButton</include><label>TV guide</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>SetFocus(523)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.guide)</onclick></control>
             </control>
         </control>
 

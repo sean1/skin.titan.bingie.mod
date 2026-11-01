@@ -2,6 +2,7 @@
 import re
 import unicodedata
 from datetime import datetime
+from modules.livetv_fixtures import LIVE_STATUSES
 
 
 _SPORT_FIELDS = {'hockey': re.compile(r'^(?:NHL|NHL\.TV)$', re.I), 'football': re.compile(r'^NFL$', re.I), 'basketball': re.compile(r'^(?:NBA|NBA\.TV)$', re.I)}
@@ -79,7 +80,7 @@ def _metadata_dates(value, year):
 	return parsed
 
 
-def fixture_groups(streams, sport, fixtures):
+def fixture_groups(streams, sport, fixtures, live_only=False):
 	"""Match event-labelled channels to unambiguous live scoreboard fixtures."""
 	if sport not in _SPORT_FIELDS and sport != 'tennis': raise ValueError('Unknown sport')
 	if not isinstance(streams, list) or not isinstance(fixtures, list): return {}
@@ -152,6 +153,8 @@ def fixture_groups(streams, sport, fixtures):
 		for index, sides in found.items():
 			if 'home' not in sides or 'away' not in sides: continue
 			fixture = fixtures[index]
+			if live_only and fixture.get('status') not in LIVE_STATUSES: continue
+			if live_only and any(other != index and fixtures[other].get('status') not in LIVE_STATUSES and fixtures[other].get('league') == fixture.get('league') and {fixtures[other][side].get('name', '').casefold() for side in ('home', 'away')} == {fixture[side].get('name', '').casefold() for side in ('home', 'away')} for other in found): continue
 			pairs = [((a, 'home'), (b, 'away')) if a[0] < b[0] else ((b, 'away'), (a, 'home')) for a in sides['home'] for b in sides['away'] if a[1] <= b[0] or b[1] <= a[0]]
 			def find_separator(value):
 				matches = list(separator.finditer(value))

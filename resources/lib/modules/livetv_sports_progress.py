@@ -16,6 +16,8 @@ _CANCEL = 'LiveTV.Sports.Progress.Cancelled'
 _HEARTBEAT = 'LiveTV.Sports.Progress.Heartbeat'
 _CONSUME = 'LiveTV.Sports.Progress.Consume'
 _ACK = 'LiveTV.Sports.Progress.Acknowledged'
+_NEXT_START = 'LiveTV.Sports.NextStart'
+_HAS_LIVE = 'LiveTV.Sports.HasLive'
 _REQUEST_LIMIT = 1024 * 1024
 _RESULT_LIMIT = 4 * 1024 * 1024
 _MAX_AGE = 15 * 60
@@ -77,6 +79,17 @@ def consume_fixtures(sport, force_refresh=False):
 
 def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 	"""Return the original fixture snapshot and either pending or matched feeds."""
+	from modules.livetv_fixtures import LIVE_STATUSES
+	ku.set_property(_HAS_LIVE, sport if any(isinstance(fixture, dict) and fixture.get('status') in LIVE_STATUSES for fixture in fixtures or []) else '')
+	starts = []
+	now = time.time()
+	for fixture in fixtures or []:
+		if not isinstance(fixture, dict) or fixture.get('status') != 'Scheduled': continue
+		try:
+			start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+			if start.utcoffset() is not None and start.timestamp() >= now - 15 * 60: starts.append(start.timestamp())
+		except (KeyError, TypeError, ValueError, OverflowError, OSError): pass
+	ku.set_property(_NEXT_START, str(min(starts)) if starts else '')
 	if not fixtures:
 		invalidate()
 		ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
@@ -136,6 +149,10 @@ def pending():
 	if ku.get_property(_ACK) == request_id: return False
 	result = _read(_RESULT + '.' + request_id)
 	return result.get('id') != request_id
+
+
+def has_live(sport):
+	return ku.get_property(_HAS_LIVE) == sport
 
 
 def _current(sport):

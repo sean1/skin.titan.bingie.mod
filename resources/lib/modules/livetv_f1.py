@@ -259,7 +259,7 @@ def _weekends(events, now):
 	return fixtures
 
 
-def fixture_groups(streams, fixtures):
+def fixture_groups(streams, fixtures, live_only=False):
 	"""Return session-id to stream-id mappings for unambiguous event feeds."""
 	if not isinstance(streams, list) or not isinstance(fixtures, list): return {}
 	owners = {}
@@ -277,6 +277,8 @@ def fixture_groups(streams, fixtures):
 		candidates = []
 		for fixture in fixtures:
 			if not isinstance(fixture, dict) or fixture.get('session_code') != codes[0]: continue
+			if live_only and fixture.get('status') != 'LIVE': continue
+			if live_only and any(isinstance(other, dict) and other is not fixture and other.get('status') == 'Scheduled' and other.get('session_code') == fixture.get('session_code') and other.get('event_id', other.get('event')) == fixture.get('event_id', fixture.get('event')) for other in fixtures): continue
 			event, session_id = fixture.get('event'), fixture.get('id')
 			if not isinstance(event, str) or not event.strip() or not isinstance(session_id, str) or not session_id: continue
 			if re.search(r'\b(?:next|upcoming)\b', name, re.I) and fixture.get('status') != 'Scheduled': continue

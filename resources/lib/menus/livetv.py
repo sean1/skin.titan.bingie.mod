@@ -78,9 +78,9 @@ def _fixture_scope(name):
 	date_pattern = (r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4}|\d{1,2}\s+'
 		r'(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{4})?)\b')
 	competition_pattern = (r'\b(?:uefa\s+champions\s+league|champions\s+league|europa\s+league|conference\s+league|premier\s+league|carabao\s+cup|fa\s+cup|'
-		r'la\s+liga|serie\s+a|ligue\s+1|bundesliga|major\s+league\s+soccer|world\s+cup)\b')
+		r'la\s*liga|serie\s+a|ligue\s+1|bundesliga|major\s+league\s+soccer|world\s+cup)\b')
 	dates = re.findall(date_pattern, metadata)
-	competitions = re.findall(competition_pattern, metadata)
+	competitions = ['la liga' if re.fullmatch(r'la\s*liga', value) else value for value in re.findall(competition_pattern, metadata)]
 	return '|'.join(sorted(set(' '.join(value.split()) for value in dates + competitions)))
 
 
@@ -1256,6 +1256,8 @@ def _soccer_feed_event(name):
 	if known: return known
 	for part in name.split('|')[:2]:
 		part = part.strip()
+		part = re.sub(r'^laliga(?:\s+ea\s+sports)?(?:\s+(?:(?:\d{4}|\d{2})/\d{2}|\(t\d{2}/\d{2}\)))?\s*:\s*', '', part, flags=re.I)
+		part = re.sub(r'\s+-\s+spanish\s+laliga\s+\d{4}/\d{4}\s+-\s+week\s+\d{1,2}\s*$', '', part, flags=re.I)
 		ending = re.search(r'\s*\(([^()]*)\)\s*$', part)
 		if ending:
 			# Keep identity markers when removing a parenthesized time or feed label.
@@ -1272,6 +1274,18 @@ def _soccer_feed_event(name):
 
 def _soccer_schedule_agrees(name, fixture):
 	"""Reject explicitly scheduled labels that conflict with the fixture kickoff."""
+	prefix = re.match(r'^\s*laliga(?:\s+ea\s+sports)?\s+(?:(\d{4}|\d{2})/(\d{2})|\(t(\d{2})/(\d{2})\))\s*:', name, re.I)
+	suffix = re.search(r'\s+-\s+spanish\s+laliga\s+(\d{4})/(\d{4})\s+-\s+week\s+\d{1,2}\s*$', name, re.I)
+	for season in (prefix, suffix):
+		if not season: continue
+		try:
+			start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+			season_year = start.year if start.month >= 7 else start.year - 1
+			first, second = (season.group(1), season.group(2)) if season.group(1) else (season.group(3), season.group(4))
+			if int(first) != (season_year if len(first) == 4 else season_year % 100) or int(second) != (season_year + 1 if len(second) == 4 else (season_year + 1) % 100): return False
+		except (KeyError, TypeError, ValueError, AttributeError): return False
+	if suffix: name = name[:suffix.start()]
+	if prefix: name = name[prefix.end():]
 	daytime = re.search(r'\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s+(\d{1,2}):(\d{2})\s*(UK|UTC|GMT)\b', name, re.I)
 	date = re.search(r'\b(\d{4}-\d{2}-\d{2})\b', name)
 	if date and date.group(1) != str(fixture.get('date', ''))[:10]: return False

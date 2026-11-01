@@ -16,6 +16,7 @@ import uuid
 import xml.etree.ElementTree as ET
 import zlib
 from datetime import datetime, timezone
+from functools import lru_cache
 from http.client import HTTPException
 from urllib.parse import quote, urlencode, urlsplit
 
@@ -1397,8 +1398,8 @@ def _soccer_fixture_groups(streams, fixtures, live_only=False):
 		country = _soccer_logos._normalize(fixture.get('league_country'))
 		if country and league in countries and country not in countries[league]: return None, {}
 		return league, catalogs.get(league, {})
-	def catalog_keys(name, league, catalog):
-		ids = catalog.get(_fixture_service._team(name)[0], set())
+	def catalog_keys(canonical, league, catalog):
+		ids = catalog.get(canonical, set())
 		return {('catalog', league, next(iter(ids)))} if len(ids) == 1 else set()
 	index = {}
 	owners = {}
@@ -1409,17 +1410,20 @@ def _soccer_fixture_groups(streams, fixtures, live_only=False):
 				name = fixture[side]
 				canonical = _fixture_service._team(name)[0]
 				league, catalog = league_catalog(fixture)
-				for key in base_keys(name) | catalog_keys(name, league, catalog): owners.setdefault(key, set()).add(canonical)
+				for key in base_keys(name) | catalog_keys(canonical, league, catalog): owners.setdefault(key, set()).add(canonical)
 			except (KeyError, TypeError, AttributeError): continue
 	def keys(name, fixture=None):
 		canonical = _fixture_service._team(name)[0]
 		keys = base_keys(name)
 		if fixture:
 			league, catalog = league_catalog(fixture)
-			keys |= catalog_keys(name, league, catalog)
+			keys |= catalog_keys(canonical, league, catalog)
 		else:
-			for league, catalog in catalogs.items(): keys |= catalog_keys(name, league, catalog)
+			for league, catalog in catalogs.items(): keys |= catalog_keys(canonical, league, catalog)
 		return {key for key in keys if (key == canonical and not any(key in group for group in aliases)) or len(owners.get(key, ())) == 1}
+	@lru_cache(maxsize=4096)
+	def provider_keys(name):
+		return keys(name)
 	for fixture in fixtures or []:
 		if not isinstance(fixture, dict) or not _schedule_state(fixture, time.time())[0]: continue
 		try:
@@ -1435,7 +1439,7 @@ def _soccer_fixture_groups(streams, fixtures, live_only=False):
 		event = _soccer_feed_event(name)
 		if not event: continue
 		scope = _fixture_scope('||' + name)
-		home, away = (keys(side) for side in event)
+		home, away = (provider_keys(side) for side in event)
 		candidates = {}
 		for home_key in home:
 			for away_key in away:

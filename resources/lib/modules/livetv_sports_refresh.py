@@ -57,6 +57,10 @@ class SportsRefresh:
 		now = monotonic()
 		self._guide_tick(visible and ku.get_property('LiveTV.Sport') == 'soccer' and progress.has_live('soccer'), now)
 		if not visible:
+			if self.opened_at is not None:
+				if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
+				ku.clear_property(progress._HAS_LIVE)
+				ku.clear_property(progress._NEXT_START)
 			self.opened_at = None
 			return
 		if self.opened_at is None:
@@ -70,5 +74,5 @@ class SportsRefresh:
 		if not ku.get_visibility('System.IdleTime(15)') or ku.get_property('LiveTV.Soccer.Reload'): return
 		self.opened_at = now
 		if start_due: self.start_checked_at = now
-		ku.set_property('LiveTV.Soccer.Reload', 'refresh')
+		ku.set_property('LiveTV.Soccer.Reload', 'schedule' if start_due else 'refresh')
 		ku.execute_builtin('Container.Refresh')

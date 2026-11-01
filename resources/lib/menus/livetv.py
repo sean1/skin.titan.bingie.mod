@@ -1466,7 +1466,7 @@ def _soccer_fixture_groups(streams, fixtures, live_only=False):
 		matched = []
 		for (_, reverse), fixture in candidates.items():
 			if live_only and fixture.get('status') not in _fixture_service.LIVE_STATUSES: continue
-			if live_only and any(other.get('status') not in _fixture_service.LIVE_STATUSES and other.get('league') == fixture.get('league') and {str(other.get(side, '')).casefold() for side in ('home', 'away')} == {str(fixture.get(side, '')).casefold() for side in ('home', 'away')} for other in candidates.values()): continue
+			if live_only and any(other.get('status') not in _fixture_service.LIVE_STATUSES and other.get('league') == fixture.get('league') and {str(other.get(side, '')).casefold() for side in ('home', 'away')} == {str(fixture.get(side, '')).casefold() for side in ('home', 'away')} and _soccer_schedule_agrees(name, other) for other in candidates.values()): continue
 			oriented = event[::-1] if reverse else event
 			if re.search(r'\bWSL\b', name, re.I): oriented = (oriented[0] + ' Women', oriented[1])
 			provider_sides = [_fixture_service._team(side) for side in oriented]

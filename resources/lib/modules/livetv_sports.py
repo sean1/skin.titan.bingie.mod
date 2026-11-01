@@ -80,6 +80,16 @@ def _metadata_dates(value, year):
 	return parsed
 
 
+def _date_may_match(name, fixture):
+	match = _METADATA_DATE.search(name)
+	if not match: return True
+	try:
+		date = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')).date()
+		parsed = _metadata_dates(match.group(), date.year)
+		return not parsed or any(abs((value - date).days) <= 1 for value in parsed)
+	except (AttributeError, KeyError, TypeError, ValueError): return True
+
+
 def fixture_groups(streams, sport, fixtures, live_only=False):
 	"""Match event-labelled channels to unambiguous live scoreboard fixtures."""
 	if sport not in _SPORT_FIELDS and sport != 'tennis': raise ValueError('Unknown sport')
@@ -154,7 +164,7 @@ def fixture_groups(streams, sport, fixtures, live_only=False):
 			if 'home' not in sides or 'away' not in sides: continue
 			fixture = fixtures[index]
 			if live_only and fixture.get('status') not in LIVE_STATUSES: continue
-			if live_only and any(other != index and fixtures[other].get('status') not in LIVE_STATUSES and fixtures[other].get('league') == fixture.get('league') and {fixtures[other][side].get('name', '').casefold() for side in ('home', 'away')} == {fixture[side].get('name', '').casefold() for side in ('home', 'away')} for other in found): continue
+			if live_only and any(other != index and fixtures[other].get('status') not in LIVE_STATUSES and fixtures[other].get('league') == fixture.get('league') and {fixtures[other][side].get('name', '').casefold() for side in ('home', 'away')} == {fixture[side].get('name', '').casefold() for side in ('home', 'away')} and _date_may_match(name, fixtures[other]) for other in found): continue
 			pairs = [((a, 'home'), (b, 'away')) if a[0] < b[0] else ((b, 'away'), (a, 'home')) for a in sides['home'] for b in sides['away'] if a[1] <= b[0] or b[1] <= a[0]]
 			def find_separator(value):
 				matches = list(separator.finditer(value))

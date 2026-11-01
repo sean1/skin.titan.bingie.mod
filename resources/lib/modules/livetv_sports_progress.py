@@ -88,7 +88,7 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 		try:
 			start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 			if start.utcoffset() is not None and start.timestamp() >= now - 15 * 60: starts.append(start.timestamp())
-		except (KeyError, TypeError, ValueError, OverflowError, OSError): pass
+		except (AttributeError, KeyError, TypeError, ValueError, OverflowError, OSError): pass
 	ku.set_property(_NEXT_START, str(min(starts)) if starts else '')
 	if not fixtures:
 		invalidate()

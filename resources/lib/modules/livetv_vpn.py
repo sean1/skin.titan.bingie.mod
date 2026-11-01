@@ -93,9 +93,13 @@ def _sha256(path):
 
 def _packaged_library():
 	arch = platform.machine().lower()
-	if _android() and arch in ('aarch64', 'arm64'):
+	android = _android()
+	word_size = ctypes.sizeof(ctypes.c_void_p)
+	if android and word_size == 8 and arch in ('aarch64', 'arm64'):
 		name = 'libbingie_vpn_android_arm64.so'
-	elif not _android() and platform.system() == 'Linux' and arch in ('x86_64', 'amd64'):
+	elif android and word_size == 4 and (arch.startswith('arm') or arch == 'aarch64'):
+		name = 'libbingie_vpn_android_armv7.so'
+	elif not android and platform.system() == 'Linux' and arch in ('x86_64', 'amd64'):
 		name = 'libbingie_vpn_linux_amd64.so'
 	else:
 		raise VPNUnavailable('VPN is not supported on this device')

@@ -24,13 +24,16 @@ def _singles_aliases(name, short):
 	return [surname, surname + ', ' + given]
 
 
-def get_schedule(cache_dir=None):
+def get_schedule(cache_dir=None, with_expiry=False):
 	"""Return known live matches and matches starting within the next 24 hours."""
 	global _CACHE
-	if _CACHE and time.monotonic() - _CACHE[0] < 30: return list(_CACHE[1])
+	entry = _CACHE
+	if entry and time.monotonic() - entry[0] < 30:
+		fixtures = list(entry[1])
+		return (fixtures, time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else fixtures
 	path = os.path.join(cache_dir, 'livetv-scoreboard-tennis-schedule.json') if cache_dir else None
 	if path:
-		fixtures = _scoreboard._cached(path)
+		fixtures = _scoreboard._cached(path, with_expiry=with_expiry)
 		if fixtures is not None: return fixtures
 	now = datetime.now(timezone.utc)
 	fixtures = []
@@ -100,6 +103,7 @@ def get_schedule(cache_dir=None):
 					if len(sides) != 2: continue
 					fixtures.append({'league': '%s:%s' % (tour, tournament_id), 'league_label': '%s · %s' % (tour.upper(), tournament.strip()), 'tour': tour, 'discipline': discipline, 'date': date, 'id': identity, 'home': sides['home'], 'away': sides['away'], 'status': 'LIVE' if state == 'in' else 'Scheduled'})
 					seen.add((tour, identity))
-	_CACHE = (time.monotonic(), fixtures)
+	entry = (time.monotonic(), fixtures)
+	_CACHE = entry
 	if path: _scoreboard._save(path, fixtures)
-	return list(fixtures)
+	return (list(fixtures), time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else list(fixtures)

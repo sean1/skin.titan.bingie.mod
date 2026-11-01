@@ -61,13 +61,14 @@ def _parse(body):
 		raise ValueError('Invalid Canadian Championship schedule') from error
 
 
-def _year(year, cache_dir, now):
+def _year(year, cache_dir, now, with_expiry=False):
 	path = os.path.join(cache_dir, 'livetv-canadian-championship-%d.json' % year) if cache_dir else None
 	if path:
 		try:
 			if os.path.getsize(path) <= _MAX_SIZE:
 				with open(path, encoding='utf-8') as source: cached = json.load(source)
-				if 0 <= now - cached['created'] < _CACHE_SECONDS and isinstance(cached['fixtures'], list): return cached['fixtures']
+				if 0 <= now - cached['created'] < _CACHE_SECONDS and isinstance(cached['fixtures'], list):
+					return (cached['fixtures'], cached['created'] + _CACHE_SECONDS) if with_expiry else cached['fixtures']
 		except (OSError, ValueError, TypeError, KeyError): pass
 	request = Request(_URL % year, headers={'User-Agent': 'BINGIE Live TV'})
 	with urlopen(request, timeout=10) as response: body = response.read(_MAX_SIZE + 1)
@@ -86,26 +87,40 @@ def _year(year, cache_dir, now):
 			if temporary:
 				try: os.unlink(temporary)
 				except OSError: pass
-	return fixtures
+	return (fixtures, now + _CACHE_SECONDS) if with_expiry else fixtures
 
 
-def get_schedule(now=None, cache_dir=None):
+def get_schedule(now=None, cache_dir=None, with_expiry=False):
 	"""Return only scheduled games kicking off in the next 24 hours."""
 	now = time.time() if now is None else now
 	start = datetime.fromtimestamp(now, timezone.utc)
 	zone = get_timezone('America/Toronto')
 	years = {start.astimezone(zone).year, (start + timedelta(days=1)).astimezone(zone).year}
 	result = []
+	expires = []
 	for year in sorted(years):
-		for fixture in _year(year, cache_dir, now):
+		if with_expiry:
+			fixtures, expiry = _year(year, cache_dir, now, with_expiry=True)
+			expires.append(expiry)
+		else: fixtures = _year(year, cache_dir, now)
+		for fixture in fixtures:
 			try:
-				seconds = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')).timestamp() - now
+				kickoff = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')).timestamp()
+				seconds = kickoff - now
 				if 0 < seconds <= 86400: result.append(fixture)
+				if with_expiry:
+					for boundary in (kickoff - 86400, kickoff):
+						if boundary > now: expires.append(boundary)
 			except (KeyError, AttributeError, TypeError, ValueError, OverflowError, OSError): continue
-	return result
+	if not with_expiry: return result
+	local = start.astimezone(zone)
+	new_year = datetime(local.year + 1, 1, 1, tzinfo=zone).timestamp()
+	for boundary in (new_year - 86400, new_year):
+		if boundary > now: expires.append(boundary)
+	return result, min(expires) if expires else None
 
 
-def get_live(now=None, cache_dir=None):
+def get_live(now=None, cache_dir=None, with_expiry=False):
 	"""Return games explicitly reported in progress by 365Scores."""
 	now = time.time() if now is None else now
 	path = os.path.join(cache_dir, 'livetv-canadian-championship-live.json') if cache_dir else None
@@ -113,7 +128,8 @@ def get_live(now=None, cache_dir=None):
 		try:
 			if os.path.getsize(path) <= _MAX_SIZE:
 				with open(path, encoding='utf-8') as source: cached = json.load(source)
-				if 0 <= now - cached['created'] < 30 and isinstance(cached['fixtures'], list): return cached['fixtures']
+				if 0 <= now - cached['created'] < 30 and isinstance(cached['fixtures'], list):
+					return (cached['fixtures'], cached['created'] + 30) if with_expiry else cached['fixtures']
 		except (OSError, ValueError, TypeError, KeyError): pass
 	request = Request(_LIVE_URL, headers={'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.365scores.com/', 'Accept': 'application/json'})
 	with urlopen(request, timeout=10) as response: body = response.read(_MAX_SIZE + 1)
@@ -150,4 +166,4 @@ def get_live(now=None, cache_dir=None):
 			if temporary:
 				try: os.unlink(temporary)
 				except OSError: pass
-	return fixtures
+	return (fixtures, now + 30) if with_expiry else fixtures

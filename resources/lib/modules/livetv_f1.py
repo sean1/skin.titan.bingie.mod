@@ -200,10 +200,13 @@ def _date_agrees(name, value):
 	except (ValueError, AttributeError, TypeError, OverflowError): return False
 
 
-def get_schedule(cache_dir=None):
+def get_schedule(cache_dir=None, with_expiry=False):
 	"""Return sessions from the current or next race weekend."""
 	global _CACHE
-	if _CACHE and time.monotonic() - _CACHE[0] < 30: return list(_CACHE[1])
+	entry = _CACHE
+	if entry and time.monotonic() - entry[0] < 30:
+		fixtures = list(entry[1])
+		return (fixtures, time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else fixtures
 	now = datetime.now(timezone.utc)
 	for year in (now.year, now.year + 1):
 		url = 'https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard?dates=%s&limit=1000' % year
@@ -224,10 +227,12 @@ def get_schedule(cache_dir=None):
 			if pending: eligible.append((min(pending), sessions))
 		if eligible:
 			fixtures = min(eligible, key=lambda item: item[0])[1]
-			_CACHE = (time.monotonic(), fixtures)
-			return list(fixtures)
-	_CACHE = (time.monotonic(), [])
-	return []
+			entry = (time.monotonic(), fixtures)
+			_CACHE = entry
+			return (list(fixtures), time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else list(fixtures)
+	entry = (time.monotonic(), [])
+	_CACHE = entry
+	return ([], time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else []
 
 
 def _weekends(events, now):

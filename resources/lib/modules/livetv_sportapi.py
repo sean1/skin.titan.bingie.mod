@@ -142,10 +142,31 @@ def _counter(value):
 	return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
 
 
-def get(profile, *, bundled=None, now=None, fetch=None):
+def _fixture_expiry(items, now, expiry):
+	"""Limit reuse to the next change in the time-filtered fixture set."""
+	for item in items:
+		if not isinstance(item, dict): continue
+		try:
+			start = datetime.fromisoformat(item['date'].replace('Z', '+00:00'))
+			if start.utcoffset() is None: continue
+			start = start.timestamp()
+			if item.get('status') == 'Scheduled': boundaries = (start - UPCOMING_SECONDS, start)
+			elif item.get('status') == 'LIVE':
+				updated = datetime.fromisoformat(item['updated_at'].replace('Z', '+00:00'))
+				if updated.utcoffset() is None: continue
+				boundaries = (start - 300, start + 8 * 3600, updated.timestamp() - 60, updated.timestamp() + MAX_UPDATE_AGE)
+			else: continue
+			for boundary in boundaries:
+				if now < boundary < expiry: expiry = boundary
+		except (KeyError, AttributeError, TypeError, ValueError, OverflowError, OSError): continue
+	return expiry
+
+
+def get(profile, *, bundled=None, now=None, fetch=None, with_expiry=False):
 	"""Return current live and near-term scheduled fixtures, without scores."""
+	def result(fixtures, status, expiry=None): return ((fixtures, status), expiry) if with_expiry else (fixtures, status)
 	key = read_key(profile, bundled)
-	if not key: return [], 'not configured'
+	if not key: return result([], 'not configured')
 	now = time.time() if now is None else now
 	fingerprint = hashlib.sha256(key.encode()).hexdigest()
 	utc = datetime.fromtimestamp(now, timezone.utc)
@@ -167,24 +188,24 @@ def get(profile, *, bundled=None, now=None, fetch=None):
 				cache = {k: cache[k] for k in ('day', 'count', 'month', 'month_count') if k in cache}
 			created = cache.get('created', 0)
 			if not isinstance(created, (int, float)) or isinstance(created, bool): created = 0
-			if 0 <= now - created < FRESH_SECONDS and isinstance(cache.get('fixtures'), list): return [item for item in cache['fixtures'] if isinstance(item, dict) and _current(item, now)], 'updated %s' % datetime.fromtimestamp(created).astimezone().strftime('%H:%M')
+			if 0 <= now - created < FRESH_SECONDS and isinstance(cache.get('fixtures'), list): return result([item for item in cache['fixtures'] if isinstance(item, dict) and _current(item, now)], 'updated %s' % datetime.fromtimestamp(created).astimezone().strftime('%H:%M'), _fixture_expiry(cache['fixtures'], now, created + FRESH_SECONDS) if with_expiry else None)
 			count = _counter(cache.get('count')) if cache.get('day') == day else 0
 			month_count = _counter(cache.get('month_count')) if cache.get('month') == month else 0
 			calendar_days = _calendar_days(now)
 			requests = len(calendar_days)
-			if count + requests > DAILY_LIMIT or month_count + requests > MONTHLY_LIMIT: return [], 'daily or monthly limit reached'
+			if count + requests > DAILY_LIMIT or month_count + requests > MONTHLY_LIMIT: return result([], 'daily or monthly limit reached')
 			attempt = cache.get('attempt', 0)
-			if isinstance(attempt, (int, float)) and 0 <= now - attempt < FRESH_SECONDS: return [], 'temporarily unavailable'
+			if isinstance(attempt, (int, float)) and 0 <= now - attempt < FRESH_SECONDS: return result([], 'temporarily unavailable')
 			cache.update(key=fingerprint, version=CACHE_VERSION, day=day, count=count + requests, month=month, month_count=month_count + requests, attempt=now)
 			_write(path, cache)
 			try:
 				items = []
 				for calendar_day in calendar_days: items.extend(_clean((fetch or _fetch)(key, calendar_day), key, now))
-			except (OSError, HTTPException, ValueError, TypeError, UnicodeError, RecursionError): return [], 'temporarily unavailable'
+			except (OSError, HTTPException, ValueError, TypeError, UnicodeError, RecursionError): return result([], 'temporarily unavailable')
 			cache.update(created=now, fixtures=items)
 			_write(path, cache)
-			return [item for item in items if _current(item, now)], 'updated %s' % datetime.fromtimestamp(now).astimezone().strftime('%H:%M')
-	except (OSError, ValueError, TypeError, OverflowError, RecursionError): return [], 'temporarily unavailable'
+			return result([item for item in items if _current(item, now)], 'updated %s' % datetime.fromtimestamp(now).astimezone().strftime('%H:%M'), _fixture_expiry(items, now, now + FRESH_SECONDS) if with_expiry else None)
+	except (OSError, ValueError, TypeError, OverflowError, RecursionError): return result([], 'temporarily unavailable')
 
 
 def _fetch_standings(key, league_id):

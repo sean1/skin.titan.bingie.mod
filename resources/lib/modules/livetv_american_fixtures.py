@@ -24,7 +24,7 @@ def team_logo(sport, value):
 	return 'livetv/%s/%s' % (league, filename) if os.path.isfile(asset) else ''
 
 
-def _cached(path):
+def _cached(path, with_expiry=False):
 	try:
 		with open(path, encoding='utf-8') as source:
 			payload = json.loads(source.read(1024 * 1024 + 1))
@@ -36,7 +36,7 @@ def _cached(path):
 			for side in ('home', 'away'):
 				team = fixture.get(side)
 				if not isinstance(team, dict) or not isinstance(team.get('name'), str) or not isinstance(team.get('aliases'), list) or not all(isinstance(a, str) for a in team['aliases']): return None
-		return fixtures
+		return (fixtures, payload['created'] + 30) if with_expiry else fixtures
 	except (OSError, ValueError, TypeError, KeyError):
 		return None
 
@@ -62,23 +62,27 @@ def get_live(sport, cache_dir=None):
 	return _get(sport, cache_dir, False)
 
 
-def get_schedule(sport, cache_dir=None):
+def get_schedule(sport, cache_dir=None, with_expiry=False):
 	"""Return live games and games scheduled to start in the next 24 hours."""
-	return _get(sport, cache_dir, True)
+	return _get(sport, cache_dir, True, with_expiry)
 
 
-def _get(sport, cache_dir, schedule):
+def _get(sport, cache_dir, schedule, with_expiry=False):
 	if sport not in _SCOREBOARDS: raise ValueError('Unknown sport')
 	cache_key = sport + ('-schedule' if schedule else '')
 	cached = _CACHE.get(cache_key)
 	allowed = {league for league, _ in _SCOREBOARDS[sport]}
-	if cached and time.monotonic() - cached[0] < 30: return [fixture for fixture in cached[1] if fixture.get('league') in allowed]
+	if cached and time.monotonic() - cached[0] < 30:
+		fixtures = [fixture for fixture in cached[1] if fixture.get('league') in allowed]
+		return (fixtures, time.time() + max(0, 30 - (time.monotonic() - cached[0]))) if with_expiry else fixtures
 	cache_path = os.path.join(cache_dir, 'livetv-scoreboard-' + cache_key + '.json') if cache_dir else None
 	if cache_path:
-		fixtures = _cached(cache_path)
-		if fixtures is not None:
+		cached_disk = _cached(cache_path, with_expiry=with_expiry)
+		if cached_disk is not None:
 			# Do not extend a disk entry's lifetime when copying it into memory.
-			return [fixture for fixture in fixtures if fixture.get('league') in allowed]
+			fixtures, expiry = cached_disk if with_expiry else (cached_disk, None)
+			fixtures = [fixture for fixture in fixtures if fixture.get('league') in allowed]
+			return (fixtures, expiry) if with_expiry else fixtures
 	fixtures = []
 	now = datetime.now(timezone.utc)
 	for league, scoreboard_path in _SCOREBOARDS[sport]:
@@ -129,6 +133,7 @@ def _get(sport, cache_dir, schedule):
 			if schedule: fixture['status'] = 'LIVE' if state == 'in' else 'Scheduled'
 			fixtures.append(fixture)
 			if event_id: seen.add(event_id)
-	_CACHE[cache_key] = (time.monotonic(), fixtures)
+	entry = (time.monotonic(), fixtures)
+	_CACHE[cache_key] = entry
 	if cache_path: _save(cache_path, fixtures)
-	return fixtures
+	return (fixtures, time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else fixtures

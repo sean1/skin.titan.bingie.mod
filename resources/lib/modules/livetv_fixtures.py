@@ -98,14 +98,15 @@ def _clean(payload, key):
 	return items
 
 
-def get_canadian_premier(profile, now=None):
+def get_canadian_premier(profile, now=None, *, with_expiry=False):
 	"""Return current CPL fixtures from CanadaSoccerAPI's public CPL data."""
+	def result(fixtures, status, expiry=None): return ((fixtures, status), expiry) if with_expiry else (fixtures, status)
 	now = time.time() if now is None else now
 	path = os.path.join(profile, 'canadian-premier-fixtures.json')
 	cache = _read(path)
 	created = cache.get('created', 0)
 	if isinstance(created, (int, float)) and 0 <= now - created < 120 and isinstance(cache.get('fixtures'), list):
-		return cache['fixtures'], 'updated'
+		return result(cache['fixtures'], 'updated', created + 120)
 	try:
 		utc = datetime.fromtimestamp(now, timezone.utc)
 		first = (utc - timedelta(days=1)).date().isoformat()
@@ -130,15 +131,16 @@ def get_canadian_premier(profile, now=None):
 			fixtures.append({'home': home, 'away': away, 'league': 'Canadian Premier League', 'status': 'Scheduled' if status == 'UPCOMING' else 'LIVE', 'date': date})
 		os.makedirs(profile, mode=0o700, exist_ok=True)
 		_write(path, {'created': now, 'fixtures': fixtures})
-		return fixtures, 'updated'
+		return result(fixtures, 'updated', now + 120)
 	except (OSError, HTTPException, ValueError, TypeError, UnicodeError, OverflowError):
-		return [], 'unavailable'
+		return result([], 'unavailable')
 
 
-def get(profile, *, bundled=None, now=None, fetch=None):
+def get(profile, *, bundled=None, now=None, fetch=None, with_expiry=False):
 	"""Return fresh verified fixtures and status; fail closed without hiding channels."""
+	def result(fixtures, status, expiry=None): return ((fixtures, status), expiry) if with_expiry else (fixtures, status)
 	key = read_key(profile, bundled)
-	if not key: return [], 'not configured'
+	if not key: return result([], 'not configured')
 	now = time.time() if now is None else now
 	fingerprint = hashlib.sha256(key.encode()).hexdigest()
 	day = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
@@ -160,20 +162,20 @@ def get(profile, *, bundled=None, now=None, fetch=None):
 			created = cache.get('created', 0)
 			if not isinstance(created, (int, float)) or isinstance(created, bool): created = 0
 			age = now - created
-			if 0 <= age < FRESH_SECONDS and isinstance(cache.get('fixtures'), list): return cache['fixtures'], 'updated %s' % datetime.fromtimestamp(created).astimezone().strftime('%H:%M')
+			if 0 <= age < FRESH_SECONDS and isinstance(cache.get('fixtures'), list): return result(cache['fixtures'], 'updated %s' % datetime.fromtimestamp(created).astimezone().strftime('%H:%M'), created + FRESH_SECONDS)
 			count = cache.get('count', 0) if cache.get('day') == day else 0
 			if not isinstance(count, int) or isinstance(count, bool) or count < 0: count = 0
-			if count >= DAILY_LIMIT: return [], 'daily limit reached'
+			if count >= DAILY_LIMIT: return result([], 'daily limit reached')
 			attempt = cache.get('attempt', 0)
-			if isinstance(attempt, (int, float)) and 0 <= now - attempt < FRESH_SECONDS: return [], 'temporarily unavailable'
+			if isinstance(attempt, (int, float)) and 0 <= now - attempt < FRESH_SECONDS: return result([], 'temporarily unavailable')
 			cache.update(key=fingerprint, day=day, count=count + 1, attempt=now)
 			_write(path, cache)
 			try: items = _clean((fetch or _fetch)(key), key)
-			except (OSError, HTTPException, ValueError, TypeError, UnicodeError): return [], 'temporarily unavailable'
+			except (OSError, HTTPException, ValueError, TypeError, UnicodeError): return result([], 'temporarily unavailable')
 			cache.update(created=now, fixtures=items)
 			_write(path, cache)
-			return items, 'updated %s' % datetime.fromtimestamp(now).astimezone().strftime('%H:%M')
-	except (OSError, ValueError, TypeError, OverflowError): return [], 'temporarily unavailable'
+			return result(items, 'updated %s' % datetime.fromtimestamp(now).astimezone().strftime('%H:%M'), now + FRESH_SECONDS)
+	except (OSError, ValueError, TypeError, OverflowError): return result([], 'temporarily unavailable')
 
 
 def _team(name):

@@ -4,4 +4,5 @@ __pycache__/
 /resources/private/subtitle_providers.json
 /resources/private/api-football-key.txt
 /resources/private/sportapi-key.txt
+/resources/private/mullvad-account.txt
 livetv-account.json

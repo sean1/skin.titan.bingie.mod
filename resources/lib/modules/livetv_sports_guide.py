@@ -4,7 +4,8 @@ import json
 import os
 import tempfile
 import time
-from urllib.request import Request, urlopen
+
+from modules.livetv_vpn_relay import open_url
 
 
 _RENEW_SECONDS = 110 * 60
@@ -49,7 +50,7 @@ def refresh(canceled, on_update):
 			if _fresh(path, key, time.time()): continue
 			deadline = time.monotonic() + _DEADLINE_SECONDS
 			with tempfile.TemporaryFile(mode='w+b', dir=profile) as raw:
-				with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}), timeout=10) as response:
+				with open_url(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}, timeout=10) as response:
 					size = 0
 					while True:
 						if canceled.is_set() or time.monotonic() >= deadline: raise OSError('Sports guide canceled or timed out')

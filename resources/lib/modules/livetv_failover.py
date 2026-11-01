@@ -1,11 +1,13 @@
 """Recover selected live match streams without exposing account credentials."""
 import json
+from http.client import HTTPException
 from queue import Empty, SimpleQueue
 from threading import Thread
 from time import monotonic
 from urllib.error import HTTPError
 from urllib.parse import quote
-from urllib.request import Request, urlopen
+
+from modules.livetv_vpn_relay import open_url, register
 
 from modules import kodi_utils as ku
 try:
@@ -35,9 +37,11 @@ def _playback_error_dialog():
 def _probe_failure(url):
 	"""Return true only for an explicit server failure; uncertainty is not a failure."""
 	try:
-		with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV'}), timeout=PROBE_TIMEOUT): return False
+		with open_url(url, headers={'User-Agent': 'BINGIE Live TV'}, timeout=PROBE_TIMEOUT): return False
 	except HTTPError as exc:
-		try: return exc.code in (404, 410) or 500 <= exc.code <= 599
+		try:
+			if exc.headers and exc.headers.get('X-Bingie-Relay-Error') == '1': return False
+			return exc.code in (404, 410) or 500 <= exc.code <= 599
 		finally: exc.close()
 	except Exception:
 		return False
@@ -143,7 +147,13 @@ class LiveTVFailover(ku.xbmc_player):
 		except (ValueError, TypeError, KeyError, AttributeError): return
 
 	def _url(self, stream_id):
-		return self.session.get('bases', {}).get(stream_id, self.session['base']) + stream_id.rsplit(':', 1)[-1] + '.ts'
+		urls = self.session.setdefault('urls', {})
+		if stream_id not in urls:
+			try:
+				url = self.session.get('bases', {}).get(stream_id, self.session['base']) + stream_id.rsplit(':', 1)[-1] + '.ts'
+				urls[stream_id] = register(url)
+			except (OSError, HTTPException, ValueError, TypeError, KeyError): return ''
+		return urls[stream_id]
 
 	def _playing_file(self):
 		try: return self.getPlayingFile() if self.isPlaying() else ''
@@ -151,7 +161,8 @@ class LiveTVFailover(ku.xbmc_player):
 
 	def onAVStarted(self, observed_callback=True):
 		if not self.session: return
-		if self._playing_file() == self._url(self.session['id']):
+		expected = self._url(self.session['id'])
+		if expected and self._playing_file() == expected:
 			if not self.session['active'] and self.session.get('timing_valid') and livetv_feed_speed:
 				elapsed = self.clock() - self.session['started_at']
 				if 0 <= elapsed <= START_TIMEOUT: livetv_feed_speed.record(self.session['speed_keys'].get(self.session['id'], ''), elapsed)
@@ -201,8 +212,15 @@ class LiveTVFailover(ku.xbmc_player):
 		if selected is not None: self.session['alternatives'] = [value for value in self.session['alternatives'] if value != selected]
 		self.session.update(started_at=now, active=False, last_time=None, last_progress=now, paused=False, switching=True, outgoing=previous_url, foreign_seen=False, observed=False, probe_started=False, probe_allowed=False, timing_valid=True)
 		self.event = None
+		# Capabilities belong to one relay instance and can expire or disappear on restart.
+		self.session.setdefault('urls', {}).pop(self.session['id'], None)
+		url = self._url(self.session['id'])
+		if not url:
+			ku.dialog.notification('Live TV', 'Live TV VPN unavailable. Check the VPN connection and try again.')
+			self._clear()
+			return False
 		ku.dialog.notification('Live TV', 'Switching feed.' if selected is not None else 'Stream interrupted. Trying another feed for this match.')
-		try: self.play(self._url(self.session['id']))
+		try: self.play(url)
 		except Exception:
 			self.event = ('error', self.session['token'], self.session['id'])
 		finally:
@@ -227,6 +245,10 @@ class LiveTVFailover(ku.xbmc_player):
 			session['timing_valid'] = 0 <= now - current['started_at'] <= START_TIMEOUT
 		playing = self._playing_file()
 		expected = self._url(session['id'])
+		if not expected:
+			ku.dialog.notification('Live TV', 'Live TV VPN unavailable. Check the VPN connection and try again.')
+			self._clear()
+			return False
 		if session['active'] and playing == expected and len(session['feeds']) > 1:
 			ku.set_property(CAN_SWITCH, 'true')
 			ku.set_property(FEED_CHOICES, json.dumps({'token': session['token'], 'current': session['id'], 'feeds': session['feeds']}))

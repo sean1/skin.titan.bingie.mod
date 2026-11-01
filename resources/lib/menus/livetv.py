@@ -18,7 +18,6 @@ import zlib
 from datetime import datetime, timezone
 from http.client import HTTPException
 from urllib.parse import quote, urlencode, urlsplit
-from urllib.request import Request, urlopen
 
 import xbmc
 import xbmcgui
@@ -26,6 +25,8 @@ import xbmcplugin
 from modules import kodi_utils as ku
 from modules.livetv_catalog import get as _catalog_get
 from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact
+from modules.livetv_vpn_relay import open_url as _vpn_open, register as _vpn_register
+from modules.livetv_vpn import failure_message as _vpn_failure_message
 from modules.livetv_guide_search import cached_search as _cached_guide_search
 from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
@@ -269,7 +270,7 @@ def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True) for stream_id in feeds} for event, feeds in matched.items() if event in live}
 
 
-def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None):
+def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True):
 	from concurrent.futures import ThreadPoolExecutor
 	legacy = _load()
 	accounts = _sports_accounts(legacy)
@@ -288,7 +289,8 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			fixtures = []
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
 	if not fixtures:
-		ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
+		if status_sink: status_sink('')
+		else: ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
 		if on_status: ku.set_property('LiveTV.Soccer.Status', '')
 		return {}, []
 	def fetch(entry):
@@ -296,6 +298,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 		account_status = []
 		try:
 			kwargs = {'force_refresh': reload == 'refresh'}
+			if not notify_stale: kwargs['notify_stale'] = False
 			if on_status: kwargs['on_status'] = lambda created, stale: account_status.append((created, stale))
 			streams = _catalog(account, 'get_live_streams', **kwargs)
 			return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
@@ -312,7 +315,8 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			for event, feeds in _sports_guide_groups(account_map[identity], streams, sport, fixtures, local, time.time()).items(): local.setdefault(event, {}).update(feeds)
 			for key, feeds in local.items():
 				for stream_id, stream in feeds.items(): groups.setdefault(key, {})[identity + ':' + stream_id if stream.get('_provider') else stream_id] = stream
-	ku.set_property('LiveTV.Sports.CatalogUnavailable', 'true' if failed else '')
+	if status_sink: status_sink('true' if failed else '')
+	else: ku.set_property('LiveTV.Sports.CatalogUnavailable', 'true' if failed else '')
 	if on_status and status_values: on_status(min(created for created, _ in status_values), any(stale for _, stale in status_values))
 	return groups, all_streams
 
@@ -500,6 +504,13 @@ def home_channels(params):
 def _item(label, params, folder=True, icon=None, playable=True, extra_context=None, extra_properties=None):
 	item = xbmcgui.ListItem(label=label, offscreen=True)
 	for key, value in (extra_properties or {}).items(): item.setProperty(key, str(value))
+	if icon:
+		try:
+			parts = urlsplit(icon)
+			if parts.scheme.lower() in ('http', 'https'): icon = _vpn_register(icon)
+			elif parts.scheme.lower() not in ('', 'special', 'resource'): icon = None
+			elif not parts.scheme and icon.startswith('//'): icon = None
+		except (OSError, HTTPException, ValueError, TypeError): icon = None
 	if icon: item.setArt({'thumb': icon, 'icon': icon, 'poster': icon, 'landscape': icon})
 	if not folder and playable: item.setProperty('IsPlayable', 'true')
 	context = list(extra_context or [])
@@ -519,7 +530,7 @@ def _request(account, action, **params):
 	url = account['server'] + '/player_api.php?' + urlencode(query)
 	headers = {'User-Agent': 'BINGIE Live TV'}
 	if action == 'get_live_streams': headers['Accept-Encoding'] = 'gzip'
-	with urlopen(Request(url, headers=headers), timeout=20) as response:
+	with _vpn_open(url, headers=headers, timeout=20) as response:
 		encoding = response.headers.get('Content-Encoding', '').strip().lower() if action == 'get_live_streams' else ''
 		if encoding not in ('', 'identity', 'gzip'): raise ValueError('Unsupported response encoding')
 		data = response.read(_API_RESPONSE_LIMIT + 1)
@@ -532,8 +543,9 @@ def _request(account, action, **params):
 	return json.loads(data.decode('utf-8-sig'))
 
 
-def _catalog(account, action, *, force_refresh=False, on_status=None, **params):
-	return _catalog_get(account, action, _request, ku.translate_path(ku.profile_path), on_stale=lambda: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.'), on_status=on_status, force_refresh=force_refresh, **params)
+def _catalog(account, action, *, force_refresh=False, on_status=None, notify_stale=True, **params):
+	on_stale = (lambda: _error(_vpn_failure_message() or 'Showing saved channels; check the VPN or provider connection.')) if notify_stale else None
+	return _catalog_get(account, action, _request, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **params)
 
 
 def _error(message):
@@ -615,7 +627,7 @@ def browse(params):
 			if not isinstance(category, dict) or not category.get('category_id'): continue
 			_item(str(category.get('category_name') or 'Other'), {'mode': 'livetv.channels', 'category': str(category['category_id'])})
 	except (OSError, HTTPException, ValueError, TypeError):
-		_error('Could not load Live TV categories. Check the server URL and account details, then try again.')
+		_error('Could not load Live TV categories. Check the VPN and account details, then try again.')
 	_finish()
 
 
@@ -647,7 +659,7 @@ def channels(params):
 			_item(name, _play_params(stream_id, name), False, stream.get('stream_icon'))
 		if has_next: _item('Next page', {**page_params, 'page': str(page + 1)})
 	except (OSError, HTTPException, ValueError, TypeError):
-		_error('Could not load channels. Check the account details and try again.')
+		_error('Could not load channels. Check the VPN and account details, then try again.')
 		_finish(False)
 		return
 	_finish()
@@ -780,7 +792,7 @@ def _download_guide(url, now, wanted=None, search_term=None):
 	fd, temporary = tempfile.mkstemp(prefix='.livetv-xmltv-', dir=profile)
 	try:
 		with os.fdopen(fd, 'w+b') as raw:
-			with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}), timeout=30) as response:
+			with _vpn_open(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}, timeout=30) as response:
 				size = 0
 				deadline = time.monotonic() + 180
 				while True:
@@ -1039,7 +1051,7 @@ def search_results(params):
 		streams = _catalog(account, 'get_live_streams')
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 	except (OSError, HTTPException, ValueError, TypeError):
-		_error('Could not search Live TV channels. Check the account and try again.')
+		_error('Could not search Live TV channels. Check the VPN and account, then try again.')
 		_finish(False)
 		return
 	streams = [s for s in streams if isinstance(s, dict) and str(s.get('stream_id') or '').isdecimal()]
@@ -1511,12 +1523,16 @@ def all_standings(params):
 	ku.dialog.textviewer('All %s standings' % sport, '\n'.join(lines))
 
 
-def _f1_dashboard(account, reload):
+def _f1_dashboard(account, reload, force_refresh=False):
 	try:
-		fixtures = _f1.get_schedule()
+		from modules import livetv_sports_progress
+		fixtures = livetv_sports_progress.consume_fixtures('f1', force_refresh=force_refresh)
+		if fixtures is None: fixtures = _f1.get_schedule()
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Sessions updated')
-		groups, _ = _sports_catalog_groups(account, 'f1', reload, fixtures=fixtures)
-		feed_cache, speed_context = {}, _speed_context()
+		fixtures, groups = livetv_sports_progress.prepare('f1', reload, fixtures, force_refresh=force_refresh)
+		pending = groups is None
+		groups = groups or {}
+		feed_cache, speed_context = {}, ({}, {}) if pending else _speed_context()
 		for fixture in sorted(fixtures, key=lambda row: row['date']):
 			state = {'LIVE': 'Live', 'Scheduled': 'Upcoming', 'Finished': 'Finished'}.get(fixture['status'], '')
 			if not state: continue
@@ -1525,7 +1541,7 @@ def _f1_dashboard(account, reload):
 			by_ref = {_sports_ref(stream): stream for stream in ordered}
 			ordered = [by_ref[ref] for ref in _speed_order(list(by_ref), speed_context)]
 			stream, count = (ordered[0] if ordered else None), len(feeds)
-			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Session finished' if state == 'Finished' else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Session finished' if state == 'Finished' else 'Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			title = fixture['event'] + ' — ' + fixture['session_label']
 			context = []
 			if count > 1:
@@ -1534,7 +1550,7 @@ def _f1_dashboard(account, reload):
 			matched = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			_item(title + (' — ' + feed_label if not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], 'f1', matched, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
 				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'Formula 1', 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture), 'LiveTV.StandingsKey': 'f1'})
-		_save_feed_matches(feed_cache)
+		if not pending: _save_feed_matches(feed_cache)
 		if not fixtures: _item('No upcoming Formula 1 sessions', {}, False, playable=False)
 	except (OSError, HTTPException, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Sessions unavailable')
@@ -1575,19 +1591,23 @@ def f1_channels(params):
 	_finish()
 
 
-def _sports_dashboard(account, sport, reload):
+def _sports_dashboard(account, sport, reload, force_refresh=False):
 	try:
+		from modules import livetv_sports_progress
 		profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 		try:
-			fixtures = _tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else _american_fixtures.get_schedule(sport, cache_dir=profile or None)
+			fixtures = livetv_sports_progress.consume_fixtures(sport, force_refresh=force_refresh)
+			if fixtures is None: fixtures = _tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else _american_fixtures.get_schedule(sport, cache_dir=profile or None)
 		except (OSError, HTTPException, ValueError, TypeError):
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
 			_item('Fixtures unavailable — browse channels', {'mode': 'livetv.refine'})
 			_finish()
 			return
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures updated')
-		groups, streams = _sports_catalog_groups(account, sport, reload, fixtures=fixtures)
-		speed_context = _speed_context()
+		fixtures, groups = livetv_sports_progress.prepare(sport, reload, fixtures, force_refresh=force_refresh)
+		pending = groups is None
+		groups = groups or {}
+		speed_context = ({}, {}) if pending else _speed_context()
 		feed_cache = {}
 		now = time.time()
 		rows = []
@@ -1608,7 +1628,7 @@ def _sports_dashboard(account, sport, reload):
 			stream = ordered[0] if ordered else None
 			title = '%s vs %s' % (fixture['home']['name'], fixture['away']['name'])
 			count = len(feeds)
-			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			standings_sport = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
 			standings_event = _sports._event(title) or event
 			standings_key = '|'.join((standings_sport, *standings_event)) if standings_sport else ''
@@ -1644,7 +1664,7 @@ def _sports_dashboard(account, sport, reload):
 			_item(title + (' — ' + feed_label if not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], sport, matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
 				extra_properties={'LiveTV.Match': title, 'LiveTV.League': fixture.get('league_label', scope.upper()), 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_match_key, **team_properties})
-		_save_feed_matches(feed_cache)
+		if not pending: _save_feed_matches(feed_cache)
 		if not rows:
 			message = 'Fixtures unavailable — browse channels' if ku.get_property('LiveTV.Soccer.FixtureStatus') == 'Live fixtures unavailable' else 'No live or upcoming %s matches — browse channels' % sport
 			_item(message, {'mode': 'livetv.refine'})
@@ -1664,6 +1684,7 @@ def soccer(params):
 	ku.set_property('LiveTV.Sport.Title', 'LIVE ' + ('FORMULA 1' if sport == 'f1' else sport.upper()))
 	action = params.get('action', '')
 	reload = ku.get_property('LiveTV.Soccer.Reload') if not action else ''
+	force_refresh = reload == 'refresh'
 	if reload: ku.clear_property('LiveTV.Soccer.Reload')
 	if params.get('refresh') == '1': reload = 'refresh'
 	account = _sports_primary()
@@ -1685,23 +1706,35 @@ def soccer(params):
 		xbmc.executebuiltin('Container.Refresh')
 		return
 	if sport == 'f1':
-		_f1_dashboard(account, reload)
+		_f1_dashboard(account, reload, force_refresh)
 		return
 	if sport != 'soccer':
-		_sports_dashboard(account, sport, reload)
+		_sports_dashboard(account, sport, reload, force_refresh)
 		return
 	try:
-		catalog_status = [None, True]
-		def status(created, stale):
-			catalog_status[:] = [created, stale]
-			when = datetime.fromtimestamp(created).astimezone().strftime('%a %H:%M')
-			ku.set_property('LiveTV.Soccer.Status', ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when)
-		fixtures, _, sport_fixtures, status_text = _live_soccer_fixtures(include_upcoming=True)
-		groups, streams = _sports_catalog_groups(account, 'soccer', reload, on_status=status, fixtures=fixtures)
-		if ku.get_property('LiveTV.Sports.CatalogUnavailable'):
-			message = ku.get_property('LiveTV.Soccer.Status') if catalog_status[0] is not None else ''
-			ku.set_property('LiveTV.Soccer.Status', (message + ' · ' if message else '') + 'Some providers unavailable')
-		speed_context = _speed_context()
+		from modules import livetv_sports_progress
+		state = livetv_sports_progress.consume_state('soccer', force_refresh=force_refresh) if not action else None
+		if state is None or not isinstance(state[1], dict) or 'sport_fixtures' not in state[1] or 'status_text' not in state[1]:
+			fixtures, _, sport_fixtures, status_text = _live_soccer_fixtures(include_upcoming=True)
+		else:
+			fixtures, auxiliary = state
+			sport_fixtures, status_text = auxiliary['sport_fixtures'], auxiliary['status_text']
+		leagues = sorted({fixture['league'] for fixture in fixtures}, key=str.casefold)
+		if action == 'league':
+			options = ['All'] + leagues
+			choice = ku.dialog.select('Soccer league', options)
+			if choice < 0: return
+			league = options[choice]
+			ku.set_property('LiveTV.Soccer.League', league)
+			xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
+			xbmc.executebuiltin('SetFocus(523)')
+			ku.set_property('LiveTV.Soccer.Reload', 'league')
+			xbmc.executebuiltin('Container.Refresh')
+			return
+		fixtures, groups = livetv_sports_progress.prepare('soccer', reload, fixtures, force_refresh=force_refresh, auxiliary={'sport_fixtures': sport_fixtures, 'status_text': status_text})
+		pending = groups is None
+		groups = groups or {}
+		speed_context = ({}, {}) if pending else _speed_context()
 		feed_cache = {}
 		ku.set_property('LiveTV.Soccer.FixtureStatus', status_text)
 		matches = {}
@@ -1722,17 +1755,6 @@ def soccer(params):
 					if all(isinstance(value, int) and not isinstance(value, bool) and 0 < value <= 100000000 for value in (home_id, away_id)) and home_id != away_id:
 						standings_teams[key] = '%d:%d' % (home_id, away_id)
 		leagues = sorted({fixture['league'] for fixture in fixtures}, key=str.casefold)
-		if action == 'league':
-			options = ['All'] + leagues
-			choice = ku.dialog.select('Soccer league', options)
-			if choice < 0: return
-			league = options[choice]
-			ku.set_property('LiveTV.Soccer.League', league)
-			xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
-			xbmc.executebuiltin('SetFocus(523)')
-			ku.set_property('LiveTV.Soccer.Reload', 'league')
-			xbmc.executebuiltin('Container.Refresh')
-			return
 		if league not in ['All'] + leagues: league = 'All'
 		ku.set_property('LiveTV.Soccer.League', league)
 		rows = []
@@ -1750,7 +1772,7 @@ def soccer(params):
 			if not state: continue
 			rows.append((title, match_league, preferred, len(feeds), event, scope, matched, state, kickoff))
 		for title, match_league, stream, count, event, scope, matched, state, kickoff in sorted(rows, key=lambda row: (row[7] != 'Live', row[8], row[1].casefold(), row[0].casefold())):
-			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			feed_label = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			label = '%s — %s — %s' % (match_league, title, feed_label)
 			context = []
 			if count > 1:
@@ -1764,7 +1786,7 @@ def soccer(params):
 				team_properties['LiveTV.%sTeam' % side.title()] = matched[side]
 				team_properties['LiveTV.%sLogo' % side.title()] = _soccer_logos.team_logo(matched, side)
 			_item(label, _matched_play_params(_sports_ref(stream), stream['name'], 'soccer', matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': feed_label, 'LiveTV.Recognition': 'Fixture matched', 'LiveTV.Kickoff': _soccer_kickoff(matched) if state == 'Upcoming' else '', 'LiveTV.MatchState': state, 'LiveTV.StandingsKey': standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': standings_teams.get((event, scope), ''), **team_properties})
-		_save_feed_matches(feed_cache)
+		if not pending: _save_feed_matches(feed_cache)
 		if not rows: _item('Fixtures unavailable — browse channels' if status_text == 'Live fixtures unavailable' else 'No live or upcoming soccer matches — browse channels', {'mode': 'livetv.refine'})
 	except (OSError, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')
@@ -1929,7 +1951,7 @@ def _f1_startup(reference, account, failover):
 			if time.monotonic() >= deadline: break
 			valid = False
 			try:
-				with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}), timeout=3) as response:
+				with _vpn_open(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}, timeout=3) as response:
 					status = getattr(response, 'status', 200)
 					content_type = str(response.headers.get('Content-Type', '')).lower()
 					if 200 <= status < 300 and not any(value in content_type for value in ('text/html', 'application/json', 'text/plain')):
@@ -1960,12 +1982,17 @@ def play(params):
 	if params.get('sport') == 'f1':
 		selected = _f1_startup(reference, account, failover)
 		if not selected:
-			ku.dialog.notification('Live TV', 'No Formula 1 feed responded. Try again or choose another channel.')
+			ku.dialog.notification('Live TV', 'No Formula 1 feed responded. Check the VPN or choose another channel.')
 			xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 			return
 		_, url = selected
 		# Unchecked alternatives can block Kodi, so keep them in the feed picker only.
 		failover = None
+	try: url = _vpn_register(url)
+	except (OSError, HTTPException, ValueError, TypeError):
+		_error(_vpn_failure_message() or 'Live TV VPN unavailable. Check the VPN connection and try again.')
+		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
+		return
 	item = xbmcgui.ListItem(path=url)
 	item.setMimeType('video/mp2t')
 	item.setContentLookup(False)

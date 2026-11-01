@@ -4,6 +4,7 @@ from queue import Empty, SimpleQueue
 from threading import Event, Thread
 
 from modules import kodi_utils as ku
+from modules import livetv_sports_progress as progress
 
 
 _SPORTS_WINDOW = 'Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'
@@ -13,6 +14,7 @@ _GUIDE_RETRY = 5 * 60
 
 class SportsRefresh:
 	def __init__(self):
+		self.progress = progress.SportsProgress()
 		self.opened_at = None
 		self.guide_worker = None
 		self.guide_cancel = None
@@ -21,6 +23,7 @@ class SportsRefresh:
 		self.guide_pending = False
 
 	def close(self):
+		self.progress.close()
 		if self.guide_cancel: self.guide_cancel.set()
 
 	def _guide_tick(self, active, now):
@@ -39,13 +42,15 @@ class SportsRefresh:
 			self.guide_worker = Thread(target=refresh, args=(self.guide_cancel, lambda: self.guide_results.put(True)), daemon=True)
 			self.guide_worker.start()
 			self.guide_next_attempt = now + _GUIDE_RETRY
-		if not self.guide_pending: return
+		if not self.guide_pending or progress.pending(): return
 		if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
 		if not ku.get_visibility('System.IdleTime(15)') or ku.get_property('LiveTV.Soccer.Reload'): return
 		self.guide_pending = False
+		progress.invalidate()
 		ku.execute_builtin('Container.Refresh')
 
 	def tick(self):
+		self.progress.tick()
 		visible = ku.get_visibility(_SPORTS_WINDOW)
 		now = monotonic()
 		self._guide_tick(visible and ku.get_property('LiveTV.Sport') == 'soccer', now)
@@ -55,7 +60,7 @@ class SportsRefresh:
 		if self.opened_at is None:
 			self.opened_at = now
 			return
-		if now - self.opened_at < _INTERVAL: return
+		if now - self.opened_at < _INTERVAL or progress.pending(): return
 		if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
 		if not ku.get_visibility('System.IdleTime(15)') or ku.get_property('LiveTV.Soccer.Reload'): return
 		self.opened_at = now

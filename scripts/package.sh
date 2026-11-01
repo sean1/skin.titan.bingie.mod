@@ -26,6 +26,7 @@ livetv_credentials_rel="resources/private/livetv-account.json"
 livetv_credentials="$project_dir/$livetv_credentials_rel"
 football_key_rel="resources/private/api-football-key.txt"
 sportapi_key_rel="resources/private/sportapi-key.txt"
+mullvad_account_rel="resources/private/mullvad-account.txt"
 
 addon_id=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*id="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
 addon_version=$(sed -n 's/^[[:space:]]*<addon[[:space:]][^>]*version="\([^"]*\)".*/\1/p' "$addon_file" | head -n 1)
@@ -230,6 +231,30 @@ PY
 	mkdir -p "$temporary_dir/$addon_id/resources/private"
 	install -m 600 "$key_file" "$temporary_dir/$addon_id/$key_rel"
 done
+
+mullvad_account="$project_dir/$mullvad_account_rel"
+if [ -L "$mullvad_account" ] || [ ! -f "$mullvad_account" ] || [ "$(stat -c '%a' "$mullvad_account")" != "600" ]; then
+	printf '%s\n' "Mullvad account file must be a regular file with permissions 0600: $mullvad_account_rel" >&2
+	exit 1
+fi
+if ! python3 - "$mullvad_account" <<'PY'
+import re
+import sys
+
+try:
+	with open(sys.argv[1], encoding='ascii') as account_file:
+		account = account_file.read(64).strip()
+	valid = bool(re.fullmatch(r'[0-9]{16}', account))
+except (OSError, UnicodeError):
+	valid = False
+sys.exit(0 if valid else 1)
+PY
+then
+	printf '%s\n' "Mullvad account file must contain a 16-digit account number: $mullvad_account_rel" >&2
+	exit 1
+fi
+mkdir -p "$temporary_dir/$addon_id/resources/private"
+install -m 600 "$mullvad_account" "$temporary_dir/$addon_id/$mullvad_account_rel"
 
 (
 	cd "$temporary_dir"

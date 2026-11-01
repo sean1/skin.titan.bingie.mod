@@ -936,6 +936,12 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		self.focused_fanart = FocusedFanart()
 		self.trailer_preview = TrailerPreview()
 		self.next_page_prefetch = NextPagePrefetch()
+		try:
+			from modules.livetv_vpn import VPNManager
+			self.livetv_vpn = VPNManager()
+			self.livetv_vpn.start()
+		except Exception:
+			logger('BINGIE Lite', 'Live TV VPN could not be started')
 		from modules.livetv_failover import LiveTVFailover
 		self.livetv_failover = LiveTVFailover()
 		from modules.livetv_standings_focus import FocusedStandings
@@ -951,6 +957,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		if hasattr(self, 'livetv_failover'): self.livetv_failover.close()
 		if hasattr(self, 'focused_standings'): self.focused_standings.close()
 		if hasattr(self, 'sports_refresh'): self.sports_refresh.close()
+		if hasattr(self, 'livetv_vpn'): self.livetv_vpn.close()
 		for i in getattr(self, 'threads', ()): i.join()
 
 	def run(self):

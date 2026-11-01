@@ -1,4 +1,5 @@
 """Match sports fixtures to provider events."""
+import math
 import re
 import unicodedata
 from datetime import datetime
@@ -15,6 +16,17 @@ _METADATA_DATE = re.compile(r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2
 _EVENT = re.compile(r"^([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?|at|@)\s+([\w .&'’\-]{2,80}?)$", re.I)
 _NON_LIVE_TITLE = re.compile(r'\b(?:end|ended|highlights?|recaps?|previews?|replays?|delayed|encore|re-?runs?|repeats?|recorded)\b', re.I)
 _WORD = re.compile(r'\w+')
+
+
+def record_timing(phase, elapsed, sport='', outcome=''):
+	"""Log bounded, non-identifying timing data for sports loading stages."""
+	if phase not in ('catalog_fetch', 'direct_match', 'guide_match', 'guide_fetch', 'guide_refresh', 'lookup', 'ui_handoff', 'fixture_fetch'): return
+	if sport not in ('', 'soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1') or outcome not in ('', 'ok', 'unavailable', 'cancelled', 'partial'): return
+	try:
+		if not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool) or not math.isfinite(elapsed) or not 0 <= elapsed <= 86400: return
+		import xbmc
+		xbmc.log('BINGIE sports timing phase=%s sport=%s outcome=%s elapsed_ms=%d' % (phase, sport or 'unknown', outcome or 'unknown', round(elapsed * 1000)), xbmc.LOGINFO)
+	except Exception: pass
 
 
 def non_live_title(name):

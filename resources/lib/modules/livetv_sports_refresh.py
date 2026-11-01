@@ -8,6 +8,7 @@ from threading import Event, Thread
 from modules import kodi_utils as ku
 from modules import livetv_sports_progress as progress
 from modules.livetv_feed_selection import FeedSelection
+from modules.livetv_sports import record_timing
 
 
 _SPORTS_WINDOW = 'Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'
@@ -16,6 +17,13 @@ _GUIDE_RETRY = 5 * 60
 _START_RETRY = 60
 _START_WINDOW = 15 * 60
 _SCHEDULE_INTERVAL = 30 * 60
+
+
+def _refresh_guide(canceled, on_update, permissive, sport):
+	from modules.livetv_sports_guide import refresh
+	started = monotonic()
+	try: refresh(canceled, on_update, permissive)
+	finally: record_timing('guide_refresh', monotonic() - started, sport, 'cancelled' if canceled.is_set() else '')
 
 
 class SportsRefresh:
@@ -38,7 +46,7 @@ class SportsRefresh:
 		self.feed_selection.close()
 		if self.guide_cancel: self.guide_cancel.set()
 
-	def _guide_tick(self, active, now, permissive=False):
+	def _guide_tick(self, active, now, permissive=False, sport=''):
 		if active and self.guide_mode != permissive:
 			if self.guide_cancel: self.guide_cancel.set()
 			self.guide_mode = permissive
@@ -54,9 +62,8 @@ class SportsRefresh:
 			self.guide_next_attempt = 0
 			return
 		if (self.guide_worker is None or not self.guide_worker.is_alive()) and now >= self.guide_next_attempt:
-			from modules.livetv_sports_guide import refresh
 			self.guide_cancel = Event()
-			self.guide_worker = Thread(target=refresh, args=(self.guide_cancel, lambda: self.guide_results.put(True), permissive), daemon=True)
+			self.guide_worker = Thread(target=_refresh_guide, args=(self.guide_cancel, lambda: self.guide_results.put(True), permissive, sport), daemon=True)
 			self.guide_worker.start()
 			self.guide_next_attempt = now + _GUIDE_RETRY
 		if not self.guide_pending or progress.pending(): return
@@ -72,7 +79,7 @@ class SportsRefresh:
 		visible = ku.get_visibility(_SPORTS_WINDOW)
 		now = monotonic()
 		sport = ku.get_property('LiveTV.Sport')
-		self._guide_tick(visible and bool(sport) and progress.has_live(sport) and not ku.get_visibility('Player.HasMedia'), now, sport != 'soccer')
+		self._guide_tick(visible and bool(sport) and progress.has_live(sport) and not ku.get_visibility('Player.HasMedia'), now, sport != 'soccer', sport)
 		if not visible:
 			if self.sport:
 				if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return

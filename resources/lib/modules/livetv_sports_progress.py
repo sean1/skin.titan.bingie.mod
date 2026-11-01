@@ -1,5 +1,6 @@
 """Coordinate progressive sports feed matching across Kodi Python invocations."""
 import json
+import hashlib
 import math
 import time
 import uuid
@@ -9,6 +10,7 @@ from threading import Thread
 from urllib.parse import parse_qs, urlsplit
 
 from modules import kodi_utils as ku
+from modules.livetv_sports import record_timing
 
 
 _REQUEST = 'LiveTV.Sports.Progress.Request'
@@ -17,6 +19,10 @@ _CANCEL = 'LiveTV.Sports.Progress.Cancelled'
 _HEARTBEAT = 'LiveTV.Sports.Progress.Heartbeat'
 _CONSUME = 'LiveTV.Sports.Progress.Consume'
 _ACK = 'LiveTV.Sports.Progress.Acknowledged'
+_ACK_REVISION = 'LiveTV.Sports.Progress.AcknowledgedRevision'
+_INCOMPLETE = 'LiveTV.Sports.Progress.Incomplete'
+_WAIT_STATUS = 'LiveTV.Sports.Progress.WaitStatus'
+_COUNTS_CACHE = 'LiveTV.Sports.LastCounts.'
 _NEXT_START = 'LiveTV.Sports.NextStart'
 _STARTS = 'LiveTV.Sports.Starts'
 _HAS_LIVE = 'LiveTV.Sports.HasLive'
@@ -62,11 +68,65 @@ def _fresh_guide_groups(groups, now):
 	return True
 
 
+def _filter_guide_groups(groups, now):
+	"""Keep current matches when a different guide entry has expired."""
+	filtered = {}
+	for key, feeds in groups.items():
+		if not isinstance(feeds, dict): raise TypeError('Invalid feed group')
+		filtered[key] = {}
+		for ref, feed in feeds.items():
+			if not isinstance(feed, dict): raise TypeError('Invalid feed')
+			if _fresh_guide_groups({key: {ref: feed}}, now): filtered[key][ref] = feed
+	return filtered
+
+
+def _group_hash(value):
+	return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')).hexdigest()
+
+
+def save_counts(sport, fixtures, groups, now=None):
+	"""Retain display-only counts, never channel identities or playback tokens."""
+	from menus import livetv
+	now = time.time() if now is None else now
+	try:
+		if not _fresh_guide_groups(groups, now): return
+		deadlines = [feed['_guide_until'] for feeds in groups.values() for feed in feeds.values() if feed.get('_guide_match')]
+		cache = {'created': now, 'expires': min([now + 300] + deadlines), 'accounts': livetv._feed_accounts_fingerprint(), 'fixtures': _group_hash(fixtures),
+			'counts': {_group_hash(key): len(feeds) for key, feeds in groups.items()}}
+		ku.set_property(_COUNTS_CACHE + sport, json.dumps(cache, separators=(',', ':')))
+	except (TypeError, ValueError, KeyError, OverflowError): return
+
+
+def load_counts(sport, fixtures, now=None):
+	"""Return still-current counts only for the identical account and fixtures."""
+	from menus import livetv
+	now = time.time() if now is None else now
+	cache = _read(_COUNTS_CACHE + sport)
+	try:
+		created, expires = cache['created'], cache['expires']
+		if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) for value in (created, expires)): return {}
+		if not created <= now < min(expires, created + 300) or cache['accounts'] != livetv._feed_accounts_fingerprint() or cache['fixtures'] != _group_hash(fixtures): return {}
+		return cache['counts'] if isinstance(cache.get('counts'), dict) else {}
+	except (KeyError, TypeError, ValueError, OverflowError): return {}
+
+
+def cached_count(snapshot, group_key):
+	try:
+		value = snapshot.get(_group_hash(group_key), 0)
+		return value if isinstance(value, int) and not isinstance(value, bool) and 0 < value <= 100000 else 0
+	except (AttributeError, TypeError, ValueError): return 0
+
+
+def incomplete():
+	return ku.get_property(_INCOMPLETE) == 'true'
+
+
 def invalidate(request_id=None):
 	request_id = request_id or _read(_REQUEST).get('id', '')
 	if not request_id: return
 	ku.set_property(_CANCEL, request_id)
 	ku.clear_property(_RESULT + '.' + request_id)
+	ku.clear_property(_INCOMPLETE)
 
 
 def _set_soccer_status(status, unavailable):
@@ -241,20 +301,27 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 	new_refresh = force_refresh or (reload in ('refresh', 'schedule') and not consume and (request.get('reload') != reload or result.get('id') == request.get('id')))
 	fresh_fixtures = (fixtures == request.get('fixtures') and auxiliary == request.get('auxiliary')) or consume
 	if _valid(request, sport) and ku.get_property(_CANCEL) != request.get('id') and request.get('accounts') == accounts and not new_refresh and fresh_fixtures:
-		stale_guides = False
 		if result.get('id') == request.get('id'):
 			try:
 				if result.get('sync'): return unavailable()
-				groups = _groups_from_json(result['groups'])
-				if _fresh_guide_groups(groups, time.time()):
-					ku.set_property('LiveTV.Sports.CatalogUnavailable', result.get('unavailable', ''))
-					if sport == 'soccer': _set_soccer_status(result.get('status'), result.get('unavailable'))
-					ku.set_property(_ACK, request['id'])
+				raw_groups = _groups_from_json(result['groups'])
+				groups = _filter_guide_groups(raw_groups, time.time())
+				if groups is not None:
+					unavailable_flag = result.get('unavailable', '') or ('true' if groups != raw_groups else '')
+					ku.set_property('LiveTV.Sports.CatalogUnavailable', unavailable_flag)
+					if sport == 'soccer': _set_soccer_status(result.get('status'), unavailable_flag)
+					complete = result.get('complete', True) is True
+					ku.set_property(_INCOMPLETE, '' if complete else 'true')
+					ku.set_property(_ACK_REVISION, request['id'] + ':' + str(result.get('revision', 0)))
+					if complete:
+						ku.set_property(_ACK, request['id'])
+						published = result.get('published')
+						if not unavailable_flag and isinstance(published, (int, float)) and not isinstance(published, bool) and math.isfinite(published) and published <= time.time(): save_counts(sport, request['fixtures'], groups, published)
+					if isinstance(result.get('published'), (int, float)) and not isinstance(result.get('published'), bool): record_timing('ui_handoff', max(0, time.time() - result['published']), sport, 'ok' if complete else 'partial')
 					ku.clear_property(_CONSUME)
 					return request['fixtures'], groups
-				stale_guides = True
 			except (KeyError, TypeError, ValueError): pass
-		if not stale_guides: return request['fixtures'], None
+		return request['fixtures'], None
 	previous_id = request.get('id', '')
 	request = {'id': uuid.uuid4().hex, 'sport': sport, 'reload': reload, 'fixtures': fixtures, 'auxiliary': auxiliary, 'created': time.time(), 'accounts': accounts}
 	try: data = json.dumps(request, ensure_ascii=False, separators=(',', ':'))
@@ -262,6 +329,8 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 	if len(data.encode('utf-8')) > _REQUEST_LIMIT: return unavailable()
 	if previous_id: invalidate(previous_id)
 	ku.set_property(_REQUEST, data)
+	ku.set_property(_INCOMPLETE, 'true')
+	ku.set_property(_WAIT_STATUS, 'Finding feeds…')
 	ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
 	if sport == 'soccer': ku.set_property('LiveTV.Soccer.Status', '')
 	return fixtures, None
@@ -275,8 +344,7 @@ def pending():
 	request_id = request.get('id', '')
 	if not request_id or ku.get_property(_CANCEL) == request_id: return False
 	if ku.get_property(_ACK) == request_id: return False
-	result = _read(_RESULT + '.' + request_id)
-	return result.get('id') != request_id
+	return True
 
 
 def has_live(sport):
@@ -307,6 +375,8 @@ class SportsProgress:
 		self.fixture_matching = {}
 
 	def _fixture_work(self, request):
+		started = time.monotonic()
+		outcome = 'unavailable'
 		try:
 			from menus import livetv
 			if livetv._feed_accounts_fingerprint() != request['accounts']: raise ValueError('Account changed')
@@ -321,7 +391,9 @@ class SportsProgress:
 				fixtures, expires = livetv._tennis_fixtures_service.get_schedule(cache_dir=profile or None, with_expiry=True) if sport == 'tennis' else livetv._american_fixtures.get_schedule(sport, cache_dir=profile or None, with_expiry=True)
 			encoded = json.dumps({'id': request['id'], 'fixtures': fixtures, 'auxiliary': auxiliary, 'captured': time.time(), 'expires': expires}, ensure_ascii=False, separators=(',', ':'))
 			if len(encoded.encode('utf-8')) > _RESULT_LIMIT: raise ValueError('Result too large')
+			outcome = 'ok'
 		except Exception: encoded = json.dumps({'id': request['id'], 'unavailable': True})
+		record_timing('fixture_fetch', time.monotonic() - started, request.get('sport', ''), outcome)
 		self.fixture_results.put((request['id'], encoded))
 
 	def _fixture_tick(self):
@@ -383,7 +455,7 @@ class SportsProgress:
 	def _item_identity(position):
 		return _focus_identity(position)
 
-	def _capture_focus(self, request, ack=_ACK):
+	def _capture_focus(self, request, ack=_ACK, expected=None):
 		self.focus = None
 		try:
 			if not ku.get_visibility('Control.HasFocus(523)'): return
@@ -392,7 +464,7 @@ class SportsProgress:
 			identity = self._item_identity(position)
 			if not identity[1]: return
 			now = time.monotonic()
-			self.focus = {'id': request['id'], 'sport': request['sport'], 'position': position, 'identity': identity, 'started': now, 'deadline': now + 90, 'ack': ack}
+			self.focus = {'id': request['id'], 'sport': request['sport'], 'position': position, 'identity': identity, 'started': now, 'deadline': now + 90, 'ack': ack, 'expected': expected or request['id']}
 		except (AttributeError, RuntimeError, TypeError, ValueError): return
 
 	def _restore_focus(self, request, visible):
@@ -411,7 +483,14 @@ class SportsProgress:
 		if not _current(focus['sport']):
 			self.focus = None
 			return
-		if ku.get_property(focus['ack']) != focus['id']: return
+		acknowledged = ku.get_property(focus['ack'])
+		if acknowledged != focus['expected']:
+			if focus['ack'] != _ACK_REVISION: return
+			try:
+				ack_id, ack_revision = acknowledged.rsplit(':', 1)
+				_, expected_revision = focus['expected'].rsplit(':', 1)
+				if ack_id != focus['id'] or int(ack_revision) < int(expected_revision): return
+			except (AttributeError, TypeError, ValueError): return
 		try:
 			if not ku.get_visibility('Control.HasFocus(523)'):
 				self.focus = None
@@ -424,33 +503,43 @@ class SportsProgress:
 		self.focus = None
 
 	def _work(self, request):
+		started = time.monotonic()
+		outcome = 'unavailable'
+		revision = 0
+		last_cleaned = []
 		try:
 			from menus import livetv
 			statuses, unavailable = [], []
 			account = livetv._sports_primary()
 			if not account or livetv._feed_accounts_fingerprint() != request['accounts']: raise ValueError('Account changed')
-			groups, _ = livetv._sports_catalog_groups(account, request['sport'], request['reload'], on_status=lambda created, stale: statuses.append((created, stale)), fixtures=request['fixtures'], status_sink=unavailable.append, notify_stale=False)
 			secrets = [str(a.get(key) or '') for _, a in livetv._sports_accounts(livetv._load()) for key in ('username', 'password')]
-			cleaned = []
-			for key, feeds in groups.items():
-				safe_feeds = {}
-				for ref, feed in feeds.items():
-					stream_id = feed.get('stream_id')
-					name = str(feed.get('name') or '')
-					if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(stream_id), name)):
-						self.results.put((request['id'], json.dumps({'id': request['id'], 'sync': True})))
-						return
-					item = {name: feed[name] for name in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if name in feed}
-					item['name'] = name
-					item['stream_icon'] = livetv._catalog_icon(feed.get('stream_icon'), secrets)
-					safe_feeds[ref] = item
-				cleaned.append((key, safe_feeds))
-			result = {'id': request['id'], 'groups': cleaned, 'unavailable': unavailable[-1] if unavailable else '', 'status': statuses[-1] if statuses else None}
-			encoded = json.dumps(result, ensure_ascii=False, separators=(',', ':'))
-			if len(encoded.encode('utf-8')) > _RESULT_LIMIT: raise ValueError('Result too large')
+			def publish(groups, unavailable_value, status_values, complete):
+				nonlocal revision, last_cleaned
+				cleaned = []
+				for key, feeds in groups.items():
+					safe_feeds = {}
+					for ref, feed in feeds.items():
+						stream_id, name = feed.get('stream_id'), str(feed.get('name') or '')
+						if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(stream_id), name)): raise ValueError('Unsafe feed')
+						item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
+						item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
+						safe_feeds[ref] = item
+					cleaned.append((key, safe_feeds))
+				revision += 1
+				result = {'id': request['id'], 'groups': cleaned, 'unavailable': unavailable_value, 'status': status_values[-1] if status_values else None,
+					'revision': revision, 'complete': complete, 'published': time.time()}
+				encoded = json.dumps(result, ensure_ascii=False, separators=(',', ':'))
+				if len(encoded.encode('utf-8')) > _RESULT_LIMIT: raise ValueError('Result too large')
+				last_cleaned = cleaned
+				self.results.put((request['id'], encoded))
+			groups, _ = livetv._sports_catalog_groups(account, request['sport'], request['reload'], on_status=lambda created, stale: statuses.append((created, stale)), fixtures=request['fixtures'],
+				status_sink=unavailable.append, notify_stale=False, on_partial=lambda groups, unavailable_value, status_values: publish(groups, unavailable_value, status_values, False))
+			publish(groups, unavailable[-1] if unavailable else '', statuses, True)
+			outcome = 'ok' if not unavailable or not unavailable[-1] else 'unavailable'
 		except Exception:
-			encoded = json.dumps({'id': request['id'], 'groups': [], 'unavailable': 'true', 'status': None})
-		self.results.put((request['id'], encoded))
+			revision += 1
+			self.results.put((request['id'], json.dumps({'id': request['id'], 'groups': last_cleaned, 'unavailable': 'true', 'status': None, 'revision': revision, 'complete': True, 'published': time.time()})))
+		record_timing('lookup', time.monotonic() - started, request.get('sport', ''), outcome)
 
 	def tick(self):
 		ku.set_property(_HEARTBEAT, str(time.time()))
@@ -466,6 +555,8 @@ class SportsProgress:
 			return
 		if visible:
 			self.seen_id = request_id
+		else:
+			ku.clear_property(_WAIT_STATUS)
 		while True:
 			try: result_id, encoded = self.results.get_nowait()
 			except Empty: break
@@ -473,20 +564,29 @@ class SportsProgress:
 				ku.set_property(_RESULT + '.' + result_id, encoded)
 				result = json.loads(encoded)
 				status = result.get('status')
-				if status and status[1]: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.')
+				if status and status[1] and result.get('complete', True) is True: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.')
 		if not visible: return
-		if ku.get_property(_ACK) == request_id: return
+		if ku.get_property(_ACK) == request_id:
+			ku.clear_property(_WAIT_STATUS)
+			return
 		result = _read(_RESULT + '.' + request_id)
+		blocked = ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)')
+		try: long_wait = time.time() - request['created'] >= 30
+		except (KeyError, TypeError): long_wait = False
+		waiting = result.get('id') == request_id and blocked
+		ku.set_property(_WAIT_STATUS, 'Waiting for Kodi…' if waiting else 'Still searching…' if long_wait else 'Finding feeds…')
 		if result.get('id') == request_id:
+			revision_key = request_id + ':' + str(result.get('revision', 0))
+			if ku.get_property(_ACK_REVISION) == revision_key: return
 			fixture_request = _read(_FIXTURE_REQUEST)
 			fixture_id = fixture_request.get('id', '')
 			if fixture_id and _current(fixture_request.get('sport')) and (_read(_FIXTURE_RESULT).get('id') != fixture_id or ku.get_property(_FIXTURE_ACK) != fixture_id or fixture_request.get('reload') in ('refresh', 'schedule')): return
-			if self.refreshed_id == request_id and time.monotonic() - self.refreshed_at < 10: return
-			if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
+			if self.refreshed_id == revision_key and time.monotonic() - self.refreshed_at < 10: return
+			if blocked: return
 			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
-			self.refreshed_id = request_id
+			self.refreshed_id = revision_key
 			self.refreshed_at = time.monotonic()
-			self._capture_focus(request)
+			self._capture_focus(request, _ACK_REVISION, revision_key)
 			ku.set_property(_CONSUME, request_id)
 			ku.execute_builtin('Container.Refresh')
 			return
@@ -503,4 +603,6 @@ class SportsProgress:
 		ku.clear_property(_HEARTBEAT)
 		ku.clear_property(_FIXTURE_REQUEST)
 		ku.clear_property(_FIXTURE_RESULT)
+		ku.clear_property(_WAIT_STATUS)
+		ku.clear_property(_INCOMPLETE)
 		invalidate()

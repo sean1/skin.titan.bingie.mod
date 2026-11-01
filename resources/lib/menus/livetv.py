@@ -300,8 +300,8 @@ def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True, _guide_until=feed['_guide_until']) for stream_id, feed in feeds.items()} for event, feeds in matched.items() if event in live}
 
 
-def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True):
-	from concurrent.futures import ThreadPoolExecutor
+def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True, on_partial=None):
+	from concurrent.futures import ThreadPoolExecutor, as_completed
 	legacy = _load()
 	accounts = _sports_accounts(legacy)
 	primary_id = accounts[0][0] if accounts else None
@@ -330,25 +330,56 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 	def fetch(entry):
 		identity, account = entry
 		account_status = []
+		started, outcome = time.monotonic(), 'unavailable'
 		try:
 			kwargs = {'force_refresh': reload == 'refresh'}
 			if not notify_stale: kwargs['notify_stale'] = False
 			if on_status: kwargs['on_status'] = lambda created, stale: account_status.append((created, stale))
 			streams = _catalog(account, 'get_live_streams', **kwargs)
+			if isinstance(streams, list): outcome = 'ok'
 			return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
 		except (OSError, HTTPException, ValueError, TypeError): return identity, [], False, account_status
+		finally: _sports.record_timing('catalog_fetch', time.monotonic() - started, sport, outcome)
 	groups, all_streams, failed = {}, [], False
 	account_map = dict(accounts)
+	account_groups, account_streams = {}, {}
+	def collect():
+		merged = {}
+		for identity, _ in accounts:
+			for key, feeds in account_groups.get(identity, {}).items():
+				for stream_id, stream in feeds.items(): merged.setdefault(key, {})[identity + ':' + stream_id if stream.get('_provider') else stream_id] = dict(stream)
+		return merged
+	def publish():
+		if on_partial:
+			status = [(min(created for created, _ in status_values), any(stale for _, stale in status_values))] if status_values else []
+			on_partial(collect(), 'true' if failed else '', status)
+	def timed_match(phase, match):
+		started, outcome = time.monotonic(), 'unavailable'
+		try:
+			result = match()
+			outcome = 'ok'
+			return result
+		finally: _sports.record_timing(phase, time.monotonic() - started, sport, outcome)
+	def direct_groups(streams):
+		if sport == 'f1': return _f1.fixture_groups(streams, fixtures, live_only=True)
+		if sport in ('hockey', 'football', 'basketball', 'tennis'): return _sports.fixture_groups(streams, sport, fixtures, live_only=True)
+		return _soccer_fixture_groups(streams, fixtures, live_only=True)
 	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
-		for identity, streams, available, account_status in pool.map(fetch, accounts):
+		futures = [pool.submit(fetch, entry) for entry in accounts]
+		for future in as_completed(futures):
+			identity, streams, available, account_status = future.result()
 			if not available: failed = True
 			status_values.extend(account_status)
 			streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
-			all_streams.extend(streams)
-			local = _f1.fixture_groups(streams, fixtures, live_only=True) if sport == 'f1' else _sports.fixture_groups(streams, sport, fixtures, live_only=True) if sport in ('hockey', 'football', 'basketball', 'tennis') else _soccer_fixture_groups(streams, fixtures, live_only=True)
-			for event, feeds in _sports_guide_groups(account_map[identity], streams, sport, fixtures, local, time.time()).items(): local.setdefault(event, {}).update(feeds)
-			for key, feeds in local.items():
-				for stream_id, stream in feeds.items(): groups.setdefault(key, {})[identity + ':' + stream_id if stream.get('_provider') else stream_id] = stream
+			account_streams[identity] = streams
+			local = timed_match('direct_match', lambda: direct_groups(streams))
+			account_groups[identity] = local
+			if local: publish()
+			guide = timed_match('guide_match', lambda: _sports_guide_groups(account_map[identity], streams, sport, fixtures, local, time.time()))
+			for event, feeds in guide.items(): local.setdefault(event, {}).update(feeds)
+			if guide: publish()
+	groups = collect()
+	all_streams = [stream for identity, _ in accounts for stream in account_streams.get(identity, [])]
 	if status_sink: status_sink('true' if failed else '')
 	else: ku.set_property('LiveTV.Sports.CatalogUnavailable', 'true' if failed else '')
 	if on_status and status_values: on_status(min(created for created, _ in status_values), any(stale for _, stale in status_values))
@@ -1494,9 +1525,11 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 			force_refresh = reload == 'refresh'
 			fixtures, groups = livetv_sports_progress.prepare('f1', reload, fixtures, force_refresh=force_refresh)
 		ku.set_property('LiveTV.Soccer.FixtureStatus', cache_status if cached else 'Sessions updated')
-		pending = groups is None
+		has_groups = groups is not None
+		pending = not has_groups or livetv_sports_progress.incomplete()
 		groups = groups or {}
-		feed_cache, speed_context = {}, ({}, {}) if pending else _speed_context()
+		saved_counts = livetv_sports_progress.load_counts('f1', fixtures) if pending else {}
+		feed_cache, speed_context = {}, _speed_context() if has_groups else ({}, {})
 		for fixture in sorted(fixtures, key=lambda row: row['date']):
 			state = {'LIVE': 'Live', 'Scheduled': 'Upcoming', 'Finished': 'Finished'}.get(fixture['status'], '')
 			if not state: continue
@@ -1506,16 +1539,20 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 			ordered = [by_ref[ref] for ref in _speed_order(list(by_ref), speed_context)]
 			stream, count = (ordered[0] if ordered else None), len(feeds)
 			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Session finished' if state == 'Finished' else 'Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			saved_count = livetv_sports_progress.cached_count(saved_counts, fixture['id']) if pending and state == 'Live' and not count else 0
+			if saved_count: feed_label = '%d %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
+			elif count and pending: feed_label += ' · updating'
 			title = fixture['event'] + ' — ' + fixture['session_label']
 			context = []
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': 'f1', 'session': fixture['id']})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
+			if pending and state == 'Live': context.append(('Retry finding feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.soccer', 'sport': 'f1', 'action': 'refresh'})))
 			matched = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			_item(title + (' — ' + feed_label if feed_label and not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], 'f1', matched, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
 				extra_properties={'LiveTV.EventIdentity': _fixture_focus_identity('f1', fixture), 'LiveTV.Match': title, 'LiveTV.League': 'Formula 1', 'LiveTV.Feeds': feed_label,
 					'LiveTV.MatchState': '' if cached else state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture), 'LiveTV.StandingsKey': 'f1'})
-		if not pending: _save_feed_matches(feed_cache)
+		if has_groups: _save_feed_matches(feed_cache)
 		if not fixtures: _item(cache_status if cached else 'No upcoming Formula 1 sessions', {}, False, playable=False)
 	except (OSError, HTTPException, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Sessions unavailable')
@@ -1575,9 +1612,11 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 			force_refresh = reload == 'refresh'
 			fixtures, groups = livetv_sports_progress.prepare(sport, reload, fixtures, force_refresh=force_refresh)
 		ku.set_property('LiveTV.Soccer.FixtureStatus', cache_status if cached else 'Live fixtures updated')
-		pending = groups is None
+		has_groups = groups is not None
+		pending = not has_groups or livetv_sports_progress.incomplete()
 		groups = groups or {}
-		speed_context = ({}, {}) if pending else _speed_context()
+		saved_counts = livetv_sports_progress.load_counts(sport, fixtures) if pending else {}
+		speed_context = _speed_context() if has_groups else ({}, {})
 		feed_cache = {}
 		now = time.time()
 		rows = []
@@ -1589,7 +1628,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 			rows.append((state, kickoff, event, scope, fixture, groups.get((event, scope), {}) if state == 'Live' else {}))
 		# The feed key has no kickoff. Do not attach a feed to the wrong
 		# game if the same teams meet twice in the schedule window.
-		duplicate_keys = {key for key in groups if sum((row[2], row[3]) == key for row in rows) > 1}
+		duplicate_keys = {(row[2], row[3]) for row in rows if sum((other[2], other[3]) == (row[2], row[3]) for other in rows) > 1}
 		for state, kickoff, event, scope, fixture, feeds in sorted(rows, key=lambda row: (row[0] != 'Live', _live_start(row[4]) if row[0] == 'Live' else row[1], row[2])):
 			if (event, scope) in duplicate_keys: feeds = {}
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
@@ -1599,6 +1638,9 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 			title = '%s vs %s' % (fixture['home']['name'], fixture['away']['name'])
 			count = len(feeds)
 			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			saved_count = livetv_sports_progress.cached_count(saved_counts, (event, scope)) if pending and state == 'Live' and not count and (event, scope) not in duplicate_keys else 0
+			if saved_count: feed_label = '%d %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
+			elif count and pending: feed_label += ' · updating'
 			standings_sport = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
 			standings_event = _sports._event(title) or event
 			standings_key = '|'.join((standings_sport, *standings_event)) if standings_sport else ''
@@ -1624,6 +1666,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
+			if pending and state == 'Live': context.append(('Retry finding feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.soccer', 'sport': sport, 'action': 'refresh'})))
 			matched_feeds = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			team_properties = {}
 			if sport == 'tennis': team_properties['LiveTV.Tennis.PlayerNames'] = tennis_names
@@ -1635,7 +1678,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 				extra_properties={'LiveTV.EventIdentity': _fixture_focus_identity(sport, fixture), 'LiveTV.Match': title, 'LiveTV.League': fixture.get('league_label', scope.upper()), 'LiveTV.Feeds': feed_label,
 					'LiveTV.MatchState': '' if cached else state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_match_key, **team_properties})
-		if not pending: _save_feed_matches(feed_cache)
+		if has_groups: _save_feed_matches(feed_cache)
 		if not rows:
 			message = cache_status if cached else 'Fixtures unavailable — browse channels' if ku.get_property('LiveTV.Soccer.FixtureStatus') == 'Live fixtures unavailable' else 'No live or upcoming %s matches — browse channels' % sport
 			_item(message, {} if cached else {'mode': 'livetv.refine'}, False if cached else True, playable=False if cached else True)
@@ -1717,9 +1760,11 @@ def soccer(params):
 			reload = fixture_reload or reload
 			force_refresh = reload == 'refresh'
 			fixtures, groups = livetv_sports_progress.prepare('soccer', reload, fixtures, force_refresh=force_refresh, auxiliary={'sport_fixtures': sport_fixtures, 'status_text': status_text})
-		pending = groups is None
+		has_groups = groups is not None
+		pending = not has_groups or livetv_sports_progress.incomplete()
 		groups = groups or {}
-		speed_context = ({}, {}) if pending else _speed_context()
+		saved_counts = livetv_sports_progress.load_counts('soccer', fixtures) if pending else {}
+		speed_context = _speed_context() if has_groups else ({}, {})
 		feed_cache = {}
 		ku.set_property('LiveTV.Soccer.FixtureStatus', cache_status if cached else status_text)
 		matches = {}
@@ -1758,11 +1803,15 @@ def soccer(params):
 			rows.append((title, match_league, preferred, len(feeds), event, scope, matched, state, kickoff))
 		for title, match_league, stream, count, event, scope, matched, state, kickoff in sorted(rows, key=lambda row: (row[7] != 'Live', _live_start(row[6]) if row[7] == 'Live' else row[8], row[1].casefold(), row[0].casefold())):
 			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			saved_count = livetv_sports_progress.cached_count(saved_counts, (event, scope)) if pending and state == 'Live' and not count else 0
+			if saved_count: feed_label = '%d %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
+			elif count and pending: feed_label += ' · updating'
 			label = '%s — %s%s' % (match_league, title, ' — ' + feed_label if feed_label else '')
 			context = []
 			if count > 1:
 				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': 'soccer', 'home': event[0], 'away': event[1], 'scope': scope})
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
+			if pending and state == 'Live': context.append(('Retry finding feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.soccer', 'sport': 'soccer', 'action': 'refresh'})))
 			feeds = groups.get((event, scope), {})
 			ordered_refs = _speed_order(list(feeds), speed_context)
 			matched_feeds = [(ref, feeds[ref]) for ref in ordered_refs] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
@@ -1776,7 +1825,7 @@ def soccer(params):
 					'LiveTV.EventIdentity': _fixture_focus_identity('soccer', matched), 'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': feed_label, 'LiveTV.Recognition': 'Fixture matched',
 					'LiveTV.StartTime': _soccer_kickoff(matched).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(matched) if state == 'Upcoming' else '', 'LiveTV.MatchState': '' if cached else state,
 					'LiveTV.StandingsKey': 'mls' if is_mls else standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': title if is_mls else standings_teams.get((event, scope), ''), **team_properties})
-		if not pending: _save_feed_matches(feed_cache)
+		if has_groups: _save_feed_matches(feed_cache)
 		if not rows:
 			if cached: _item(cache_status, {}, False, playable=False)
 			else: _item('Fixtures unavailable — browse channels' if status_text == 'Live fixtures unavailable' else 'No live or upcoming soccer matches — browse channels', {'mode': 'livetv.refine'})
@@ -1809,8 +1858,15 @@ def match_feeds(params):
 		from modules import livetv_feed_selection
 		sport = params.get('sport', '')
 		state, result = livetv_feed_selection.prepare(params)
-		if state != 'ready':
-			_item('Finding feeds…' if state == 'loading' else 'Feeds unavailable — return and try again', {}, False, playable=False)
+		def waiting_row(retry_label=None):
+			if retry_label:
+				retry = {key: params.get(key, '') for key in ('sport', 'home', 'away', 'scope', 'session')}
+				retry.update({'mode': 'livetv.match_feeds', 'retry': livetv_feed_selection.retry_request()})
+				_item(retry_label, retry)
+			else: _item('Finding more feeds…', {}, False, playable=False)
+		if state not in ('ready', 'partial', 'partial_unavailable'):
+			if state == 'slow': waiting_row('Still finding feeds… — select to retry')
+			else: _item('Finding feeds…' if state == 'loading' else 'Feeds unavailable — return and try again', {}, False, playable=False)
 			_finish()
 			return
 		choices = [(ref, feed) for ref, feed, _ in result]
@@ -1827,8 +1883,10 @@ def match_feeds(params):
 			for number, (stream_id, stream) in enumerate(choices, 1):
 				name = str(stream.get('name') or 'Live channel')
 				_item(('Feed %d' % number if ':' in stream_id else name.split('|')[-1].strip()) + ' (play channel)', _matched_play_params(stream_id, name, sport, choices if unique.get(stream_id) else [], feed_cache), False, stream.get('stream_icon'))
-		else:
+		elif state == 'ready':
 			_item('No matching live feeds are currently available', {}, False, playable=False)
+		if state == 'partial_unavailable': waiting_row('Some feeds unavailable — select to retry')
+		elif state == 'partial': waiting_row('Still finding feeds… — select to retry' if livetv_feed_selection.is_slow() else None)
 		if sport: _save_feed_matches(feed_cache)
 	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load matching feeds. Try again.')

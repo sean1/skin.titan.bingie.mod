@@ -119,12 +119,20 @@ def next_half_hour(timestamp):
 	return timestamp + 1800 - seconds
 
 
+def _focus_identity(position):
+	base = 'Container(523).ListItemAbsolute(%d).Property(LiveTV.%%s)' % position
+	event = ku.get_infolabel(base % 'EventIdentity')
+	if event: return ('event', event)
+	return ('legacy', *(ku.get_infolabel(base % name) for name in ('Match', 'League', 'Kickoff')))
+
+
 def _fixture_focus():
 	try:
 		if ku.get_visibility('Control.HasFocus(523)'):
 			position = int(ku.get_infolabel('Container(523).CurrentItem')) - 1
-			identity = [ku.get_infolabel('Container(523).ListItemAbsolute(%d).Property(LiveTV.%s)' % (position, name)) for name in ('Match', 'League', 'Kickoff')]
-			if position >= 0 and identity[0]: return {'position': position, 'identity': identity, 'started': time.monotonic()}
+			if position < 0: return None
+			identity = _focus_identity(position)
+			if identity[1]: return {'position': position, 'identity': identity, 'started': time.monotonic()}
 	except (AttributeError, RuntimeError, TypeError, ValueError): pass
 	return None
 
@@ -325,6 +333,12 @@ class SportsProgress:
 		self.fixture_seen = request_id
 		if _read(_FIXTURE_RESULT).get('id') == request_id:
 			result = _read(_FIXTURE_RESULT)
+			if (self.fixture_refreshed != request_id and not request.get('background') and not request.get('reload') and request_id not in self.fixture_matching
+					and not _fixtures_unavailable(request.get('sport'), result) and not ku.get_visibility('Player.HasMedia')):
+				from menus import livetv
+				if request.get('accounts') == livetv._feed_accounts_fingerprint():
+					_, groups = prepare(request['sport'], '', result['fixtures'], auxiliary=result.get('auxiliary'))
+					self.fixture_matching = {request_id: _read(_REQUEST).get('id', '') if groups is None else ''}
 			if self.fixture_refreshed != request_id and request.get('background') and not _fixtures_unavailable(request.get('sport'), result):
 				if request_id not in self.fixture_matching:
 					_, groups = prepare(request['sport'], request.get('reload', 'schedule'), result['fixtures'], auxiliary=result.get('auxiliary'))
@@ -333,23 +347,11 @@ class SportsProgress:
 				if feed_id:
 					if _read(_RESULT + '.' + feed_id).get('id') != feed_id: return
 					ku.set_property(_CONSUME, feed_id)
-			if self.fixture_refreshed == request_id:
-				if self.fixture_restored == request_id: return
-				if request.get('reload'): return
-				if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
-				focus = request.get('focus') or {}
-				try:
-					elapsed = time.monotonic() - focus['started']
-					if 0 <= elapsed < 90 and ku.get_visibility('System.IdleTime(%d) + Control.HasFocus(523)' % max(2, int(elapsed) + 1)):
-						position = focus['position']
-						if self._item_identity(position) == tuple(focus['identity']):
-							if int(ku.get_infolabel('Container(523).CurrentItem')) - 1 != position: ku.execute_builtin('Control.SetFocus(523,%d,absolute)' % position)
-							self.fixture_restored = request_id
-				except (AttributeError, KeyError, RuntimeError, TypeError, ValueError): pass
-				return
+			if self.fixture_refreshed == request_id: return
 			if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
-			if not ku.get_visibility('System.IdleTime(2)'): return
+			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
 			self.fixture_refreshed = request_id
+			self._capture_focus(request, _FIXTURE_ACK)
 			ku.execute_builtin('Container.Refresh')
 			return
 		self.fixture_workers = {key: worker for key, worker in self.fixture_workers.items() if worker.is_alive()}
@@ -363,18 +365,18 @@ class SportsProgress:
 
 	@staticmethod
 	def _item_identity(position):
-		return tuple(ku.get_infolabel('Container(523).ListItemAbsolute(%d).Property(LiveTV.%s)' % (position, name)) for name in ('Match', 'League', 'Kickoff'))
+		return _focus_identity(position)
 
-	def _capture_focus(self, request):
+	def _capture_focus(self, request, ack=_ACK):
 		self.focus = None
 		try:
 			if not ku.get_visibility('Control.HasFocus(523)'): return
 			position = int(ku.get_infolabel('Container(523).CurrentItem')) - 1
 			if position < 0: return
 			identity = self._item_identity(position)
-			if not identity[0]: return
+			if not identity[1]: return
 			now = time.monotonic()
-			self.focus = {'id': request['id'], 'sport': request['sport'], 'position': position, 'identity': identity, 'started': now, 'deadline': now + 90}
+			self.focus = {'id': request['id'], 'sport': request['sport'], 'position': position, 'identity': identity, 'started': now, 'deadline': now + 90, 'ack': ack}
 		except (AttributeError, RuntimeError, TypeError, ValueError): return
 
 	def _restore_focus(self, request, visible):
@@ -382,24 +384,26 @@ class SportsProgress:
 		if not focus: return
 		now = time.monotonic()
 		idle_required = max(2, int(now - focus['started']) + 1)
-		if focus['id'] != request.get('id') or now >= focus['deadline'] or not ku.get_visibility('System.IdleTime(%d)' % idle_required):
+		current = _read(_FIXTURE_REQUEST) if focus['ack'] == _FIXTURE_ACK else request
+		if focus['id'] != current.get('id') or now >= focus['deadline'] or not ku.get_visibility('System.IdleTime(%d)' % idle_required):
 			self.focus = None
 			return
 		if ku.get_visibility('Container.IsUpdating | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
 		if ku.get_visibility('Player.HasMedia | System.HasActiveModalDialog'):
 			self.focus = None
 			return
-		if not visible:
+		if not _current(focus['sport']):
 			self.focus = None
 			return
-		if ku.get_property(_ACK) != focus['id']: return
+		if ku.get_property(focus['ack']) != focus['id']: return
 		try:
 			if not ku.get_visibility('Control.HasFocus(523)'):
 				self.focus = None
 				return
 			position = int(ku.get_infolabel('Container(523).CurrentItem')) - 1
-			if self._item_identity(focus['position']) == focus['identity'] and position != focus['position']:
-				ku.execute_builtin('Control.SetFocus(523,%d,absolute)' % focus['position'])
+			count = min(10000, max(0, int(ku.get_infolabel('Container(523).NumItems'))))
+			matches = [index for index in range(count) if self._item_identity(index) == focus['identity']]
+			if len(matches) == 1 and position != matches[0]: ku.execute_builtin('Control.SetFocus(523,%d,absolute)' % matches[0])
 		except (AttributeError, RuntimeError, TypeError, ValueError): pass
 		self.focus = None
 
@@ -460,10 +464,10 @@ class SportsProgress:
 		if result.get('id') == request_id:
 			fixture_request = _read(_FIXTURE_REQUEST)
 			fixture_id = fixture_request.get('id', '')
-			if fixture_id and _current(fixture_request.get('sport')) and (_read(_FIXTURE_RESULT).get('id') != fixture_id or fixture_request.get('reload') in ('refresh', 'schedule')): return
+			if fixture_id and _current(fixture_request.get('sport')) and (_read(_FIXTURE_RESULT).get('id') != fixture_id or ku.get_property(_FIXTURE_ACK) != fixture_id or fixture_request.get('reload') in ('refresh', 'schedule')): return
 			if self.refreshed_id == request_id and time.monotonic() - self.refreshed_at < 10: return
 			if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
-			if not ku.get_visibility('System.IdleTime(2)'): return
+			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
 			self.refreshed_id = request_id
 			self.refreshed_at = time.monotonic()
 			self._capture_focus(request)

@@ -6,6 +6,7 @@ import re
 import tempfile
 import threading
 import time
+import unicodedata
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 from http.client import HTTPException
@@ -19,6 +20,7 @@ _URLS = {
 	'nfl_afc': 'https://site.api.espn.com/apis/v2/sports/football/nfl/standings?group=8',
 	'ncaa': 'https://site.api.espn.com/apis/v2/sports/football/college-football/standings',
 	'nba': 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings',
+	'mls': 'https://site.api.espn.com/apis/v2/sports/soccer/usa.1/standings',
 }
 _LIMIT = 4 * 1024 * 1024
 _cache = {}
@@ -37,6 +39,7 @@ def _key(value):
 
 def _cacheable(sport, payload):
 	"""Validate a complete payload before reusing it across matches or restarts."""
+	if sport == 'mls': return bool(_mls_groups(payload))
 	field = 'standings' if sport == 'nhl' else 'children'
 	if not isinstance(payload, dict) or not isinstance(payload.get(field), list) or not payload[field]: raise ValueError('Invalid standings response')
 	parsed = _nhl(payload) if sport == 'nhl' else _espn(payload)
@@ -123,7 +126,7 @@ def _fetch(sport, force=False):
 		path = _cache_path(sport)
 		provider = 'nhl' if sport == 'nhl' else 'espn'
 		from .livetv_standings_generation import get_refresh_time
-		refreshed = get_refresh_time(os.path.dirname(path), {'nhl': 'hockey', 'nba': 'basketball', 'nfl': 'football', 'nfl_afc': 'football', 'nfl_nfc': 'football', 'ncaa': 'football'}[sport]) if path else 0
+		refreshed = get_refresh_time(os.path.dirname(path), {'nhl': 'hockey', 'nba': 'basketball', 'nfl': 'football', 'nfl_afc': 'football', 'nfl_nfc': 'football', 'ncaa': 'football', 'mls': 'soccer'}[sport]) if path else 0
 		cached = _cache.get(sport)
 		if not force and cached and cached[0] >= refreshed and _same_day(cached[0], now): return cached[1]
 		if not force and path:
@@ -218,6 +221,66 @@ def _raw_sections(data):
 		if name and isinstance(standings, dict) and isinstance(standings.get('entries'), list): counts[path] = len(standings['entries'])
 		elif name and not children: counts[path] = 0
 	return counts
+
+
+def _mls_groups(payload):
+	"""Parse complete conference rankings using ESPN's explicit rank statistic."""
+	if not isinstance(payload, dict) or not isinstance(payload.get('children'), list): return []
+	groups = {}
+	for group in payload['children']:
+		if not isinstance(group, dict): return []
+		name = _text(group.get('name'))
+		if name not in ('Eastern Conference', 'Western Conference') or name in groups: return []
+		standings = group.get('standings')
+		entries = standings.get('entries') if isinstance(standings, dict) else None
+		if not isinstance(entries, list) or len(entries) != 15: return []
+		rows = []
+		for raw in entries:
+			if not isinstance(raw, dict) or not isinstance(raw.get('team'), dict) or not isinstance(raw.get('stats'), list): return []
+			team = raw['team']
+			name_value = _text(team.get('displayName'))
+			stats = {item.get('name'): item.get('value') for item in raw['stats'] if isinstance(item, dict)}
+			rank, points = stats.get('rank'), stats.get('points')
+			if not name_value or any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value != int(value) for value in (rank, points)): return []
+			aliases = {_key(team.get(field)) for field in ('displayName', 'shortDisplayName', 'name', 'abbreviation', 'location')}
+			rows.append({'position': int(rank), 'team': name_value, 'points': str(int(points)), 'aliases': aliases - {''}, 'espn_id': _text(team.get('id'))})
+		if sorted(row['position'] for row in rows) != list(range(1, 16)) or len({_key(row['team']) for row in rows}) != 15: return []
+		groups[name] = sorted(rows, key=lambda row: row['position'])
+	if set(groups) != {'Eastern Conference', 'Western Conference'}: return []
+	return [(name, groups[name]) for name in ('Eastern Conference', 'Western Conference')]
+
+
+def match_mls_team(groups, name):
+	"""Match a fixture name to one unambiguous conference row."""
+	def normalized(value):
+		value = unicodedata.normalize('NFKD', _text(value))
+		return _key(''.join(char for char in value if not unicodedata.combining(char)))
+	key = normalized(name)
+	if not key: return None
+	entries = [row for _, rows in groups for row in rows]
+	# Fixture-provider names whose ESPN names differ, verified against the bundled
+	# soccer logo catalog's ESPN team IDs.
+	ids = {'orlando city': '12011', 'dc united': '193', 'new york city': '17606', 'montreal': '9720', 'sporting kc': '186', 'st louis city': '21812', 'sj earthquakes': '191',
+		'chicago fire': '182', 'atlanta united': '18418', 'houston dynamo': '6077', 'inter miami': '20232', 'los angeles': '18966', 'minnesota united': '17362', 'new york rb': '190', 'seattle sounders': '9726'}
+	if key in ids:
+		matched = [row for row in entries if row.get('espn_id') == ids[key]]
+		return matched[0] if len(matched) == 1 else None
+	matched = [row for row in entries if key in {normalized(alias) for alias in row.get('aliases', set())}]
+	if len(matched) == 1: return matched[0]
+	def without_suffix(value): return re.sub(r'\s+(?:fc|sc|cf)$', '', value)
+	key = without_suffix(key)
+	matched = [row for row in entries if any(without_suffix(normalized(alias)) == key for alias in row.get('aliases', set()))]
+	return matched[0] if len(matched) == 1 else None
+
+
+def get_mls_groups(team_a='', team_b='', force=False):
+	"""Return both MLS conferences, marking recognized match teams."""
+	try:
+		groups = _mls_groups(_fetch('mls', force=True) if force else _fetch('mls'))
+		first, second = match_mls_team(groups, team_a), match_mls_team(groups, team_b)
+		return [(name, [dict(row, highlight=row is first or row is second) for row in rows]) for name, rows in groups], 'PTS'
+	except (OSError, HTTPException, ValueError, TypeError, AttributeError, KeyError):
+		return [], 'PTS'
 
 
 def get(sport, team_a, team_b):

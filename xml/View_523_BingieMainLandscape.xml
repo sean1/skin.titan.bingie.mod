@@ -33,7 +33,7 @@
                 <control type="textbox"><width>1300</width><height>105</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
             </control>
             <control type="group">
-                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nfl) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),ncaa) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nba) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),college) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),f1) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Row1.Team))</visible>
+                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.IsEqual(Window(Home).Property(LiveTV.Sport),hockey) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nfl) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),ncaa) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),nba) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),mls) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),college) + !String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),f1) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Row1.Team))</visible>
                 <left>138</left><top>224</top><width>1600</width><height>325</height>
                 <control type="image"><left>-12</left><top>-8</top><width>1600</width><height>341</height><texture>colors/color_white.png</texture><colordiffuse>ff000000</colordiffuse></control>
                 <control type="label"><width>1400</width><height>32</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>STANDINGS · $INFO[Window(Home).Property(LiveTV.Standings.League)]</label><visible>!String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),tennis)</visible></control>
@@ -228,6 +228,25 @@
                 <control type="label"><width>1400</width><height>32</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>NBA STANDINGS · W-L</label></control>
                 <include content="BingieBasketballConference"><param name="group" value="1" /><param name="left" value="0" /></include>
                 <include content="BingieBasketballConference"><param name="group" value="2" /><param name="left" value="790" /></include>
+            </control>
+
+            <control type="group">
+                <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),mls) + !String.IsEmpty(ListItem.Property(LiveTV.StandingsKey)) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Name))</visible>
+                <left>138</left><top>224</top><width>1600</width><height>325</height>
+                <control type="image"><left>-12</left><top>-8</top><width>1600</width><height>341</height><texture>colors/color_white.png</texture><colordiffuse>ff000000</colordiffuse></control>
+                <control type="label"><width>1400</width><height>32</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>STANDINGS · $INFO[Window(Home).Property(LiveTV.Standings.League)]</label></control>
+                <control type="label"><left>650</left><top>34</top><width>100</width><height>20</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                <control type="label"><left>1440</left><top>34</top><width>100</width><height>20</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align><label>PTS</label></control>
+                <control type="group">
+                    <visible>String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Row16.Team)) + String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group2.Row16.Team))</visible>
+                    <include content="BingieBasketballConference"><param name="group" value="1" /><param name="left" value="0" /></include>
+                    <include content="BingieBasketballConference"><param name="group" value="2" /><param name="left" value="790" /></include>
+                </control>
+                <control type="group">
+                    <visible>!String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group1.Row16.Team)) | !String.IsEmpty(Window(Home).Property(LiveTV.Standings.Group2.Row16.Team))</visible>
+                    <include content="BingieCollegeConference"><param name="group" value="1" /><param name="left" value="0" /></include>
+                    <include content="BingieCollegeConference"><param name="group" value="2" /><param name="left" value="790" /></include>
+                </control>
             </control>
 
             <control type="group">

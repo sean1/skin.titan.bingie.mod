@@ -35,6 +35,7 @@ def _tennis_identity(key):
 
 def _identity_sport(key):
 	if key == 'f1': return 'f1'
+	if key == 'mls': return 'soccer'
 	if _tennis_identity(key): return 'tennis'
 	parts = _sports_identity(key)
 	if parts: return {'nhl': 'hockey', 'nfl': 'football', 'ncaa': 'football', 'nba': 'basketball'}[parts[0]]
@@ -50,6 +51,7 @@ class FocusedStandings:
 		self.published = ''
 		self.published_at = 0.0
 		self.rows = []
+		self.mls_groups = []
 		self.tennis_rows = []
 		self.match_key = ''
 		self.worker = None
@@ -62,7 +64,7 @@ class FocusedStandings:
 	def _focused(self):
 		if not ku.get_visibility(_SOCCER_WINDOW): return '', ''
 		key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsKey)').strip()
-		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key) and not _tennis_identity(key) and key != 'f1': return '', ''
+		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key) and not _tennis_identity(key) and key not in ('f1', 'mls'): return '', ''
 		league = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.League)').strip()
 		return key, league
 
@@ -90,6 +92,7 @@ class FocusedStandings:
 		self.published_day = None
 		self.published_partial = False
 		self.rows = []
+		self.mls_groups = []
 		self.tennis_rows = []
 		self.match_key = ''
 
@@ -102,6 +105,9 @@ class FocusedStandings:
 	def _highlight(self):
 		if self.identity == 'f1': return
 		if _sports_identity(self.identity): return
+		if self.mls_groups:
+			self._highlight_mls()
+			return
 		if _tennis_identity(self.identity):
 			self._highlight_tennis()
 			return
@@ -118,6 +124,22 @@ class FocusedStandings:
 		for index, team_id in enumerate(ids, 1):
 			if team_id in wanted and ids.count(team_id) == 1: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
 		ku.set_property(_PREFIX + 'MatchKey', match_key)
+
+	def _highlight_mls(self):
+		from modules.livetv_american_standings import match_mls_team
+		match_key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsMatchKey)').strip()
+		names = tuple(ku.get_infolabel('Container(523).ListItem.Property(LiveTV.%sTeam)' % side).strip() for side in ('Home', 'Away'))
+		focus = (match_key, names)
+		if focus == self.match_key: return
+		self.match_key = focus
+		ku.clear_property(_PREFIX + 'MatchKey')
+		matched = [match_mls_team(self.mls_groups, name) for name in names]
+		for group_index, (_, rows) in enumerate(self.mls_groups, 1):
+			for index, row in enumerate(rows, 1):
+				property_name = '%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index)
+				ku.clear_property(property_name)
+				if any(row is item for item in matched if item is not None): ku.set_property(property_name, 'true')
+		if match_key: ku.set_property(_PREFIX + 'MatchKey', match_key)
 
 	def _highlight_tennis(self):
 		from modules.livetv_tennis_rankings import name_key
@@ -169,6 +191,10 @@ class FocusedStandings:
 				from modules import livetv_f1
 				rows = livetv_f1.get_driver_standings(ku.translate_path(ku.profile_path), **({'force_refresh': True} if force else {}))
 				heading, metric = 'F1 DRIVERS', 'PTS'
+			elif identity == 'mls':
+				from modules import livetv_american_standings
+				rows, metric = livetv_american_standings.get_mls_groups(**({'force': True} if force else {}))
+				heading = 'MLS'
 			elif sport:
 				from modules import livetv_american_standings
 				if sport[0] in ('nhl', 'nfl'):
@@ -213,6 +239,22 @@ class FocusedStandings:
 			if len(result) >= 6 and (result[4] != self.refresh_token or result[5] != date.today()): continue
 			stale = len(result) >= 7 and result[6]
 			if completed != self.identity or self._focused()[0] != completed: continue
+			if completed == 'mls':
+				if not rows:
+					self._clear()
+					continue
+				self._clear()
+				self.mls_groups = rows
+				ku.set_property(_PREFIX + 'League', self.league)
+				ku.set_property(_PREFIX + 'Metric', metric)
+				ku.set_property(_PREFIX + 'Layout', 'mls')
+				for group_index, (name, items) in enumerate(rows, 1):
+					ku.set_property('%sGroup%d.Name' % (_PREFIX, group_index), name)
+					for index, row in enumerate(items, 1):
+						for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
+				self._remember(completed, now)
+				ku.set_property(_PREFIX + 'Key', completed)
+				continue
 			if completed.startswith('nba|'):
 				if not isinstance(rows, list) or len(rows) != 2:
 					self._clear()

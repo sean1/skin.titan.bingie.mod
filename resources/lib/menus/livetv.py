@@ -105,6 +105,20 @@ def _unique_match(groups, stream_id, name):
 	return sum(1 for feeds in groups.values() if stream_id in feeds and feeds[stream_id].get('name') == name) == 1
 
 
+def _fixture_focus_identity(sport, fixture):
+	"""Identify the same scheduled event across status and list-order changes."""
+	try:
+		start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+		if start.utcoffset() is None: return ''
+		start = start.astimezone(timezone.utc).isoformat()
+		if sport == 'f1': parts = [sport, str(fixture['id']), start]
+		elif sport == 'soccer': parts = [sport, fixture['home'], fixture['away'], fixture['league'], start]
+		else: parts = [sport, fixture['home']['name'], fixture['away']['name'], fixture['league'], start]
+		if not all(isinstance(value, str) and value.strip() for value in parts): return ''
+		return hashlib.sha256(json.dumps(parts, ensure_ascii=False, separators=(',', ':')).encode('utf-8')).hexdigest()
+	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return ''
+
+
 def _feed_accounts_fingerprint():
 	accounts = _sports_accounts(_load())
 	return hashlib.sha256(json.dumps([(identity, _account_fingerprint(account)) for identity, account in accounts], separators=(',', ':')).encode('utf-8')).hexdigest()
@@ -1466,7 +1480,8 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			matched = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
 			_item(title + (' — ' + feed_label if feed_label and not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], 'f1', matched, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
-				extra_properties={'LiveTV.Match': title, 'LiveTV.League': 'Formula 1', 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': '' if cached else state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture), 'LiveTV.StandingsKey': 'f1'})
+				extra_properties={'LiveTV.EventIdentity': _fixture_focus_identity('f1', fixture), 'LiveTV.Match': title, 'LiveTV.League': 'Formula 1', 'LiveTV.Feeds': feed_label,
+					'LiveTV.MatchState': '' if cached else state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture), 'LiveTV.StandingsKey': 'f1'})
 		if not pending: _save_feed_matches(feed_cache)
 		if not fixtures: _item(cache_status if cached else 'No upcoming Formula 1 sessions', {}, False, playable=False)
 	except (OSError, HTTPException, ValueError, TypeError):
@@ -1584,7 +1599,8 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 					team_properties['LiveTV.%sTeam' % side.title()] = fixture[side]['name']
 					if sport != 'tennis': team_properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.team_logo(sport, fixture[side].get('abbreviation'))
 			_item(title + (' — ' + feed_label if feed_label and not count else ''), _matched_play_params(_sports_ref(stream), stream['name'], sport, matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context,
-				extra_properties={'LiveTV.Match': title, 'LiveTV.League': fixture.get('league_label', scope.upper()), 'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': '' if cached else state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
+				extra_properties={'LiveTV.EventIdentity': _fixture_focus_identity(sport, fixture), 'LiveTV.Match': title, 'LiveTV.League': fixture.get('league_label', scope.upper()), 'LiveTV.Feeds': feed_label,
+					'LiveTV.MatchState': '' if cached else state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else '',
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_match_key, **team_properties})
 		if not pending: _save_feed_matches(feed_cache)
 		if not rows:
@@ -1721,7 +1737,12 @@ def soccer(params):
 			for side in ('home', 'away'):
 				team_properties['LiveTV.%sTeam' % side.title()] = matched[side]
 				team_properties['LiveTV.%sLogo' % side.title()] = _soccer_logos.team_logo(matched, side)
-			_item(label, _matched_play_params(_sports_ref(stream), stream['name'], 'soccer', matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context, extra_properties={'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': feed_label, 'LiveTV.Recognition': 'Fixture matched', 'LiveTV.StartTime': _soccer_kickoff(matched).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(matched) if state == 'Upcoming' else '', 'LiveTV.MatchState': '' if cached else state, 'LiveTV.StandingsKey': standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': standings_teams.get((event, scope), ''), **team_properties})
+			is_mls = _soccer_logos._LEAGUES.get(_soccer_logos._normalize(match_league)) == 'usa.1'
+			_item(label, _matched_play_params(_sports_ref(stream), stream['name'], 'soccer', matched_feeds, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None,
+				playable=bool(stream), extra_context=context, extra_properties={
+					'LiveTV.EventIdentity': _fixture_focus_identity('soccer', matched), 'LiveTV.Match': title, 'LiveTV.League': match_league, 'LiveTV.Feeds': feed_label, 'LiveTV.Recognition': 'Fixture matched',
+					'LiveTV.StartTime': _soccer_kickoff(matched).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(matched) if state == 'Upcoming' else '', 'LiveTV.MatchState': '' if cached else state,
+					'LiveTV.StandingsKey': 'mls' if is_mls else standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': title if is_mls else standings_teams.get((event, scope), ''), **team_properties})
 		if not pending: _save_feed_matches(feed_cache)
 		if not rows:
 			if cached: _item(cache_status, {}, False, playable=False)

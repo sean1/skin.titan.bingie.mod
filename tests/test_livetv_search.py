@@ -19,20 +19,28 @@ class LiveTVSearchTests(unittest.TestCase):
 		self.live._save({'server': 'http://example.test', 'username': 'user', 'password': 'private'})
 
 
-	def test_matches_event_names_and_guide_titles_without_credentials(self):
-		now = 1000
-		streams = [{'name': 'End | Liverpool vs Old', 'stream_id': 1}, {'name': 'Live | Liverpool vs Chelsea', 'stream_id': 2}, {'name': 'TSN 1', 'stream_id': 3, 'epg_channel_id': 'tsn'}]
-		programmes = {'tsn': [[900, 1100, 'Premier League: Liverpool v Chelsea'], [1200, 1300, 'Liverpool postgame']]}
-		with patch.object(self.live, '_request', return_value=streams), patch.object(self.live, '_download_guide', return_value=programmes) as guide, patch.object(self.live.time, 'time', return_value=now), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
+	def test_search_matches_channel_names_case_insensitively_and_orders_live_first(self):
+		streams = [{'name': 'End | Liverpool vs Old', 'stream_id': 1}, {'name': 'Live | Liverpool vs Chelsea', 'stream_id': 2}, {'name': 'TSN 1', 'stream_id': 3, 'epg_channel_id': 'liverpool'}]
+		with patch.object(self.live, '_catalog', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish') as finish:
 			self.live.search_results({'query': 'LiVeRpOoL'})
 		calls = item.call_args_list
-		self.assertEqual(len(calls), 4)
-		self.assertTrue(calls[0].args[0].startswith('Live | Liverpool'))
-		self.assertEqual(calls[0].args[1], {'mode': 'livetv.play', 'id': '2'})
-		self.assertIn('Now — Premier League: Liverpool v Chelsea — TSN 1', calls[2].args[0])
-		self.assertEqual(calls[2].args[1], {'mode': 'livetv.schedule', 'id': '3', 'epg': 'tsn', 'name': 'TSN 1'})
+		self.assertEqual(len(calls), 2)
+		self.assertEqual([call.args[1] for call in calls], [{'mode': 'livetv.play', 'id': '2'}, {'mode': 'livetv.play', 'id': '1'}])
 		self.assertNotIn('private', str(calls))
-		self.assertEqual(guide.call_args.kwargs['search_term'], 'liverpool')
+		finish.assert_called_once_with()
+
+	def test_search_groups_matching_live_event_feeds(self):
+		streams = [{'name': 'Live | Liverpool vs Chelsea | Soccer', 'stream_id': 1}, {'name': 'Live | Liverpool vs Chelsea | Soccer', 'stream_id': 2}]
+		with patch.object(self.live, '_catalog', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'):
+			self.live.search_results({'query': 'chelsea'})
+		item.assert_called_once_with('Liverpool vs Chelsea — 2 feeds', {'mode': 'livetv.match_feeds', 'home': 'liverpool', 'away': 'chelsea', 'scope': ''}, True, None)
+
+	def test_no_channel_name_match_does_not_search_programmes(self):
+		streams = [{'name': 'TSN 1', 'stream_id': 3, 'epg_channel_id': 'liverpool'}]
+		with patch.object(self.live, '_catalog', return_value=streams), patch.object(self.live, '_item') as item, patch.object(self.live, '_finish'), patch.object(self.live.ku.dialog, 'notification') as notification:
+			self.live.search_results({'query': 'liverpool'})
+		item.assert_not_called()
+		notification.assert_called_once_with('Live TV', 'No matches found.')
 
 
 if __name__ == '__main__': unittest.main()

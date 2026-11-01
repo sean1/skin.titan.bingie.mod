@@ -1,5 +1,6 @@
 """Load the matching-feed picker without blocking its Kodi directory."""
 import json
+import math
 import time
 import uuid
 from queue import Empty, SimpleQueue
@@ -44,6 +45,20 @@ def prepare(params):
 	if result.get('id') != request.get('id'): return 'loading', []
 	if result.get('error'): return 'unavailable', []
 	choices = result.get('choices')
+	if isinstance(choices, list):
+		now = time.time()
+		for choice in choices:
+			if not isinstance(choice, list) or len(choice) < 2 or not isinstance(choice[1], dict): continue
+			feed = choice[1]
+			if feed.get('_guide_match'):
+				until = feed.get('_guide_until')
+				try: valid_until = isinstance(until, (int, float)) and not isinstance(until, bool) and math.isfinite(until) and until > now
+				except OverflowError: valid_until = False
+				if not valid_until:
+					request = {'id': uuid.uuid4().hex, 'created': now, 'query': query, 'accounts': accounts}
+					ku.clear_property(_RESULT)
+					ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+					return 'loading', []
 	return ('ready', choices) if isinstance(choices, list) else ('unavailable', [])
 
 
@@ -79,7 +94,7 @@ class FeedSelection:
 			for ref, feed in feeds.items():
 				name, stream_id = str(feed.get('name') or ''), feed.get('stream_id')
 				if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(stream_id), name)): raise ValueError('Unsafe feed')
-				item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match') if field in feed}
+				item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
 				item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
 				choices.append([ref, item, livetv._unique_match(groups, ref, name)])
 			encoded = json.dumps({'id': request['id'], 'choices': choices}, ensure_ascii=False, separators=(',', ':'))

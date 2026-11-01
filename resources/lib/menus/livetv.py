@@ -3,6 +3,7 @@ import json
 import gzip
 import hashlib
 import io
+import math
 import os
 import queue
 import re
@@ -94,9 +95,14 @@ def _play_params(stream_id, name, sport=''):
 
 def _matched_play_params(stream_id, name, sport, feeds, cache):
 	params = _play_params(stream_id, name, sport)
-	if not sport or len(feeds) < 2 or len(cache) >= 500 or any(feed.get('_guide_match') for _, feed in feeds): return params
+	if not sport or len(feeds) < 2 or len(cache) >= 500: return params
+	deadlines = {ref: feed.get('_guide_until') for ref, feed in feeds if feed.get('_guide_match')}
+	try:
+		if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= time.time() for value in deadlines.values()): return params
+	except OverflowError: return params
 	token = uuid.uuid4().hex
 	cache[token] = {'sport': sport, 'feeds': [[ref, hashlib.sha256(str(feed.get('name') or '').encode('utf-8')).hexdigest()] for ref, feed in feeds[:100]]}
+	if deadlines: cache[token]['guide_expiries'] = {ref: deadlines[ref] for ref, _ in feeds[:100] if ref in deadlines}
 	params['feeds_token'] = token
 	return params
 
@@ -159,14 +165,25 @@ def _cached_failover(params):
 		if data['accounts'] != _feed_accounts_fingerprint(): return
 		match = data['match']
 		if match['sport'] != params.get('sport'): return
+		if 'expires' in match:
+			expires = match['expires']
+			if not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or expires <= time.time(): return
 		feeds = match['feeds']
 		selected = params.get('id', '')
 		name_hash = hashlib.sha256(str(params.get('name', '')).encode('utf-8')).hexdigest()
 		if [selected, name_hash] not in feeds: return
-		ordered = [selected] + [ref for ref, _ in feeds if ref != selected]
+		deadlines = match.get('guide_expiries', {})
+		if not isinstance(deadlines, dict) or any(ref not in [item[0] for item in feeds] for ref in deadlines): return
+		if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) for value in deadlines.values()): return
+		if selected in deadlines and deadlines[selected] <= time.time(): return
+		ordered = [selected] + [ref for ref, _ in feeds if ref != selected and (ref not in deadlines or deadlines[ref] > time.time())]
 		if len(ordered) < 2: return
-		return {'id': selected, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': [{'id': ref, 'name': 'Feed %d' % (index + 1)} for index, ref in enumerate(ordered)], 'token': uuid.uuid4().hex}
-	except (KeyError, TypeError, ValueError, AttributeError): return
+		result = {'id': selected, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': [{'id': ref, 'name': 'Feed %d' % (index + 1)} for index, ref in enumerate(ordered)], 'token': uuid.uuid4().hex}
+		for feed in result['feeds']:
+			if feed['id'] in deadlines: feed['expires'] = deadlines[feed['id']]
+		if 'expires' in match: result['expires'] = expires
+		return result
+	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return
 
 
 def _prepare_failover(account, stream_id, name, sport='', defer=False):
@@ -276,9 +293,11 @@ def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 		current = [entry for entry in entries if isinstance(entry, list) and len(entry) == 3 and isinstance(entry[0], (int, float)) and not isinstance(entry[0], bool) and isinstance(entry[1], (int, float)) and not isinstance(entry[1], bool) and isinstance(entry[2], str) and entry[0] <= now < entry[1]]
 		if len(current) != 1: continue
 		if _sports.non_live_title(current[0][2]): continue
-		candidates.append(dict(stream, name=current[0][2]))
+		future = [entry[0] for entry in entries if isinstance(entry, list) and len(entry) == 3 and isinstance(entry[0], (int, float)) and not isinstance(entry[0], bool)
+			and isinstance(entry[1], (int, float)) and not isinstance(entry[1], bool) and isinstance(entry[2], str) and now < entry[0] < entry[1]]
+		candidates.append(dict(stream, name=current[0][2], _guide_until=min([current[0][1], created + _GUIDE_FRESH_SECONDS] + future)))
 	matched = _f1.fixture_groups(candidates, fixtures, live_only=True) if sport == 'f1' else _soccer_fixture_groups(candidates, fixtures, live_only=True) if sport == 'soccer' else _sports.fixture_groups(candidates, sport, fixtures, live_only=True)
-	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True) for stream_id in feeds} for event, feeds in matched.items() if event in live}
+	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True, _guide_until=feed['_guide_until']) for stream_id, feed in feeds.items()} for event, feeds in matched.items() if event in live}
 
 
 def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True):
@@ -1873,9 +1892,21 @@ def play(params):
 			ku.dialog.notification('Live TV', 'No Formula 1 feed responded. Check the VPN or choose another channel.')
 			xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 			return
-		_, url = selected
-		# Unchecked alternatives can block Kodi, so keep them in the feed picker only.
-		failover = None
+		selected_reference, url = selected
+		if failover:
+			selected_feed = next((feed for feed in failover['feeds'] if feed['id'] == selected_reference), None)
+			if ('expires' in failover and time.time() >= failover['expires']) or not selected_feed or ('expires' in selected_feed and time.time() >= selected_feed['expires']):
+				if selected_reference != reference:
+					ku.dialog.notification('Live TV', 'Feed matches expired. Return to the feed list and try again.')
+					xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
+					return
+				failover = None
+			else:
+				failover['feeds'] = [feed for feed in failover['feeds'] if 'expires' not in feed or time.time() < feed['expires']]
+				failover['id'] = selected_reference
+				failover['alternatives'] = [feed['id'] for feed in failover['feeds'] if feed['id'] != selected_reference][:_FAILOVER_LIMIT]
+				failover['manual_only'] = True
+				if not failover['alternatives']: failover = None
 	try: url = _vpn_register(url)
 	except (OSError, HTTPException, ValueError, TypeError):
 		_error(_vpn_failure_message() or 'Live TV VPN unavailable. Check the VPN connection and try again.')

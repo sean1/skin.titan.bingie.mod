@@ -49,6 +49,19 @@ def _groups_from_json(items):
 	return groups
 
 
+def _fresh_guide_groups(groups, now):
+	for feeds in groups.values():
+		if not isinstance(feeds, dict): return False
+		for feed in feeds.values():
+			if not isinstance(feed, dict): return False
+			if not feed.get('_guide_match'): continue
+			until = feed.get('_guide_until')
+			try:
+				if not isinstance(until, (int, float)) or isinstance(until, bool) or not math.isfinite(until) or until <= now: return False
+			except OverflowError: return False
+	return True
+
+
 def invalidate(request_id=None):
 	request_id = request_id or _read(_REQUEST).get('id', '')
 	if not request_id: return
@@ -228,17 +241,20 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 	new_refresh = force_refresh or (reload in ('refresh', 'schedule') and not consume and (request.get('reload') != reload or result.get('id') == request.get('id')))
 	fresh_fixtures = (fixtures == request.get('fixtures') and auxiliary == request.get('auxiliary')) or consume
 	if _valid(request, sport) and ku.get_property(_CANCEL) != request.get('id') and request.get('accounts') == accounts and not new_refresh and fresh_fixtures:
+		stale_guides = False
 		if result.get('id') == request.get('id'):
 			try:
 				if result.get('sync'): return unavailable()
 				groups = _groups_from_json(result['groups'])
-				ku.set_property('LiveTV.Sports.CatalogUnavailable', result.get('unavailable', ''))
-				if sport == 'soccer': _set_soccer_status(result.get('status'), result.get('unavailable'))
-				ku.set_property(_ACK, request['id'])
-				ku.clear_property(_CONSUME)
-				return request['fixtures'], groups
+				if _fresh_guide_groups(groups, time.time()):
+					ku.set_property('LiveTV.Sports.CatalogUnavailable', result.get('unavailable', ''))
+					if sport == 'soccer': _set_soccer_status(result.get('status'), result.get('unavailable'))
+					ku.set_property(_ACK, request['id'])
+					ku.clear_property(_CONSUME)
+					return request['fixtures'], groups
+				stale_guides = True
 			except (KeyError, TypeError, ValueError): pass
-		return request['fixtures'], None
+		if not stale_guides: return request['fixtures'], None
 	previous_id = request.get('id', '')
 	request = {'id': uuid.uuid4().hex, 'sport': sport, 'reload': reload, 'fixtures': fixtures, 'auxiliary': auxiliary, 'created': time.time(), 'accounts': accounts}
 	try: data = json.dumps(request, ensure_ascii=False, separators=(',', ':'))
@@ -424,7 +440,7 @@ class SportsProgress:
 					if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(stream_id), name)):
 						self.results.put((request['id'], json.dumps({'id': request['id'], 'sync': True})))
 						return
-					item = {name: feed[name] for name in ('stream_id', '_provider', '_primary', '_guide_match') if name in feed}
+					item = {name: feed[name] for name in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if name in feed}
 					item['name'] = name
 					item['stream_icon'] = livetv._catalog_icon(feed.get('stream_icon'), secrets)
 					safe_feeds[ref] = item

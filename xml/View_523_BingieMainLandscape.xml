@@ -29,7 +29,16 @@
             <control type="group">
                 <visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible>
                 <left>138</left><top>105</top><width>1500</width><height>105</height>
-                <control type="textbox"><width>1300</width><height>105</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label><visible>!String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
+                <control type="grouplist">
+                    <width>1500</width><height>70</height><orientation>horizontal</orientation><itemgap>12</itemgap>
+                    <visible>!String.IsEmpty(ListItem.Property(LiveTV.Match)) + !String.IsEmpty(ListItem.Property(LiveTV.HomeTeam)) + !String.IsEmpty(ListItem.Property(LiveTV.AwayTeam)) + [!String.IsEmpty(ListItem.Property(LiveTV.HomeLogo)) | !String.IsEmpty(ListItem.Property(LiveTV.AwayLogo))]</visible>
+                    <control type="image"><width>60</width><height>70</height><texture background="true">$INFO[ListItem.Property(LiveTV.HomeLogo)]</texture><aspectratio>keep</aspectratio><visible>!String.IsEmpty(ListItem.Property(LiveTV.HomeLogo))</visible></control>
+                    <control type="label"><width max="580">auto</width><height>70</height><font>Bold45</font><textcolor>ffffffff</textcolor><aligny>center</aligny><scroll>true</scroll><label>$INFO[ListItem.Property(LiveTV.HomeTeam)]</label></control>
+                    <control type="label"><width>60</width><height>70</height><font>Bold45</font><textcolor>ffffffff</textcolor><align>center</align><aligny>center</aligny><label>vs</label></control>
+                    <control type="image"><width>60</width><height>70</height><texture background="true">$INFO[ListItem.Property(LiveTV.AwayLogo)]</texture><aspectratio>keep</aspectratio><visible>!String.IsEmpty(ListItem.Property(LiveTV.AwayLogo))</visible></control>
+                    <control type="label"><width max="580">auto</width><height>70</height><font>Bold45</font><textcolor>ffffffff</textcolor><aligny>center</aligny><scroll>true</scroll><label>$INFO[ListItem.Property(LiveTV.AwayTeam)]</label></control>
+                </control>
+                <control type="textbox"><width>1300</width><height>105</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(LiveTV.Match)]</label><visible>!String.IsEmpty(ListItem.Property(LiveTV.Match)) + [String.IsEmpty(ListItem.Property(LiveTV.HomeTeam)) | String.IsEmpty(ListItem.Property(LiveTV.AwayTeam)) | [String.IsEmpty(ListItem.Property(LiveTV.HomeLogo)) + String.IsEmpty(ListItem.Property(LiveTV.AwayLogo))]]</visible></control>
                 <control type="textbox"><width>1300</width><height>105</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><visible>String.IsEmpty(ListItem.Property(LiveTV.Match))</visible></control>
             </control>
             <control type="group">

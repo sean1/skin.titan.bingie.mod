@@ -19,7 +19,9 @@ _LEAGUES = {
 	'concacaf champions cup': 'concacaf.champions', 'concacaf champions league cup': 'concacaf.champions',
 }
 _ALIASES = {
-	'ger.1': {'borussia m gladbach': '268'},
+	'ger.1': {'borussia m gladbach': '268', 'hamburger sv': '127', 'koln': '122'},
+	'esp.1': {'racing de santander': '87'},
+	'fra.1': {'olympique lyonnais': '167', 'angers sco': '7868'},
 	'ita.1': {'roma': '104'},
 	'usa.1': {'orlando city': '12011', 'dc united': '193', 'new york city': '17606', 'montreal': '9720', 'sporting kc': '186', 'st louis city': '21812', 'sj earthquakes': '191', 'chicago fire': '182',
 		'atlanta united': '18418', 'houston dynamo': '6077', 'inter miami': '20232', 'los angeles': '18966', 'minnesota united': '17362', 'new york rb': '190', 'seattle sounders': '9726'},

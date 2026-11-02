@@ -1,12 +1,17 @@
 import io
+import base64
 import json
 import math
 import re
 import stat
+import unicodedata
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from html.parser import HTMLParser
 from pathlib import PurePosixPath
 from threading import Lock
+from time import monotonic
+from urllib.parse import quote, unquote, urljoin, urlsplit
 
 import requests
 from modules import kodi_utils
@@ -116,6 +121,9 @@ def _load_provider_config(path=None):
 			if all(isinstance(value, str) and value.strip() and not value.startswith('YOUR_') for value in (username, password)):
 				clean.update({'username': username.strip(), 'password': password})
 		config[provider] = clean
+	entry = payload.get('addic7ed')
+	if isinstance(entry, dict) and entry.get('enabled', True) is not False:
+		config['addic7ed'] = {}
 	if not config:
 		_log('config', 'disabled', category='invalid_schema')
 		return {}, 'invalid_schema'
@@ -131,11 +139,13 @@ def _cancelled(cancelled):
 
 
 def _request(method, url, provider, cancelled=None, **kwargs):
-	for attempt in (1, 2):
+	timeout = kwargs.pop('timeout', REQUEST_TIMEOUT)
+	attempts = kwargs.pop('attempts', 2)
+	for attempt in range(1, attempts + 1):
 		_cancelled(cancelled)
-		try: response = requests.request(method, url, timeout=REQUEST_TIMEOUT, **kwargs)
+		try: response = requests.request(method, url, timeout=timeout, **kwargs)
 		except (requests.Timeout, requests.ConnectionError) as error:
-			if attempt == 2: raise ProviderError(type(error).__name__)
+			if attempt == attempts: raise ProviderError(type(error).__name__)
 			_log(method.lower(), 'retry', provider, type(error).__name__)
 			if kodi_utils.monitor.waitForAbort(1): raise ProviderCancelled
 			continue
@@ -143,7 +153,7 @@ def _request(method, url, provider, cancelled=None, **kwargs):
 			try: response.close()
 			except Exception: pass
 			raise ProviderCancelled
-		if response.status_code not in RETRYABLE_STATUS_CODES or attempt == 2: return response
+		if response.status_code not in RETRYABLE_STATUS_CODES or attempt == attempts: return response
 		try: retry_after = int(response.headers.get('Retry-After', 1)) if response.status_code == 429 else 1
 		except (AttributeError, TypeError, ValueError): retry_after = 1
 		retry_after = min(max(retry_after, 1), 10)
@@ -549,7 +559,242 @@ class SubSourceProvider(Provider):
 			return None
 
 
-PROVIDER_CLASSES = {'opensubtitles': OpenSubtitlesProvider, 'subdl': SubDLProvider, 'subsource': SubSourceProvider}
+class _Addic7edParser(HTMLParser):
+	def __init__(self):
+		super().__init__(convert_charrefs=True)
+		self.options, self.links, self.rows = [], [], []
+		self.option, self.link, self.row, self.cell = None, None, None, None
+
+	def handle_starttag(self, tag, attrs):
+		attrs = dict(attrs)
+		if tag == 'option': self.option = {'value': attrs.get('value', ''), 'text': []}
+		elif tag == 'tr': self.row = {'class': attrs.get('class', '').split(), 'cells': []}
+		elif tag == 'td' and self.row is not None:
+			self.cell = {'class': attrs.get('class', '').split(), 'text': [], 'links': [], 'images': []}
+			self.row['cells'].append(self.cell)
+		elif tag == 'a': self.link = {'href': attrs.get('href', ''), 'text': []}
+		elif tag == 'img' and self.cell is not None: self.cell['images'].append(attrs.get('title', ''))
+
+	def handle_data(self, data):
+		for item in (self.option, self.cell, self.link):
+			if item is not None: item['text'].append(data)
+
+	def handle_endtag(self, tag):
+		if tag == 'option' and self.option is not None:
+			self.option['text'] = ' '.join(''.join(self.option['text']).split())
+			self.options.append(self.option)
+			self.option = None
+		elif tag == 'a' and self.link is not None:
+			self.link['text'] = ' '.join(''.join(self.link['text']).split())
+			self.links.append(self.link)
+			if self.cell is not None: self.cell['links'].append(self.link)
+			self.link = None
+		elif tag == 'td' and self.cell is not None:
+			self.cell['text'] = ' '.join(''.join(self.cell['text']).split())
+			self.cell = None
+		elif tag == 'tr' and self.row is not None:
+			self.rows.append(self.row)
+			self.row, self.cell = None, None
+
+
+def _addic7ed_title(value):
+	value = unicodedata.normalize('NFKD', str(value or ''))
+	return ' '.join(re.findall(r'[a-z0-9]+', ''.join(character for character in value.lower() if not unicodedata.combining(character))))
+
+
+class Addic7edProvider(Provider):
+	name = 'addic7ed'
+	base_url = 'https://www.addic7ed.com'
+	request_budget = 25.0
+
+	def __init__(self, config, media, cancelled=None):
+		super().__init__(config, media, cancelled)
+		self.deadline = 0.0
+
+	def _fetch(self, path, operation, referer='/', params=None, max_bytes=2 * 1024 * 1024):
+		url = urljoin(self.base_url + '/', path)
+		try:
+			for redirect in range(4):
+				parsed = urlsplit(url)
+				if parsed.scheme != 'https' or parsed.netloc != 'www.addic7ed.com' or parsed.username or parsed.password or '\\' in parsed.path: raise ProviderError('invalid_redirect')
+				remaining = self.deadline - monotonic()
+				if remaining <= 0: raise ProviderError('timeout')
+				response = _request('GET', url, self.name, self.cancelled, headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Referer': self.base_url + referer}, params=params, timeout=min(18.0, remaining), attempts=1, allow_redirects=False, stream=True)
+				params = None
+				try:
+					if response.status_code in (301, 302, 303, 307, 308):
+						location = response.headers.get('Location', '')
+						if not location or redirect == 3: raise ProviderError('invalid_redirect')
+						url = urljoin(url, location)
+						continue
+					if not 200 <= response.status_code < 300: raise ProviderError('http_%s' % response.status_code)
+					chunks, total = [], 0
+					for chunk in response.iter_content(chunk_size=64 * 1024):
+						_cancelled(self.cancelled)
+						if monotonic() >= self.deadline: raise ProviderError('timeout')
+						if not chunk: continue
+						total += len(chunk)
+						if total > max_bytes: raise ProviderError('invalid_size')
+						chunks.append(chunk)
+					if not chunks: raise ProviderError('empty_response')
+					return b''.join(chunks), urlsplit(url).path
+				finally: response.close()
+			raise ProviderError('invalid_redirect')
+		except ProviderError as error:
+			self.failed = True
+			_log(operation, 'failed', self.name, str(error))
+			raise
+		except (requests.Timeout, requests.ConnectionError) as error:
+			self.failed = True
+			_log(operation, 'failed', self.name, type(error).__name__)
+			raise ProviderError(type(error).__name__)
+
+	def _get(self, path, operation, referer='/', params=None, max_bytes=2 * 1024 * 1024):
+		return self._fetch(path, operation, referer, params, max_bytes)[0]
+
+	def _page(self, path, operation, referer='/', params=None):
+		content = self._get(path, operation, referer, params)
+		text = content.decode('utf-8', 'replace')
+		if re.search(r'(?i)<form[^>]+(?:login|signin)|name=["\'](?:password|pass)["\']', text):
+			self.failed = True
+			_log(operation, 'failed', self.name, 'authentication')
+			raise ProviderError('authentication')
+		parser = _Addic7edParser()
+		parser.feed(text)
+		return parser
+
+	@staticmethod
+	def _candidate_id(path, kind, source_id):
+		match = re.fullmatch(r'/(updated|original)/([0-9]+)/([0-9]+)(?:/([0-9]+))?', str(path or ''))
+		if not match or not str(source_id).isdigit(): return ''
+		if kind == 'show' and (match.group(1) != 'updated' or match.group(4) is None): return ''
+		if kind == 'movie' and (match.group(1) != 'original' or match.group(4) is not None or match.group(2) != str(source_id)): return ''
+		return ':'.join((match.group(1), match.group(2), match.group(3), match.group(4) or '-', kind, str(source_id)))
+
+	def _episode_reference(self, path):
+		parsed = urlsplit(urljoin(self.base_url + '/', str(path or '')))
+		if parsed.scheme != 'https' or parsed.netloc != 'www.addic7ed.com' or parsed.query or parsed.fragment: return ''
+		parts = parsed.path.split('/')
+		if len(parts) != 6 or parts[1] != 'serie' or not parts[3].isdigit() or not parts[4].isdigit(): return ''
+		show, episode_title = unquote(parts[2]), unquote(parts[5])
+		if any(not value or value in ('.', '..') or any(c in value for c in '/\\\r\n\x00') for value in (show, episode_title)): return ''
+		if _addic7ed_title(show) != _addic7ed_title(self.media.get('title')) or (_as_int(parts[3]), _as_int(parts[4])) != (_as_int(self.media.get('season')), _as_int(self.media.get('episode'))): return ''
+		return '/serie/%s/%s/%s/%s' % (quote(show, safe=''), parts[3], parts[4], quote(episode_title, safe=''))
+
+	@staticmethod
+	def _episode_candidate_id(path, referer):
+		match = re.fullmatch(r'/(original|updated)/([0-9]+)/([0-9]+)(?:/([0-9]+))?', str(path or ''))
+		if not match: return ''
+		encoded = base64.urlsafe_b64encode(referer.encode('utf-8')).decode('ascii').rstrip('=')
+		candidate_id = ':'.join(('ep', match.group(1), match.group(2), match.group(3), match.group(4) or '-', encoded))
+		return candidate_id if len(candidate_id) <= 256 else ''
+
+	def _episode_search(self):
+		season, episode = _as_int(self.media.get('season')), _as_int(self.media.get('episode'))
+		title = _addic7ed_title(self.media.get('title'))
+		if season is None or episode is None or season < 0 or episode < 0 or not title: return []
+		page = self._page('/', 'lookup')
+		shows = [(item['value'], _addic7ed_title(item['text'])) for item in page.options if item['value'].isdigit()]
+		matches = [show_id for show_id, name in shows if name == title]
+		variant = re.compile(r'^(?:(?:19|20)\d{2}|us|uk|au|ca|united states|united kingdom|australia|canada)(?:\s+(?:(?:19|20)\d{2}|us|uk|au|ca|united states|united kingdom|australia|canada))?$')
+		if any(name.startswith(title + ' ') and variant.fullmatch(name[len(title) + 1:]) for _, name in shows): return []
+		if len(set(matches)) != 1: return []
+		content, final_path = self._fetch('/search.php', 'search', '/', {'search': '%s %02dx%02d' % (self.media['title'], season, episode), 'Submit': 'Search'})
+		if re.search(r'(?i)/(?:login|signin)(?:\.php)?/?$', final_path):
+			self.failed = True
+			_log('search', 'failed', self.name, 'authentication')
+			return []
+		page = _Addic7edParser()
+		page.feed(content.decode('utf-8', 'replace'))
+		references = [self._episode_reference(final_path)] if final_path.startswith('/serie/') else [self._episode_reference(link['href']) for link in page.links]
+		references = list(dict.fromkeys(reference for reference in references if reference))
+		results = []
+		for reference in references[:3]:
+			if reference != self._episode_reference(final_path):
+				try: page = self._page(reference, 'search')
+				except ProviderError: continue
+			release = ''
+			for row_index, row in enumerate(page.rows):
+				cells = row['cells']
+				notes = next((cell['text'] for cell in cells if 'NewsTitle' in cell['class']), '')
+				if notes: release = re.sub(r'(?i)^version\s+', '', notes).split(', Duration:', 1)[0].strip()
+				language = next((_normalize_language(cell['text']) for cell in cells if 'language' in cell['class']), '')
+				if not language or not any('completed' in cell['text'].lower() for cell in cells): continue
+				following = page.rows[row_index + 1]['cells'] if row_index + 1 < len(page.rows) else []
+				if any('jointranslation' in link['href'].lower() for cell in cells + following for link in cell['links']): continue
+				hearing_impaired = any('hearing impaired' in image.lower() for cell in following for image in cell['images'])
+				for cell in cells:
+					for link in cell['links']:
+						candidate_id = self._episode_candidate_id(link['href'], reference)
+						if candidate_id:
+							candidate = _candidate(self.name, candidate_id, language, (release,), season=season, episode=episode, hearing_impaired=hearing_impaired, extension='srt')
+							if candidate: results.append(candidate)
+		return results
+
+	def _movie_search(self):
+		title, year = _addic7ed_title(self.media.get('title')), _as_int(self.media.get('year'))
+		if not title or not year: return []
+		page = self._page('/search.php', 'lookup', '/srch.php', {'Submit': 'Search', 'search': self.media['title']})
+		ids = []
+		for link in page.links:
+			parsed = urlsplit(urljoin(self.base_url + '/', link['href']))
+			if parsed.scheme != 'https' or parsed.netloc != 'www.addic7ed.com' or parsed.query or parsed.fragment: continue
+			match = re.fullmatch(r'/movie/([0-9]+)', parsed.path)
+			name = re.fullmatch(r'(.+?)\s*\((\d{4})\)', link['text'])
+			if match and name and _addic7ed_title(name.group(1)) == title and int(name.group(2)) == year and match.group(1) not in ids: ids.append(match.group(1))
+		results = []
+		for movie_id in ids[:3]:
+			try: page = self._page('/movie/%s' % movie_id, 'search', '/srch.php')
+			except ProviderError: continue
+			release = ''
+			for row in page.rows:
+				cells = row['cells']
+				notes = next((cell['text'] for cell in cells if 'newsDate' in cell['class']), '')
+				if notes: release = notes[:300]
+				language = next((_normalize_language(cell['text']) for cell in cells if 'language' in cell['class']), '')
+				if not language or not any('completed' in cell['text'].lower() for cell in cells): continue
+				for cell in cells:
+					for link in cell['links']:
+						candidate_id = self._candidate_id(link['href'], 'movie', movie_id)
+						if candidate_id:
+							candidate = _candidate(self.name, candidate_id, language, (release, self.media['title']), extension='srt')
+							if candidate: results.append(candidate)
+		return results
+
+	def search(self):
+		self.deadline = monotonic() + self.request_budget
+		try: return self._episode_search() if self.media.get('season') not in (None, '') else self._movie_search()
+		except ProviderError: return []
+
+	def download(self, candidate):
+		self.deadline = monotonic() + self.request_budget
+		parts = str(candidate.get('id') or '').split(':')
+		if len(parts) == 6 and parts[0] == 'ep':
+			try: referer = base64.b64decode(parts[5] + '=' * (-len(parts[5]) % 4), altchars=b'-_', validate=True).decode('utf-8')
+			except (ValueError, UnicodeError): return None
+			if not referer or self._episode_reference(referer) != referer: return None
+			path = '/%s/%s/%s%s' % (parts[1], parts[2], parts[3], '' if parts[4] == '-' else '/' + parts[4])
+			if self._episode_candidate_id(path, referer) != ':'.join(parts): return None
+			try:
+				content = self._get(path, 'download', referer, max_bytes=MAX_SUBTITLE_BYTES)
+				if b'-->' not in content or re.search(br'(?i)^\s*<(?:!doctype|html|form)', content): raise ProviderError('invalid_subtitle')
+				return {'content': content, 'extension': 'srt'}
+			except ProviderError as error:
+				_log('download', 'failed', self.name, str(error))
+				return None
+		if len(parts) != 6 or parts[0] not in ('updated', 'original') or not all(part.isdigit() for part in parts[1:3]) or parts[3] != '-' and not parts[3].isdigit() or parts[4] not in ('show', 'movie') or not parts[5].isdigit(): return None
+		path = '/%s/%s/%s%s' % (parts[0], parts[1], parts[2], '' if parts[3] == '-' else '/' + parts[3])
+		if self._candidate_id(path, parts[4], parts[5]) != ':'.join(parts): return None
+		try:
+			content = self._get(path, 'download', '/%s/%s' % (parts[4], parts[5]), max_bytes=MAX_SUBTITLE_BYTES)
+			if b'-->' not in content or re.search(br'(?i)^\s*<(?:!doctype|html|form)', content): raise ProviderError('invalid_subtitle')
+			return {'content': content, 'extension': 'srt'}
+		except ProviderError as error:
+			_log('download', 'failed', self.name, str(error))
+			return None
+
+
+PROVIDER_CLASSES = {'opensubtitles': OpenSubtitlesProvider, 'subdl': SubDLProvider, 'subsource': SubSourceProvider, 'addic7ed': Addic7edProvider}
 
 
 def _release_tokens(value):

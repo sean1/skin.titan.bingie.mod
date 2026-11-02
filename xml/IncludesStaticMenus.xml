@@ -86,7 +86,7 @@
 			<onclick>SetProperty(flushWidgetProps,1,Home)</onclick>
 			<property name="submenuVisibility">tvshows</property>
 			<property name="group">mainmenu</property>
-			<property name="hasSubmenu">False</property>
+			<property name="hasSubmenu">True</property>
 		</item>
 		<item id="7">
 			<property name="id">$NUMBER[7]</property>
@@ -141,6 +141,24 @@
 		</item>
 	</include>
 	<include name="StaticSubmenu">
+		<item id="1">
+			<property name="id">$NUMBER[1]</property><property name="mainmenuid">3</property>
+			<label>C-Dramas</label><label2>C-Dramas</label2><icon>DefaultShortcut.png</icon><thumb />
+			<property name="labelID">tvshows-c-dramas</property><property name="defaultID">tvshows-c-dramas</property>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow&amp;language=zh)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow&amp;language=zh)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow&amp;language=zh</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible><property name="group">tvshows</property><property name="isSubmenu">True</property>
+		</item>
+		<item id="2">
+			<property name="id">$NUMBER[2]</property><property name="mainmenuid">3</property>
+			<label>K-Dramas</label><label2>K-Dramas</label2><icon>DefaultShortcut.png</icon><thumb />
+			<property name="labelID">tvshows-k-dramas</property><property name="defaultID">tvshows-k-dramas</property>
+			<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow&amp;language=ko)</onclick>
+			<property name="path">RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow&amp;language=ko)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=refine.browse&amp;mediatype=tvshow&amp;language=ko</property>
+			<visible>String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)</visible><property name="group">tvshows</property><property name="isSubmenu">True</property>
+		</item>
 		<item id="1">
 			<property name="id">$NUMBER[1]</property><property name="mainmenuid">7</property>
 			<label>Soccer</label><label2>Soccer</label2><icon>DefaultShortcut.png</icon><thumb />

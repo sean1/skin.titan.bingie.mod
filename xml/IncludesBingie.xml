@@ -948,7 +948,7 @@
                 <posx>110</posx>
 				<posy>303</posy>
 				<animation effect="slide" end="0,70" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
-				<animation effect="slide" end="0,154" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
+				<animation effect="slide" end="0,184" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
 				<animation effect="slide" end="0,238" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),live-tv)">Conditional</animation>
 				<animation effect="slide" end="0,333" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),myvideos)">Conditional</animation>
 				<animation effect="slide" end="0,391" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),mylist)">Conditional</animation>

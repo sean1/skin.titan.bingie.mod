@@ -184,6 +184,10 @@ class Refine:
 
 	def browse(self):
 		self.draft = dict(DEFAULT_DRAFT)
+		language = self.params.get('language') if self.mediatype == 'tvshow' else None
+		if language in ('zh', 'ko'):
+			self.draft['language'], self.draft['language_label'] = language, {'zh': 'Chinese', 'ko': 'Korean'}[language]
+			return self.apply()
 		kodi_utils.set_property(APPLIED_STATE_PROPERTY % self.mediatype, json.dumps(self.draft, sort_keys=True))
 		self._save()
 		mode, action, name = ('build_movie_list', 'tmdb_movies_trending', 'Trending Movies This Week') if self.mediatype == 'movie' else ('build_tvshow_list', 'tmdb_tv_trending', 'Trending TV Shows This Week')

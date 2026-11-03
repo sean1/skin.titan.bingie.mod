@@ -1793,12 +1793,101 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 		xbmc.executebuiltin('Container.SetViewMode(523)')
 
 
+def _sports_overview(sport_filter=None):
+	from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
+	accounts = _feed_accounts_fingerprint()
+	rows, unavailable, schedule_unavailable, loading, stale = [], [], [], [], []
+	for sport in ((sport_filter,) if sport_filter else overview.SPORTS):
+		try: data = json.loads(ku.get_property(overview.PREFIX + sport) or '{}')
+		except (TypeError, ValueError): data = {}
+		if data.get('accounts') != accounts or not data: loading.append(sport); continue
+		if data.get('unavailable'): unavailable.append(sport)
+		if data.get('schedule_unavailable'): schedule_unavailable.append(sport)
+		if data.get('matching'): loading.append(sport)
+		if data.get('stale'): stale.append(sport)
+		fixtures = data.get('fixtures', [])
+		try: groups = progress._filter_guide_groups(progress._groups_from_json(data.get('groups', [])), time.time())
+		except (TypeError, ValueError, KeyError): groups = {}
+		entries = []
+		for fixture in fixtures:
+			state, kickoff = _schedule_state(fixture, time.time())
+			if not state: continue
+			if sport == 'f1': key = fixture['id']
+			elif sport == 'soccer': key = _soccer_fixture_key(fixture)
+			else:
+				event = tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away'))
+				key = (event, str(fixture.get('league') or ''))
+			entries.append((state, kickoff, fixture, key))
+		for state, kickoff, fixture, key in entries:
+			if state != 'Live': continue
+			feeds = groups.get(key, {}) if state == 'Live' and sum(other[3] == key for other in entries) == 1 else {}
+			rows.append((state != 'Live', _live_start(fixture) if state == 'Live' else kickoff, sport, fixture, key, feeds, groups, state))
+	feed_cache = {}
+	speed_context = _speed_context()
+	for _, _, sport, fixture, key, feeds, groups, state in sorted(rows, key=lambda row: (row[0], row[1], row[2], str(row[4]))):
+		by_ref = {_sports_ref(feed): feed for feed in feeds.values()}
+		ordered = [by_ref[ref] for ref in _speed_order(list(by_ref), speed_context)]
+		stream = ordered[0] if ordered else None
+		if sport == 'f1': title, league = fixture['event'] + ' — ' + fixture['session_label'], 'Formula 1'
+		elif sport == 'soccer': title, league = '%s vs %s' % (fixture['home'], fixture['away']), fixture['league']
+		else: title, league = '%s vs %s' % (fixture['home']['name'], fixture['away']['name']), fixture.get('league_label', str(fixture.get('league') or '').upper())
+		feed_label = ('%d %s' % (len(feeds), 'feed' if len(feeds) == 1 else 'feeds')) if feeds else ('Finding feeds…' if sport in loading else 'Feeds unavailable' if sport in unavailable else '0 feeds') if state == 'Live' else ''
+		if feeds and sport in stale: feed_label += ' · saved'
+		context = []
+		if len(feeds) > 1:
+			params = {'mode': 'livetv.match_feeds', 'sport': sport}
+			if sport == 'f1': params['session'] = key
+			else: params.update({'home': key[0][0], 'away': key[0][1], 'scope': key[1]})
+			context.append(('Choose another feed', 'Container.Update(%s)' % _sports_feed_url(params, fixture, groups)))
+		matched = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
+		properties = {'LiveTV.ItemSport': sport, 'LiveTV.EventIdentity': _fixture_focus_identity(sport, fixture), 'LiveTV.Match': title, 'LiveTV.League': league,
+			'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else ''}
+		if sport != 'f1':
+			for side in ('home', 'away'):
+				properties['LiveTV.%sTeam' % side.title()] = fixture[side] if sport == 'soccer' else fixture[side]['name']
+				if sport == 'soccer': properties['LiveTV.%sLogo' % side.title()] = _soccer_logos.team_logo(fixture, side)
+				elif sport != 'tennis': properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.team_logo(sport, fixture[side].get('abbreviation'))
+		_item(title + (' — ' + feed_label if feed_label and not feeds else ''), _matched_play_params(_sports_ref(stream), stream['name'], sport, matched, feed_cache) if stream else {}, False, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context, extra_properties=properties)
+	if feed_cache: _save_feed_matches(feed_cache)
+	status = ' · '.join(part for part in ('Loading sports schedules…' if loading else '', 'Some sports unavailable' if unavailable or schedule_unavailable else '', 'Some feeds are saved' if stale else '') if part)
+	if not sport_filter: ku.set_property('LiveTV.Sports.OverviewStatus', status)
+	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False)
+	elif not rows and (unavailable or schedule_unavailable): _item('Sports schedule unavailable', {}, False, playable=False)
+	elif not rows and not sport_filter: _item('No live sports events', {}, False, playable=False)
+	_finish()
+
+
+def sports_overview_row(params):
+	from modules import livetv_sports_overview as overview
+	sport = params.get('sport', '')
+	if sport not in overview.SPORTS:
+		_finish(False)
+		return
+	_sports_overview(sport)
+
+
 def soccer(params):
 	sport = params.get('sport', 'soccer')
-	if sport not in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'): sport = 'soccer'
+	if sport not in ('all', 'soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'): sport = 'soccer'
 	ku.set_property('LiveTV.Sport', sport)
-	ku.set_property('LiveTV.Sport.Title', 'LIVE ' + ('FORMULA 1' if sport == 'f1' else sport.upper()))
+	if sport != 'all': ku.clear_property('LiveTV.Sports.OverviewStatus')
+	ku.set_property('LiveTV.Sport.Title', 'LIVE SPORTS' if sport == 'all' else 'LIVE ' + ('FORMULA 1' if sport == 'f1' else sport.upper()))
 	action = params.get('action', '')
+	if sport == 'all':
+		from modules import livetv_sports_overview as overview
+		if action == 'refresh':
+			ku.set_property(overview.PREFIX + 'Refresh', 'true')
+			xbmc.executebuiltin('ClearProperty(ShowViewSubMenu,Home)')
+			xbmc.executebuiltin('SetFocus(523)')
+			return
+		if not _sports_primary():
+			_error('No Live TV account is available.')
+			_finish(False)
+			return
+		ku.set_property('LiveTV.Soccer.Status', '')
+		ku.set_property('LiveTV.Soccer.FixtureStatus', '')
+		_sports_overview()
+		return
 	reload = ku.get_property('LiveTV.Soccer.Reload') if not action else ''
 	force_refresh = reload == 'refresh'
 	if reload: ku.clear_property('LiveTV.Soccer.Reload')

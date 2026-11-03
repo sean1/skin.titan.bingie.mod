@@ -7,6 +7,7 @@ from threading import Event, Thread
 
 from modules import kodi_utils as ku
 from modules import livetv_sports_progress as progress
+from modules.livetv_sports_overview import SportsOverview
 from modules.livetv_feed_selection import FeedSelection
 from modules.livetv_sports import record_timing
 
@@ -30,6 +31,7 @@ def _refresh_guide(canceled, on_update, permissive, sport):
 class SportsRefresh:
 	def __init__(self):
 		self.progress = progress.SportsProgress()
+		self.overview = SportsOverview()
 		self.feed_selection = FeedSelection()
 		self.sport = ''
 		self.next_live_check = 0
@@ -81,6 +83,10 @@ class SportsRefresh:
 		visible = ku.get_visibility(_SPORTS_WINDOW)
 		now = monotonic()
 		sport = ku.get_property('LiveTV.Sport')
+		self.overview.tick(visible and sport == 'all' and progress._current('all'), now)
+		if sport == 'all' and visible:
+			self._guide_tick(False, now)
+			return
 		self._guide_tick(visible and bool(sport) and progress.has_live(sport) and not ku.get_visibility('Player.HasMedia'), now, sport != 'soccer', sport)
 		if not visible:
 			if self.sport:

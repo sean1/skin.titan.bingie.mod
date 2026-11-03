@@ -1,0 +1,172 @@
+"""Load each sports schedule independently for the combined sports view."""
+import json
+import time
+from queue import Empty, SimpleQueue
+from threading import Event, Lock, Thread
+
+from modules import kodi_utils as ku
+
+SPORTS = ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1')
+PREFIX = 'LiveTV.Sports.Overview.'
+ROW_IDS = dict(zip(SPORTS, range(9501, 9507)))
+_CATALOG_LOCK = Lock()
+_FORCED_GENERATIONS = set()
+
+
+def _load(sport, accounts, generation, force, results):
+	from menus import livetv
+	fixtures = None
+	partial = False
+	try:
+		if sport == 'soccer':
+			fixtures, _, _, status = livetv._live_soccer_fixtures(include_upcoming=True)
+			if status.startswith('Live fixtures unavailable'): raise ValueError('Fixtures unavailable')
+			partial = any(part in ('Canadian Premier League unavailable', 'Canadian Championship live status unavailable') for part in status.split(' · ')[1:])
+		elif sport == 'f1': fixtures = livetv._f1.get_schedule()
+		else:
+			profile = ku.translate_path(getattr(ku, 'profile_path', ''))
+			fixtures = livetv._tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else livetv._american_fixtures.get_schedule(sport, cache_dir=profile or None)
+		if not isinstance(fixtures, list): raise ValueError('Invalid fixtures')
+		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures, 'groups': [], 'matching': True, 'schedule_unavailable': partial, 'created': time.time()}, ensure_ascii=False, separators=(',', ':'))))
+		failures, catalog_status = [], []
+		with _CATALOG_LOCK:
+			force_catalog = force and generation not in _FORCED_GENERATIONS and any(isinstance(fixture, dict) and fixture.get('status') in livetv._fixture_service.LIVE_STATUSES for fixture in fixtures)
+			if force_catalog:
+				_FORCED_GENERATIONS.clear()
+				_FORCED_GENERATIONS.add(generation)
+			groups, _ = livetv._sports_catalog_groups(livetv._sports_primary(), sport, reload='refresh' if force_catalog else '', fixtures=fixtures, status_sink=failures.append, notify_stale=False, on_status=lambda created, stale: catalog_status.append((created, stale)))
+		secrets = [str(account.get(key) or '') for _, account in livetv._sports_accounts(livetv._load()) for key in ('username', 'password')]
+		clean = []
+		for key, feeds in groups.items():
+			items = {}
+			for ref, feed in feeds.items():
+				name = str(feed.get('name') or '')
+				if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(feed.get('stream_id', '')), name)): continue
+				item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
+				item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
+				items[ref] = item
+			clean.append((key, items))
+		data = {'accounts': accounts, 'fixtures': fixtures, 'groups': clean, 'unavailable': bool(failures and failures[-1]), 'schedule_unavailable': partial, 'stale': any(stale for _, stale in catalog_status), 'created': time.time()}
+		encoded = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+		if len(encoded.encode('utf-8')) > 4 * 1024 * 1024: raise ValueError('Overview result too large')
+		results.put((sport, accounts, generation, encoded))
+	except Exception:
+		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures if isinstance(fixtures, list) else [], 'unavailable': True, 'created': time.time()})))
+
+
+def _refresh_guides(cancel, results, generation):
+	from modules.livetv_sports_guide import refresh
+	try:
+		for permissive in (False, True):
+			if cancel.is_set(): return
+			refresh(cancel, lambda: None, permissive)
+	finally:
+		if not cancel.is_set(): results.put(generation)
+
+
+class SportsOverview:
+	def __init__(self):
+		self.workers = {}
+		self.results = SimpleQueue()
+		self.accounts = ''
+		self.next_refresh = 0
+		self.pending_refresh = set()
+		self.focus = None
+		self.generation = 0
+		self.due = set()
+		self.guide_worker = None
+		self.guide_cancel = None
+		self.guide_results = SimpleQueue()
+		self.next_guide = 0
+		self.active = False
+		self.forced = set()
+
+	def tick(self, active, now):
+		from menus import livetv
+		if not active:
+			if self.active:
+				self.generation += 1
+				if self.guide_cancel: self.guide_cancel.set()
+			self.active = False
+			self.next_guide = 0
+			self.focus = None
+			self.pending_refresh = set()
+			return
+		if not self.active:
+			ku.clear_property('LiveTV.Sports.OverviewEmpty')
+			self.active = True
+			self.due = set(SPORTS)
+			self.next_refresh = now + 120
+		accounts = livetv._feed_accounts_fingerprint()
+		if accounts != self.accounts:
+			self.accounts = accounts
+			if self.guide_cancel: self.guide_cancel.set()
+			self.next_guide = 0
+			self.generation += 1
+			self.due = set(SPORTS)
+			self.next_refresh = now + 120
+			ku.clear_property('LiveTV.Sports.OverviewEmpty')
+			for sport in SPORTS: ku.clear_property(PREFIX + sport)
+		if ku.get_property(PREFIX + 'Refresh'):
+			ku.clear_property(PREFIX + 'Refresh')
+			self.forced = set(SPORTS)
+			self.generation += 1
+			self.due = set(SPORTS)
+			self.next_refresh = now + 120
+		while True:
+			try: guide_generation = self.guide_results.get_nowait()
+			except Empty: break
+			if guide_generation == self.generation: self.due.update(SPORTS)
+		if now >= self.next_guide and (self.guide_worker is None or not self.guide_worker.is_alive()) and not ku.get_visibility('Player.HasMedia'):
+			self.guide_cancel = Event()
+			self.guide_worker = Thread(target=_refresh_guides, args=(self.guide_cancel, self.guide_results, self.generation), daemon=True)
+			self.guide_worker.start()
+			self.next_guide = now + 300
+		while True:
+			try: sport, result_accounts, generation, encoded = self.results.get_nowait()
+			except Empty: break
+			if result_accounts == accounts and generation == self.generation:
+				ku.set_property(PREFIX + sport, encoded)
+				self.pending_refresh.add(sport)
+		if self.focus:
+			control, identity, started, deadline = self.focus
+			if now >= deadline or not ku.get_visibility('Control.HasFocus(%d) + System.IdleTime(2)' % control): self.focus = None
+			elif now >= started + 2 and not ku.get_visibility('Container(%d).IsUpdating' % control):
+				try:
+					count = min(10000, int(ku.get_infolabel('Container(%d).NumItems' % control)))
+					matches = [index for index in range(count) if ku.get_infolabel('Container(%d).ListItemAbsolute(%d).Property(LiveTV.EventIdentity)' % (control, index)) == identity]
+					if len(matches) == 1:
+						ku.execute_builtin('Control.SetFocus(%d,%d,absolute)' % (control, matches[0]))
+						self.focus = None
+				except (TypeError, ValueError): pass
+		if now >= self.next_refresh:
+			self.generation += 1
+			self.due = set(SPORTS)
+			self.next_refresh = now + 120
+		if not ku.get_visibility('Player.HasMedia'):
+			for sport in tuple(self.due):
+				if sport not in self.workers or not self.workers[sport].is_alive():
+					worker = Thread(target=_load, args=(sport, accounts, self.generation, sport in self.forced, self.results), daemon=True)
+					self.forced.discard(sport)
+					self.workers[sport] = worker
+					self.due.remove(sport)
+					worker.start()
+		if self.pending_refresh and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') and ku.get_visibility('System.IdleTime(2)'):
+			loading, unavailable, stale, events = False, False, False, False
+			for sport in SPORTS:
+				try: data = json.loads(ku.get_property(PREFIX + sport) or '{}')
+				except (TypeError, ValueError): data = {}
+				if not data or data.get('accounts') != accounts or data.get('matching'): loading = True
+				if data.get('accounts') == accounts and (data.get('unavailable') or data.get('schedule_unavailable')): unavailable = True
+				if data.get('accounts') == accounts and data.get('stale'): stale = True
+				if data.get('accounts') == accounts and any(livetv._schedule_state(fixture, time.time())[0] == 'Live' for fixture in data.get('fixtures', []) if isinstance(fixture, dict)): events = True
+			status = ' · '.join(part for part in ('Loading sports schedules…' if loading else '', 'Some sports unavailable' if unavailable else '', 'Some feeds are saved' if stale else '') if part)
+			ku.set_property('LiveTV.Sports.OverviewEmpty', 'true' if not loading and not unavailable and not events else '')
+			ku.set_property('LiveTV.Sports.OverviewStatus', status)
+			for sport in tuple(self.pending_refresh):
+				control = ROW_IDS[sport]
+				if ku.get_visibility('Control.HasFocus(%d)' % control):
+					identity = ku.get_infolabel('Container(%d).ListItem.Property(LiveTV.EventIdentity)' % control)
+					if identity: self.focus = (control, identity, now, now + 15)
+				ku.set_property('LiveTV.Sports.OverviewRevision.' + sport, str(time.time_ns()))
+				self.pending_refresh.discard(sport)

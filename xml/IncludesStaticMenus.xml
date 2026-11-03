@@ -278,6 +278,23 @@
 			<property name="group">powermenu</property>
 			<property name="isSubmenu">True</property>
 		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[13013]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/reboot1.png</icon>
+			<thumb />
+			<property name="labelID">13013</property>
+			<property name="defaultID">13013</property>
+			<visible>System.CanReboot + String.IsEqual(Container(900).ListItem.Property(submenuVisibility),powermenu)</visible>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>Reset()</onclick>
+			<property name="path">Reset()</property>
+			<property name="list">Reset()</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
 		<item id="3">
 			<property name="id">$NUMBER[3]</property>
 			<property name="mainmenuid">8</property>
@@ -326,6 +343,23 @@
 			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
 			<onclick>ActivateWindow(Settings)</onclick>
 			<property name="list">Settings</property>
+			<property name="group">powermenu</property>
+			<property name="isSubmenu">True</property>
+		</item>
+		<item id="4">
+			<property name="id">$NUMBER[4]</property>
+			<property name="mainmenuid">8</property>
+			<label>$LOCALIZE[13013]</label>
+			<label2>Kodi Command</label2>
+			<icon>common/reboot1.png</icon>
+			<thumb />
+			<property name="labelID">13013</property>
+			<property name="defaultID">13013</property>
+			<visible>System.CanReboot</visible>
+			<onclick condition="Window.IsActive(DialogButtonMenu.xml)">Close</onclick>
+			<onclick>Reset()</onclick>
+			<property name="path">Reset()</property>
+			<property name="list">Reset()</property>
 			<property name="group">powermenu</property>
 			<property name="isSubmenu">True</property>
 		</item>

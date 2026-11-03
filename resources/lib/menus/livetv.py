@@ -1319,11 +1319,22 @@ def _live_soccer_fixtures(include_upcoming=False, with_expiry=False):
 	return result, min(expiries)
 
 
+_SOCCER_UEFA_SLOT = re.compile(r"^\s*UEFA\d{1,3}:\s*\(CL\)\s*([\w .&'’/\-]{2,80}?)\s+(\d{1,2}):(\d{2})\s+([\w .&'’/\-]{2,80}?)\s+(\d{1,2})/(\d{1,2})\s*$", re.I)
+_SOCCER_UEFA_LISTING = re.compile(r"^\s*UEFA\s*\|\s*\d{1,3}\s+-\s+([\w .&'’/\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’/\-]{2,80}?)\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*$", re.I)
+
+
 def _soccer_feed_event(name):
 	"""Extract two teams from a provider event label, never a team-only channel."""
 	if not isinstance(name, str) or _sports.non_live_title(name): return None
 	known = _soccer_event(name)
 	if known: return known
+	slot = _SOCCER_UEFA_SLOT.fullmatch(name)
+	listing = _SOCCER_UEFA_LISTING.fullmatch(name)
+	if slot or listing:
+		event = (slot.group(1), slot.group(4)) if slot else (listing.group(1), listing.group(2))
+		event = tuple(' '.join(side.casefold().split()) for side in event)
+		if event[0] != event[1] and all(re.search(r'[^\W\d_]', side) for side in event): return event
+		return None
 	for part in name.split('|')[:2]:
 		part = part.strip()
 		part = re.sub(r'^laliga(?:\s+ea\s+sports)?(?:\s+(?:(?:\d{4}|\d{2})/\d{2}|\(t\d{2}/\d{2}\)))?\s*:\s*', '', part, flags=re.I)
@@ -1344,6 +1355,26 @@ def _soccer_feed_event(name):
 
 def _soccer_schedule_agrees(name, fixture):
 	"""Reject explicitly scheduled labels that conflict with the fixture kickoff."""
+	slot = _SOCCER_UEFA_SLOT.fullmatch(name)
+	listing = _SOCCER_UEFA_LISTING.fullmatch(name)
+	if slot or listing:
+		try:
+			start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+			if start.utcoffset() is None: return False
+			utc = start.astimezone(timezone.utc)
+			uk = start.astimezone(get_timezone('Europe/London'))
+			# The observed listings agree with both UTC and UK time. Do not guess during DST.
+			if utc.replace(tzinfo=None) != uk.replace(tzinfo=None): return False
+			league = _soccer_logos._LEAGUES.get(_soccer_logos._normalize(fixture.get('league')))
+			if slot:
+				if league != 'uefa.champions': return False
+				return (utc.hour, utc.minute, utc.day, utc.month) == tuple(int(slot.group(i)) for i in (2, 3, 5, 6))
+			if league not in ('uefa.champions', 'uefa.europa', 'uefa.europa.conf'): return False
+			hour, minute = int(listing.group(3)), int(listing.group(4))
+			if not 1 <= hour <= 12: return False
+			hour = hour % 12 + (12 if listing.group(5).casefold() == 'pm' else 0)
+			return (utc.hour, utc.minute) == (hour, minute)
+		except (KeyError, TypeError, ValueError, AttributeError, OSError, ImportError): return False
 	prefix = re.match(r'^\s*laliga(?:\s+ea\s+sports)?\s+(?:(\d{4}|\d{2})/(\d{2})|\(t(\d{2})/(\d{2})\))\s*:', name, re.I)
 	suffix = re.search(r'\s+-\s+spanish\s+laliga\s+(\d{4})/(\d{4})\s+-\s+week\s+\d{1,2}\s*$', name, re.I)
 	for season in (prefix, suffix):

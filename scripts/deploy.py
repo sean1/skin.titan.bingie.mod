@@ -352,10 +352,16 @@ def addon_jobs_complete(serial):
     # A real directory transition forces Kodi to rebuild the browser root.
     if not dialog_is_clear(serial):
         return False
+    repositories = rpc_required(serial, 'Addons.GetAddons', {'type': 'xbmc.addon.repository', 'enabled': True})
+    addons = repositories.get('addons', []) if isinstance(repositories, dict) else None
+    if not isinstance(addons, list) or any(not isinstance(addon, dict) or not isinstance(addon.get('addonid'), str) or not re.fullmatch(r'[A-Za-z0-9_.-]+', addon['addonid']) for addon in addons):
+        raise DeployError('Kodi did not report its enabled add-on repositories.')
+    repository_paths = {'addons://repos/'} | {'addons://' + addon['addonid'] + '/' for addon in addons}
     repos = {'window': 'addonbrowser', 'parameters': ['addons://repos/']}
     if rpc_required(serial, 'GUI.ActivateWindow', repos) != 'OK':
         raise DeployError('Kodi did not open add-on repositories while checking installation jobs.')
-    wait_ui(serial, lambda: addon_browser_path(serial) == 'addons://repos/', 'the add-on repository list')
+    # Kodi opens the repository directly when only one is available.
+    wait_ui(serial, lambda: addon_browser_path(serial) in repository_paths, 'the add-on repository list')
     if not dialog_is_clear(serial):
         return False
     root = {'window': 'addonbrowser', 'parameters': ['addons://']}
@@ -431,7 +437,9 @@ def check_playback_before_permission_change(serial):
 
 def deploy(args):
     serial, model = DEVICES[args.target]
+    stage_started = time.monotonic()
     version, expected = package_contents(args.archive)
+    print('Package validated in %.1fs.' % (time.monotonic() - stage_started))
     state = adb(serial, 'get-state', check=False)
     if state.returncode or state.stdout.decode().strip() != 'device':
         adb(serial, 'connect', serial, check=False)
@@ -454,7 +462,9 @@ def deploy(args):
     installed_version, enabled = addon_details(serial)
     print('Installed version:', installed_version or 'not found', '| enabled:', enabled if enabled is not None else 'unknown')
     if installed_version:
+        stage_started = time.monotonic()
         missing, different, extra_private = compare_installed(serial, expected)
+        print('Existing files compared in %.1fs.' % (time.monotonic() - stage_started))
         if installed_version == version and not missing and not different:
             if enabled is False:
                 raise DeployError('The matching add-on is disabled in Kodi; enable it before use.')
@@ -488,7 +498,9 @@ def deploy(args):
             raise DeployError('Could not reserve an unused temporary ZIP path on the device.')
         try:
             print('Transferring the package to the device...')
+            stage_started = time.monotonic()
             adb(serial, 'push', str(args.archive), remote)
+            print('Package transferred in %.1fs.' % (time.monotonic() - stage_started))
             print('Installing the package through Kodi...')
             def mark_select():
                 install_state['selected'] = True
@@ -498,30 +510,43 @@ def deploy(args):
                 if not install_state['selected']:
                     raise
                 print('Kodi did not acknowledge ZIP selection; checking whether installation started.')
-            deadline = time.monotonic() + 300
+            verification_started = time.monotonic()
+            deadline = verification_started + 300
             last = 'Kodi has not finished installing the package.'
+            reported = None
             while time.monotonic() < deadline:
                 try:
                     current, current_enabled = addon_details(serial)
-                    if current == version and current_enabled is not False:
-                        missing, different, _ = compare_installed(serial, expected)
-                        if not missing and not different:
-                            if deployment_log_ok(before_log, log_bytes(serial), version) and addon_jobs_complete(serial):
-                                print('Installed version', version, 'and all', len(expected), 'package files match.')
-                                print('Kodi log confirms the skin reloaded and its service started.')
-                                if current_enabled is None:
-                                    print('Kodi JSON-RPC was unavailable; enabled state could not be verified.')
-                                else:
-                                    print('Kodi reports the add-on enabled.')
-                                installed = True
-                                break
-                            last = 'Kodi has not confirmed both the skin reload and completion of its installation jobs.'
-                        else:
-                            last = 'Some installed files do not yet match the package.'
-                    elif current_enabled is False:
+                    if current_enabled is False:
                         last = 'Kodi reports the add-on is disabled.'
-                except (DeployError, OSError):
-                    last = 'Kodi or the installed files could not be read while verifying; retrying.'
+                    elif current != version:
+                        last = 'Kodi has not reported the installed version ' + version + '.'
+                    elif not deployment_log_ok(before_log, log_bytes(serial), version):
+                        last = 'Kodi has not confirmed the skin reload and service startup.'
+                    elif not addon_jobs_complete(serial):
+                        last = 'Kodi is still running add-on installation jobs.'
+                    else:
+                        stage_started = time.monotonic()
+                        missing, different, _ = compare_installed(serial, expected)
+                        print('Installed files compared in %.1fs.' % (time.monotonic() - stage_started))
+                        if not missing and not different:
+                            print('Installed version', version, 'and all', len(expected), 'package files match.')
+                            print('Kodi log confirms the skin reloaded and its service started.')
+                            if current_enabled is None:
+                                print('Kodi JSON-RPC was unavailable; enabled state could not be verified.')
+                            else:
+                                print('Kodi reports the add-on enabled.')
+                            print('Installation verified in %.1fs.' % (time.monotonic() - verification_started))
+                            installed = True
+                            break
+                        last = 'Some installed files do not yet match the package.'
+                except DeployError as exc:
+                    last = str(exc)
+                except OSError as exc:
+                    last = 'Verification I/O failed: ' + (exc.strerror or type(exc).__name__) + '.'
+                if last != reported:
+                    print('Waiting:', last)
+                    reported = last
                 time.sleep(2)
             if not installed:
                 raise DeployError(last + ' Installation outcome is unknown.')
@@ -567,11 +592,14 @@ def main():
     parser.add_argument('target', choices=DEVICES, help='target device: googletv, shield or tcl')
     parser.add_argument('archive', type=Path, help='path to the already-built add-on ZIP')
     args = parser.parse_args()
+    started = time.monotonic()
     try:
         deploy(args)
     except (DeployError, FileNotFoundError, EOFError, KeyboardInterrupt) as exc:
         print('\nDeployment stopped:', exc or 'cancelled', file=sys.stderr)
         return 1
+    finally:
+        print('Deployment elapsed: %.1fs.' % (time.monotonic() - started))
     return 0
 
 

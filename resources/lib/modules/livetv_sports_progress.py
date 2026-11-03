@@ -15,6 +15,9 @@ from modules.livetv_sports import record_timing
 
 _REQUEST = 'LiveTV.Sports.Progress.Request'
 _RESULT = 'LiveTV.Sports.Progress.Result'
+_FALLBACK = 'LiveTV.Sports.Progress.Fallback'
+_FALLBACK_EXPIRED = 'LiveTV.Sports.Progress.FallbackExpired'
+_FALLBACK_DEADLINE = 'LiveTV.Sports.Progress.FallbackDeadline'
 _CANCEL = 'LiveTV.Sports.Progress.Cancelled'
 _HEARTBEAT = 'LiveTV.Sports.Progress.Heartbeat'
 _CONSUME = 'LiveTV.Sports.Progress.Consume'
@@ -33,6 +36,7 @@ _FIXTURE_CACHE = 'LiveTV.Sports.Fixtures.Cache.'
 _REQUEST_LIMIT = 1024 * 1024
 _RESULT_LIMIT = 4 * 1024 * 1024
 _MAX_AGE = 15 * 60
+_FALLBACK_SECONDS = 60
 
 
 def _read(name):
@@ -126,6 +130,8 @@ def invalidate(request_id=None):
 	if not request_id: return
 	ku.set_property(_CANCEL, request_id)
 	ku.clear_property(_RESULT + '.' + request_id)
+	ku.clear_property(_FALLBACK + '.' + request_id)
+	ku.clear_property(_FALLBACK_DEADLINE + '.' + request_id)
 	ku.clear_property(_INCOMPLETE)
 
 
@@ -226,6 +232,67 @@ def request_background(sport, reload):
 	return True
 
 
+def accepted_result(sport, now=None):
+	"""Return the currently displayed matching snapshot when it is still valid."""
+	now = time.time() if now is None else now
+	from menus import livetv
+	request = _read(_REQUEST)
+	request_id = request.get('id', '')
+	if not request_id or not _current(sport) or not _valid(request, sport) or request.get('accounts') != livetv._feed_accounts_fingerprint() or ku.get_property(_CANCEL) == request_id: return None
+	result = _read(_RESULT + '.' + request_id)
+	fallback = _read(_FALLBACK + '.' + request_id)
+	if not isinstance(fallback.get('fallback_expires'), (int, float)) or isinstance(fallback.get('fallback_expires'), bool) or not now < fallback['fallback_expires']: fallback = {}
+	use_fallback = fallback and (result.get('id') != request_id or result.get('complete', True) is not True or result.get('unavailable'))
+	try:
+		if use_fallback:
+			groups = _filter_guide_groups(_groups_from_json(fallback['groups']), now)
+			published = fallback['published']
+			if result.get('id') == request_id:
+				for key, feeds in _filter_guide_groups(_groups_from_json(result['groups']), now).items(): groups.setdefault(key, {}).update(feeds)
+				published = min(published, result['published'])
+		else:
+			if result.get('id') != request_id: return None
+			groups = _filter_guide_groups(_groups_from_json(result['groups']), now)
+			published = result['published']
+		if not isinstance(published, (int, float)) or isinstance(published, bool) or not math.isfinite(published) or published > now: return None
+		return {'request': request, 'groups': groups, 'published': published, 'unavailable': bool(result.get('unavailable')), 'revision': result.get('revision', 0)}
+	except (KeyError, TypeError, ValueError): return None
+
+
+def guide_fixture_stale(sport):
+	"""Whether the current fixture snapshot needs refreshing before rematching."""
+	from menus import livetv
+	request = _read(_REQUEST)
+	if not _current(sport) or not _valid(request, sport) or request.get('accounts') != livetv._feed_accounts_fingerprint(): return False
+	cache = _read(_FIXTURE_CACHE + sport)
+	if cache.get('accounts') != request['accounts'] or cache.get('fixtures') != request['fixtures']: return False
+	expires = cache.get('source_expires')
+	return not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or expires <= time.time()
+
+
+def request_guide_rematch(sport):
+	"""Match the accepted fixture snapshot against newly saved guide data."""
+	if not _alive() or not _current(sport) or pending(): return False
+	request = _read(_REQUEST)
+	from menus import livetv
+	if not _valid(request, sport) or request.get('accounts') != livetv._feed_accounts_fingerprint(): return False
+	cache = _read(_FIXTURE_CACHE + sport)
+	try:
+		expires = cache['source_expires']
+		if not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or expires <= time.time() or cache.get('accounts') != request.get('accounts') or cache.get('fixtures') != request['fixtures']: return False
+	except (KeyError, TypeError, ValueError, OverflowError): return False
+	result = _read(_RESULT + '.' + request['id'])
+	if result.get('id') != request['id'] or result.get('complete', True) is not True or ku.get_property(_ACK) != request['id'] or (result.get('unavailable') and _read(_FALLBACK + '.' + request['id'])): return False
+	_, groups = prepare(sport, '', request['fixtures'], force_refresh=True, auxiliary=request.get('auxiliary'))
+	if groups is not None: return False
+	new_id = _read(_REQUEST).get('id', '')
+	if not new_id or new_id == request['id']: return False
+	result['fallback_expires'] = min(expires, time.time() + _FALLBACK_SECONDS)
+	ku.set_property(_FALLBACK + '.' + new_id, json.dumps(result, ensure_ascii=False, separators=(',', ':')))
+	ku.set_property(_FALLBACK_DEADLINE + '.' + new_id, str(result['fallback_expires']))
+	return True
+
+
 def load_fixtures(sport, force_refresh=False, reload='', url_refresh=False):
 	"""Request a fixture snapshot without waiting for network access."""
 	if not _alive(): return 'unavailable', None, None
@@ -301,6 +368,23 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 	new_refresh = force_refresh or (reload in ('refresh', 'schedule') and not consume and (request.get('reload') != reload or result.get('id') == request.get('id')))
 	fresh_fixtures = (fixtures == request.get('fixtures') and auxiliary == request.get('auxiliary')) or consume
 	if _valid(request, sport) and ku.get_property(_CANCEL) != request.get('id') and request.get('accounts') == accounts and not new_refresh and fresh_fixtures:
+		fallback = _read(_FALLBACK + '.' + request['id'])
+		if not isinstance(fallback.get('fallback_expires'), (int, float)) or isinstance(fallback.get('fallback_expires'), bool) or not time.time() < fallback['fallback_expires']: fallback = {}
+		if fallback and (result.get('id') != request['id'] or result.get('complete', True) is not True or result.get('unavailable')):
+			try:
+				groups = _filter_guide_groups(_groups_from_json(fallback['groups']), time.time())
+				if result.get('id') == request['id']:
+					partial = _filter_guide_groups(_groups_from_json(result['groups']), time.time())
+					for key, feeds in partial.items(): groups.setdefault(key, {}).update(feeds)
+					ku.set_property(_ACK_REVISION, request['id'] + ':' + str(result.get('revision', 0)))
+					if result.get('complete', True) is True:
+						ku.set_property(_ACK, request['id'])
+						ku.set_property(_INCOMPLETE, '')
+						ku.set_property('LiveTV.Sports.CatalogUnavailable', 'true')
+						if sport == 'soccer': _set_soccer_status(result.get('status'), True)
+					ku.clear_property(_CONSUME)
+				return request['fixtures'], groups
+			except (KeyError, TypeError, ValueError): pass
 		if result.get('id') == request.get('id'):
 			try:
 				if result.get('sync'): return unavailable()
@@ -314,6 +398,8 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 					ku.set_property(_INCOMPLETE, '' if complete else 'true')
 					ku.set_property(_ACK_REVISION, request['id'] + ':' + str(result.get('revision', 0)))
 					if complete:
+						ku.clear_property(_FALLBACK + '.' + request['id'])
+						ku.clear_property(_FALLBACK_DEADLINE + '.' + request['id'])
 						ku.set_property(_ACK, request['id'])
 						published = result.get('published')
 						if not unavailable_flag and isinstance(published, (int, float)) and not isinstance(published, bool) and math.isfinite(published) and published <= time.time(): save_counts(sport, request['fixtures'], groups, published)
@@ -321,6 +407,9 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 					ku.clear_property(_CONSUME)
 					return request['fixtures'], groups
 			except (KeyError, TypeError, ValueError): pass
+		if ku.get_property(_FALLBACK_EXPIRED) in (request['id'], request['id'] + ':refreshing'):
+			ku.set_property(_ACK_REVISION, request['id'] + ':0')
+			ku.clear_property(_FALLBACK_EXPIRED)
 		return request['fixtures'], None
 	previous_id = request.get('id', '')
 	request = {'id': uuid.uuid4().hex, 'sport': sport, 'reload': reload, 'fixtures': fixtures, 'auxiliary': auxiliary, 'created': time.time(), 'accounts': accounts}
@@ -408,7 +497,7 @@ class SportsProgress:
 				if not _fixtures_unavailable(request.get('sport'), result) and request.get('sport') in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1') and _read(_FIXTURE_REQUEST).get('id') == request_id:
 					captured = result.get('captured')
 					if isinstance(captured, (int, float)) and not isinstance(captured, bool) and math.isfinite(captured):
-						cache = {'captured': captured, 'expires': next_half_hour(captured), 'accounts': request.get('accounts'), 'fixtures': result['fixtures'], 'auxiliary': result.get('auxiliary')}
+						cache = {'captured': captured, 'expires': next_half_hour(captured), 'source_expires': result.get('expires'), 'accounts': request.get('accounts'), 'fixtures': result['fixtures'], 'auxiliary': result.get('auxiliary')}
 						data = json.dumps(cache, ensure_ascii=False, separators=(',', ':'))
 						if cache['expires'] > time.time() and len(data.encode('utf-8')) <= _RESULT_LIMIT: ku.set_property(_FIXTURE_CACHE + request['sport'], data)
 				ku.set_property(_FIXTURE_RESULT, encoded)
@@ -566,6 +655,16 @@ class SportsProgress:
 				status = result.get('status')
 				if status and status[1] and result.get('complete', True) is True: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.')
 		if not visible: return
+		deadline = ku.get_property(_FALLBACK_DEADLINE + '.' + request_id)
+		if deadline:
+			try: expired = time.time() >= float(deadline)
+			except (TypeError, ValueError): expired = True
+			if expired:
+				ku.clear_property(_FALLBACK + '.' + request_id)
+				ku.clear_property(_FALLBACK_DEADLINE + '.' + request_id)
+				ku.set_property(_FALLBACK_EXPIRED, request_id)
+				if ku.get_property(_ACK) == request_id: ku.clear_property(_ACK)
+				ku.clear_property(_ACK_REVISION)
 		if ku.get_property(_ACK) == request_id:
 			ku.clear_property(_WAIT_STATUS)
 			return
@@ -575,15 +674,24 @@ class SportsProgress:
 		except (KeyError, TypeError): long_wait = False
 		waiting = result.get('id') == request_id and blocked
 		ku.set_property(_WAIT_STATUS, 'Waiting for Kodi…' if waiting else 'Still searching…' if long_wait else 'Finding feeds…')
+		if ku.get_property(_FALLBACK_EXPIRED) == request_id and result.get('id') != request_id:
+			if blocked: return
+			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
+			self._capture_focus(request, _ACK_REVISION, request_id + ':0')
+			ku.set_property(_FALLBACK_EXPIRED, request_id + ':refreshing')
+			ku.execute_builtin('Container.Refresh')
+			return
 		if result.get('id') == request_id:
+			expiry_refresh = ku.get_property(_FALLBACK_EXPIRED) == request_id
 			revision_key = request_id + ':' + str(result.get('revision', 0))
 			if ku.get_property(_ACK_REVISION) == revision_key: return
 			fixture_request = _read(_FIXTURE_REQUEST)
 			fixture_id = fixture_request.get('id', '')
 			if fixture_id and _current(fixture_request.get('sport')) and (_read(_FIXTURE_RESULT).get('id') != fixture_id or ku.get_property(_FIXTURE_ACK) != fixture_id or fixture_request.get('reload') in ('refresh', 'schedule')): return
-			if self.refreshed_id == revision_key and time.monotonic() - self.refreshed_at < 10: return
+			if not expiry_refresh and self.refreshed_id == revision_key and time.monotonic() - self.refreshed_at < 10: return
 			if blocked: return
 			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
+			if expiry_refresh: ku.clear_property(_FALLBACK_EXPIRED)
 			self.refreshed_id = revision_key
 			self.refreshed_at = time.monotonic()
 			self._capture_focus(request, _ACK_REVISION, revision_key)

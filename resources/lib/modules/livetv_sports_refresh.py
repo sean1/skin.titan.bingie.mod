@@ -14,6 +14,7 @@ from modules.livetv_sports import record_timing
 _SPORTS_WINDOW = 'Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'
 _LIVE_INTERVAL = 2 * 60
 _GUIDE_RETRY = 5 * 60
+_GUIDE_FIXTURE_RETRY = 2 * 60
 _START_RETRY = 60
 _START_WINDOW = 15 * 60
 _SCHEDULE_INTERVAL = 30 * 60
@@ -39,7 +40,9 @@ class SportsRefresh:
 		self.guide_results = SimpleQueue()
 		self.guide_next_attempt = 0
 		self.guide_pending = False
-		self.guide_mode = None
+		self.guide_identity = None
+		self.guide_generation = 0
+		self.guide_fixture_next_attempt = 0
 
 	def close(self):
 		self.progress.close()
@@ -47,31 +50,30 @@ class SportsRefresh:
 		if self.guide_cancel: self.guide_cancel.set()
 
 	def _guide_tick(self, active, now, permissive=False, sport=''):
-		if active and self.guide_mode != permissive:
+		from menus import livetv
+		identity = (sport, permissive, livetv._feed_accounts_fingerprint()) if active else None
+		if identity != self.guide_identity:
 			if self.guide_cancel: self.guide_cancel.set()
-			self.guide_mode = permissive
+			self.guide_identity = identity
+			self.guide_generation += 1
 			self.guide_pending = False
 			self.guide_next_attempt = 0
+			self.guide_fixture_next_attempt = 0
 		while True:
-			try: self.guide_results.get_nowait()
+			try: generation = self.guide_results.get_nowait()
 			except Empty: break
-			if active: self.guide_pending = True
-		if not active:
-			if self.guide_cancel: self.guide_cancel.set()
-			self.guide_pending = False
-			self.guide_next_attempt = 0
-			return
+			if active and generation == self.guide_generation: self.guide_pending = True
+		if not active: return
 		if (self.guide_worker is None or not self.guide_worker.is_alive()) and now >= self.guide_next_attempt:
 			self.guide_cancel = Event()
-			self.guide_worker = Thread(target=_refresh_guide, args=(self.guide_cancel, lambda: self.guide_results.put(True), permissive, sport), daemon=True)
+			generation = self.guide_generation
+			self.guide_worker = Thread(target=_refresh_guide, args=(self.guide_cancel, lambda: self.guide_results.put(generation), permissive, sport), daemon=True)
 			self.guide_worker.start()
 			self.guide_next_attempt = now + _GUIDE_RETRY
-		if not self.guide_pending or progress.pending(): return
-		if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
-		if not ku.get_visibility('System.IdleTime(15)') or ku.get_property('LiveTV.Soccer.Reload'): return
-		self.guide_pending = False
-		progress.invalidate()
-		ku.execute_builtin('Container.Refresh')
+		if not self.guide_pending or ku.get_property('LiveTV.Soccer.Reload'): return
+		if progress.request_guide_rematch(sport): self.guide_pending = False
+		elif now >= self.guide_fixture_next_attempt and not progress.pending() and progress.guide_fixture_stale(sport):
+			if progress.request_background(sport, 'schedule'): self.guide_fixture_next_attempt = now + _GUIDE_FIXTURE_RETRY
 
 	def tick(self):
 		self.progress.tick()

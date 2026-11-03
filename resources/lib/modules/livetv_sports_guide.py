@@ -4,6 +4,8 @@ import json
 import os
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
+from threading import BoundedSemaphore, Lock
 
 from modules.livetv_vpn_relay import open_url
 
@@ -11,6 +13,8 @@ from modules.livetv_vpn_relay import open_url
 _RENEW_SECONDS = 110 * 60
 _CACHE_LIMIT = 16 * 1024 * 1024
 _DEADLINE_SECONDS = 180
+_DOWNLOAD_SLOTS = BoundedSemaphore(2)
+_WRITE_LOCK = Lock()
 
 
 class _CancelableFile:
@@ -41,13 +45,18 @@ def refresh(canceled, on_update, permissive=False):
 	profile = ku.translate_path(ku.profile_path)
 	if not profile: return
 	os.makedirs(profile, mode=0o700, exist_ok=True)
-	for _, account in livetv._sports_accounts(livetv._load()):
-		if canceled.is_set(): return
+	accounts = livetv._sports_accounts(livetv._load())
+	def fetch(entry):
+		_, account = entry
+		while not canceled.is_set():
+			if _DOWNLOAD_SLOTS.acquire(timeout=0.25): break
+		else: return
 		try:
+			if canceled.is_set(): return
 			url = livetv._guide_url(account)
 			key = hashlib.sha256(url.encode('utf-8')).hexdigest()
 			path = livetv._sports_guide_cache_path(account, permissive)
-			if _fresh(path, key, time.time()): continue
+			if _fresh(path, key, time.time()): return
 			deadline = time.monotonic() + _DEADLINE_SECONDS
 			with tempfile.TemporaryFile(mode='w+b', dir=profile) as raw:
 				with open_url(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}, timeout=10) as response:
@@ -61,17 +70,22 @@ def refresh(canceled, on_update, permissive=False):
 						raw.write(chunk)
 				created = time.time()
 				programmes = livetv._parse_raw_guide(_CancelableFile(raw, canceled, deadline), created, None, sports_window=True, require_zone=not permissive)
-			if canceled.is_set() or time.monotonic() >= deadline: continue
+			if canceled.is_set() or time.monotonic() >= deadline: return
 			encoded = json.dumps({'key': key, 'created': created, 'programmes': programmes}, separators=(',', ':')).encode('utf-8')
-			if len(encoded) > _CACHE_LIMIT: continue
+			if len(encoded) > _CACHE_LIMIT: return
 			fd, temporary = tempfile.mkstemp(prefix='.livetv-sports-guide-', dir=profile)
 			try:
 				with os.fdopen(fd, 'wb') as output: output.write(encoded)
-				if canceled.is_set(): return
-				os.replace(temporary, path)
+				with _WRITE_LOCK:
+					if canceled.is_set() or _fresh(path, key, time.time()): return
+					os.replace(temporary, path)
 			finally:
 				if os.path.exists(temporary): os.unlink(temporary)
 			on_update()
 		except Exception:
 			# Provider URLs may contain credentials; never log the exception text.
-			continue
+			pass
+		finally:
+			_DOWNLOAD_SLOTS.release()
+	with ThreadPoolExecutor(max_workers=min(2, max(1, len(accounts)))) as pool:
+		list(pool.map(fetch, accounts))

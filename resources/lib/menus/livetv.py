@@ -46,6 +46,8 @@ from modules.livetv_timezone import get_timezone
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
 _GUIDE_FRESH_SECONDS = 2 * 60 * 60
+_GUIDE_MATCH_SLOTS = threading.BoundedSemaphore(2)
+_CATALOG_PREFETCH_SLOTS = threading.BoundedSemaphore(4)
 _API_RESPONSE_LIMIT = 128 * 1024 * 1024
 _SEARCH_RESULT_LIMIT = 300
 _SEARCH_GUIDE_LIMIT = 5000
@@ -110,6 +112,12 @@ def _matched_play_params(stream_id, name, sport, feeds, cache):
 
 def _unique_match(groups, stream_id, name):
 	return sum(1 for feeds in groups.values() if stream_id in feeds and feeds[stream_id].get('name') == name) == 1
+
+
+def _sports_feed_url(params, fixture, groups):
+	from modules import livetv_feed_selection
+	token = livetv_feed_selection.handoff(params, fixture, groups)
+	return ku.build_url({**params, **({'handoff': token} if token else {})})
 
 
 def _fixture_focus_identity(sport, fixture):
@@ -301,33 +309,12 @@ def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True, _guide_until=feed['_guide_until']) for stream_id, feed in feeds.items()} for event, feeds in matched.items() if event in live}
 
 
-def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True, on_partial=None):
-	from concurrent.futures import ThreadPoolExecutor, as_completed
+def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True, on_partial=None, overlap_catalogs=False):
+	from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 	legacy = _load()
 	accounts = _sports_accounts(legacy)
 	primary_id = accounts[0][0] if accounts else None
 	status_values = []
-	if sport == 'soccer' and fixtures is None:
-		fixtures, _, _, _ = _live_soccer_fixtures(include_upcoming=True)
-	elif sport == 'f1' and fixtures is None:
-		fixtures = _f1.get_schedule()
-	elif sport in ('hockey', 'football', 'basketball', 'tennis') and fixtures is None:
-		try:
-			profile = ku.translate_path(getattr(ku, 'profile_path', ''))
-			fixtures = _tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else _american_fixtures.get_schedule(sport, cache_dir=profile or None)
-			if not status_sink: ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures updated')
-		except (OSError, HTTPException, ValueError, TypeError):
-			fixtures = []
-			if not status_sink: ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
-	if not fixtures:
-		if status_sink: status_sink('')
-		else: ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
-		if on_status: ku.set_property('LiveTV.Soccer.Status', '')
-		return {}, []
-	if not any(isinstance(fixture, dict) and fixture.get('status') in _fixture_service.LIVE_STATUSES for fixture in fixtures):
-		if status_sink: status_sink('')
-		else: ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
-		return {}, []
 	def fetch(entry):
 		identity, account = entry
 		account_status = []
@@ -341,6 +328,51 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
 		except (OSError, HTTPException, ValueError, TypeError): return identity, [], False, account_status
 		finally: _sports.record_timing('catalog_fetch', time.monotonic() - started, sport, outcome)
+	prefetch_pool, prefetched = None, None
+	prefetch_canceled = threading.Event()
+	def prefetch(entry):
+		while not prefetch_canceled.is_set():
+			if _CATALOG_PREFETCH_SLOTS.acquire(timeout=0.1):
+				try:
+					if not prefetch_canceled.is_set(): return fetch(entry)
+				finally: _CATALOG_PREFETCH_SLOTS.release()
+		return entry[0], [], False, []
+	if overlap_catalogs and fixtures is None and accounts:
+		prefetch_pool = ThreadPoolExecutor(max_workers=min(2, len(accounts)))
+		prefetched = {prefetch_pool.submit(prefetch, entry) for entry in accounts}
+	try:
+		if sport == 'soccer' and fixtures is None:
+			fixtures, _, _, _ = _live_soccer_fixtures(include_upcoming=True)
+		elif sport == 'f1' and fixtures is None:
+			fixtures = _f1.get_schedule()
+		elif sport in ('hockey', 'football', 'basketball', 'tennis') and fixtures is None:
+			try:
+				profile = ku.translate_path(getattr(ku, 'profile_path', ''))
+				fixtures = _tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else _american_fixtures.get_schedule(sport, cache_dir=profile or None)
+				if not status_sink: ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures updated')
+			except (OSError, HTTPException, ValueError, TypeError):
+				fixtures = []
+				if not status_sink: ku.set_property('LiveTV.Soccer.FixtureStatus', 'Live fixtures unavailable')
+	except BaseException:
+		if prefetch_pool:
+			prefetch_canceled.set()
+			prefetch_pool.shutdown(wait=False, cancel_futures=True)
+		raise
+	if not fixtures:
+		if prefetch_pool:
+			prefetch_canceled.set()
+			prefetch_pool.shutdown(wait=False, cancel_futures=True)
+		if status_sink: status_sink('')
+		else: ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
+		if on_status: ku.set_property('LiveTV.Soccer.Status', '')
+		return {}, []
+	if not any(isinstance(fixture, dict) and fixture.get('status') in _fixture_service.LIVE_STATUSES for fixture in fixtures):
+		if prefetch_pool:
+			prefetch_canceled.set()
+			prefetch_pool.shutdown(wait=False, cancel_futures=True)
+		if status_sink: status_sink('')
+		else: ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
+		return {}, []
 	groups, all_streams, failed = {}, [], False
 	account_map = dict(accounts)
 	account_groups, account_streams = {}, {}
@@ -365,20 +397,33 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 		if sport == 'f1': return _f1.fixture_groups(streams, fixtures, live_only=True)
 		if sport in ('hockey', 'football', 'basketball', 'tennis'): return _sports.fixture_groups(streams, sport, fixtures, live_only=True)
 		return _soccer_fixture_groups(streams, fixtures, live_only=True)
-	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
-		futures = [pool.submit(fetch, entry) for entry in accounts]
-		for future in as_completed(futures):
-			identity, streams, available, account_status = future.result()
-			if not available: failed = True
-			status_values.extend(account_status)
-			streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
-			account_streams[identity] = streams
-			local = timed_match('direct_match', lambda: direct_groups(streams))
-			account_groups[identity] = local
-			if local: publish()
-			guide = timed_match('guide_match', lambda: _sports_guide_groups(account_map[identity], streams, sport, fixtures, local, time.time()))
-			for event, feeds in guide.items(): local.setdefault(event, {}).update(feeds)
-			if guide: publish()
+	def guide_groups(account, streams, local):
+		with _GUIDE_MATCH_SLOTS:
+			return timed_match('guide_match', lambda: _sports_guide_groups(account, streams, sport, fixtures, local, time.time()))
+	with prefetch_pool or ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool, ThreadPoolExecutor(max_workers=1) as guide_pool:
+		catalog_futures = prefetched if prefetched is not None else {pool.submit(fetch, entry) for entry in accounts}
+		guide_futures = {}
+		while catalog_futures or guide_futures:
+			wait(catalog_futures | guide_futures.keys(), return_when=FIRST_COMPLETED)
+			ready_catalogs = [future for future in catalog_futures if future.done()]
+			if not ready_catalogs:
+				future = next(future for future in guide_futures if future.done())
+				identity = guide_futures.pop(future)
+				guide = future.result()
+				for event, feeds in guide.items(): account_groups[identity].setdefault(event, {}).update(feeds)
+				if guide: publish()
+				continue
+			for future in ready_catalogs:
+				catalog_futures.remove(future)
+				identity, streams, available, account_status = future.result()
+				if not available: failed = True
+				status_values.extend(account_status)
+				streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
+				account_streams[identity] = streams
+				local = timed_match('direct_match', lambda: direct_groups(streams))
+				account_groups[identity] = local
+				if local: publish()
+				guide_futures[guide_pool.submit(guide_groups, account_map[identity], streams, local)] = identity
 	groups = collect()
 	all_streams = [stream for identity, _ in accounts for stream in account_streams.get(identity, [])]
 	if status_sink: status_sink('true' if failed else '')
@@ -1602,7 +1647,7 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 			title = fixture['event'] + ' — ' + fixture['session_label']
 			context = []
 			if count > 1:
-				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': 'f1', 'session': fixture['id']})
+				feed_url = _sports_feed_url({'mode': 'livetv.match_feeds', 'sport': 'f1', 'session': fixture['id']}, fixture, groups)
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			if pending and state == 'Live': context.append(('Retry finding feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.soccer', 'sport': 'f1', 'action': 'refresh'})))
 			matched = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
@@ -1721,7 +1766,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 						if len(set(normalized)) == 2 * expected: tennis_names = json.dumps(names, ensure_ascii=False)
 			context = []
 			if count > 1:
-				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope})
+				feed_url = _sports_feed_url({'mode': 'livetv.match_feeds', 'sport': sport, 'home': event[0], 'away': event[1], 'scope': scope}, fixture, groups)
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			if pending and state == 'Live': context.append(('Retry finding feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.soccer', 'sport': sport, 'action': 'refresh'})))
 			matched_feeds = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
@@ -1866,7 +1911,7 @@ def soccer(params):
 			label = '%s — %s%s' % (match_league, title, ' — ' + feed_label if feed_label else '')
 			context = []
 			if count > 1:
-				feed_url = ku.build_url({'mode': 'livetv.match_feeds', 'sport': 'soccer', 'home': event[0], 'away': event[1], 'scope': scope})
+				feed_url = _sports_feed_url({'mode': 'livetv.match_feeds', 'sport': 'soccer', 'home': event[0], 'away': event[1], 'scope': scope}, matched, groups)
 				context.append(('Choose another feed', 'Container.Update(%s)' % feed_url))
 			if pending and state == 'Live': context.append(('Retry finding feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.soccer', 'sport': 'soccer', 'action': 'refresh'})))
 			feeds = groups.get((event, scope), {})
@@ -1930,7 +1975,7 @@ def match_feeds(params):
 		unique = {ref: is_unique for ref, _, is_unique in result}
 		choices.sort(key=lambda entry: (0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1, str(entry[1].get('name') or '').casefold(), int(str(entry[1].get('stream_id') or entry[0]).rsplit(':', 1)[-1])))
 		by_ref = dict(choices)
-		choices = [(ref, by_ref[ref]) for ref in _speed_order(list(by_ref), _speed_context())]
+		choices = livetv_feed_selection.order_choices([(ref, by_ref[ref]) for ref in _speed_order(list(by_ref), _speed_context())])
 		feed_cache = {}
 		if choices:
 			stream_id, first = choices[0]

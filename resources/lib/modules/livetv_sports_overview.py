@@ -9,11 +9,42 @@ from modules import kodi_utils as ku
 SPORTS = ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1')
 PREFIX = 'LiveTV.Sports.Overview.'
 ROW_IDS = dict(zip(SPORTS, range(9501, 9507)))
-_CATALOG_LOCK = Lock()
-_FORCED_GENERATIONS = set()
+class _SharedCatalog:
+	"""Coalesce each provider download within one overview refresh generation."""
+	def __init__(self, accounts, force):
+		self.accounts = accounts
+		self.force = force
+		self.lock = Lock()
+		self.entries = {}
+
+	def get(self, identity, account, *, on_status=None, **kwargs):
+		from menus import livetv
+		with self.lock:
+			entry = self.entries.get(identity)
+			if entry is None:
+				entry = {'ready': Event()}
+				self.entries[identity] = entry
+				owner = True
+			else: owner = False
+		if owner:
+			try:
+				if livetv._feed_accounts_fingerprint() != self.accounts: raise ValueError('Account changed')
+				status = []
+				entry['items'] = livetv._catalog(account, 'get_live_streams', force_refresh=self.force, notify_stale=False, on_status=lambda created, stale: status.append((created, stale)))
+				if livetv._feed_accounts_fingerprint() != self.accounts: raise ValueError('Account changed')
+				entry['status'] = status
+			except Exception as error:
+				entry['error'] = error
+			finally:
+				entry['ready'].set()
+		else: entry['ready'].wait()
+		if 'error' in entry: raise entry['error']
+		if on_status:
+			for created, stale in entry.get('status', []): on_status(created, stale)
+		return entry['items']
 
 
-def _load(sport, accounts, generation, force, results):
+def _load(sport, accounts, generation, catalog, results):
 	from menus import livetv
 	fixtures = None
 	partial = False
@@ -29,12 +60,7 @@ def _load(sport, accounts, generation, force, results):
 		if not isinstance(fixtures, list): raise ValueError('Invalid fixtures')
 		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures, 'groups': [], 'matching': True, 'schedule_unavailable': partial, 'created': time.time()}, ensure_ascii=False, separators=(',', ':'))))
 		failures, catalog_status = [], []
-		with _CATALOG_LOCK:
-			force_catalog = force and generation not in _FORCED_GENERATIONS and any(isinstance(fixture, dict) and fixture.get('status') in livetv._fixture_service.LIVE_STATUSES for fixture in fixtures)
-			if force_catalog:
-				_FORCED_GENERATIONS.clear()
-				_FORCED_GENERATIONS.add(generation)
-			groups, _ = livetv._sports_catalog_groups(livetv._sports_primary(), sport, reload='refresh' if force_catalog else '', fixtures=fixtures, status_sink=failures.append, notify_stale=False, on_status=lambda created, stale: catalog_status.append((created, stale)))
+		groups, _ = livetv._sports_catalog_groups(livetv._sports_primary(), sport, fixtures=fixtures, status_sink=failures.append, notify_stale=False, on_status=lambda created, stale: catalog_status.append((created, stale)), catalog_fetch=catalog.get)
 		secrets = [str(account.get(key) or '') for _, account in livetv._sports_accounts(livetv._load()) for key in ('username', 'password')]
 		clean = []
 		for key, feeds in groups.items():
@@ -80,6 +106,8 @@ class SportsOverview:
 		self.next_guide = 0
 		self.active = False
 		self.forced = set()
+		self.catalog_generation = None
+		self.catalog = None
 
 	def tick(self, active, now):
 		from menus import livetv
@@ -144,9 +172,12 @@ class SportsOverview:
 			self.due = set(SPORTS)
 			self.next_refresh = now + 120
 		if not ku.get_visibility('Player.HasMedia'):
+			if self.catalog_generation != self.generation:
+				self.catalog = _SharedCatalog(accounts, bool(self.forced))
+				self.catalog_generation = self.generation
 			for sport in tuple(self.due):
 				if sport not in self.workers or not self.workers[sport].is_alive():
-					worker = Thread(target=_load, args=(sport, accounts, self.generation, sport in self.forced, self.results), daemon=True)
+					worker = Thread(target=_load, args=(sport, accounts, self.generation, self.catalog, self.results), daemon=True)
 					self.forced.discard(sport)
 					self.workers[sport] = worker
 					self.due.remove(sport)

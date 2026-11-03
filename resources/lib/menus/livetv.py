@@ -309,7 +309,7 @@ def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True, _guide_until=feed['_guide_until']) for stream_id, feed in feeds.items()} for event, feeds in matched.items() if event in live}
 
 
-def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True, on_partial=None, overlap_catalogs=False):
+def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=None, status_sink=None, notify_stale=True, on_partial=None, overlap_catalogs=False, catalog_fetch=None):
 	from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 	legacy = _load()
 	accounts = _sports_accounts(legacy)
@@ -323,7 +323,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			kwargs = {'force_refresh': reload == 'refresh'}
 			if not notify_stale: kwargs['notify_stale'] = False
 			if on_status: kwargs['on_status'] = lambda created, stale: account_status.append((created, stale))
-			streams = _catalog(account, 'get_live_streams', **kwargs)
+			streams = catalog_fetch(identity, account, **kwargs) if catalog_fetch else _catalog(account, 'get_live_streams', **kwargs)
 			if isinstance(streams, list): outcome = 'ok'
 			return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
 		except (OSError, HTTPException, ValueError, TypeError): return identity, [], False, account_status

@@ -164,7 +164,7 @@
 
     <include name="widget_layout_landscape_not_vertical_layout">
         <height>212</height>
-        <itemlayout width="364" height="212">
+        <itemlayout width="352" height="212">
             <control type="group">
                 <include content="left">
                     <param name="left" value="bingie_no_circular_posx"/>
@@ -176,7 +176,7 @@
                 <include>New_Episodes_Tag_Overlay</include>
             </control>
         </itemlayout>
-        <focusedlayout width="364" height="212">
+        <focusedlayout width="352" height="212">
             <control type="group">
                 <include content="left">
                     <param name="left" value="bingie_no_circular_posx"/>

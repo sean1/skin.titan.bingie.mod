@@ -1793,7 +1793,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 		xbmc.executebuiltin('Container.SetViewMode(523)')
 
 
-def _sports_overview(sport_filter=None):
+def _sports_overview(sport_filter=None, revision=''):
 	from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
 	accounts = _feed_accounts_fingerprint()
 	rows, unavailable, schedule_unavailable, loading, stale = [], [], [], [], []
@@ -1840,7 +1840,7 @@ def _sports_overview(sport_filter=None):
 			else: params.update({'home': key[0][0], 'away': key[0][1], 'scope': key[1]})
 			context.append(('Choose another feed', 'Container.Update(%s)' % _sports_feed_url(params, fixture, groups)))
 		matched = [(_sports_ref(feed), feed) for feed in ordered] if stream and _unique_match(groups, _sports_ref(stream), stream['name']) else []
-		properties = {'LiveTV.ItemSport': sport, 'LiveTV.EventIdentity': _fixture_focus_identity(sport, fixture), 'LiveTV.Match': title, 'LiveTV.League': league,
+		properties = {'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport, 'LiveTV.EventIdentity': _fixture_focus_identity(sport, fixture), 'LiveTV.Match': title, 'LiveTV.League': league,
 			'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else ''}
 		if sport != 'f1':
 			for side in ('home', 'away'):
@@ -1851,8 +1851,8 @@ def _sports_overview(sport_filter=None):
 	if feed_cache: _save_feed_matches(feed_cache)
 	status = ' · '.join(part for part in ('Loading sports schedules…' if loading else '', 'Some sports unavailable' if unavailable or schedule_unavailable else '', 'Some feeds are saved' if stale else '') if part)
 	if not sport_filter: ku.set_property('LiveTV.Sports.OverviewStatus', status)
-	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False)
-	elif not rows and (unavailable or schedule_unavailable): _item('Sports schedule unavailable', {}, False, playable=False)
+	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision})
+	elif not rows and (unavailable or schedule_unavailable): _item('Sports schedule unavailable', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision})
 	elif not rows and not sport_filter: _item('No live sports events', {}, False, playable=False)
 	_finish()
 
@@ -1863,7 +1863,9 @@ def sports_overview_row(params):
 	if sport not in overview.SPORTS:
 		_finish(False)
 		return
-	_sports_overview(sport)
+	revision = str(params.get('revision', ''))
+	if not re.fullmatch(r'[0-9]{1,30}', revision): revision = ''
+	_sports_overview(sport, revision)
 
 
 def soccer(params):

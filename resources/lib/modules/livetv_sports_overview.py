@@ -157,16 +157,11 @@ class SportsOverview:
 				ku.set_property(PREFIX + sport, encoded)
 				self.pending_refresh.add(sport)
 		if self.focus:
-			control, identity, started, deadline = self.focus
-			if now >= deadline or not ku.get_visibility('Control.HasFocus(%d) + System.IdleTime(2)' % control): self.focus = None
-			elif now >= started + 2 and not ku.get_visibility('Container(%d).IsUpdating' % control):
-				try:
-					count = min(10000, int(ku.get_infolabel('Container(%d).NumItems' % control)))
-					matches = [index for index in range(count) if ku.get_infolabel('Container(%d).ListItemAbsolute(%d).Property(LiveTV.EventIdentity)' % (control, index)) == identity]
-					if len(matches) == 1:
-						ku.execute_builtin('Control.SetFocus(%d,%d,absolute)' % (control, matches[0]))
-						self.focus = None
-				except (TypeError, ValueError): pass
+			control, revision = self.focus
+			if not ku.get_visibility('Control.HasFocus(%d)' % control): self.focus = None
+			elif not ku.get_visibility('Container(%d).IsUpdating' % control) and ku.get_infolabel('Container(%d).ListItemAbsolute(0).Property(LiveTV.OverviewRevision)' % control) == revision:
+				ku.execute_builtin('Control.SetFocus(%d,0,absolute)' % control)
+				self.focus = None
 		if now >= self.next_refresh:
 			self.generation += 1
 			self.due = set(SPORTS)
@@ -196,8 +191,7 @@ class SportsOverview:
 			ku.set_property('LiveTV.Sports.OverviewStatus', status)
 			for sport in tuple(self.pending_refresh):
 				control = ROW_IDS[sport]
-				if ku.get_visibility('Control.HasFocus(%d)' % control):
-					identity = ku.get_infolabel('Container(%d).ListItem.Property(LiveTV.EventIdentity)' % control)
-					if identity: self.focus = (control, identity, now, now + 15)
-				ku.set_property('LiveTV.Sports.OverviewRevision.' + sport, str(time.time_ns()))
+				revision = str(time.time_ns())
+				if ku.get_visibility('Control.HasFocus(%d)' % control): self.focus = (control, revision)
+				ku.set_property('LiveTV.Sports.OverviewRevision.' + sport, revision)
 				self.pending_refresh.discard(sport)

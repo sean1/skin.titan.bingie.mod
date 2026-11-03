@@ -186,6 +186,17 @@ def _cached_failover(params):
 		if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) for value in deadlines.values()): return
 		if selected in deadlines and deadlines[selected] <= time.time(): return
 		ordered = [selected] + [ref for ref, _ in feeds if ref != selected and (ref not in deadlines or deadlines[ref] > time.time())]
+		if match['sport'] == 'vietnamese':
+			provider = lambda ref: ref.split(':', 1)[0] if ':' in ref else 'primary'
+			seen = {provider(selected)}
+			other_providers, remaining = [], []
+			for ref in ordered[1:]:
+				identity = provider(ref)
+				if identity not in seen:
+					seen.add(identity)
+					other_providers.append(ref)
+				else: remaining.append(ref)
+			ordered = [selected] + other_providers + remaining
 		if len(ordered) < 2: return
 		result = {'id': selected, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': [{'id': ref, 'name': 'Feed %d' % (index + 1)} for index, ref in enumerate(ordered)], 'token': uuid.uuid4().hex}
 		for feed in result['feeds']:
@@ -2127,6 +2138,8 @@ def _f1_startup(reference, account, failover):
 
 def play(params):
 	xbmcgui.Window(10000).clearProperty(_FAILOVER_PROPERTY)
+	xbmcgui.Window(10000).clearProperty('BingieLiveTVPlaybackFailed')
+	xbmcgui.Window(10000).clearProperty('BingieLiveTVOpening')
 	reference = params.get('id', '')
 	provider, separator, stream_id = reference.partition(':')
 	account = _account_for_feed(provider) if separator else _load()
@@ -2136,6 +2149,7 @@ def play(params):
 		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 		return
 	failover = _cached_failover(params) if params.get('sport') else None if separator or _soccer_event(params.get('name', '')) else _prepare_failover(account, stream_id, params.get('name', ''), defer=True)
+	if not failover: failover = {'id': reference, 'alternatives': [], 'feeds': [{'id': reference, 'name': 'Feed 1'}], 'token': uuid.uuid4().hex}
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
 	if params.get('sport') == 'f1':
 		selected = _f1_startup(reference, account, failover)
@@ -2157,7 +2171,6 @@ def play(params):
 				failover['id'] = selected_reference
 				failover['alternatives'] = [feed['id'] for feed in failover['feeds'] if feed['id'] != selected_reference][:_FAILOVER_LIMIT]
 				failover['manual_only'] = True
-				if not failover['alternatives']: failover = None
 	try: url = _vpn_register(url)
 	except (OSError, HTTPException, ValueError, TypeError):
 		_error(_vpn_failure_message() or 'Live TV VPN unavailable. Check the VPN connection and try again.')
@@ -2169,4 +2182,5 @@ def play(params):
 	if failover:
 		failover['started_at'] = time.monotonic()
 		xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(failover))
+		xbmcgui.Window(10000).setProperty('BingieLiveTVOpening', 'true')
 	xbmcplugin.setResolvedUrl(_handle(), True, item)

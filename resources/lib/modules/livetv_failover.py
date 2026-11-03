@@ -18,6 +18,8 @@ except ImportError:
 	livetv_feed_speed = None
 
 PROPERTY = 'BingieLiveTVFailover'
+PLAYBACK_FAILED = 'BingieLiveTVPlaybackFailed'
+LIVE_OPENING = 'BingieLiveTVOpening'
 SWITCH_REQUEST = 'BingieLiveTVSwitchRequest'
 CAN_SWITCH = 'BingieLiveTVCanSwitch'
 FEED_CHOICES = 'BingieLiveTVFeedChoices'
@@ -51,7 +53,7 @@ def _probe_failure(url):
 	except HTTPError as exc:
 		try:
 			if exc.headers and exc.headers.get('X-Bingie-Relay-Error') == '1': return False
-			return exc.code in (404, 410) or 500 <= exc.code <= 599
+			return exc.code in (404, 410, 458) or 500 <= exc.code <= 599
 		finally: exc.close()
 	except Exception:
 		return False
@@ -99,6 +101,8 @@ class LiveTVFailover(ku.xbmc_player):
 			except (ValueError, TypeError, AttributeError): pass
 		self.session = None
 		self.event = None
+		ku.clear_property(PLAYBACK_FAILED)
+		ku.clear_property(LIVE_OPENING)
 		ku.clear_property(SWITCH_REQUEST)
 		ku.clear_property(CAN_SWITCH)
 		ku.clear_property(FEED_CHOICES)
@@ -112,7 +116,7 @@ class LiveTVFailover(ku.xbmc_player):
 			return False
 		feeds = [feed for feed in self.session['feeds'] if _current_evidence(feed)]
 		ids = {feed['id'] for feed in feeds}
-		if self.session['id'] not in ids or len(ids) < 2:
+		if self.session['id'] not in ids:
 			self._clear()
 			return False
 		self.session['feeds'] = feeds
@@ -203,6 +207,7 @@ class LiveTVFailover(ku.xbmc_player):
 		if not self._prune_expired(): return
 		expected = self._url(self.session['id'])
 		if expected and self._playing_file() == expected:
+			ku.clear_property(LIVE_OPENING)
 			if ku.get_property(OPENING) == expected: ku.clear_property(OPENING)
 			if not self.session['active'] and self.session.get('timing_valid') and livetv_feed_speed:
 				elapsed = self.clock() - self.session['started_at']
@@ -243,6 +248,7 @@ class LiveTVFailover(ku.xbmc_player):
 	def _next(self, now, selected=None):
 		if not self._prune_expired(): return False
 		if selected is not None and selected not in [feed['id'] for feed in self.session['feeds']]: return False
+		ku.clear_property(PLAYBACK_FAILED)
 		if selected is None and self.session and livetv_feed_speed: livetv_feed_speed.record(self.session.get('speed_keys', {}).get(self.session['id'], ''), None)
 		ku.clear_property(CAN_SWITCH)
 		ku.clear_property(FEED_CHOICES)
@@ -253,7 +259,7 @@ class LiveTVFailover(ku.xbmc_player):
 		previous_url = self._url(self.session['id'])
 		self.session['id'] = selected if selected is not None else self.session['alternatives'].pop(0)
 		if selected is not None: self.session['alternatives'] = [value for value in self.session['alternatives'] if value != selected]
-		self.session.update(started_at=now, active=False, last_time=None, last_progress=now, paused=False, switching=True, outgoing=previous_url, foreign_seen=False, observed=False, probe_started=False, probe_allowed=False, timing_valid=True)
+		self.session.update(started_at=now, active=False, last_time=None, last_progress=now, paused=False, switching=True, outgoing=previous_url, foreign_seen=False, observed=False, probe_started=False, probe_allowed=False, failure_dialog=False, stop_pending=None, timing_valid=True)
 		self.event = None
 		# Capabilities belong to one relay instance and can expire or disappear on restart.
 		self.session.setdefault('urls', {}).pop(self.session['id'], None)
@@ -264,6 +270,7 @@ class LiveTVFailover(ku.xbmc_player):
 			return False
 		ku.dialog.notification('Live TV', 'Switching feed.' if selected is not None else 'Stream interrupted. Trying another feed for this match.')
 		ku.set_property(OPENING, url)
+		ku.set_property(LIVE_OPENING, 'true')
 		try: self.play(url)
 		except Exception:
 			self.event = ('error', self.session['token'], self.session['id'])
@@ -359,29 +366,44 @@ class LiveTVFailover(ku.xbmc_player):
 			if not session['active'] or playing != expected or selected not in [feed['id'] for feed in session['feeds']] or not _current_evidence(session): continue
 			if valid: return self._next(now, selected)
 			ku.dialog.notification('Live TV', 'This feed did not respond. Choose another feed.')
-		event, self.event = self.event, None
-		if event and event[1:] == (session['token'], session['id']):
-			if event[0] == 'stop' and playing != expected:
+		if not session['active'] and not playing and not session.get('failure_dialog') and (ku.get_property(PLAYBACK_FAILED) or _playback_error_dialog()):
+			session['failure_dialog'] = True
+			ku.xbmc.executebuiltin('Dialog.Close(okdialog)')
+			ku.dialog.notification('Live TV', 'Playback failed. Checking for another feed.' if session['alternatives'] else 'Playback failed. Please try again.')
+			if not session['alternatives']:
 				self._clear()
 				return False
+		event, self.event = self.event, None
+		if event and event[1:] == (session['token'], session['id']):
+			if event[0] == 'stop' and playing != expected and not session.get('failure_dialog'):
+				if session['active'] or session['observed']:
+					self._clear()
+					return False
+				session['stop_pending'] = now
 			if event[0] == 'error' and (session['observed'] or playing == expected): return self._next(now)
 		if not session['active']:
+			if session.get('stop_pending') is not None and not playing and not session.get('failure_dialog') and now - session['stop_pending'] >= PROBE_DELAY:
+				self._clear()
+				return False
 			if not session['probe_allowed'] and not ku.get_visibility('Window.IsActive(12002)'):
 				session['probe_allowed'] = True
 			while True:
 				try: token, stream_id, failed = self.probe_results.get_nowait()
 				except Empty: break
-				if failed and (token, stream_id) == (session['token'], session['id']) and not playing and _playback_error_dialog():
-					ku.xbmc.executebuiltin('Dialog.Close(okdialog)')
-					return self._next(now)
+				if (token, stream_id) == (session['token'], session['id']) and not playing and session.get('failure_dialog'):
+					if failed: return self._next(now)
+					ku.dialog.notification('Live TV', 'Playback failed. Please try again.')
+					self._clear()
+					return False
 			if playing == expected:
+				session.pop('stop_pending', None)
 				session['foreign_seen'] = False
 				session['observed'] = True
 				# Recover if AV started before the service adopted the session.
 				try:
 					if self.isPlayingVideo(): self.onAVStarted(False)
 				except Exception: pass
-			elif not playing and session['probe_allowed'] and not session['probe_started'] and now - session['started_at'] >= PROBE_DELAY and _playback_error_dialog():
+			elif not playing and session['probe_allowed'] and not session['probe_started'] and now - session['started_at'] >= PROBE_DELAY and session.get('failure_dialog'):
 				session['probe_started'] = True
 				Thread(target=self._probe, args=(session['token'], session['id'], expected), daemon=True).start()
 			if not session['active'] and now - session['started_at'] >= START_TIMEOUT:

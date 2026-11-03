@@ -3,6 +3,41 @@ from caches.mylist_cache import MyList, normalize_identity
 from modules import kodi_utils
 
 
+def build_list(params):
+	from threading import Thread
+	from menus.movies import Movies
+	from menus.tvshows import TVShows
+	from modules.utils import LIST_WORKERS, TaskPool
+
+	handle = int(kodi_utils.argv1())
+	try:
+		store = MyList()
+		movies = store.items('movie')[0]
+		tvshows = store.items('tvshow')[0]
+		entries = [(item, 'movie') for item in movies] + [(item, 'tvshow') for item in tvshows]
+		entries.sort(key=lambda entry: (-entry[0]['saved_at'], entry[1], int(entry[0]['media_id'])))
+		builders = {}
+		if movies:
+			builders['movie'] = Movies({**params, 'action': 'my_list_movies'})
+			builders['movie'].saved_titles = {item['media_id']: item['title'] for item in movies}
+		if tvshows:
+			builders['tvshow'] = TVShows({**params, 'action': 'my_list_tvshows'})
+			builders['tvshow'].saved_titles = {item['media_id']: item['title'] for item in tvshows}
+		def build(position, item, mediatype):
+			builder = builders[mediatype]
+			if mediatype == 'movie': builder.build_movie_content(position, item['media_id'])
+			else: builder.build_tvshow_content(position, item['media_id'])
+		for thread in TaskPool(LIST_WORKERS).tasks(build, [(position, item, mediatype) for position, (item, mediatype) in enumerate(entries)], Thread): thread.join()
+		items = [item for builder in builders.values() for item in builder.items]
+		items.sort(key=lambda item: int(item[1].getProperty('pov_lite_sort_order')))
+		kodi_utils.add_items(handle, items)
+	except Exception as error:
+		kodi_utils.logger('My List', 'Could not load saved list: %s' % type(error).__name__)
+		kodi_utils.notification('Could not load My List')
+	kodi_utils.set_content(handle, 'videos')
+	kodi_utils.end_directory(handle, False)
+
+
 def saved_status(mediatype, tmdb_id):
 	try: return 'true' if MyList().contains(mediatype, tmdb_id) else 'false'
 	except Exception as error:

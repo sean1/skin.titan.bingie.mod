@@ -35,6 +35,7 @@ POV_ROUTES = {
 
 	'build_movie_list': lambda p: _import('menus.movies', 'Menu')(p).run(),
 	'build_tvshow_list': lambda p: _import('menus.tvshows', 'Menu')(p).run(),
+	'build_my_list': lambda p: _import('modules.mylist', 'build_list')(p),
 	'build_season_list': lambda p: _import('menus.seasons', 'Seasons')(p).run(),
 	'build_episode_list': lambda p: _import('menus.seasons', 'Episodes')(p).run(),
 	'build_in_progress_episode': lambda p: _import('menus.episodes', 'Menu')(p).run(),

@@ -69,7 +69,7 @@ def _soccer_event(name):
 	if len(parts) < 3 or parts[0].casefold() != 'live': return None
 	if not re.search(r'\b(?:soccer|football)\b', ' '.join(parts[2:]), re.I): return None
 	if re.search(r'\b(?:end|ended|upcoming|replay|delayed)\b', ' '.join(parts[2:]), re.I): return None
-	match = re.fullmatch(r"([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’\-]{2,80}?)", parts[1], re.I)
+	match = re.fullmatch(r"([\w .&'’/\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’/\-]{2,80}?)", parts[1], re.I)
 	if not match: return None
 	teams = tuple(' '.join(team.casefold().split()) for team in match.groups())
 	if not all(re.search(r'[^\W\d_]', team) for team in teams) or teams[0] == teams[1]: return None
@@ -1333,9 +1333,9 @@ def _soccer_feed_event(name):
 			# Keep identity markers when removing a parenthesized time or feed label.
 			markers = re.findall(r'\b(?:women|womens|ladies|wfc|w|reserve|reserves|ii|iii|b|(?:u|under)\s*[- ]?\s*\d{1,2})\b', ending.group(1), re.I)
 			part = part[:ending.start()] + (' ' + ' '.join(markers) if markers else '')
-		match = re.fullmatch(r"([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’\-]{2,80}?)", part, re.I)
+		match = re.fullmatch(r"([\w .&'’/\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’/\-]{2,80}?)", part, re.I)
 		if not match and len(re.findall(r'\s+-\s+', part)) == 1:
-			match = re.fullmatch(r"([\w .&'’\-]{2,80}?)\s+-\s+([\w .&'’\-]{2,80}?)", part, re.I)
+			match = re.fullmatch(r"([\w .&'’/\-]{2,80}?)\s+-\s+([\w .&'’/\-]{2,80}?)", part, re.I)
 		if match:
 			event = tuple(' '.join(side.casefold().split()) for side in match.groups())
 			if event[0] != event[1] and all(re.search(r'[^\W\d_]', side) for side in event): return event

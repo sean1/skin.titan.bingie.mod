@@ -3,7 +3,6 @@ from modules import kodi_utils
 POV_ROUTES = {
 	'livetv.browse': lambda p: _import('menus.livetv', 'browse')(p),
 	'livetv.settings': lambda p: _import('menus.livetv', 'settings')(p),
-	'livetv.guide_settings': lambda p: _import('menus.livetv', 'guide_settings')(p),
 	'livetv.search': lambda p: _import('menus.livetv', 'search')(p),
 	'livetv.search_results': lambda p: _import('menus.livetv', 'search_results')(p),
 	'livetv.match_feeds': lambda p: _import('menus.livetv', 'match_feeds')(p),

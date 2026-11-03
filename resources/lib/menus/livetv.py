@@ -650,32 +650,6 @@ def settings(params):
 	ku.dialog.notification('Live TV', 'Live TV account saved.', time=5000)
 
 
-def guide_settings(params):
-	account = _load()
-	if not account:
-		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
-		return
-	url = ku.dialog.input('Sports feed matching data URL (leave empty to cancel)', option=xbmcgui.ALPHANUM_HIDE_INPUT).strip()
-	if not url: return
-	try:
-		parts = urlsplit(url)
-		valid = parts.scheme in ('http', 'https') and parts.hostname and not (parts.username or parts.password or parts.fragment)
-	except ValueError:
-		valid = False
-	if not valid:
-		_error('Enter a valid HTTP or HTTPS sports feed matching data URL.')
-		return
-	account['epg_url'] = url
-	bundled = _read_account(_bundled_credentials_path())
-	if bundled: account['guide_override_base'] = _account_fingerprint(bundled)
-	try:
-		_save(account)
-	except OSError:
-		_error('Could not save the sports feed matching data URL in the Kodi profile.')
-		return
-	ku.dialog.notification('Live TV', 'Sports feed matching data URL saved.', time=5000)
-
-
 def browse(params):
 	account = _load()
 	if not account:

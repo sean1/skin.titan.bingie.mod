@@ -21,6 +21,7 @@ PROPERTY = 'BingieLiveTVFailover'
 SWITCH_REQUEST = 'BingieLiveTVSwitchRequest'
 CAN_SWITCH = 'BingieLiveTVCanSwitch'
 FEED_CHOICES = 'BingieLiveTVFeedChoices'
+OPENING = 'BingieTV'
 START_TIMEOUT = 15.0
 STALL_TIMEOUT = 8.0
 PROBE_DELAY = 2.0
@@ -90,6 +91,7 @@ class LiveTVFailover(ku.xbmc_player):
 
 	def _clear(self):
 		if self.session:
+			if ku.get_property(OPENING) in self.session.get('urls', {}).values(): ku.clear_property(OPENING)
 			self.ignored_token = self.session['token']
 			try:
 				current = json.loads(ku.get_property(PROPERTY) or '{}')
@@ -201,6 +203,7 @@ class LiveTVFailover(ku.xbmc_player):
 		if not self._prune_expired(): return
 		expected = self._url(self.session['id'])
 		if expected and self._playing_file() == expected:
+			if ku.get_property(OPENING) == expected: ku.clear_property(OPENING)
 			if not self.session['active'] and self.session.get('timing_valid') and livetv_feed_speed:
 				elapsed = self.clock() - self.session['started_at']
 				if 0 <= elapsed <= START_TIMEOUT: livetv_feed_speed.record(self.session['speed_keys'].get(self.session['id'], ''), elapsed)
@@ -260,6 +263,7 @@ class LiveTVFailover(ku.xbmc_player):
 			self._clear()
 			return False
 		ku.dialog.notification('Live TV', 'Switching feed.' if selected is not None else 'Stream interrupted. Trying another feed for this match.')
+		ku.set_property(OPENING, url)
 		try: self.play(url)
 		except Exception:
 			self.event = ('error', self.session['token'], self.session['id'])

@@ -31,6 +31,12 @@ PROBE_TIMEOUT = 3.0
 MAX_ALTERNATIVES = 3
 
 
+def start_opening():
+	ku.xbmc.executebuiltin('CancelAlarm(BingieLiveTVOpeningTimeout,silent)')
+	ku.set_property(LIVE_OPENING, 'true')
+	ku.xbmc.executebuiltin('AlarmClock(BingieLiveTVOpeningTimeout,ClearProperty(BingieLiveTVOpening,Home),00:00:15,silent)')
+
+
 def _current_evidence(data):
 	if 'expires' not in data: return True
 	value = data['expires']
@@ -103,6 +109,7 @@ class LiveTVFailover(ku.xbmc_player):
 		self.event = None
 		ku.clear_property(PLAYBACK_FAILED)
 		ku.clear_property(LIVE_OPENING)
+		ku.xbmc.executebuiltin('CancelAlarm(BingieLiveTVOpeningTimeout,silent)')
 		ku.clear_property(SWITCH_REQUEST)
 		ku.clear_property(CAN_SWITCH)
 		ku.clear_property(FEED_CHOICES)
@@ -208,6 +215,7 @@ class LiveTVFailover(ku.xbmc_player):
 		expected = self._url(self.session['id'])
 		if expected and self._playing_file() == expected:
 			ku.clear_property(LIVE_OPENING)
+			ku.xbmc.executebuiltin('CancelAlarm(BingieLiveTVOpeningTimeout,silent)')
 			if ku.get_property(OPENING) == expected: ku.clear_property(OPENING)
 			if not self.session['active'] and self.session.get('timing_valid') and livetv_feed_speed:
 				elapsed = self.clock() - self.session['started_at']
@@ -270,7 +278,7 @@ class LiveTVFailover(ku.xbmc_player):
 			return False
 		ku.dialog.notification('Live TV', 'Switching feed.' if selected is not None else 'Stream interrupted. Trying another feed for this match.')
 		ku.set_property(OPENING, url)
-		ku.set_property(LIVE_OPENING, 'true')
+		start_opening()
 		try: self.play(url)
 		except Exception:
 			self.event = ('error', self.session['token'], self.session['id'])

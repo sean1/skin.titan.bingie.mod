@@ -8,7 +8,7 @@
 	<onunload>CancelAlarm(BingieLiveTVDialogClose,silent)</onunload>
     <controls>
 	<control type="group">
-		<animation effect="fade" start="100" end="0" time="0" condition="String.IsEqual(Window(Home).Property(BingieLiveTVPlaybackFailed),true) + String.IsEqual(Window(Home).Property(BingieLiveTVOpening),true) + String.IsEqual(Control.GetLabel(1),$LOCALIZE[16026])">Conditional</animation>
+		<animation effect="fade" start="100" end="0" time="0" condition="String.IsEqual(Window(Home).Property(BingieLiveTVOpening),true) + String.IsEqual(Control.GetLabel(1),$LOCALIZE[16026])">Conditional</animation>
 		<visible>!Window.IsActive(DialogButtonMenu.xml)</visible>
 		<visible>!Window.IsActive(DialogKeyboard.xml)</visible>
 		<visible>!Window.IsActive(DialogNumeric.xml)</visible>

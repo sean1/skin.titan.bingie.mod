@@ -2182,5 +2182,6 @@ def play(params):
 	if failover:
 		failover['started_at'] = time.monotonic()
 		xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(failover))
-		xbmcgui.Window(10000).setProperty('BingieLiveTVOpening', 'true')
+		from modules.livetv_failover import start_opening
+		start_opening()
 	xbmcplugin.setResolvedUrl(_handle(), True, item)

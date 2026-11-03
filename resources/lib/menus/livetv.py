@@ -90,7 +90,7 @@ def _fixture_scope(name):
 
 def _play_params(stream_id, name, sport=''):
 	params = {'mode': 'livetv.play', 'id': stream_id}
-	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1', 'vietnamese'):
+	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'):
 		params.update({'name': name, 'sport': sport})
 	elif _soccer_event(name): params['name'] = name
 	return params
@@ -186,17 +186,6 @@ def _cached_failover(params):
 		if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) for value in deadlines.values()): return
 		if selected in deadlines and deadlines[selected] <= time.time(): return
 		ordered = [selected] + [ref for ref, _ in feeds if ref != selected and (ref not in deadlines or deadlines[ref] > time.time())]
-		if match['sport'] == 'vietnamese':
-			provider = lambda ref: ref.split(':', 1)[0] if ':' in ref else 'primary'
-			seen = {provider(selected)}
-			other_providers, remaining = [], []
-			for ref in ordered[1:]:
-				identity = provider(ref)
-				if identity not in seen:
-					seen.add(identity)
-					other_providers.append(ref)
-				else: remaining.append(ref)
-			ordered = [selected] + other_providers + remaining
 		if len(ordered) < 2: return
 		result = {'id': selected, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': [{'id': ref, 'name': 'Feed %d' % (index + 1)} for index, ref in enumerate(ordered)], 'token': uuid.uuid4().hex}
 		for feed in result['feeds']:
@@ -757,85 +746,6 @@ def channels(params):
 		_finish(False)
 		return
 	_finish()
-
-
-def _vietnamese_feeds(accounts):
-	from concurrent.futures import ThreadPoolExecutor
-	def fetch(entry):
-		identity, account = entry
-		try:
-			streams = _catalog(account, 'get_live_streams', notify_stale=False)
-			return identity, streams if isinstance(streams, list) else None
-		except (OSError, HTTPException, ValueError, TypeError):
-			return identity, None
-	channels, failed = {}, False
-	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
-		for identity, streams in pool.map(fetch, accounts):
-			if streams is None:
-				failed = True
-				continue
-			for stream in streams:
-				if not isinstance(stream, dict): continue
-				stream_id = str(stream.get('stream_id') or '')
-				match = re.fullmatch(r'\s*VN\s*[:|]\s*VTV\s*([1-9])(?:\s+HD)?\s*', str(stream.get('name') or ''), re.I)
-				if not match or not stream_id.isdecimal(): continue
-				number = int(match.group(1))
-				ref = stream_id if identity == 'primary' else identity + ':' + stream_id
-				channels.setdefault(number, {})[ref] = stream
-	return channels, failed
-
-
-def vietnamese(params):
-	accounts = _sports_accounts(_load())
-	if not accounts:
-		_error('No Live TV account is available.')
-		_finish(False)
-		return
-	channels, failed = _vietnamese_feeds(accounts)
-	feed_cache, speed = {}, _speed_context()
-	for number, feeds in sorted(channels.items()):
-		ordered = [(ref, feeds[ref]) for ref in _speed_order(list(feeds), speed)]
-		stream_id, stream = ordered[0]
-		name = str(stream.get('name') or 'VTV%d' % number)
-		icon = os.path.join(ku.translate_path(ku.addon_path), 'media', 'livetv', 'vtv', '%d.png' % number)
-		context = []
-		if len(ordered) > 1:
-			url = ku.build_url({'mode': 'livetv.vtv_feeds', 'channel': str(number)})
-			context.append(('Choose another feed', 'Container.Update(%s)' % url))
-		_item('VTV%d — %d %s' % (number, len(ordered), 'feed' if len(ordered) == 1 else 'feeds'), _matched_play_params(stream_id, name, 'vietnamese', ordered, feed_cache), False, icon, extra_context=context)
-	_save_feed_matches(feed_cache)
-	if not channels:
-		_error('Could not load Vietnamese TV channels. Check the VPN and provider connection.' if failed else 'No VTV channels were found in the available providers.')
-	elif failed:
-		ku.dialog.notification('Live TV', 'Some provider feeds are unavailable.')
-	_finish(bool(channels))
-	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.vietnamese) + !Control.IsVisible(523)'):
-		xbmc.executebuiltin('Container.SetViewMode(523)')
-
-
-def vietnamese_feeds(params):
-	number = params.get('channel', '')
-	if number not in tuple(str(value) for value in range(1, 10)):
-		_finish(False)
-		return
-	accounts = _sports_accounts(_load())
-	if not accounts:
-		_error('No Live TV account is available.')
-		_finish(False)
-		return
-	channels, failed = _vietnamese_feeds(accounts)
-	feeds = channels.get(int(number), {})
-	choices = [(ref, feeds[ref]) for ref in _speed_order(list(feeds), _speed_context())]
-	feed_cache = {}
-	for index, (ref, stream) in enumerate(choices, 1):
-		name = str(stream.get('name') or 'VTV' + number)
-		_item('Feed %d (play channel)' % index, _matched_play_params(ref, name, 'vietnamese', choices, feed_cache), False)
-	_save_feed_matches(feed_cache)
-	if not choices:
-		_error('Could not load matching feeds. Try again.' if failed else 'No matching feeds are currently available.')
-	elif failed:
-		ku.dialog.notification('Live TV', 'Some provider feeds are unavailable.')
-	_finish(bool(choices))
 
 
 def _guide_url(account):

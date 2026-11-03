@@ -105,6 +105,23 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">True</property>
 		</item>
+		<item id="8">
+			<property name="id">$NUMBER[8]</property>
+			<label>Vietnamese TV</label>
+			<label2>Vietnamese TV</label2>
+			<icon>shortcuts/tv.png</icon>
+			<thumb />
+			<property name="labelID">vietnamese-tv</property>
+			<property name="defaultID">vietnamese-tv</property>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="Window.IsActive(Videos)">Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.vietnamese)</onclick>
+			<onclick condition="!Window.IsActive(Videos)">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.vietnamese,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.vietnamese,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.vietnamese</property>
+			<property name="submenuVisibility">vietnamese-tv</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
 			<label>My Videos</label>

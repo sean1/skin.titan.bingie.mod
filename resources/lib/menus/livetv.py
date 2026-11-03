@@ -88,7 +88,7 @@ def _fixture_scope(name):
 
 def _play_params(stream_id, name, sport=''):
 	params = {'mode': 'livetv.play', 'id': stream_id}
-	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'):
+	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1', 'vietnamese'):
 		params.update({'name': name, 'sport': sport})
 	elif _soccer_event(name): params['name'] = name
 	return params
@@ -727,6 +727,85 @@ def channels(params):
 		_finish(False)
 		return
 	_finish()
+
+
+def _vietnamese_feeds(accounts):
+	from concurrent.futures import ThreadPoolExecutor
+	def fetch(entry):
+		identity, account = entry
+		try:
+			streams = _catalog(account, 'get_live_streams', notify_stale=False)
+			return identity, streams if isinstance(streams, list) else None
+		except (OSError, HTTPException, ValueError, TypeError):
+			return identity, None
+	channels, failed = {}, False
+	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
+		for identity, streams in pool.map(fetch, accounts):
+			if streams is None:
+				failed = True
+				continue
+			for stream in streams:
+				if not isinstance(stream, dict): continue
+				stream_id = str(stream.get('stream_id') or '')
+				match = re.fullmatch(r'\s*VN\s*[:|]\s*VTV\s*([1-9])(?:\s+HD)?\s*', str(stream.get('name') or ''), re.I)
+				if not match or not stream_id.isdecimal(): continue
+				number = int(match.group(1))
+				ref = stream_id if identity == 'primary' else identity + ':' + stream_id
+				channels.setdefault(number, {})[ref] = stream
+	return channels, failed
+
+
+def vietnamese(params):
+	accounts = _sports_accounts(_load())
+	if not accounts:
+		_error('No Live TV account is available.')
+		_finish(False)
+		return
+	channels, failed = _vietnamese_feeds(accounts)
+	feed_cache, speed = {}, _speed_context()
+	for number, feeds in sorted(channels.items()):
+		ordered = [(ref, feeds[ref]) for ref in _speed_order(list(feeds), speed)]
+		stream_id, stream = ordered[0]
+		name = str(stream.get('name') or 'VTV%d' % number)
+		icon = os.path.join(ku.translate_path(ku.addon_path), 'media', 'livetv', 'vtv', '%d.png' % number)
+		context = []
+		if len(ordered) > 1:
+			url = ku.build_url({'mode': 'livetv.vtv_feeds', 'channel': str(number)})
+			context.append(('Choose another feed', 'Container.Update(%s)' % url))
+		_item('VTV%d — %d %s' % (number, len(ordered), 'feed' if len(ordered) == 1 else 'feeds'), _matched_play_params(stream_id, name, 'vietnamese', ordered, feed_cache), False, icon, extra_context=context)
+	_save_feed_matches(feed_cache)
+	if not channels:
+		_error('Could not load Vietnamese TV channels. Check the VPN and provider connection.' if failed else 'No VTV channels were found in the available providers.')
+	elif failed:
+		ku.dialog.notification('Live TV', 'Some provider feeds are unavailable.')
+	_finish(bool(channels))
+	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.vietnamese) + !Control.IsVisible(523)'):
+		xbmc.executebuiltin('Container.SetViewMode(523)')
+
+
+def vietnamese_feeds(params):
+	number = params.get('channel', '')
+	if number not in tuple(str(value) for value in range(1, 10)):
+		_finish(False)
+		return
+	accounts = _sports_accounts(_load())
+	if not accounts:
+		_error('No Live TV account is available.')
+		_finish(False)
+		return
+	channels, failed = _vietnamese_feeds(accounts)
+	feeds = channels.get(int(number), {})
+	choices = [(ref, feeds[ref]) for ref in _speed_order(list(feeds), _speed_context())]
+	feed_cache = {}
+	for index, (ref, stream) in enumerate(choices, 1):
+		name = str(stream.get('name') or 'VTV' + number)
+		_item('Feed %d (play channel)' % index, _matched_play_params(ref, name, 'vietnamese', choices, feed_cache), False)
+	_save_feed_matches(feed_cache)
+	if not choices:
+		_error('Could not load matching feeds. Try again.' if failed else 'No matching feeds are currently available.')
+	elif failed:
+		ku.dialog.notification('Live TV', 'Some provider feeds are unavailable.')
+	_finish(bool(choices))
 
 
 def _guide_url(account):

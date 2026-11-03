@@ -521,8 +521,8 @@
                 <control type="group">
                     <width>335</width>
                     <height>195</height>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>ThumbsViewItemBingieLayout</include></control>
-                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>BingieLiveChannelGridArt</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.Contains(Container.FolderPath,mode=livetv.vietnamese)</visible><include>ThumbsViewItemBingieLayout</include></control>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine) | String.Contains(Container.FolderPath,mode=livetv.vietnamese)</visible><include>BingieLiveChannelGridArt</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="BingieLiveSoccerCardArt"><param name="color" value="ff202020" /></include></control>
                     <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include></control>
                     <include content="BingieLiveSoccerTitle"><param name="focused" value="false" /></include>
@@ -547,8 +547,8 @@
 						<bordertexture colordiffuse="ffffffff">diffuse/panel2.png</bordertexture>
 						<include>thumbsborder_focused</include>
 					</control>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>ThumbsViewItemBingieLayout</include></control>
-                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>BingieLiveChannelGridArt</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.Contains(Container.FolderPath,mode=livetv.vietnamese)</visible><include>ThumbsViewItemBingieLayout</include></control>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine) | String.Contains(Container.FolderPath,mode=livetv.vietnamese)</visible><include>BingieLiveChannelGridArt</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="BingieLiveSoccerCardArt"><param name="color" value="ff303030" /></include></control>
                     <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include></control>
                     <include content="BingieLiveSoccerTitle"><param name="focused" value="true" /></include>

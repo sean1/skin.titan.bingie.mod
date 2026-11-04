@@ -5,6 +5,7 @@
 	    <include>videoViewIds</include>
     <onload condition="$EXP[IsPovLiteNavigationMenu]">Container.SetViewMode(50)</onload>
 	<onload condition="String.Contains(Container.FolderPath,mode=livetv.refine) | String.Contains(Container.FolderPath,mode=livetv.soccer)">Container.SetViewMode(523)</onload>
+	<onload condition="String.Contains(Container.FolderPath,mode=livetv.news)">Container.SetViewMode(524)</onload>
 	<onload condition="String.IsEqual(Container.FolderPath,sources://video/)">Container.SetViewMode(50)</onload>
 	<onload>ClearProperty(ShowViewSubMenu,Home)</onload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>

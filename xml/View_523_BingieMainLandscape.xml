@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
 <includes>
+    <variable name="BingieNewsHeading">
+        <value condition="String.Contains(Container.FolderPath,channel=cbc)">CBC News Network</value>
+        <value condition="String.Contains(Container.FolderPath,channel=global_national)">Global News National</value>
+        <value condition="String.Contains(Container.FolderPath,channel=global_bc)">Global News BC</value>
+        <value condition="String.Contains(Container.FolderPath,channel=cnn)">CNN</value>
+        <value condition="String.Contains(Container.FolderPath,channel=cbs)">CBS News</value>
+        <value condition="String.Contains(Container.FolderPath,channel=bbc)">BBC News</value>
+        <value condition="String.Contains(Container.FolderPath,channel=al_jazeera)">Al Jazeera English</value>
+        <value condition="String.Contains(Container.FolderPath,channel=ctv)">CTV News Channel</value>
+        <value>News</value>
+    </variable>
     <include name="View_523_Bingie_Main_Landscape">
         <control type="group">
             <include>FullscreenDimensions</include>
@@ -488,6 +499,42 @@
         </control>
     </include>
 
+    <!-- News uses the full screen rather than the movie spotlight layout. -->
+    <include name="View_524_News_Feeds">
+        <control type="group">
+            <include>FullscreenDimensions</include>
+            <visible>Control.IsVisible(524)</visible>
+            <include>animation_view_change</include>
+            <control type="label"><left>138</left><top>35</top><width>1600</width><height>58</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>$VAR[BingieNewsHeading]</label></control>
+            <control type="panel" id="524">
+                <visible>String.Contains(Container.FolderPath,mode=livetv.news)</visible>
+                <viewtype label="31018">panel</viewtype>
+                <left>131</left><top>120</top><width>1668</width><height>900</height>
+                <orientation>vertical</orientation><itemgap>0</itemgap><preloaditems>4</preloaditems><pagecontrol>61</pagecontrol>
+                <include>ScrollTime</include>
+                <onleft>524</onleft><onright>61</onright><onup>524</onup><ondown>524</ondown>
+                <itemlayout height="193" width="333">
+                    <control type="group"><width>335</width><height>195</height><include>BingieNewsCardArt</include><include content="BingieNewsTitle"><param name="focused" value="false" /></include></control>
+                </itemlayout>
+                <focusedlayout height="193" width="333">
+                    <control type="group"><width>335</width><height>195</height>
+                        <control type="image"><texture background="true">home/home_matte3.png</texture><colordiffuse>ffffffff</colordiffuse><include>thumbsborder_focused</include></control>
+                        <include>BingieNewsCardArt</include><include content="BingieNewsTitle"><param name="focused" value="true" /></include>
+                    </control>
+                </focusedlayout>
+            </control>
+            <control type="scrollbar" id="61">
+                <left>1808</left><top>120</top><width>10</width><height>900</height><orientation>vertical</orientation><onleft>524</onleft>
+                <visible>Control.IsVisible(524) + Integer.IsGreater(Container(524).NumItems,0)</visible>
+                <texturesliderbackground border="5" colordiffuse="ff141414">scrollbar/texturesliderbar_small.png</texturesliderbackground>
+                <texturesliderbar colordiffuse="ff646464" border="5">scrollbar/texturesliderbar_small.png</texturesliderbar>
+                <texturesliderbarfocus colordiffuse="ffcc0000" border="5">scrollbar/texturesliderbar_small.png</texturesliderbarfocus>
+                <textureslidernib colordiffuse="ff646464">scrollbar/texturesliderbar_nib.png</textureslidernib>
+                <textureslidernibfocus colordiffuse="ffcc0000">scrollbar/texturesliderbar_nib.png</textureslidernibfocus>
+            </control>
+        </control>
+    </include>
+
     <!-- Container -->
     <include name="Bingie_Main_Landscape_View">
 		<control type="$PARAM[containerType]" id="523">
@@ -495,6 +542,7 @@
             <visible>!$EXP[IsPovLiteNavigationMenu]</visible>
 			<visible>!String.IsEqual(Container.FolderPath,sources://video/)</visible>
             <viewtype label="31018">panel</viewtype>
+            <onfocus condition="String.Contains(Container.FolderPath,mode=livetv.news) + !Player.HasMedia + !Container.IsUpdating + !System.HasActiveModalDialog + !Window.IsVisible(busydialog) + !Window.IsVisible(busydialognocancel)">Container.SetViewMode(524)</onfocus>
             <onfocus condition="String.IsEqual(Window(Home).Property(LiveTV.Sport),all) + String.Contains(Container.FolderPath,mode=livetv.soccer)">SetFocus(9500)</onfocus>
             <focusedposition>0</focusedposition>
             <top>51</top>
@@ -523,10 +571,12 @@
                 <control type="group">
                     <width>335</width>
                     <height>195</height>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>ThumbsViewItemBingieLayout</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.Contains(Container.FolderPath,mode=livetv.news)</visible><include>ThumbsViewItemBingieLayout</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>BingieLiveChannelGridArt</include></control>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.news)</visible><include>BingieNewsCardArt</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="BingieLiveSoccerCardArt"><param name="color" value="ff202020" /></include></control>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.Contains(Container.FolderPath,mode=livetv.news)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include></control>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.news)</visible><include content="BingieNewsTitle"><param name="focused" value="false" /></include></control>
                     <include content="BingieLiveSoccerTitle"><param name="focused" value="false" /></include>
                     <include content="BingieTennisScoreboardCard"><param name="focused" value="false" /></include>
                     <include content="BingieSportsMatchupCard"><param name="focused" value="false" /></include>
@@ -549,10 +599,12 @@
 						<bordertexture colordiffuse="ffffffff">diffuse/panel2.png</bordertexture>
 						<include>thumbsborder_focused</include>
 					</control>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include>ThumbsViewItemBingieLayout</include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.refine) + !String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.Contains(Container.FolderPath,mode=livetv.news)</visible><include>ThumbsViewItemBingieLayout</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.refine)</visible><include>BingieLiveChannelGridArt</include></control>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.news)</visible><include>BingieNewsCardArt</include></control>
                     <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="BingieLiveSoccerCardArt"><param name="color" value="ff303030" /></include></control>
-                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include></control>
+                    <control type="group"><visible>!String.Contains(Container.FolderPath,mode=livetv.soccer) + !String.Contains(Container.FolderPath,mode=livetv.news)</visible><include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include></control>
+                    <control type="group"><visible>String.Contains(Container.FolderPath,mode=livetv.news)</visible><include content="BingieNewsTitle"><param name="focused" value="true" /></include></control>
                     <include content="BingieLiveSoccerTitle"><param name="focused" value="true" /></include>
                     <include content="BingieTennisScoreboardCard"><param name="focused" value="true" /></include>
                     <include content="BingieSportsMatchupCard"><param name="focused" value="true" /></include>
@@ -696,6 +748,16 @@
     <include name="BingieLiveChannelGridArt">
         <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>ff202020</colordiffuse></control>
         <control type="image"><left>30</left><right>30</right><top>12</top><bottom>45</bottom><texture background="true" fallback="DefaultVideo.png">$INFO[ListItem.Art(thumb)]</texture><aspectratio>keep</aspectratio></control>
+    </include>
+
+    <include name="BingieNewsTitle">
+        <control type="label"><left>16</left><right>16</right><bottom>28</bottom><height>28</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><scroll>$PARAM[focused]</scroll></control>
+        <control type="label"><left>16</left><right>16</right><bottom>10</bottom><height>20</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(BingieNewsStatus)]</label><scroll>$PARAM[focused]</scroll></control>
+    </include>
+
+    <include name="BingieNewsCardArt">
+        <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>ff202020</colordiffuse></control>
+        <control type="image"><left>30</left><right>30</right><top>12</top><bottom>60</bottom><texture background="true" fallback="DefaultVideo.png">$INFO[ListItem.Art(thumb)]</texture><aspectratio>keep</aspectratio></control>
     </include>
 
     <include name="Bingie_Main_Landscape_Title">

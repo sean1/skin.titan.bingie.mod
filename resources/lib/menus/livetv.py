@@ -748,6 +748,69 @@ def channels(params):
 	_finish()
 
 
+_NEWS_CHANNELS = {
+	'cbc': {'cbc news', 'cbc news network'},
+	'global_national': {'global news national', 'global national news'},
+	'global_bc': {'global bc', 'global vancouver', 'global vancouver bc', 'global news bc', 'global bc news'},
+	'cnn': {'cnn', 'cnn news'},
+	'cbs': {'cbs news', 'cbs news 24 7'},
+	'bbc': {'bbc news', 'bbc world news'},
+	'al_jazeera': {'al jazeera english'},
+	'ctv': {'ctv news', 'ctv news channel', 'ctv news network'},
+}
+_NEWS_LABELS = {
+	'cbc': 'CBC News Network', 'global_national': 'Global News National', 'global_bc': 'Global News BC', 'cnn': 'CNN', 'cbs': 'CBS News',
+	'bbc': 'BBC News', 'al_jazeera': 'Al Jazeera English', 'ctv': 'CTV News Channel',
+}
+
+
+def _news_name(name):
+	name = re.sub(r'^(?:ca(?:\s+en)?|us|ar|at&t)\s*(?:\||:)\s*', '', name.strip(), flags=re.I)
+	name = re.sub(r'^(?:ca|us)\s+', '', name, flags=re.I)
+	name = re.sub(r'\s+ᴿᴬᵂ\s*$', '', name)
+	name = re.sub(r'(?:\s+\(FL\))?\s*$', '', name, flags=re.I)
+	name = re.sub(r'\b(?:fhd|uhd|hd|sd|4k|1080p|720p)(?:\s+source)?\s*$', '', name, flags=re.I)
+	return ' '.join(re.sub(r'[^\w]+', ' ', name.casefold()).split())
+
+
+def news(params):
+	channel = params.get('channel', '')
+	if channel and channel not in _NEWS_CHANNELS:
+		_error('This news channel is unavailable.')
+		_finish(False)
+		return
+	if params.get('action') == 'refresh':
+		query = {'mode': 'livetv.news', 'reload': str(time.time_ns())}
+		if channel: query['channel'] = channel
+		xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url(query))
+		return
+	from modules import livetv_news_refresh
+	state, groups = livetv_news_refresh.prepare(params)
+	refresh = [('Refresh news feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.news', 'action': 'refresh', **({'channel': channel} if channel else {})}))]
+	if not channel:
+		for key, label in _NEWS_LABELS.items():
+			feeds = groups.get(key, [])
+			count = len(feeds)
+			status = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else 'No feeds'
+			if state in ('loading', 'partial'): status = status + ' · updating' if count else 'Finding feeds…'
+			elif state == 'stale': status = status + ' · saved' if count else 'Feeds unavailable'
+			elif state == 'unavailable': status = 'Feeds unavailable'
+			icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % key
+			_item(label, {'mode': 'livetv.news', 'channel': key}, icon=icon, extra_context=refresh, extra_properties={'BingieNewsStatus': status})
+	else:
+		feeds = groups.get(channel, [])
+		icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % channel
+		for index, (ref, feed) in enumerate(feeds, 1):
+			name = str(feed.get('name') or _NEWS_LABELS[channel])
+			_item('Feed %d · %s' % (index, name), _play_params(ref, name), False, icon, extra_context=refresh)
+		if not feeds:
+			message = 'Finding feeds…' if state in ('loading', 'partial') else 'Feeds unavailable' if state in ('stale', 'unavailable') else 'No matching feeds'
+			_item(message, {'mode': 'livetv.news', 'channel': channel}, False, playable=False, extra_context=refresh)
+	_finish()
+	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.news) + !Control.IsVisible(524)'):
+		xbmc.executebuiltin('Container.SetViewMode(524)')
+
+
 def _guide_url(account):
 	return account.get('epg_url') or account['server'] + '/xmltv.php?' + urlencode({'username': account['username'], 'password': account['password']})
 

@@ -948,6 +948,8 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		self.focused_standings = FocusedStandings()
 		from modules.livetv_sports_refresh import SportsRefresh
 		self.sports_refresh = SportsRefresh()
+		from modules.livetv_news_refresh import NewsRefresh
+		self.news_refresh = NewsRefresh()
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
@@ -957,6 +959,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 		if hasattr(self, 'livetv_failover'): self.livetv_failover.close()
 		if hasattr(self, 'focused_standings'): self.focused_standings.close()
 		if hasattr(self, 'sports_refresh'): self.sports_refresh.close()
+		if hasattr(self, 'news_refresh'): self.news_refresh.close()
 		if hasattr(self, 'livetv_vpn'): self.livetv_vpn.close()
 		for i in getattr(self, 'threads', ()): i.join()
 
@@ -979,6 +982,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 					continue
 				self.next_page_prefetch.tick()
 				self.sports_refresh.tick()
+				self.news_refresh.tick()
 				fanart_pending = self.focused_fanart.tick()
 				standings_pending = self.focused_standings.tick()
 				preview_active = self.trailer_preview.tick()

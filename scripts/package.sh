@@ -68,12 +68,7 @@ fi
 
 mkdir -p "$output_dir"
 output_dir=$(CDPATH= cd -- "$output_dir" && pwd)
-if [ "$diagnostic" = true ]; then
-	diagnostic_version="$addon_version"
-	package_name="$addon_id-$diagnostic_version-diagnostic.zip"
-else
-	package_name="$addon_id-$addon_version.zip"
-fi
+package_name="$addon_id-$addon_version.zip"
 package_path="$output_dir/$package_name"
 mkdir -p "$project_dir/tmp"
 temporary_dir=$(mktemp -d "$project_dir/tmp/bingie-lite-package.XXXXXX")
@@ -95,21 +90,6 @@ tar -C "$project_dir" \
 	--verbatim-files-from \
 	--files-from="$tracked_manifest" \
 	-cf - | tar -C "$temporary_dir/$addon_id" -xf -
-
-if [ "$diagnostic" = true ]; then
-	python3 - "$temporary_dir/$addon_id/addon.xml" "$addon_version" "$diagnostic_version" <<'PY'
-import sys
-
-path, version, diagnostic_version = sys.argv[1:]
-with open(path, encoding='utf-8') as source:
-	content = source.read()
-old = 'version="%s"' % version
-if content.count(old) != 1:
-	raise SystemExit('Unable to identify the add-on version in staged addon.xml')
-with open(path, 'w', encoding='utf-8') as target:
-	target.write(content.replace(old, 'version="%s"' % diagnostic_version, 1))
-PY
-fi
 
 if [ ! -e "$subtitle_credentials" ] && [ ! -L "$subtitle_credentials" ]; then
 	printf '%s\n' "Subtitle credential file is required to build a complete package: $subtitle_credentials_rel" >&2

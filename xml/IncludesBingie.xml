@@ -947,11 +947,11 @@
             <control type="list" id="4444">
                 <posx>110</posx>
 				<posy>303</posy>
-				<animation effect="slide" end="0,70" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
-				<animation effect="slide" end="0,184" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
-				<animation effect="slide" end="0,238" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),live-tv)">Conditional</animation>
-				<animation effect="slide" end="0,333" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),myvideos)">Conditional</animation>
-				<animation effect="slide" end="0,391" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),mylist)">Conditional</animation>
+				<animation effect="slide" end="0,28" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),movies)">Conditional</animation>
+				<animation effect="slide" end="0,142" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),tvshows)">Conditional</animation>
+				<animation effect="slide" end="0,196" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),live-tv)">Conditional</animation>
+				<animation effect="slide" end="0,375" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),myvideos)">Conditional</animation>
+				<animation effect="slide" end="0,433" time="0" condition="String.IsEqual(Container(900).ListItem.Property(submenuVisibility),mylist)">Conditional</animation>
                 <visible allowhiddenfocus="true">[Control.HasFocus(900) | Control.HasFocus(4444)] + Integer.IsGreater(Container(4445).NumItems,0)</visible>
                 <width>450</width>
 				<height>739</height>

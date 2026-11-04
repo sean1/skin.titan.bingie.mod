@@ -105,6 +105,23 @@
 			<property name="group">mainmenu</property>
 			<property name="hasSubmenu">True</property>
 		</item>
+		<item id="9">
+			<property name="id">$NUMBER[9]</property>
+			<label>News</label>
+			<label2>News</label2>
+			<icon>shortcuts/tv.png</icon>
+			<thumb />
+			<property name="labelID">news</property>
+			<property name="defaultID">news</property>
+			<onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+			<onclick condition="Window.IsActive(Videos)">Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.news)</onclick>
+			<onclick condition="!Window.IsActive(Videos)">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.news,return)</onclick>
+			<property name="path">ActivateWindow(Videos,plugin://skin.titan.bingie.lite/?mode=livetv.news,return)</property>
+			<property name="list">plugin://skin.titan.bingie.lite/?mode=livetv.news</property>
+			<property name="submenuVisibility">news</property>
+			<property name="group">mainmenu</property>
+			<property name="hasSubmenu">False</property>
+		</item>
 		<item id="4">
 			<property name="id">$NUMBER[4]</property>
 			<label>My Videos</label>

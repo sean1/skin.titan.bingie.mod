@@ -2,7 +2,7 @@
 <!-- BINGIE -->
 <includes>
     <include name="videoViewIds">
-        <views>50,523,525,527</views>
+        <views>50,523,524,525,527</views>
     </include>
 
     <include name="genericViewIds">
@@ -15,6 +15,7 @@
             <include>animation_window_open_close</include>
             <include>View_50_List</include>
             <include condition="Window.IsActive(MyVideoNav.xml)">View_523_Bingie_Main_Landscape</include>
+            <include condition="Window.IsActive(MyVideoNav.xml)">View_524_News_Feeds</include>
             <include condition="Window.IsActive(MyVideoNav.xml)">View_525_Episodes</include>
             <include condition="Window.IsActive(MyVideoNav.xml)">View_527_Seasons</include>
         </control>

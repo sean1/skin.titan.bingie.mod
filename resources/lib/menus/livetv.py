@@ -2127,13 +2127,9 @@ def match_feeds(params):
 		choices = livetv_feed_selection.order_choices(choices)
 		feed_cache = {}
 		if choices:
-			stream_id, first = choices[0]
-			name = str(first.get('name') or 'Live channel')
-			feed_label = 'Feed 1' if ':' in stream_id else name.split('|')[-1].strip()
-			_item('Play first feed — ' + feed_label, _matched_play_params(stream_id, name, sport, choices if unique.get(stream_id) else [], feed_cache), False, first.get('stream_icon'))
 			for number, (stream_id, stream) in enumerate(choices, 1):
 				name = str(stream.get('name') or 'Live channel')
-				_item(('Feed %d' % number if ':' in stream_id else name.split('|')[-1].strip()) + ' (play channel)', _matched_play_params(stream_id, name, sport, choices if unique.get(stream_id) else [], feed_cache), False, stream.get('stream_icon'))
+				_item(('Feed %d' % number if ':' in stream_id else name.split('|')[-1].strip()) + ' (play channel)', _matched_play_params(stream_id, name, sport, choices if unique.get(stream_id) else [], feed_cache), False)
 		elif state == 'ready':
 			_item('No matching live feeds are currently available', {}, False, playable=False)
 		if state == 'partial_unavailable': waiting_row('Some feeds unavailable — select to retry')
@@ -2147,7 +2143,14 @@ def match_feeds(params):
 
 
 def play(params):
-	xbmcgui.Window(10000).clearProperty(_FAILOVER_PROPERTY)
+	window = xbmcgui.Window(10000)
+	deadline = time.monotonic() + 3
+	while window.getProperty('BingieLiveTVStopRequest') and time.monotonic() < deadline: xbmc.sleep(50)
+	if window.getProperty('BingieLiveTVStopRequest'):
+		_error('Still stopping the previous feed. Try again.')
+		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
+		return
+	window.clearProperty(_FAILOVER_PROPERTY)
 	reference = params.get('id', '')
 	provider, separator, stream_id = reference.partition(':')
 	account = _account_for_feed(provider) if separator else _load()
@@ -2168,5 +2171,6 @@ def play(params):
 	item.setMimeType('video/mp2t')
 	item.setContentLookup(False)
 	if failover:
+		failover['playback_url'] = url
 		xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(failover))
 	xbmcplugin.setResolvedUrl(_handle(), True, item)

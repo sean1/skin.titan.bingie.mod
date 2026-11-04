@@ -4,13 +4,18 @@
 	<defaultcontrol always="true">9900</defaultcontrol>
 	<onload condition="!String.IsEmpty(Window(Home).Property(BingieTrailerPreview))">Dialog.Close(busydialog,true)</onload>
 	<onload condition="!String.IsEmpty(Window(Home).Property(BingieTrailerPreview))">Dialog.Close(busydialognocancel,true)</onload>
+	<onload condition="Control.IsVisible(9901)">SetFocus(9901)</onload>
 	<controls>
-		<!-- Kodi's busy dialog otherwise dismisses Back without stopping a stream that is still opening. -->
+		<!-- Back cancels an opening Live TV stream and returns to the feed list. -->
 		<control type="button" id="9900">
 			<left>0</left><top>0</top><width>1</width><height>1</height>
-			<visible>Player.HasMedia + !Player.HasVideo</visible>
-			<visible>String.Contains(Player.Filenameandpath,plugin://skin.titan.bingie.lite/?mode=livetv.play)|[!String.IsEmpty(Window(Home).Property(BingieTV))+String.IsEqual(Player.Filenameandpath,Window(Home).Property(BingieTV))]</visible>
-			<onback>PlayerControl(Stop)</onback>
+			<visible>!String.IsEmpty(Window(Home).Property(BingieLiveTVFailover)) + [String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true) | Player.Caching | [Player.HasMedia + !Player.HasVideo + [String.Contains(Player.Filenameandpath,plugin://skin.titan.bingie.lite/?mode=livetv.play) | [!String.IsEmpty(Window(Home).Property(BingieTV)) + String.IsEqual(Player.Filenameandpath,Window(Home).Property(BingieTV))]]]]</visible>
+			<onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">SetProperty(BingieLiveTVStopRequest,true,Home)</onback>
+		</control>
+		<control type="button" id="9901">
+			<left>0</left><top>0</top><width>1</width><height>1</height>
+			<visible>String.IsEmpty(Window(Home).Property(BingieLiveTVFailover)) + Player.HasMedia + !Player.HasVideo + [String.Contains(Player.Filenameandpath,plugin://skin.titan.bingie.lite/?mode=livetv.play) | [!String.IsEmpty(Window(Home).Property(BingieTV)) + String.IsEqual(Player.Filenameandpath,Window(Home).Property(BingieTV))]]</visible>
+			<onback condition="String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">PlayerControl(Stop)</onback>
 		</control>
 		<control type="group">
             <visible>!Window.IsVisible(startup)</visible>

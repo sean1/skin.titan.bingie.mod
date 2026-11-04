@@ -1,17 +1,20 @@
 """Switch live match streams on request without exposing account credentials."""
 import json
 import math
+import re
 from http.client import HTTPException
 from time import monotonic, time
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, urlsplit
 
-from modules.livetv_vpn_relay import register
+from modules.livetv_vpn_relay import cancel, register
 
 from modules import kodi_utils as ku
 
 PROPERTY = 'BingieLiveTVFailover'
 SWITCH_REQUEST = 'BingieLiveTVSwitchRequest'
+STOP_REQUEST = 'BingieLiveTVStopRequest'
 CAN_SWITCH = 'BingieLiveTVCanSwitch'
+LOADING_SWITCH = 'BingieLiveTVLoadingSwitch'
 FEED_CHOICES = 'BingieLiveTVFeedChoices'
 OPENING = 'BingieTV'
 SESSION_OPEN_TIMEOUT = 30.0
@@ -29,7 +32,7 @@ def request_manual_switch():
 	try:
 		data = json.loads(ku.get_property(FEED_CHOICES) or '{}')
 		token, current, raw_feeds = data.get('token'), data.get('current'), data.get('feeds')
-		if not isinstance(token, str) or not token or not isinstance(current, str) or not isinstance(raw_feeds, list) or not ku.get_property(CAN_SWITCH) or not _current_evidence(data): raise ValueError('No session')
+		if not isinstance(token, str) or not token or not isinstance(current, str) or not isinstance(raw_feeds, list) or not ku.get_property(CAN_SWITCH) or ku.get_property(STOP_REQUEST) or not _current_evidence(data): raise ValueError('No session')
 		feeds = [feed for feed in raw_feeds if isinstance(feed, dict) and _current_evidence(feed)]
 		current_feed = next((feed for feed in feeds if feed.get('id') == current), None)
 		if not current_feed or len(feeds) < 2: raise ValueError('No session')
@@ -38,7 +41,7 @@ def request_manual_switch():
 		if choice >= len(feeds): raise ValueError('Invalid choice')
 		selected = feeds[choice]['id']
 		if selected == current: return False
-		if json.loads(ku.get_property(FEED_CHOICES) or '{}') != data or not ku.get_property(CAN_SWITCH) or not _current_evidence(data) or not _current_evidence(current_feed) or not _current_evidence(feeds[choice]): return False
+		if json.loads(ku.get_property(FEED_CHOICES) or '{}') != data or not ku.get_property(CAN_SWITCH) or ku.get_property(STOP_REQUEST) or not _current_evidence(data) or not _current_evidence(current_feed) or not _current_evidence(feeds[choice]): return False
 		ku.set_property(SWITCH_REQUEST, json.dumps({'token': token, 'current': current, 'id': selected}))
 		return True
 	except (TypeError, ValueError, AttributeError, KeyError):
@@ -53,8 +56,11 @@ class LiveTVFailover(ku.xbmc_player):
 		self.session = None
 		self.ignored_token = ''
 		self.event = None
+		self.caching = False
+		self.stop_pending = False
+		self.stop_ack_queued = False
 
-	def _clear(self):
+	def _clear(self, keep_stop=False):
 		if self.session:
 			if ku.get_property(OPENING) in self.session.get('urls', {}).values(): ku.clear_property(OPENING)
 			self.ignored_token = self.session['token']
@@ -64,22 +70,26 @@ class LiveTVFailover(ku.xbmc_player):
 			except (ValueError, TypeError, AttributeError): pass
 		self.session = None
 		self.event = None
+		self.caching = False
 		ku.clear_property(SWITCH_REQUEST)
+		if not keep_stop: ku.clear_property(STOP_REQUEST)
 		ku.clear_property(CAN_SWITCH)
+		ku.clear_property(LOADING_SWITCH)
 		ku.clear_property(FEED_CHOICES)
 
 	def close(self):
 		self._clear()
 
 	def _prune_expired(self):
-		if not self.session or not _current_evidence(self.session):
+		if not self.session:
 			self._clear()
 			return False
-		feeds = [feed for feed in self.session['feeds'] if _current_evidence(feed)]
+		feeds = [feed for feed in self.session['feeds'] if _current_evidence(feed)] if _current_evidence(self.session) else []
 		ids = {feed['id'] for feed in feeds}
 		if self.session['id'] not in ids:
-			self._clear()
-			return False
+			# Keep only the playback identity so Back can cancel an expired stream.
+			self.session['feeds'] = []
+			return True
 		self.session['feeds'] = feeds
 		return True
 
@@ -89,11 +99,11 @@ class LiveTVFailover(ku.xbmc_player):
 			if not isinstance(data, dict): return
 			token, stream_id, alternatives = data.get('token'), data.get('id'), data.get('alternatives')
 			if not isinstance(token, str) or not token or token == self.ignored_token: return
+			if self.session and token == self.session['token']: return
 			if not _current_evidence(data):
 				self.session = {'token': token}
 				self._clear()
 				return
-			if self.session and token == self.session['token']: return
 			def valid(value):
 				if not isinstance(value, str): return False
 				if value.isdecimal(): return True
@@ -152,6 +162,45 @@ class LiveTVFailover(ku.xbmc_player):
 		try: return self.getPlayingFile() if self.isPlaying() else ''
 		except Exception: return ''
 
+	def _owns_playback(self, playing, stream_id, urls):
+		if not playing or playing in urls: return True
+		try:
+			parsed = urlsplit(playing)
+			query = parse_qs(parsed.query)
+			return parsed.scheme == 'plugin' and parsed.netloc == 'skin.titan.bingie.lite' and query.get('mode') == ['livetv.play'] and query.get('id') == [stream_id]
+		except (ValueError, TypeError): return False
+
+	def _queue_stop(self):
+		try: ku.xbmc.executebuiltin('PlayerControl(Stop)')
+		except Exception: return False
+		self.stop_pending = True
+		self.stop_ack_queued = False
+		self._queue_stop_ack()
+		return True
+
+	def _queue_stop_ack(self):
+		try:
+			ku.xbmc.executebuiltin('ClearProperty(%s,Home)' % STOP_REQUEST)
+			self.stop_ack_queued = True
+		except Exception: pass
+
+	def _cancel_unadopted(self):
+		try:
+			data = json.loads(ku.get_property(PROPERTY) or '{}')
+			token, stream_id, url = data.get('token'), data.get('id'), data.get('playback_url')
+			if not isinstance(token, str) or not token or not isinstance(stream_id, str) or not stream_id or not isinstance(url, str) or not self._owns_playback(self._playing_file(), stream_id, (url,)): return
+			parsed = urlsplit(url)
+			if parsed.scheme != 'http' or parsed.hostname != '127.0.0.1' or not parsed.port or parsed.query or parsed.fragment or not re.fullmatch(r'/r/[A-Za-z0-9_-]{32,}/resource(?:\.[A-Za-z0-9]{1,8})?', parsed.path): return
+			try: cancel(url)
+			except (OSError, HTTPException): pass
+			current = json.loads(ku.get_property(PROPERTY) or '{}')
+			if current != data or not self._owns_playback(self._playing_file(), stream_id, (url,)): return
+			if not self._queue_stop(): return False
+			if json.loads(ku.get_property(PROPERTY) or '{}') == data: ku.clear_property(PROPERTY)
+			return True
+		except (OSError, HTTPException, ValueError, TypeError, AttributeError, KeyError): pass
+		return False
+
 	def onAVStarted(self, observed_callback=True):
 		if not self.session or not self._prune_expired(): return
 		expected = self._url(self.session['id'])
@@ -161,12 +210,28 @@ class LiveTVFailover(ku.xbmc_player):
 			self.session['switching'] = False
 
 	def onPlayBackError(self):
-		if self.session: self.event = ('error', self.session['token'], self.session['id'])
+		if self.session: self.event = ('error', self.session['token'], self.session['id'], self.session['switching'])
 
 	def onPlayBackStopped(self):
 		if self.session: self.event = ('stop', self.session['token'], self.session['id'], self.session['switching'])
 
 	onPlayBackEnded = onPlayBackStopped
+
+	def _publish_choices(self):
+		session = self.session
+		if session and not session['active']:
+			newly_loading = not ku.get_property(LOADING_SWITCH)
+			ku.set_property(LOADING_SWITCH, 'true')
+			if newly_loading and (ku.get_visibility('Window.IsActive(busydialog)') or ku.get_visibility('Window.IsActive(busydialognocancel)')): ku.xbmc.executebuiltin('SetFocus(9900)')
+		else: ku.clear_property(LOADING_SWITCH)
+		if session and session['active'] and len(session['feeds']) > 1:
+			choices = {'token': session['token'], 'current': session['id'], 'feeds': session['feeds']}
+			if 'expires' in session: choices['expires'] = session['expires']
+			ku.set_property(FEED_CHOICES, json.dumps(choices))
+			ku.set_property(CAN_SWITCH, 'true')
+		else:
+			ku.clear_property(CAN_SWITCH)
+			ku.clear_property(FEED_CHOICES)
 
 	def _switch(self, selected):
 		if not self._prune_expired(): return False
@@ -181,35 +246,71 @@ class LiveTVFailover(ku.xbmc_player):
 			return False
 		if selected == session['id'] or selected not in [feed['id'] for feed in session['feeds']]: return False
 		previous_id, previous_url = session['id'], self._url(session['id'])
+		outgoing = self._playing_file() or previous_url
+		if ku.get_property(STOP_REQUEST):
+			self._clear()
+			return False
 		session.setdefault('urls', {}).pop(selected, None)
 		url = self._url(selected)
 		if not url:
 			ku.dialog.notification('Live TV', 'Live TV VPN unavailable. Check the VPN connection and try again.')
 			return False
-		ku.clear_property(CAN_SWITCH)
-		ku.clear_property(FEED_CHOICES)
-		session.update(id=selected, active=False, switching=True, outgoing=previous_url, opening_at=self.clock())
+		if ku.get_property(STOP_REQUEST):
+			self._clear()
+			return False
+		session.update(id=selected, active=False, switching=True, outgoing=outgoing, opening_at=self.clock())
 		self.event = None
+		self._publish_choices()
 		ku.set_property(OPENING, url)
-		try: self.play(url)
+		try:
+			item = ku.xbmcgui.ListItem(path=url)
+			item.setMimeType('video/mp2t')
+			item.setContentLookup(False)
+			self.play(url, item)
 		except Exception:
 			if ku.get_property(OPENING) == url: ku.clear_property(OPENING)
 			session.update(id=previous_id, active=self._playing_file() == previous_url, switching=False)
+			self._publish_choices()
 			ku.dialog.notification('Live TV', 'Could not switch feed.')
 			return False
 		return True
 
 	def tick(self):
+		if self.stop_pending:
+			if not ku.get_property(STOP_REQUEST):
+				self.stop_pending = False
+				self.stop_ack_queued = False
+			elif not self.stop_ack_queued: self._queue_stop_ack()
+			return False
+		if not self.session and ku.get_property(STOP_REQUEST):
+			if not self._cancel_unadopted(): ku.clear_property(STOP_REQUEST)
+			return False
 		self._read_session(self.clock())
-		if not self.session or not self._prune_expired(): return False
+		if not self.session:
+			ku.clear_property(STOP_REQUEST)
+			return False
 		session = self.session
+		if ku.get_property(STOP_REQUEST):
+			url = session.get('urls', {}).get(session['id']) or self._url(session['id'])
+			if url:
+				try: cancel(url)
+				except (OSError, HTTPException, ValueError, TypeError): pass
+			try: current = json.loads(ku.get_property(PROPERTY) or '{}')
+			except (ValueError, TypeError): current = {}
+			playing = self._playing_file()
+			urls = tuple(session.get('urls', {}).values()) + (session.get('outgoing'),)
+			stop = isinstance(current, dict) and current.get('token') == session['token'] and self._owns_playback(playing, session['id'], urls)
+			queued = self._queue_stop() if stop else False
+			self._clear(keep_stop=queued)
+			return False
+		if not self._prune_expired(): return False
 		try: current = json.loads(ku.get_property(PROPERTY) or '{}')
 		except (ValueError, TypeError): current = {}
 		if not isinstance(current, dict) or current.get('token') != session['token']:
 			self._clear()
 			return False
 		playing, expected = self._playing_file(), self._url(session['id'])
-		if not session['active'] and self.clock() - session['opening_at'] >= SESSION_OPEN_TIMEOUT:
+		if not session['active'] and self.clock() - session['opening_at'] >= SESSION_OPEN_TIMEOUT and not (ku.get_visibility('Window.IsVisible(busydialog)') or ku.get_visibility('Window.IsVisible(busydialognocancel)')):
 			self._clear()
 			return False
 		if not expected:
@@ -218,7 +319,12 @@ class LiveTVFailover(ku.xbmc_player):
 		event, self.event = self.event, None
 		if event and event[1:3] == (session['token'], session['id']):
 			# Kodi also reports a stop for the outgoing player during a requested switch.
-			if not (event[0] == 'stop' and event[3]) and (event[0] == 'stop' or not playing):
+			if not event[3] and event[0] == 'stop' and playing == expected:
+				# A delayed outgoing callback can arrive after the new feed starts.
+				# Discard queued switches until Kodi confirms whether playback stopped.
+				ku.clear_property(SWITCH_REQUEST)
+				return True
+			if not event[3] and (event[0] == 'stop' or not playing):
 				self._clear()
 				return False
 		if playing and playing != expected and (session['active'] or (session.get('outgoing') and playing != session['outgoing'])):
@@ -231,14 +337,11 @@ class LiveTVFailover(ku.xbmc_player):
 			try:
 				if self.isPlayingVideo(): self.onAVStarted(False)
 			except Exception: pass
-		if session['active'] and playing == expected and len(session['feeds']) > 1:
-			ku.set_property(CAN_SWITCH, 'true')
-			choices = {'token': session['token'], 'current': session['id'], 'feeds': session['feeds']}
-			if 'expires' in session: choices['expires'] = session['expires']
-			ku.set_property(FEED_CHOICES, json.dumps(choices))
-		else:
-			ku.clear_property(CAN_SWITCH)
-			ku.clear_property(FEED_CHOICES)
+		self._publish_choices()
+		caching = bool(session['active'] and ku.get_visibility('Player.Caching'))
+		can_focus = ku.get_visibility('Window.IsActive(fullscreenvideo)') and not ku.get_visibility('Window.IsVisible(videoosd)')
+		if caching and not self.caching and can_focus: ku.xbmc.executebuiltin('SetFocus(9902)')
+		self.caching = bool(caching and (self.caching or can_focus))
 		manual = ku.get_property(SWITCH_REQUEST)
 		if manual:
 			ku.clear_property(SWITCH_REQUEST)

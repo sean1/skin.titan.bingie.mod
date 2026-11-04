@@ -106,14 +106,14 @@ def _descriptor(path=None):
 	return port, secret
 
 
-def register(url, descriptor_path=None):
+def register(url, descriptor_path=None, data_request=False):
 	"""Register a remote IPTV URL and return a local opaque capability URL."""
 	parsed = _url(url)
 	port, secret = _descriptor(descriptor_path)
 	if parsed.scheme.lower() == 'http' and parsed.hostname == '127.0.0.1' and parsed.port == port and not parsed.query and not parsed.fragment and re.fullmatch(r'/r/[A-Za-z0-9_-]{32,}/resource(?:\.[A-Za-z0-9]{1,8})?', parsed.path): return url
 	conn = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
 	try:
-		body = json.dumps({'url': url}, separators=(',', ':')).encode('utf-8')
+		body = json.dumps({'url': url, 'data_request': bool(data_request)}, separators=(',', ':')).encode('utf-8')
 		conn.request('POST', '/register', body, {'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json'})
 		response = conn.getresponse()
 		data = response.read(_MAX_CONTROL + 1)
@@ -124,9 +124,24 @@ def register(url, descriptor_path=None):
 	finally: conn.close()
 
 
+def cancel(url, descriptor_path=None):
+	"""Cancel one playback capability and its active relay requests."""
+	parsed = _url(url)
+	port, secret = _descriptor(descriptor_path)
+	if parsed.scheme.lower() != 'http' or parsed.hostname != '127.0.0.1' or parsed.port != port or parsed.query or parsed.fragment or not re.fullmatch(r'/r/[A-Za-z0-9_-]{32,}/resource(?:\.[A-Za-z0-9]{1,8})?', parsed.path): raise ValueError('Invalid IPTV relay capability')
+	conn = http.client.HTTPConnection('127.0.0.1', port, timeout=2)
+	try:
+		body = json.dumps({'path': parsed.path}, separators=(',', ':')).encode('utf-8')
+		conn.request('POST', '/cancel', body, {'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json'})
+		response = conn.getresponse()
+		response.read(_MAX_CONTROL + 1)
+		if response.status != 200: raise OSError('IPTV relay cancellation failed')
+	finally: conn.close()
+
+
 def open_url(url, headers=None, timeout=20, descriptor_path=None):
 	"""Open an IPTV URL through the VPN; never use environment proxy settings."""
-	local = register(url, descriptor_path)
+	local = register(url, descriptor_path, data_request=True)
 	port, secret = _descriptor(descriptor_path)
 	if urlsplit(local).port != port: raise OSError('IPTV VPN relay changed')
 	request_headers = dict(headers or {})
@@ -145,30 +160,44 @@ class Relay:
 		self.secret = secrets.token_urlsafe(32)
 		self.items = collections.OrderedDict()
 		self.tokens = {}
+		self.roots = {}
+		self.namespaces = {}
+		self.active = {}
 		self.lock = threading.RLock()
 		self.stopping = threading.Event()
 		self.connections = set()
 		self.server = None
 		self.thread = None
 
-	def _register(self, url):
+	def _register(self, url, root=None, data_request=False):
 		parsed = _url(url)
 		ext = os.path.splitext(parsed.path)[1]
 		if not re.fullmatch(r'\.[A-Za-z0-9]{1,8}', ext or ''): ext = ''
 		token = secrets.token_urlsafe(32)
 		now = time.monotonic()
 		with self.lock:
-			old = self.tokens.get(url)
+			if root and root not in self.items: raise OSError('Playback capability expired')
+			namespace = 'data' if data_request else 'playback'
+			key = (url, root or '', namespace)
+			old = self.tokens.get(key)
 			item = self.items.pop(old, None) if old else None
 			if item and now - item[1] <= _TOKEN_TTL:
 				self.items[old] = (url, now)
 				return '/r/%s/resource%s' % (old, ext)
-			if old: self.tokens.pop(url, None)
+			if old:
+				self.tokens.pop(key, None)
+				self.roots.pop(old, None)
+				self.namespaces.pop(old, None)
 			while self.items and (len(self.items) >= _MAX_ITEMS or now - next(iter(self.items.values()))[1] > _TOKEN_TTL):
 				removed_token, (removed_url, _) = self.items.popitem(last=False)
-				if self.tokens.get(removed_url) == removed_token: self.tokens.pop(removed_url, None)
+				removed_root = self.roots.pop(removed_token, removed_token)
+				removed_namespace = self.namespaces.pop(removed_token, 'playback')
+				removed_key = (removed_url, '' if removed_root == removed_token else removed_root, removed_namespace)
+				if self.tokens.get(removed_key) == removed_token: self.tokens.pop(removed_key, None)
 			self.items[token] = (url, now)
-			self.tokens[url] = token
+			self.roots[token] = root or token
+			self.namespaces[token] = namespace
+			self.tokens[key] = token
 		return '/r/%s/resource%s' % (token, ext)
 
 	def _resolve(self, token):
@@ -177,12 +206,41 @@ class Relay:
 			item = self.items.pop(token, None)
 			if not item: return None
 			if now - item[1] > _TOKEN_TTL:
-				if self.tokens.get(item[0]) == token: self.tokens.pop(item[0], None)
+				root = self.roots.pop(token, token)
+				namespace = self.namespaces.pop(token, 'playback')
+				key = (item[0], '' if root == token else root, namespace)
+				if self.tokens.get(key) == token: self.tokens.pop(key, None)
 				return None
 			self.items[token] = (item[0], now)
+			root = self.roots.get(token)
+			if root and root != token and root in self.items:
+				root_item = self.items.pop(root)
+				self.items[root] = (root_item[0], now)
 			return item[0]
 
-	def _open(self, url, method, headers, timeout=30, data_request=False):
+	def _cancel(self, path):
+		match = re.fullmatch(r'/r/([A-Za-z0-9_-]{32,})/resource(?:\.[A-Za-z0-9]{1,8})?', path or '')
+		if not match: raise ValueError('Invalid IPTV relay capability')
+		with self.lock:
+			root = self.roots.get(match.group(1))
+			if not root or self.namespaces.get(root) != 'playback': return
+			for token, item_root in list(self.roots.items()):
+				if item_root != root: continue
+				item = self.items.pop(token, None)
+				self.roots.pop(token, None)
+				namespace = self.namespaces.pop(token, 'playback')
+				if item:
+					key = (item[0], '' if token == root else root, namespace)
+					if self.tokens.get(key) == token: self.tokens.pop(key, None)
+			handlers = list(self.active.pop(root, ()))
+			for handler in handlers: handler.cancelled = True
+		for handler in handlers:
+			for sock in (handler.connection, getattr(getattr(handler, 'upstream', None), 'sock', None)):
+				try:
+					if sock: sock.shutdown(socket.SHUT_RDWR)
+				except OSError: pass
+
+	def _open(self, url, method, headers, timeout=30, data_request=False, handler=None):
 		"""Follow redirects internally; each destination uses explicit CONNECT."""
 		headers = {key: value for key, value in headers.items() if key.lower() in _HEADERS and '\r' not in value and '\n' not in value}
 		if not data_request:
@@ -199,6 +257,8 @@ class Relay:
 			connection = (http.client.HTTPSConnection if parsed.scheme.lower() == 'https' else http.client.HTTPConnection)('127.0.0.1', self.proxy_port, timeout=timeout)
 			with self.lock:
 				if self.stopping.is_set(): raise OSError('IPTV VPN relay is unavailable')
+				if handler and handler.cancelled: raise OSError('Playback cancelled')
+				if handler: handler.upstream = connection
 				self.connections.add(connection)
 			auth = base64.b64encode(('bingie:' + self.proxy_password).encode('utf-8')).decode('ascii')
 			connection.set_tunnel(parsed.hostname, target_port, headers={'Proxy-Authorization': 'Basic ' + auth})
@@ -207,6 +267,7 @@ class Relay:
 			keep_open = False
 			try:
 				connection.request(method, path, headers=hop_headers)
+				if handler and handler.cancelled: raise OSError('Playback cancelled')
 				response = connection.getresponse()
 				cookies.extract_cookies(response, request)
 				if response.status not in _REDIRECTS:
@@ -224,12 +285,12 @@ class Relay:
 		with self.lock: self.connections.discard(connection)
 		connection.close()
 
-	def _rewrite(self, data, base):
+	def _rewrite(self, data, base, root=None):
 		text = data.decode('utf-8-sig').lstrip('\ufeff \t\r\n')
 		if not text.startswith('#EXTM3U'): raise ValueError('Invalid HLS playlist')
 		def local(value):
 			if '{$' in value: raise ValueError('HLS variables are unsupported')
-			return self._register(urljoin(base, value))
+			return self._register(urljoin(base, value), root)
 		lines = []
 		for line in text.splitlines(keepends=True):
 			stripped = line.strip()
@@ -263,11 +324,14 @@ class Relay:
 
 			def do_POST(self):
 				try:
-					if self.path != '/register' or not hmac.compare_digest(self.headers.get('Authorization', ''), 'Bearer ' + owner.secret): return self._error(403)
+					if self.path not in ('/register', '/cancel') or not hmac.compare_digest(self.headers.get('Authorization', ''), 'Bearer ' + owner.secret): return self._error(403)
 					length = int(self.headers.get('Content-Length', '0'))
 					if not 0 < length <= _MAX_CONTROL: return self._error(400)
 					data = json.loads(self.rfile.read(length).decode('utf-8'))
-					body = json.dumps({'path': owner._register(data.get('url'))}).encode('utf-8')
+					if self.path == '/register': body = json.dumps({'path': owner._register(data.get('url'), data_request=data.get('data_request') is True)}).encode('utf-8')
+					else:
+						owner._cancel(data.get('path'))
+						body = b'{}'
 					self.send_response(200)
 					self.send_header('Content-Type', 'application/json')
 					self.send_header('Content-Length', str(len(body)))
@@ -283,14 +347,21 @@ class Relay:
 			def _serve(self, method):
 				connection = None
 				sent = False
+				root = None
+				self.cancelled = False
+				self.upstream = None
 				try:
 					match = re.fullmatch(r'/r/([A-Za-z0-9_-]{32,})/resource(?:\.[A-Za-z0-9]{1,8})?', self.path)
-					url = owner._resolve(match.group(1)) if match else None
+					data_request = hmac.compare_digest(self.headers.get('X-Bingie-Data-Request', ''), owner.secret)
+					with owner.lock:
+						url = owner._resolve(match.group(1)) if match else None
+						if url and not data_request:
+							root = owner.roots.get(match.group(1))
+							owner.active.setdefault(root, set()).add(self)
 					if not url: return self._error(404)
 					try: timeout = max(1, min(120, float(self.headers.get('X-Bingie-Timeout', '30'))))
 					except ValueError: timeout = 30
-					data_request = hmac.compare_digest(self.headers.get('X-Bingie-Data-Request', ''), owner.secret)
-					connection, response, effective_url = owner._open(url, method, dict(self.headers), timeout=timeout, data_request=data_request)
+					connection, response, effective_url = owner._open(url, method, dict(self.headers), timeout=timeout, data_request=data_request, handler=self if not data_request else None)
 					content_type = (response.getheader('Content-Type') or '').lower()
 					if not data_request and ('dash+xml' in content_type or urlsplit(effective_url).path.lower().endswith('.mpd')): return self._error(502)
 					if response.status == 206: return self._error(502)
@@ -305,7 +376,7 @@ class Relay:
 						if method == 'GET':
 							data = prefix + response.read(_MAX_PLAYLIST + 1)
 							if len(data) > _MAX_PLAYLIST: return self._error(502)
-							body = owner._rewrite(data, effective_url)
+							body = owner._rewrite(data, effective_url, root)
 					selection = None
 					length = response.getheader('Content-Length')
 					if method == 'GET' and response.status == 200 and not playlist and length and length.isdecimal() and not response.getheader('Transfer-Encoding') and not self.headers.get('If-Range'):
@@ -353,6 +424,12 @@ class Relay:
 						except OSError: pass
 				finally:
 					if connection: owner._release(connection)
+					if root:
+						with owner.lock:
+							handlers = owner.active.get(root)
+							if handlers:
+								handlers.discard(self)
+								if not handlers: owner.active.pop(root, None)
 					self.close_connection = True
 
 		server = _Server(('127.0.0.1', 0), Handler)
@@ -398,3 +475,6 @@ class Relay:
 		with self.lock:
 			self.items.clear()
 			self.tokens.clear()
+			self.roots.clear()
+			self.namespaces.clear()
+			self.active.clear()

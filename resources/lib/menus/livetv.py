@@ -757,10 +757,15 @@ _NEWS_CHANNELS = {
 	'bbc': {'bbc news', 'bbc world news'},
 	'al_jazeera': {'al jazeera english'},
 	'ctv': {'ctv news', 'ctv news channel', 'ctv news network'},
+	'citynews_vancouver': {'citynews vancouver', 'ca city citynews vancouver fhd'},
+	'cpac': {'cpac', 'cpac english'},
+	'nbc_news_now': {'nbc news now', 'nbc news now a', 'nbc news now d', 'nbc news now h', 'nbc news now pc', 'prime nbc news now', 'rk nbc news now', 'tubi nbc news now', 'tv nbc news now', 'uk nbc news now', 'uk nbc news now 4k'},
+	'abc_news_live': {'abc news live', 'prime abc news live', 'rk abc news live', 'tubi abc news live', 'tv abc news live'},
 }
 _NEWS_LABELS = {
 	'cbc': 'CBC News Network', 'global_national': 'Global News National', 'global_bc': 'Global News BC', 'cnn': 'CNN', 'cbs': 'CBS News',
 	'bbc': 'BBC News', 'al_jazeera': 'Al Jazeera English', 'ctv': 'CTV News Channel',
+	'citynews_vancouver': 'CityNews Vancouver', 'cpac': 'CPAC English', 'nbc_news_now': 'NBC News NOW', 'abc_news_live': 'ABC News Live',
 }
 
 

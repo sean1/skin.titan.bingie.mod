@@ -10,6 +10,10 @@
         <value condition="String.Contains(Container.FolderPath,channel=bbc)">BBC News</value>
         <value condition="String.Contains(Container.FolderPath,channel=al_jazeera)">Al Jazeera English</value>
         <value condition="String.Contains(Container.FolderPath,channel=ctv)">CTV News Channel</value>
+        <value condition="String.Contains(Container.FolderPath,channel=citynews_vancouver)">CityNews Vancouver</value>
+        <value condition="String.Contains(Container.FolderPath,channel=cpac)">CPAC English</value>
+        <value condition="String.Contains(Container.FolderPath,channel=nbc_news_now)">NBC News NOW</value>
+        <value condition="String.Contains(Container.FolderPath,channel=abc_news_live)">ABC News Live</value>
         <value>News</value>
     </variable>
     <include name="View_523_Bingie_Main_Landscape">

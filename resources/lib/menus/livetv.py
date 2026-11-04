@@ -15,7 +15,7 @@ import unicodedata
 import uuid
 import xml.etree.ElementTree as ET
 import zlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from http.client import HTTPException
 from urllib.parse import quote, urlencode, urlsplit
@@ -1387,24 +1387,33 @@ def _live_soccer_fixtures(include_upcoming=False, with_expiry=False):
 	return result, min(expiries)
 
 
-_SOCCER_UEFA_SLOT = re.compile(r"^\s*UEFA\d{1,3}:\s*\(CL\)\s*([\w .&'’/\-]{2,80}?)\s+(\d{1,2}):(\d{2})\s+([\w .&'’/\-]{2,80}?)\s+(\d{1,2})/(\d{1,2})\s*$", re.I)
+_SOCCER_UEFA_SLOT = re.compile(r"^\s*UEFA\d{1,3}:\s*\((CL|EL|ECL)\)\s*([\w .&'’/\-]{2,80}?)\s+(\d{1,2}):(\d{2})\s+([\w .&'’/\-]{2,80}?)\s+(\d{1,2})/(\d{1,2})\s*$", re.I)
 _SOCCER_UEFA_LISTING = re.compile(r"^\s*UEFA\s*\|\s*\d{1,3}\s+-\s+([\w .&'’/\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’/\-]{2,80}?)\s+(\d{1,2}):(\d{2})\s*(am|pm)\s*$", re.I)
 
 
 def _soccer_feed_event(name):
 	"""Extract two teams from a provider event label, never a team-only channel."""
-	if not isinstance(name, str) or _sports.non_live_title(name): return None
+	if not isinstance(name, str) or _sports.non_live_title(name) or re.search(r'\bupcoming\b', name, re.I): return None
 	known = _soccer_event(name)
 	if known: return known
 	slot = _SOCCER_UEFA_SLOT.fullmatch(name)
 	listing = _SOCCER_UEFA_LISTING.fullmatch(name)
 	if slot or listing:
-		event = (slot.group(1), slot.group(4)) if slot else (listing.group(1), listing.group(2))
+		event = (slot.group(2), slot.group(5)) if slot else (listing.group(1), listing.group(2))
 		event = tuple(' '.join(side.casefold().split()) for side in event)
 		if event[0] != event[1] and all(re.search(r'[^\W\d_]', side) for side in event): return event
 		return None
 	for part in name.split('|')[:2]:
 		part = part.strip()
+		# Reuse the league catalog to separate a named competition from the teams.
+		part_scope = _fixture_scope('||' + part)
+		if part_scope:
+			for league in sorted(_soccer_logos._LEAGUES, key=len, reverse=True):
+				if part_scope in league and re.match(re.escape(league) + r'\s+', part, re.I):
+					part = part[len(league):].lstrip()
+					break
+		part = re.sub(r'^([^:|]+):\s*(?=[^:|]+\s+v(?:s\.?)?\s+)', '', part, flags=re.I)
+		part = re.sub(r'\s+@\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}\s+\d{1,2}:\d{2}\s*(?:am|pm)?\s*:.+$', '', part, flags=re.I)
 		part = re.sub(r'^laliga(?:\s+ea\s+sports)?(?:\s+(?:(?:\d{4}|\d{2})/\d{2}|\(t\d{2}/\d{2}\)))?\s*:\s*', '', part, flags=re.I)
 		part = re.sub(r'\s+-\s+spanish\s+laliga\s+\d{4}/\d{4}\s+-\s+week\s+\d{1,2}\s*$', '', part, flags=re.I)
 		ending = re.search(r'\s*\(([^()]*)\)\s*$', part)
@@ -1435,14 +1444,49 @@ def _soccer_schedule_agrees(name, fixture):
 			if utc.replace(tzinfo=None) != uk.replace(tzinfo=None): return False
 			league = _soccer_logos._LEAGUES.get(_soccer_logos._normalize(fixture.get('league')))
 			if slot:
-				if league != 'uefa.champions': return False
-				return (utc.hour, utc.minute, utc.day, utc.month) == tuple(int(slot.group(i)) for i in (2, 3, 5, 6))
+				if league != {'CL': 'uefa.champions', 'EL': 'uefa.europa', 'ECL': 'uefa.europa.conf'}.get(slot.group(1).upper()): return False
+				return (utc.hour, utc.minute, utc.day, utc.month) == tuple(int(slot.group(i)) for i in (3, 4, 6, 7))
 			if league not in ('uefa.champions', 'uefa.europa', 'uefa.europa.conf'): return False
 			hour, minute = int(listing.group(3)), int(listing.group(4))
-			if not 1 <= hour <= 12: return False
-			hour = hour % 12 + (12 if listing.group(5).casefold() == 'pm' else 0)
+			if not 1 <= hour <= 23 or (hour > 12 and listing.group(5).casefold() != 'pm'): return False
+			if hour <= 12: hour = hour % 12 + (12 if listing.group(5).casefold() == 'pm' else 0)
 			return (utc.hour, utc.minute) == (hour, minute)
 		except (KeyError, TypeError, ValueError, AttributeError, OSError, ImportError): return False
+	# A labelled broadcast can start before the match. Only compare a time window
+	# when the provider supplies an explicit, unambiguous timezone.
+	broadcast = re.search(r'\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s+(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}):(\d{2})\s+(UTC|GMT|CET|CEST)\b', name, re.I)
+	if broadcast:
+		try:
+			start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+			if start.utcoffset() is None: return False
+			offset = {'UTC': 0, 'GMT': 0, 'CET': 1, 'CEST': 2}[broadcast.group(6).upper()]
+			zone = timezone(timedelta(hours=offset))
+			local_start = start.astimezone(zone)
+			when = datetime.strptime('%s %s %s %s:%s %s' % (*broadcast.group(1, 2, 3, 4, 5), local_start.year), '%a %d %b %H:%M %Y').replace(tzinfo=zone)
+			candidates = [when]
+			if local_start.month == 1 and when.month == 12: candidates.append(when.replace(year=when.year - 1))
+			if local_start.month == 12 and when.month == 1: candidates.append(when.replace(year=when.year + 1))
+			if not any(item.strftime('%a').casefold() == broadcast.group(1).casefold() and -1800 <= (local_start - item).total_seconds() <= 3600 for item in candidates): return False
+		except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return False
+		name = name[:broadcast.start()] + name[broadcast.end():]
+	# Without a timezone, only accept a date and time that could describe this
+	# broadcast in a plausible UTC offset; the local clock is not UTC.
+	undated_zone = re.search(r'\s+@\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})\s+(\d{1,2}):(\d{2})\s*(am|pm)?\s*:', name, re.I)
+	if undated_zone:
+		try:
+			start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
+			if start.utcoffset() is None: return False
+			hour, minute, meridiem = int(undated_zone.group(3)), int(undated_zone.group(4)), undated_zone.group(5)
+			if minute > 59 or (not 1 <= hour <= 12 if meridiem else hour > 23): return False
+			if meridiem: hour = hour % 12 + (12 if meridiem.casefold() == 'pm' else 0)
+			utc_start = start.astimezone(timezone.utc).replace(tzinfo=None)
+			local = datetime.strptime('%s %s %s %s:%s' % (undated_zone.group(1), undated_zone.group(2), utc_start.year, hour, minute), '%b %d %Y %H:%M')
+			candidates = [local]
+			if utc_start.month == 1 and local.month == 12: candidates.append(local.replace(year=local.year - 1))
+			if utc_start.month == 12 and local.month == 1: candidates.append(local.replace(year=local.year + 1))
+			if not any(-14 * 3600 - 1800 <= (utc_start - item).total_seconds() <= 13 * 3600 for item in candidates): return False
+		except (KeyError, TypeError, ValueError, AttributeError): return False
+		name = name[:undated_zone.start()] + name[undated_zone.end():]
 	prefix = re.match(r'^\s*laliga(?:\s+ea\s+sports)?\s+(?:(\d{4}|\d{2})/(\d{2})|\(t(\d{2})/(\d{2})\))\s*:', name, re.I)
 	suffix = re.search(r'\s+-\s+spanish\s+laliga\s+(\d{4})/(\d{4})\s+-\s+week\s+\d{1,2}\s*$', name, re.I)
 	for season in (prefix, suffix):
@@ -1456,8 +1500,8 @@ def _soccer_schedule_agrees(name, fixture):
 	if suffix: name = name[:suffix.start()]
 	if prefix: name = name[prefix.end():]
 	daytime = re.search(r'\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s+(\d{1,2}):(\d{2})\s*(UK|UTC|GMT)\b', name, re.I)
-	date = re.search(r'\b(\d{4}-\d{2}-\d{2})\b', name)
-	if date and date.group(1) != str(fixture.get('date', ''))[:10]: return False
+	dates = re.findall(r'\b(\d{4}-\d{2}-\d{2})\b', name)
+	if any(date != str(fixture.get('date', ''))[:10] for date in dates): return False
 	# Dates without a defined timezone/format cannot safely establish an occurrence.
 	if re.search(r'\b\d{4}[/.]\d{1,2}[/.]\d{1,2}\b|(?<![\d/.-])\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?(?![\d/.-])|\b(?:\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2})\b', name, re.I): return False
 	if not daytime:
@@ -1476,9 +1520,9 @@ def _soccer_fixture_groups(streams, fixtures, live_only=False):
 	"""Join provider event labels to a unique live fixture using both team identities."""
 	# Artwork IDs are only used within the bundled league catalog; they are not
 	# comparable with IDs from a fixture provider.
-	aliases = ({'bayer 04', 'bayer leverkusen'}, {'monchengladbach', 'borussia m gladbach'}, {'leipzig', 'rb leipzig'}, {'bremen', 'werder bremen'})
+	aliases = ({'bayer 04', 'bayer leverkusen'}, {'monchengladbach', 'borussia m gladbach'}, {'leipzig', 'rb leipzig'}, {'bremen', 'werder bremen'}, {'olympiacos', 'olympiakos'})
 	curated = {'131': ('bayer leverkusen', aliases[0]), '268': ('borussia monchengladbach', aliases[1]), '11420': ('rb leipzig', aliases[2]), '137': ('werder bremen', aliases[3]),
-		'110': ('internazionale', {'inter', 'inter milan', 'internazionale'})}
+		'110': ('internazionale', {'inter', 'inter milan', 'internazionale'}), '435': ('olympiacos', aliases[4])}
 	def base_keys(name):
 		keys = _fixture_service.team_keys(name)
 		canonical = _fixture_service._team(name)[0]
@@ -1557,6 +1601,12 @@ def _soccer_fixture_groups(streams, fixtures, live_only=False):
 		event = _soccer_feed_event(name)
 		if not event: continue
 		scope = _fixture_scope('||' + name)
+		label_league = None
+		if scope:
+			for part in name.split('|')[:2]:
+				label_league = next((_soccer_logos._LEAGUES[league] for league in sorted(_soccer_logos._LEAGUES, key=len, reverse=True) if re.match(r'^\s*' + re.escape(league) + r'(?:\s+|\s*:)', part, re.I)), None)
+				if label_league: break
+		scope = '|'.join(part for part in scope.split('|') if not re.fullmatch(r'(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4}|\d{1,2}\s+[a-z]+(?:\s+\d{4})?)', part))
 		home, away = (provider_keys(side) for side in event)
 		candidates = {}
 		for home_key in home:
@@ -1565,6 +1615,7 @@ def _soccer_fixture_groups(streams, fixtures, live_only=False):
 				for fixture in index.get((away_key, home_key), []): candidates[(id(fixture), True)] = fixture
 		matched = []
 		for (_, reverse), fixture in candidates.items():
+			if label_league and _soccer_logos._LEAGUES.get(_soccer_logos._normalize(fixture.get('league'))) != label_league: continue
 			if live_only and fixture.get('status') not in _fixture_service.LIVE_STATUSES: continue
 			if live_only and any(other.get('status') not in _fixture_service.LIVE_STATUSES and other.get('league') == fixture.get('league') and {str(other.get(side, '')).casefold() for side in ('home', 'away')} == {str(fixture.get(side, '')).casefold() for side in ('home', 'away')} and _soccer_schedule_agrees(name, other) for other in candidates.values()): continue
 			oriented = event[::-1] if reverse else event

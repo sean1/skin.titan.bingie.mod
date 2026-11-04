@@ -986,7 +986,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 				fanart_pending = self.focused_fanart.tick()
 				standings_pending = self.focused_standings.tick()
 				preview_active = self.trailer_preview.tick()
-				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending)
+				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending or self.sports_refresh.feed_selection.pending())
 
 	def _deferred_database_maintenance(self):
 		if self.waitForAbort(DATABASE_MAINTENANCE_DELAY): return

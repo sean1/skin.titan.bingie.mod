@@ -136,12 +136,12 @@ def invalidate(request_id=None):
 	ku.clear_property(_INCOMPLETE)
 
 
-def _set_soccer_status(status, unavailable):
+def _set_soccer_status(status, unavailable, complete=True):
 	message = ''
 	if status:
 		created, stale = status
 		when = datetime.fromtimestamp(created).astimezone().strftime('%a %H:%M')
-		message = ('Saved channels from %s; refresh failed' if stale else 'Updated %s') % when
+		message = (('Saved channels from %s; refresh failed' if complete else 'Saved channels from %s; refreshing…') if stale else 'Updated %s') % when
 	if unavailable: message = (message + ' · ' if message else '') + 'Some providers unavailable'
 	ku.set_property('LiveTV.Soccer.Status', message)
 
@@ -256,7 +256,8 @@ def accepted_result(sport, now=None):
 			groups = _filter_guide_groups(_groups_from_json(result['groups']), now)
 			published = result['published']
 		if not isinstance(published, (int, float)) or isinstance(published, bool) or not math.isfinite(published) or published > now: return None
-		return {'request': request, 'groups': groups, 'published': published, 'unavailable': bool(result.get('unavailable')), 'revision': result.get('revision', 0)}
+		status = result.get('status')
+		return {'request': request, 'groups': groups, 'published': published, 'unavailable': bool(result.get('unavailable')), 'saved': bool(use_fallback or isinstance(status, (list, tuple)) and len(status) == 2 and status[1]), 'revision': result.get('revision', 0)}
 	except (KeyError, TypeError, ValueError): return None
 
 
@@ -394,8 +395,8 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 				if groups is not None:
 					unavailable_flag = result.get('unavailable', '') or ('true' if groups != raw_groups else '')
 					ku.set_property('LiveTV.Sports.CatalogUnavailable', unavailable_flag)
-					if sport == 'soccer': _set_soccer_status(result.get('status'), unavailable_flag)
 					complete = result.get('complete', True) is True
+					if sport == 'soccer': _set_soccer_status(result.get('status'), unavailable_flag, complete)
 					ku.set_property(_INCOMPLETE, '' if complete else 'true')
 					ku.set_property(_ACK_REVISION, request['id'] + ':' + str(result.get('revision', 0)))
 					if complete:

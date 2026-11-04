@@ -66,24 +66,34 @@ def _load(sport, accounts, generation, catalog, results):
 			profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 			fixtures, fixture_expires = livetv._tennis_fixtures_service.get_schedule(cache_dir=profile or None, with_expiry=True) if sport == 'tennis' else livetv._american_fixtures.get_schedule(sport, cache_dir=profile or None, with_expiry=True)
 		if not isinstance(fixtures, list): raise ValueError('Invalid fixtures')
-		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures, 'fixture_expires': fixture_expires, 'groups': [], 'matching': True, 'schedule_unavailable': partial, 'created': time.time()}, ensure_ascii=False, separators=(',', ':'))))
+		try:
+			previous = json.loads(ku.get_property(PREFIX + sport) or '{}')
+			now = time.time()
+			retain = previous.get('accounts') == accounts and previous.get('fixtures') == fixtures and 0 <= now - previous.get('created', 0) < 120 and now < previous.get('fixture_expires', 0)
+		except (TypeError, ValueError): retain = False
+		if retain:
+			previous.update(matching=True, stale=True)
+			results.put((sport, accounts, generation, json.dumps(previous, ensure_ascii=False, separators=(',', ':'))))
+		else: results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures, 'fixture_expires': fixture_expires, 'groups': [], 'matching': True, 'schedule_unavailable': partial, 'created': time.time()}, ensure_ascii=False, separators=(',', ':'))))
 		failures, catalog_status = [], []
-		groups, _ = livetv._sports_catalog_groups(livetv._sports_primary(), sport, fixtures=fixtures, status_sink=failures.append, notify_stale=False, on_status=lambda created, stale: catalog_status.append((created, stale)), catalog_fetch=catalog.get)
 		secrets = [str(account.get(key) or '') for _, account in livetv._sports_accounts(livetv._load()) for key in ('username', 'password')]
-		clean = []
-		for key, feeds in groups.items():
-			items = {}
-			for ref, feed in feeds.items():
-				name = str(feed.get('name') or '')
-				if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(feed.get('stream_id', '')), name)): continue
-				item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
-				item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
-				items[ref] = item
-			clean.append((key, items))
-		data = {'accounts': accounts, 'fixtures': fixtures, 'fixture_expires': fixture_expires, 'groups': clean, 'unavailable': bool(failures and failures[-1]), 'schedule_unavailable': partial, 'stale': any(stale for _, stale in catalog_status), 'created': time.time()}
-		encoded = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
-		if len(encoded.encode('utf-8')) > 4 * 1024 * 1024: raise ValueError('Overview result too large')
-		results.put((sport, accounts, generation, encoded))
+		def publish(groups, unavailable, statuses, matching):
+			clean = []
+			for key, feeds in groups.items():
+				items = {}
+				for ref, feed in feeds.items():
+					name = str(feed.get('name') or '')
+					if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(feed.get('stream_id', '')), name)): continue
+					item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
+					item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
+					items[ref] = item
+				clean.append((key, items))
+			data = {'accounts': accounts, 'fixtures': fixtures, 'fixture_expires': fixture_expires, 'groups': clean, 'matching': matching, 'unavailable': bool(unavailable), 'schedule_unavailable': partial, 'stale': any(stale for _, stale in statuses), 'created': time.time()}
+			encoded = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+			if len(encoded.encode('utf-8')) > 4 * 1024 * 1024: raise ValueError('Overview result too large')
+			results.put((sport, accounts, generation, encoded))
+		groups, _ = livetv._sports_catalog_groups(livetv._sports_primary(), sport, fixtures=fixtures, status_sink=failures.append, notify_stale=False, on_status=lambda created, stale: catalog_status.append((created, stale)), catalog_fetch=catalog.get, on_partial=lambda groups, unavailable, statuses: publish(groups, unavailable, statuses, True))
+		publish(groups, failures and failures[-1], catalog_status, False)
 	except Exception:
 		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures if isinstance(fixtures, list) else [], 'unavailable': True, 'created': time.time()})))
 
@@ -116,6 +126,7 @@ class SportsOverview:
 		self.forced = set()
 		self.catalog_generation = None
 		self.catalog = None
+		self.expired = {}
 
 	def tick(self, active, now):
 		from menus import livetv
@@ -142,7 +153,13 @@ class SportsOverview:
 			self.due = set(SPORTS)
 			self.next_refresh = now + 120
 			ku.clear_property('LiveTV.Sports.OverviewEmpty')
-			for sport in SPORTS: ku.clear_property(PREFIX + sport)
+			for sport in SPORTS:
+				try:
+					data = json.loads(ku.get_property(PREFIX + sport) or '{}')
+					wall = time.time()
+					valid = data.get('accounts') == accounts and 0 <= wall - data.get('created', 0) < 120 and wall < data.get('fixture_expires', 0)
+				except (TypeError, ValueError): valid = False
+				if not valid: ku.clear_property(PREFIX + sport)
 		if ku.get_property(PREFIX + 'Refresh'):
 			ku.clear_property(PREFIX + 'Refresh')
 			self.forced = set(SPORTS)
@@ -164,6 +181,15 @@ class SportsOverview:
 			if result_accounts == accounts and generation == self.generation:
 				ku.set_property(PREFIX + sport, encoded)
 				self.pending_refresh.add(sport)
+		for sport in SPORTS:
+			try:
+				data = json.loads(ku.get_property(PREFIX + sport) or '{}')
+				expires = data.get('fixture_expires')
+				if data.get('accounts') == accounts and isinstance(expires, (int, float)) and not isinstance(expires, bool) and time.time() >= expires and self.expired.get(sport) != expires:
+					self.expired[sport] = expires
+					self.pending_refresh.add(sport)
+					self.due.add(sport)
+			except (TypeError, ValueError): pass
 		if self.focus:
 			control, revision = self.focus
 			if not ku.get_visibility('Control.HasFocus(%d)' % control): self.focus = None

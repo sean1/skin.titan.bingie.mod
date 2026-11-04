@@ -24,6 +24,15 @@ _HANDOFF_SECONDS = 120
 _handoff_cache = None
 
 
+def _timing(phase, created):
+	if phase not in ('request', 'first_choices', 'refresh'): return
+	try:
+		elapsed = time.time() - created
+		if not math.isfinite(elapsed) or not 0 <= elapsed <= _MAX_AGE: return
+		ku.xbmc.log('BINGIE picker timing phase=%s elapsed_ms=%d' % (phase, round(elapsed * 1000)), ku.xbmc.LOGINFO)
+	except (TypeError, ValueError, AttributeError, OverflowError): pass
+
+
 def _read(key):
 	try:
 		value = json.loads(ku.get_property(key) or '{}')
@@ -82,7 +91,7 @@ def handoff(params, fixture, groups):
 			cache = progress._read(progress._FIXTURE_CACHE + sport)
 			if cache.get('accounts') != accounts or cache.get('fixtures') != request['fixtures'] or not isinstance(cache.get('source_expires'), (int, float)) or isinstance(cache.get('source_expires'), bool) or not math.isfinite(cache['source_expires']) or not now < cache['source_expires']: return ''
 			snapshot = {'token': uuid.uuid4().hex, 'sport': sport, 'accounts': accounts, 'fixtures': request['fixtures'], 'groups': list(groups.items()), 'expires': min(published + _HANDOFF_SECONDS, cache['source_expires']),
-				'unavailable': accepted['unavailable'], 'revision': accepted['revision'], 'request_id': request_id}
+				'unavailable': accepted['unavailable'], 'saved': accepted.get('saved', False), 'revision': accepted['revision'], 'request_id': request_id}
 			encoded = json.dumps(snapshot, ensure_ascii=False, separators=(',', ':'))
 			if len(encoded.encode('utf-8')) > _MAX_RESULT: return ''
 			ku.set_property(_HANDOFF, encoded)
@@ -133,7 +142,7 @@ def _overview_handoff(token, query, accounts):
 		key = query['session'] if query['sport'] == 'f1' else ((query['home'], query['away']), query['scope'])
 		matches = [fixture for fixture in value['fixtures'] if isinstance(fixture, dict) and _fixture_key(query['sport'], fixture) == key]
 		identity = livetv._fixture_focus_identity(query['sport'], matches[0]) if len(matches) == 1 else ''
-		return {'choices': choices, 'unavailable': value.get('unavailable'), 'fixture_identity': identity} if choices and identity else None
+		return {'choices': choices, 'unavailable': value.get('unavailable'), 'saved': bool(value.get('stale')), 'fixture_identity': identity} if choices and identity else None
 	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return None
 
 
@@ -150,7 +159,7 @@ def _handoff(params, query, accounts):
 		result = progress._read(progress._RESULT + '.' + value['request_id'])
 		if result.get('id') == value['request_id'] and result.get('revision', 0) != value['revision']: return None
 		choices = _selection(value, query)
-		return {'choices': choices, 'unavailable': value.get('unavailable')} if choices else None
+		return {'choices': choices, 'unavailable': value.get('unavailable'), 'saved': bool(value.get('saved'))} if choices else None
 	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return None
 
 
@@ -242,6 +251,7 @@ def prepare(params):
 			seed = _overview_handoff(token, query, accounts)
 			if not seed or _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': seed['fixture_identity']}): return 'unavailable', []
 		request = {'id': uuid.uuid4().hex, 'created': time.time(), 'query': query, 'accounts': accounts, 'handoff': params.get('handoff', ''), 'fixture_identity': _retention_identity(query, accounts)}
+		_timing('request', request['created'])
 		seed = None if params.get('retry') else _handoff(params, query, accounts)
 		if seed and seed.get('fixture_identity') and request['fixture_identity'] and seed['fixture_identity'] != request['fixture_identity']: seed = None
 		if seed and not request['fixture_identity']: request['fixture_identity'] = seed.get('fixture_identity', '')
@@ -250,7 +260,8 @@ def prepare(params):
 		ku.clear_property(_ORDER)
 		ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
 		if seed:
-			ku.set_property(_RESULT, json.dumps({'id': request['id'], 'choices': seed['choices'], 'revision': 0, 'complete': False, 'incomplete_error': seed['unavailable'], 'seeded': True}, ensure_ascii=False, separators=(',', ':')))
+			ku.set_property(_RESULT, json.dumps({'id': request['id'], 'choices': seed['choices'], 'revision': 0, 'complete': False, 'incomplete_error': seed['unavailable'], 'saved': seed.get('saved', False), 'seeded': True}, ensure_ascii=False, separators=(',', ':')))
+			_timing('first_choices', request['created'])
 		else: return 'loading', []
 	elif request.get('retained') and not ku.get_visibility('Player.HasMedia'):
 		request.pop('retained', None)
@@ -261,6 +272,7 @@ def prepare(params):
 	result = _read(_RESULT)
 	if result.get('id') == request.get('id') and result.get('seeded') and not _handoff(params, query, accounts):
 		result['choices'] = result.get('fresh_choices', [])
+		result['saved'] = result.get('fresh_saved', False)
 		result['seeded'] = False
 		result['incomplete_error'] = True
 		ku.set_property(_RESULT, json.dumps(result, ensure_ascii=False, separators=(',', ':')))
@@ -285,13 +297,14 @@ def prepare(params):
 					expired = True
 					continue
 			current.append(choice)
-		if result.get('incomplete_error') or (expired and result.get('complete', True) is True): return 'partial_unavailable', current
-		return ('ready' if result.get('complete', True) is True else 'partial'), current
+		if result.get('incomplete_error') or (expired and result.get('complete', True) is True): return ('partial_saved_unavailable' if result.get('saved') else 'partial_unavailable'), current
+		state = 'ready' if result.get('complete', True) is True else 'partial'
+		return (state + '_saved' if result.get('saved') else state), current
 	return 'unavailable', []
 
 
 def order_choices(choices):
-	"""Keep shown feeds in place as new providers finish, dropping removed feeds."""
+	"""Keep shown rows in place, disabling removed feeds until the picker is left."""
 	request_id = _read(_REQUEST).get('id', '')
 	if not request_id: return choices
 	by_ref = dict(choices)
@@ -301,11 +314,11 @@ def order_choices(choices):
 	refs = []
 	seen = set()
 	for ref in order + [ref for ref, _ in choices]:
-		if isinstance(ref, str) and ref in by_ref and ref not in seen:
+		if isinstance(ref, str) and ref not in seen:
 			refs.append(ref)
 			seen.add(ref)
 	ku.set_property(_ORDER, json.dumps({'id': request_id, 'refs': refs}, ensure_ascii=False, separators=(',', ':')))
-	return [(ref, by_ref[ref]) for ref in refs]
+	return [(ref, by_ref.get(ref, {'_unavailable': True})) for ref in refs]
 
 
 def retry_request():
@@ -335,12 +348,21 @@ class FeedSelection:
 		self.validations = SimpleQueue()
 		self.validation_worker = None
 		self.validating_id = ''
+		self.timed_refresh_id = ''
+
+	def pending(self):
+		request = _read(_REQUEST)
+		if not request.get('id') or not _visible(request) or ku.get_visibility('Player.HasMedia'): return False
+		result = _read(_RESULT)
+		return result.get('id') != request['id'] or result.get('complete', True) is not True
 
 	def _work(self, request):
 		revision = 0
 		seed = _handoff(request, request['query'], request['accounts']) if request.get('handoff') else None
 		last_choices = [[ref, feed, False] for ref, feed, _ in seed['choices']] if seed else []
 		last_fresh = []
+		last_saved = bool(seed and seed.get('saved'))
+		timed_choices = bool(seed and seed.get('choices'))
 		observed_identity = ''
 		try:
 			from menus import livetv
@@ -358,15 +380,16 @@ class FeedSelection:
 				observed_identity = identity
 				if request.get('fixture_identity') and request['fixture_identity'] != identity: raise ValueError('Fixture changed')
 			secrets = [str(account.get(field) or '') for _, account in livetv._sports_accounts(livetv._load()) for field in ('username', 'password')]
-			def publish(groups, complete, unavailable=False):
-				nonlocal revision, last_choices, last_fresh
+			def publish(groups, complete, unavailable=False, saved=False):
+				nonlocal revision, last_choices, last_fresh, timed_choices
+				fresh_saved = saved
 				choices = []
 				for ref, feed in groups.get(key, {}).items():
 					name, stream_id = str(feed.get('name') or ''), feed.get('stream_id')
 					if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(stream_id), name)): raise ValueError('Unsafe feed')
 					item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
 					item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
-					choices.append([ref, item, livetv._unique_match(groups, ref, name)])
+					choices.append([ref, item, complete and not unavailable and livetv._unique_match(groups, ref, name)])
 				last_fresh = list(choices)
 				using_seed = False
 				if not complete or unavailable:
@@ -376,13 +399,21 @@ class FeedSelection:
 						additional = [[ref, feed, False] for ref, feed, _ in current_seed['choices'] if ref not in known]
 						choices.extend(additional)
 						using_seed = bool(additional)
+						if using_seed and current_seed.get('saved'): saved = True
 				revision += 1
-				encoded = json.dumps({'id': request['id'], 'choices': choices, 'revision': revision, 'complete': complete, 'incomplete_error': bool(unavailable), 'seeded': using_seed, 'fresh_choices': last_fresh if using_seed else [], 'fixture_identity': observed_identity}, ensure_ascii=False, separators=(',', ':'))
+				encoded = json.dumps({'id': request['id'], 'choices': choices, 'revision': revision, 'complete': complete, 'incomplete_error': bool(unavailable), 'saved': bool(saved), 'seeded': using_seed, 'fresh_choices': last_fresh if using_seed else [], 'fresh_saved': bool(fresh_saved), 'fixture_identity': observed_identity}, ensure_ascii=False, separators=(',', ':'))
 				if len(encoded.encode('utf-8')) > _MAX_RESULT: raise ValueError('Result too large')
 				last_choices = choices
+				if choices and not timed_choices:
+					_timing('first_choices', request['created'])
+					timed_choices = True
 				self.results.put((request['id'], encoded))
 			unavailable = []
 			if sport:
+				def publish_partial(groups, partial_unavailable, statuses):
+					nonlocal last_saved
+					last_saved = any(stale for _, stale in statuses)
+					publish(groups, False, partial_unavailable, last_saved)
 				from modules import livetv_sports_progress as progress
 				cached = progress._cached_fixtures(sport, request['accounts'])
 				fixture_cache = progress._read(progress._FIXTURE_CACHE + sport)
@@ -391,11 +422,11 @@ class FeedSelection:
 					source_fresh = isinstance(source_expiry, (int, float)) and not isinstance(source_expiry, bool) and math.isfinite(source_expiry) and time.time() < source_expiry
 				except (TypeError, ValueError, OverflowError): source_fresh = False
 				if not source_fresh or cached is None or fixture_cache.get('accounts') != request['accounts'] or fixture_cache.get('fixtures') != cached[0]: cached = None
-				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=cached[0] if cached is not None else None, overlap_catalogs=cached is None, status_sink=unavailable.append, notify_stale=False,
-					on_partial=lambda groups, unavailable, statuses: publish(groups, False), on_fixtures=observe_fixtures)
+				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=cached[0] if cached is not None else None, overlap_catalogs=cached is None, status_sink=unavailable.append, notify_stale=False, picker_priority=True, selected_fixture=key,
+					on_partial=publish_partial, on_fixtures=observe_fixtures)
 			else:
 				groups = livetv._soccer_groups(livetv._catalog(account, 'get_live_streams', notify_stale=False))
-			publish(groups, True, unavailable[-1] if unavailable else False)
+			publish(groups, True, unavailable[-1] if unavailable else False, last_saved)
 		except Exception:
 			revision += 1
 			if observed_identity and request.get('fixture_identity') and observed_identity != request['fixture_identity']:
@@ -405,7 +436,7 @@ class FeedSelection:
 			known = {choice[0] for choice in last_fresh}
 			additional = [[ref, feed, False] for ref, feed, _ in current_seed['choices'] if ref not in known] if current_seed else []
 			last_choices = last_fresh + additional
-			self.results.put((request['id'], json.dumps({'id': request['id'], 'choices': last_choices, 'incomplete_error': True, 'revision': revision, 'complete': True, 'seeded': bool(additional), 'fresh_choices': last_fresh if additional else []})))
+			self.results.put((request['id'], json.dumps({'id': request['id'], 'choices': last_choices, 'incomplete_error': True, 'saved': last_saved or bool(additional and current_seed.get('saved')), 'revision': revision, 'complete': True, 'seeded': bool(additional), 'fresh_choices': last_fresh if additional else [], 'fresh_saved': last_saved})))
 
 	def _validate_fixture(self, request):
 		"""Recheck the event without fetching the provider catalogs again."""
@@ -446,6 +477,7 @@ class FeedSelection:
 			ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
 		retaining = bool(request_id and request.get('retained') and _request_current(request))
 		background = bool(playing and _request_current(request))
+		if not visible and self.seen_id == request_id and not ku.get_visibility('Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): ku.clear_property(_ORDER)
 		if visible: self.seen_id = request_id
 		elif request_id and self.seen_id == request_id and not retaining and not background:
 			if not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):
@@ -534,9 +566,15 @@ class FeedSelection:
 			result_key = request_id + ':' + str(result.get('revision', 0))
 			slow_refresh = result.get('complete', True) is not True and is_slow() and self.slow_refreshed_id != request_id
 			if self.refreshed_id == result_key and not slow_refresh: return
-			if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') or not ku.get_visibility('System.IdleTime(2)'): return
+			order = _read(_ORDER)
+			focused_label = ku.get_infolabel('Container.ListItem.Label') or ''
+			first_choices = bool(result.get('choices')) and (order.get('id') != request_id or not order.get('refs')) and not is_slow() and 'select to retry' not in focused_label.casefold()
+			if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') or (not first_choices and not ku.get_visibility('System.IdleTime(2)')): return
 			self.refreshed_id = result_key
 			if slow_refresh: self.slow_refreshed_id = request_id
+			if result.get('choices') and self.timed_refresh_id != request_id:
+				_timing('refresh', request.get('created'))
+				self.timed_refresh_id = request_id
 			ku.execute_builtin('Container.Refresh')
 			return
 		try: slow = time.time() - request['created'] >= _SLOW_SECONDS

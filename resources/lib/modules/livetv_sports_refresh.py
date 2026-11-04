@@ -7,7 +7,7 @@ from threading import Event, Thread
 
 from modules import kodi_utils as ku
 from modules import livetv_sports_progress as progress
-from modules.livetv_sports_overview import SportsOverview
+from modules.livetv_sports_overview import SportsOverview, SPORTS, PREFIX, _SharedCatalog, _load as _load_overview
 from modules.livetv_feed_selection import FeedSelection
 from modules.livetv_sports import record_timing
 
@@ -19,6 +19,24 @@ _GUIDE_FIXTURE_RETRY = 2 * 60
 _START_RETRY = 60
 _START_WINDOW = 15 * 60
 _SCHEDULE_INTERVAL = 30 * 60
+_WARM_INTERVAL = 5 * 60
+_WARM_SPACING = 30
+_WARM_TIMEOUT = 20
+_MATCH_WARM_SPACING = 45
+
+
+def _warm_catalog(account, fingerprint, canceled):
+	from menus import livetv
+	try:
+		if canceled.is_set() or livetv._feed_accounts_fingerprint() != fingerprint: return
+		livetv._catalog(account, 'get_live_streams', notify_stale=False, _deadline=monotonic() + _WARM_TIMEOUT)
+	except Exception: pass
+
+
+def _warm_matches(sport, fingerprint, catalog, results, canceled):
+	from menus import livetv
+	if canceled.is_set() or livetv._feed_accounts_fingerprint() != fingerprint: return
+	_load_overview(sport, fingerprint, 0, catalog, results)
 
 
 def _refresh_guide(canceled, on_update, permissive, sport):
@@ -45,8 +63,18 @@ class SportsRefresh:
 		self.guide_identity = None
 		self.guide_generation = 0
 		self.guide_fixture_next_attempt = 0
+		self.warm_worker = None
+		self.warm_cancel = Event()
+		self.warm_next = monotonic() + _WARM_SPACING
+		self.warm_accounts = []
+		self.warm_identity = None
+		self.match_results = SimpleQueue()
+		self.match_next = monotonic() + _WARM_SPACING
+		self.match_index = 0
+		self.match_baseline = None
 
 	def close(self):
+		self.warm_cancel.set()
 		self.progress.close()
 		self.feed_selection.close()
 		if self.guide_cancel: self.guide_cancel.set()
@@ -77,11 +105,59 @@ class SportsRefresh:
 		elif now >= self.guide_fixture_next_attempt and not progress.pending() and progress.guide_fixture_stale(sport):
 			if progress.request_background(sport, 'schedule'): self.guide_fixture_next_attempt = now + _GUIDE_FIXTURE_RETRY
 
+	def _warm_tick(self, now):
+		from menus import livetv
+		blocked = not ku.get_visibility('System.IdleTime(10)')
+		blocked = blocked or ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel) | String.Contains(Container.FolderPath,mode=livetv)')
+		while True:
+			try: sport, accounts, generation, encoded = self.match_results.get_nowait()
+			except Empty: break
+			try:
+				data = json.loads(encoded)
+				baseline = self.match_baseline
+				if (not blocked and baseline and baseline[:2] == (sport, accounts) and accounts == livetv._feed_accounts_fingerprint() and not data.get('matching')
+						and (not data.get('unavailable') or data.get('groups')) and data.get('accounts') == accounts and 0 <= time() - data.get('created', 0) < 120
+						and time() < data.get('fixture_expires', 0) and ku.get_property(PREFIX + sport) == baseline[2]): ku.set_property(PREFIX + sport, encoded)
+			except (TypeError, ValueError): pass
+		if blocked or (self.warm_worker and self.warm_worker.is_alive()): return
+		if now < self.warm_next and now < self.match_next: return
+		from modules.livetv_catalog import catalog_lock_supported
+		if not catalog_lock_supported(ku.translate_path(ku.profile_path)):
+			self.warm_next = self.match_next = now + _WARM_INTERVAL
+			return
+		identity = livetv._feed_accounts_fingerprint()
+		if identity != self.warm_identity:
+			self.warm_identity = identity
+			self.warm_accounts = []
+		if now >= self.match_next and now < self.warm_next:
+			if not livetv._sports_accounts(livetv._load()):
+				self.match_next = now + _WARM_INTERVAL
+				return
+			sport = SPORTS[self.match_index % len(SPORTS)]
+			self.match_index += 1
+			self.match_baseline = (sport, identity, ku.get_property(PREFIX + sport))
+			catalog = _SharedCatalog(identity, False)
+			self.warm_worker = Thread(target=_warm_matches, args=(sport, identity, catalog, self.match_results, self.warm_cancel), daemon=True)
+			self.warm_worker.start()
+			self.match_next = now + _MATCH_WARM_SPACING
+			return
+		if now < self.warm_next: return
+		if not self.warm_accounts:
+			self.warm_accounts = livetv._sports_accounts(livetv._load())
+			if not self.warm_accounts:
+				self.warm_next = now + _WARM_INTERVAL
+				return
+		_, account = self.warm_accounts.pop(0)
+		self.warm_worker = Thread(target=_warm_catalog, args=(account, identity, self.warm_cancel), daemon=True)
+		self.warm_worker.start()
+		self.warm_next = now + (_WARM_SPACING if self.warm_accounts else _WARM_INTERVAL)
+
 	def tick(self):
 		self.progress.tick()
 		self.feed_selection.tick()
 		visible = ku.get_visibility(_SPORTS_WINDOW)
 		now = monotonic()
+		self._warm_tick(now)
 		sport = ku.get_property('LiveTV.Sport')
 		self.overview.tick(visible and sport == 'all' and progress._current('all'), now)
 		if sport == 'all' and visible:

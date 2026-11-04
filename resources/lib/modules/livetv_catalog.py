@@ -5,6 +5,10 @@ import os
 import re
 import tempfile
 import time
+try:
+	import fcntl
+except ImportError:
+	fcntl = None
 from functools import lru_cache
 from http.client import HTTPException
 from urllib.parse import parse_qsl, unquote, urlsplit
@@ -86,13 +90,45 @@ def _read(path, key, now):
 		return None
 
 
+def catalog_lock_supported(profile):
+	"""Whether this profile supports the advisory lock used by catalog writers."""
+	if fcntl is None: return False
+	fd = None
+	try:
+		os.makedirs(profile, mode=0o700, exist_ok=True)
+		fd = os.open(profile, os.O_RDONLY)
+		try: fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+		except BlockingIOError: pass  # Another writer holds a supported lock.
+		return True
+	except OSError:
+		return False
+	finally:
+		if fd is not None: os.close(fd)
+
+
 def _write(profile, path, payload, _deadline=None):
 	temporary = None
+	lock_fd = None
 	try:
 		os.makedirs(profile, mode=0o700, exist_ok=True)
 		encoded = json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
 		if len(encoded) > MAX_BYTES: return
 		if _deadline is not None and time.monotonic() >= _deadline: return
+		# Unsupported platforms retain foreground caching; background warmers
+		# must check catalog_lock_supported before starting any requests.
+		if catalog_lock_supported(profile):
+			lock_fd = os.open(profile, os.O_RDONLY)
+			lock_deadline = min(time.monotonic() + 2, _deadline) if _deadline is not None else time.monotonic() + 2
+			while True:
+				try:
+					fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+					break
+				except BlockingIOError:
+					if time.monotonic() >= lock_deadline: return
+					time.sleep(min(0.02, max(0, lock_deadline - time.monotonic())))
+		if _deadline is not None and time.monotonic() >= _deadline: return
+		current = _read(path, payload['key'], time.time())
+		if current and current[0]['created'] > payload['created']: return
 		fd, temporary = tempfile.mkstemp(prefix='.livetv-catalog-', dir=profile)
 		with os.fdopen(fd, 'wb') as target: target.write(encoded)
 		if _deadline is not None and time.monotonic() >= _deadline: return
@@ -112,6 +148,7 @@ def _write(profile, path, payload, _deadline=None):
 	except (OSError, TypeError, ValueError, OverflowError):
 		pass
 	finally:
+		if lock_fd is not None: os.close(lock_fd)
 		if temporary is not None:
 			try: os.unlink(temporary)
 			except OSError: pass
@@ -119,6 +156,14 @@ def _write(profile, path, payload, _deadline=None):
 
 def _usable_streams(items):
 	return isinstance(items, list) and any(isinstance(item, dict) and str(item.get('stream_id') or '').isdecimal() for item in items)
+
+
+def saved_streams(account, profile):
+	"""Return a valid saved full catalog and its creation time, if available."""
+	key = _key(account, 'get_live_streams', {})
+	cached = _read(os.path.join(profile, 'livetv-catalog-' + key + '.json'), key, time.time())
+	if not cached or not _usable_streams(cached[0]['items']): return None
+	return cached[0]['items'], cached[0]['created']
 
 
 def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=None, force_refresh=False, _deadline=None, **params):

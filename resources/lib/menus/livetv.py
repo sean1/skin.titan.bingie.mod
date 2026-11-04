@@ -1402,19 +1402,13 @@ def _live_soccer_fixtures(include_upcoming=False, with_expiry=False):
 	def fetch(method, *args, **kwargs):
 		if with_expiry: return method(*args, with_expiry=True, **kwargs)
 		return method(*args, **kwargs), None
-	(sport, sport_status), sport_expiry = fetch(_sportapi_service.get, profile, bundled=os.path.join(base, _sportapi_service.KEY_FILE)) if profile else (([], 'not configured'), None)
-	(football, football_status), football_expiry = (([], 'not needed'), None) if sport_status.startswith('updated ') else (fetch(_fixture_service.get, profile, bundled=os.path.join(base, _fixture_service.KEY_FILE)) if profile else (([], 'not configured'), None))
-	sport = [item for item in sport if _valid_soccer_fixture(item)] if isinstance(sport, list) else []
-	football = [item for item in football if _valid_soccer_fixture(item)] if isinstance(football, list) else []
-	available = sport_status.startswith('updated ') or football_status.startswith('updated ')
-	selected = sport if sport_status.startswith('updated ') else football if football_status.startswith('updated ') else []
-	source = 'sportapi' if sport_status.startswith('updated ') else 'api-football'
-	live = [item for item in selected if isinstance(item, dict) and _selected_soccer_fixture(item, source) and (item.get('status') in _fixture_service.LIVE_STATUSES or (include_upcoming and _schedule_state(item, time.time())[0] == 'Upcoming'))]
 	from concurrent.futures import ThreadPoolExecutor
 	with ThreadPoolExecutor(max_workers=3) as pool:
 		canadian_future = pool.submit(fetch, _fixture_service.get_canadian_premier, profile) if profile else None
 		live_future = pool.submit(fetch, _canadian_championship.get_live, cache_dir=profile or None)
 		schedule_future = pool.submit(fetch, _canadian_championship.get_schedule, cache_dir=profile or None) if include_upcoming else None
+		(sport, sport_status), sport_expiry = fetch(_sportapi_service.get, profile, bundled=os.path.join(base, _sportapi_service.KEY_FILE)) if profile else (([], 'not configured'), None)
+		(football, football_status), football_expiry = (([], 'not needed'), None) if sport_status.startswith('updated ') else (fetch(_fixture_service.get, profile, bundled=os.path.join(base, _fixture_service.KEY_FILE)) if profile else (([], 'not configured'), None))
 		(canadian, canadian_status), canadian_expiry = canadian_future.result() if canadian_future else (([], 'unavailable'), None)
 		championship_live_status = 'updated'
 		try: championship_live, championship_live_expiry = live_future.result()
@@ -1422,6 +1416,12 @@ def _live_soccer_fixtures(include_upcoming=False, with_expiry=False):
 		championship_status = 'updated'
 		try: championship_schedule, championship_expiry = schedule_future.result() if schedule_future else ([], None)
 		except (OSError, HTTPException, ValueError, TypeError, KeyError): championship_schedule, championship_status, championship_expiry = [], 'unavailable', None
+	sport = [item for item in sport if _valid_soccer_fixture(item)] if isinstance(sport, list) else []
+	football = [item for item in football if _valid_soccer_fixture(item)] if isinstance(football, list) else []
+	available = sport_status.startswith('updated ') or football_status.startswith('updated ')
+	selected = sport if sport_status.startswith('updated ') else football if football_status.startswith('updated ') else []
+	source = 'sportapi' if sport_status.startswith('updated ') else 'api-football'
+	live = [item for item in selected if isinstance(item, dict) and _selected_soccer_fixture(item, source) and (item.get('status') in _fixture_service.LIVE_STATUSES or (include_upcoming and _schedule_state(item, time.time())[0] == 'Upcoming'))]
 	seen = {_soccer_fixture_key(item) for item in live}
 	def add_fixture(item):
 		if not _valid_soccer_fixture(item): return

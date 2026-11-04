@@ -25,6 +25,7 @@ TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
 TRAILER_PREVIEW_ACTIVE_POLL = 0.25
 TRAILER_PREVIEW_IDLE_POLL = 1.0
 FOCUSED_FANART_STABLE_POLL = 0.5
+STANDINGS_FOCUS_ACTIVE_SECONDS = 3.0
 MAIN_MENU_WINDOWS = ('Home', '1110', '1111', '1112', '1119')
 MAIN_MENU_FOCUS = '[%s] + [ControlGroup(9001).HasFocus() | Control.HasFocus(4444)]' % ' | '.join('Window.IsActive(%s)' % window for window in MAIN_MENU_WINDOWS)
 TRAILER_PREVIEW_CACHE_LIMIT = 128
@@ -152,7 +153,7 @@ def _service_poll_interval(fanart_pending, fanart_stable, preview_active):
 	if fanart_stable: return FOCUSED_FANART_STABLE_POLL
 	return TRAILER_PREVIEW_IDLE_POLL
 
-def _wait_for_service_tick(monitor, poll_interval, wake_event=None):
+def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=None):
 	if wake_event is not None:
 		remaining = poll_interval
 		menu_focused = poll_interval == TRAILER_PREVIEW_IDLE_POLL and kodi_utils.get_visibility(MAIN_MENU_FOCUS)
@@ -164,6 +165,7 @@ def _wait_for_service_tick(monitor, poll_interval, wake_event=None):
 			# Kodi dispatches Python playback callbacks inside waitForAbort, not Event.wait.
 			if monitor.waitForAbort(delay): return True
 			remaining -= delay
+			if standings and standings.identity and standings._focused()[0] != standings.identity: return False
 			if menu_focused and not kodi_utils.get_visibility(MAIN_MENU_FOCUS): return False
 		return False
 	if poll_interval != TRAILER_PREVIEW_IDLE_POLL or not kodi_utils.get_visibility(MAIN_MENU_FOCUS): return monitor.waitForAbort(poll_interval)
@@ -971,13 +973,15 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			try: clearSubs()
 			except: pass
 			poll_interval = TRAILER_PREVIEW_IDLE_POLL
-			while not _wait_for_service_tick(self, poll_interval, self.trailer_preview.wake_event):
+			standings_identity, standings_active_until = '', 0.0
+			while not _wait_for_service_tick(self, poll_interval, self.trailer_preview.wake_event, self.focused_standings):
 				self._sync_keymap()
 				live_tv_active = self.livetv_failover.tick()
 				if get_property('pov_lite_pause_services'):
 					self.next_page_prefetch.cancel()
 					self.focused_fanart.pause()
 					self.focused_standings.pause()
+					standings_identity, standings_active_until = '', 0.0
 					poll_interval = TRAILER_PREVIEW_ACTIVE_POLL if self.trailer_preview.pause() else TRAILER_PREVIEW_IDLE_POLL
 					continue
 				self.next_page_prefetch.tick()
@@ -985,8 +989,11 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 				self.news_refresh.tick()
 				fanart_pending = self.focused_fanart.tick()
 				standings_pending = self.focused_standings.tick()
+				if self.focused_standings.identity != standings_identity:
+					standings_identity = self.focused_standings.identity
+					standings_active_until = monotonic() + STANDINGS_FOCUS_ACTIVE_SECONDS if standings_identity else 0.0
 				preview_active = self.trailer_preview.tick()
-				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending or self.sports_refresh.feed_selection.pending())
+				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending or bool(standings_identity and monotonic() < standings_active_until) or self.sports_refresh.feed_selection.pending())
 
 	def _deferred_database_maintenance(self):
 		if self.waitForAbort(DATABASE_MAINTENANCE_DELAY): return

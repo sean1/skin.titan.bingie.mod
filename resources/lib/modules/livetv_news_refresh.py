@@ -38,11 +38,12 @@ def prepare(params):
 	groups = result.get('groups') if isinstance(result.get('groups'), dict) else {}
 	provider_times = result.get('provider_times') if isinstance(result.get('provider_times'), dict) else {}
 	def current(entry):
-		if not isinstance(entry, list) or len(entry) != 2 or not isinstance(entry[0], str): return False
+		if not isinstance(entry, list) or len(entry) != 2 or not isinstance(entry[0], str) or not isinstance(entry[1], dict): return False
 		provider = entry[0].partition(':')[0] if ':' in entry[0] else 'primary'
 		created = provider_times.get(provider, 0)
 		return isinstance(created, (int, float)) and 0 <= now - created < _MAX_AGE
-	groups = {slug: [entry for entry in entries if current(entry)] for slug, entries in groups.items() if isinstance(entries, list)}
+	groups = {slug: [[entry[0], {**entry[1], '_news_until': provider_times[entry[0].partition(':')[0] if ':' in entry[0] else 'primary'] + _MAX_AGE, '_news_accounts': accounts}]
+		for entry in entries if current(entry)] for slug, entries in groups.items() if isinstance(entries, list)}
 	groups = {slug: entries for slug, entries in groups.items() if entries}
 	try: alive = 0 <= now - float(ku.get_property(_HEARTBEAT)) < 30
 	except (TypeError, ValueError): alive = False

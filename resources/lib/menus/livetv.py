@@ -87,7 +87,7 @@ def _fixture_scope(name):
 
 def _play_params(stream_id, name, sport=''):
 	params = {'mode': 'livetv.play', 'id': stream_id}
-	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'):
+	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1', 'news'):
 		params.update({'name': name, 'sport': sport})
 	elif _soccer_event(name): params['name'] = name
 	return params
@@ -96,13 +96,14 @@ def _play_params(stream_id, name, sport=''):
 def _matched_play_params(stream_id, name, sport, feeds, cache):
 	params = _play_params(stream_id, name, sport)
 	if not sport or len(feeds) < 2 or len(cache) >= 500: return params
-	deadlines = {ref: feed.get('_guide_until') for ref, feed in feeds if feed.get('_guide_match')}
+	deadlines = {ref: feed.get('_news_until') for ref, feed in feeds} if sport == 'news' else {ref: feed.get('_guide_until') for ref, feed in feeds if feed.get('_guide_match')}
 	try:
 		if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= time.time() for value in deadlines.values()): return params
 	except OverflowError: return params
 	token = uuid.uuid4().hex
 	cache[token] = {'sport': sport, 'feeds': [[ref, hashlib.sha256(str(feed.get('name') or '').encode('utf-8')).hexdigest()] for ref, feed in feeds[:100]]}
 	if deadlines: cache[token]['guide_expiries'] = {ref: deadlines[ref] for ref, _ in feeds[:100] if ref in deadlines}
+	if sport == 'news': cache[token]['labels'] = {ref: feed['_news_label'] for ref, feed in feeds[:100]}
 	params['feeds_token'] = token
 	return params
 
@@ -140,8 +141,9 @@ def _feed_accounts_fingerprint():
 	return hashlib.sha256(json.dumps([(identity, _account_fingerprint(account)) for identity, account in accounts], separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
-def _save_feed_matches(cache):
+def _save_feed_matches(cache, expected_accounts=None):
 	created, accounts = time.time(), _feed_accounts_fingerprint()
+	if expected_accounts is not None and accounts != expected_accounts: return
 	for token, match in cache.items():
 		try: start = int(token, 16) % _FEED_CACHE_SLOTS
 		except (TypeError, ValueError): continue
@@ -188,7 +190,10 @@ def _cached_failover(params):
 		if selected in deadlines and deadlines[selected] <= time.time(): return
 		ordered = [selected] + [ref for ref, _ in feeds if ref != selected and (ref not in deadlines or deadlines[ref] > time.time())]
 		if len(ordered) < 2: return
-		result = {'id': selected, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': [{'id': ref, 'name': 'Feed %d' % (index + 1)} for index, ref in enumerate(ordered)], 'token': uuid.uuid4().hex}
+		labels = match.get('labels', {}) if match['sport'] == 'news' else {}
+		if not isinstance(labels, dict) or any(ref not in [item[0] for item in feeds] or not isinstance(label, str) or not re.fullmatch(r'Feed [1-9][0-9]{0,5}', label) for ref, label in labels.items()): return
+		if match['sport'] == 'news' and any(ref not in labels or ref not in deadlines for ref in ordered): return
+		result = {'id': selected, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': [{'id': ref, 'name': labels.get(ref, 'Feed %d' % (index + 1))} for index, ref in enumerate(ordered)], 'token': uuid.uuid4().hex}
 		for feed in result['feeds']:
 			if feed['id'] in deadlines: feed['expires'] = deadlines[feed['id']]
 		if 'expires' in match: result['expires'] = expires
@@ -878,9 +883,29 @@ def news(params):
 	else:
 		feeds = groups.get(channel, [])
 		icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % channel
+		counts = {}
+		for ref, _ in feeds: counts[ref] = counts.get(ref, 0) + 1
+		choices = []
+		for index, (ref, feed) in enumerate(feeds, 1):
+			name = feed.get('name')
+			if counts[ref] != 1 or not re.fullmatch(r'(?:[A-Za-z0-9_-]{1,64}:)?[0-9]{1,32}', ref) or not isinstance(name, str) or _news_name(name) not in _NEWS_CHANNELS[channel]: continue
+			choices.append((ref, {**feed, '_news_label': 'Feed %d' % index}))
+		feed_cache = {}
+		tokens = {}
+		chunks = [choices[offset:offset + 100] for offset in range(0, len(choices), 100)]
+		if len(chunks) > 1 and len(chunks[-1]) == 1: chunks[-1].insert(0, chunks[-2].pop())
+		for chunk in chunks:
+			ref, feed = chunk[0]
+			token = _matched_play_params(ref, feed['name'], 'news', chunk, feed_cache).get('feeds_token')
+			if token: tokens.update({value: token for value, _ in chunk})
 		for index, (ref, feed) in enumerate(feeds, 1):
 			name = str(feed.get('name') or _NEWS_LABELS[channel])
-			_item('Feed %d · %s' % (index, name), _play_params(ref, name), False, icon, extra_context=refresh)
+			play_params = _play_params(ref, name, 'news') if ref in tokens else _play_params(ref, name)
+			if ref in tokens: play_params['feeds_token'] = tokens[ref]
+			_item('Feed %d · %s' % (index, name), play_params, False, icon, extra_context=refresh)
+		if feed_cache:
+			snapshot_accounts = {feed.get('_news_accounts') for _, feed in choices}
+			if len(snapshot_accounts) == 1 and isinstance(next(iter(snapshot_accounts)), str): _save_feed_matches(feed_cache, expected_accounts=next(iter(snapshot_accounts)))
 		if not feeds:
 			message = 'Finding feeds…' if state in ('loading', 'partial') else 'Feeds unavailable' if state in ('stale', 'unavailable') else 'No matching feeds'
 			_item(message, {'mode': 'livetv.news', 'channel': channel}, False, playable=False, extra_context=refresh)

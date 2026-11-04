@@ -683,8 +683,8 @@
 					<height>$PARAM[topsize]</height>
 					<font/>
 					<label>Switch feed</label>
-					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]reset_fo.png</texturefocus>
-					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]reset.png</texturenofocus>
+					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]playlist_fo.png</texturefocus>
+					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]playlist.png</texturenofocus>
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.next)</onclick>
 					<visible>Player.HasVideo + String.IsEqual(Window(Home).Property(BingieLiveTVCanSwitch),true)</visible>
 					<include>Top_OSD_Button_Zoom_Anim</include>

@@ -69,6 +69,13 @@ def _visible():
 	except ValueError: return False
 
 
+def _stable_grid():
+	try:
+		params = parse_qs(urlsplit(ku.get_infolabel('Container.FolderPath')).query, keep_blank_values=True)
+		return params.get('mode') == ['livetv.news'] and 'channel' not in params and not ku.get_visibility('Container.Scrolling') and ku.get_visibility('System.IdleTime(1)')
+	except ValueError: return False
+
+
 class NewsRefresh:
 	def __init__(self):
 		self.results = SimpleQueue()
@@ -189,7 +196,7 @@ class NewsRefresh:
 				worker.start()
 		if result.get('id') == request_id and request_id:
 			version = str(hash(json.dumps(result, sort_keys=True, ensure_ascii=False)))
-			if version != self.refreshed and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') and ku.get_visibility('System.IdleTime(2)'):
+			if version != self.refreshed and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') and (_stable_grid() or ku.get_visibility('System.IdleTime(2)')):
 				self.refreshed = version
 				ku.execute_builtin('Container.Refresh')
 		if result.get('complete') and time.time() - result.get('created', 0) >= _INTERVAL and time.time() - self.last_auto >= _INTERVAL and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') and ku.get_visibility('System.IdleTime(2)'):

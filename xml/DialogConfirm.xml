@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <window>
-	<onload condition="String.IsEqual(Window(Home).Property(BingieLiveTVOpening),true) + String.IsEqual(Control.GetLabel(1),$LOCALIZE[16026])">AlarmClock(BingieLiveTVDialogClose,Dialog.Close(okdialog,true),00:00:03,silent)</onload>
-	<onload condition="String.IsEqual(Window(Home).Property(BingieLiveTVOpening),true) + String.IsEqual(Control.GetLabel(1),$LOCALIZE[16026])">SetProperty(BingieLiveTVPlaybackFailed,true,Home)</onload>
-	<onload condition="String.IsEqual(Window(Home).Property(BingieLiveTVOpening),true) + String.IsEqual(Control.GetLabel(1),$LOCALIZE[16026])">Dialog.Close(okdialog,true)</onload>
 	<onload condition="Control.IsVisible(12)">SetFocus(12)</onload>
-	<onunload>CancelAlarm(BingieLiveTVDialogClose,silent)</onunload>
     <controls>
 	<control type="group">
-		<animation effect="fade" start="100" end="0" time="0" condition="String.IsEqual(Window(Home).Property(BingieLiveTVOpening),true) + String.IsEqual(Control.GetLabel(1),$LOCALIZE[16026])">Conditional</animation>
 		<visible>!Window.IsActive(DialogButtonMenu.xml)</visible>
 		<visible>!Window.IsActive(DialogKeyboard.xml)</visible>
 		<visible>!Window.IsActive(DialogNumeric.xml)</visible>

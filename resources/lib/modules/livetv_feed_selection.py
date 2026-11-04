@@ -1,4 +1,5 @@
 """Load the matching-feed picker without blocking its Kodi directory."""
+import hashlib
 import json
 import math
 import time
@@ -93,9 +94,54 @@ def handoff(params, fixture, groups):
 	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return ''
 
 
+def overview_handoff(params, fixture, groups):
+	"""Bind a picker link to the current, short-lived overview snapshot."""
+	from menus import livetv
+	from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
+	try:
+		sport = params.get('sport', '')
+		if sport not in overview.SPORTS: return ''
+		raw = ku.get_property(overview.PREFIX + sport)
+		value = json.loads(raw or '{}')
+		now = time.time()
+		if value.get('accounts') != livetv._feed_accounts_fingerprint() or not 0 <= now - value['created'] < _HANDOFF_SECONDS or not _overview_fixture_fresh(value, now): return ''
+		if progress._filter_guide_groups(progress._groups_from_json(value['groups']), now) != groups: return ''
+		query = {key: params.get(key, '') for key in _FIELDS}
+		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
+		matching = [row for row in value['fixtures'] if isinstance(row, dict) and _fixture_key(sport, row) == key]
+		identity = livetv._fixture_focus_identity(sport, fixture)
+		if _fixture_key(sport, fixture) != key or len(matching) != 1 or matching[0].get('status') not in livetv._fixture_service.LIVE_STATUSES or not identity or livetv._fixture_focus_identity(sport, matching[0]) != identity: return ''
+		return 'o' + hashlib.sha256(raw.encode('utf-8')).hexdigest()
+	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return ''
+
+
+def _overview_fixture_fresh(value, now):
+	expires = value.get('fixture_expires')
+	return isinstance(expires, (int, float)) and not isinstance(expires, bool) and math.isfinite(expires) and now < expires
+
+
+def _overview_handoff(token, query, accounts):
+	from menus import livetv
+	from modules import livetv_sports_overview as overview
+	try:
+		if query['sport'] not in overview.SPORTS: return None
+		raw = ku.get_property(overview.PREFIX + query['sport'])
+		if token != 'o' + hashlib.sha256(raw.encode('utf-8')).hexdigest(): return None
+		value = json.loads(raw or '{}')
+		if value.get('accounts') != accounts or not 0 <= time.time() - value['created'] < _HANDOFF_SECONDS or not _overview_fixture_fresh(value, time.time()): return None
+		choices = _selection(value, query)
+		key = query['session'] if query['sport'] == 'f1' else ((query['home'], query['away']), query['scope'])
+		matches = [fixture for fixture in value['fixtures'] if isinstance(fixture, dict) and _fixture_key(query['sport'], fixture) == key]
+		identity = livetv._fixture_focus_identity(query['sport'], matches[0]) if len(matches) == 1 else ''
+		return {'choices': choices, 'unavailable': value.get('unavailable'), 'fixture_identity': identity} if choices and identity else None
+	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return None
+
+
 def _handoff(params, query, accounts):
 	from modules import livetv_sports_progress as progress
 	try:
+		token = params.get('handoff', '')
+		if isinstance(token, str) and token.startswith('o'): return _overview_handoff(token, query, accounts)
 		value = _read(_HANDOFF)
 		if not params.get('handoff') or value.get('token') != params.get('handoff') or value.get('sport') != query['sport'] or value.get('accounts') != accounts or not time.time() < value['expires']: return None
 		if progress._read(progress._REQUEST).get('id') != value.get('request_id'): return None
@@ -126,6 +172,11 @@ def _retention_identity(query, accounts):
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return ''
 
 
+def _overview_identity(query, accounts, token):
+	value = _overview_handoff(token, query, accounts) if token else None
+	return value.get('fixture_identity', '') if value else ''
+
+
 def _request_current(request):
 	from menus import livetv
 	try: return bool(0 <= time.time() - request['created'] < _MAX_AGE and request['accounts'] == livetv._feed_accounts_fingerprint())
@@ -135,7 +186,8 @@ def _request_current(request):
 def _retainable(request):
 	try:
 		identity = request.get('fixture_identity')
-		return bool(identity and _request_current(request) and _retention_identity(request['query'], request['accounts']) == identity)
+		return bool(identity and _request_current(request) and not _fresh_cache_conflicts(request) and (
+			_retention_identity(request['query'], request['accounts']) == identity or _overview_identity(request['query'], request['accounts'], request.get('handoff', '')) == identity))
 	except (KeyError, TypeError, ValueError, OverflowError): return False
 
 
@@ -160,8 +212,16 @@ def prepare(params):
 	query = {key: params.get(key, '') for key in _FIELDS}
 	accounts = livetv._feed_accounts_fingerprint()
 	request = _read(_REQUEST)
+	token = params.get('handoff', '')
 	try: valid = 0 <= time.time() - request['created'] < _MAX_AGE
 	except (KeyError, TypeError): valid = False
+	same_handoff = valid and not request.get('validation_failed') and request.get('handoff') == token and request.get('query') == query and request.get('accounts') == accounts
+	if isinstance(token, str) and token.startswith('o') and not same_handoff:
+		seed = _overview_handoff(token, query, accounts)
+		if not seed: return 'unavailable', []
+		identity = seed['fixture_identity']
+		if _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': identity}): return 'unavailable', []
+		if valid and request.get('query') == query and request.get('accounts') == accounts and request.get('fixture_identity') and request['fixture_identity'] != identity: return 'unavailable', []
 	compatible = valid and not request.get('validation_failed') and request.get('query') == query and request.get('accounts') == accounts and not (params.get('retry') and params.get('retry') == request.get('id'))
 	if compatible and request.get('validated_until'):
 		try: validated = isinstance(request['validated_until'], (int, float)) and not isinstance(request['validated_until'], bool) and math.isfinite(request['validated_until']) and time.time() < request['validated_until']
@@ -178,8 +238,13 @@ def prepare(params):
 			return 'loading', []
 		compatible = False
 	if not compatible:
+		if isinstance(token, str) and token.startswith('o'):
+			seed = _overview_handoff(token, query, accounts)
+			if not seed or _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': seed['fixture_identity']}): return 'unavailable', []
 		request = {'id': uuid.uuid4().hex, 'created': time.time(), 'query': query, 'accounts': accounts, 'handoff': params.get('handoff', ''), 'fixture_identity': _retention_identity(query, accounts)}
 		seed = None if params.get('retry') else _handoff(params, query, accounts)
+		if seed and seed.get('fixture_identity') and request['fixture_identity'] and seed['fixture_identity'] != request['fixture_identity']: seed = None
+		if seed and not request['fixture_identity']: request['fixture_identity'] = seed.get('fixture_identity', '')
 		if not seed: request['handoff'] = ''
 		ku.clear_property(_RESULT)
 		ku.clear_property(_ORDER)

@@ -58,15 +58,15 @@ def _load(sport, accounts, generation, catalog, results):
 	partial = False
 	try:
 		if sport == 'soccer':
-			fixtures, _, _, status = livetv._live_soccer_fixtures(include_upcoming=True)
+			(fixtures, _, _, status), fixture_expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True)
 			if status.startswith('Live fixtures unavailable'): raise ValueError('Fixtures unavailable')
 			partial = any(part in ('Canadian Premier League unavailable', 'Canadian Championship live status unavailable') for part in status.split(' · ')[1:])
-		elif sport == 'f1': fixtures = livetv._f1.get_schedule()
+		elif sport == 'f1': fixtures, fixture_expires = livetv._f1.get_schedule(with_expiry=True)
 		else:
 			profile = ku.translate_path(getattr(ku, 'profile_path', ''))
-			fixtures = livetv._tennis_fixtures_service.get_schedule(cache_dir=profile or None) if sport == 'tennis' else livetv._american_fixtures.get_schedule(sport, cache_dir=profile or None)
+			fixtures, fixture_expires = livetv._tennis_fixtures_service.get_schedule(cache_dir=profile or None, with_expiry=True) if sport == 'tennis' else livetv._american_fixtures.get_schedule(sport, cache_dir=profile or None, with_expiry=True)
 		if not isinstance(fixtures, list): raise ValueError('Invalid fixtures')
-		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures, 'groups': [], 'matching': True, 'schedule_unavailable': partial, 'created': time.time()}, ensure_ascii=False, separators=(',', ':'))))
+		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures, 'fixture_expires': fixture_expires, 'groups': [], 'matching': True, 'schedule_unavailable': partial, 'created': time.time()}, ensure_ascii=False, separators=(',', ':'))))
 		failures, catalog_status = [], []
 		groups, _ = livetv._sports_catalog_groups(livetv._sports_primary(), sport, fixtures=fixtures, status_sink=failures.append, notify_stale=False, on_status=lambda created, stale: catalog_status.append((created, stale)), catalog_fetch=catalog.get)
 		secrets = [str(account.get(key) or '') for _, account in livetv._sports_accounts(livetv._load()) for key in ('username', 'password')]
@@ -80,7 +80,7 @@ def _load(sport, accounts, generation, catalog, results):
 				item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
 				items[ref] = item
 			clean.append((key, items))
-		data = {'accounts': accounts, 'fixtures': fixtures, 'groups': clean, 'unavailable': bool(failures and failures[-1]), 'schedule_unavailable': partial, 'stale': any(stale for _, stale in catalog_status), 'created': time.time()}
+		data = {'accounts': accounts, 'fixtures': fixtures, 'fixture_expires': fixture_expires, 'groups': clean, 'unavailable': bool(failures and failures[-1]), 'schedule_unavailable': partial, 'stale': any(stale for _, stale in catalog_status), 'created': time.time()}
 		encoded = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
 		if len(encoded.encode('utf-8')) > 4 * 1024 * 1024: raise ValueError('Overview result too large')
 		results.put((sport, accounts, generation, encoded))

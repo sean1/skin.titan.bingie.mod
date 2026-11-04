@@ -95,6 +95,13 @@ def _playback_timing(started, outcome):
 	except Exception: pass
 
 
+def _trace_relay(message):
+	try:
+		import xbmc
+		xbmc.log('BINGIE RELAY TRACE ' + message, xbmc.LOGINFO)
+	except Exception: pass
+
+
 def _range(value, size):
 	"""Return one satisfiable byte range; unsupported requests receive full 200."""
 	if not value or size <= 0: return None
@@ -175,6 +182,8 @@ class Relay:
 		self.roots = {}
 		self.namespaces = {}
 		self.active = {}
+		self.trace_roots = {}
+		self.trace_sequence = 0
 		self.started_roots = set()
 		self.lock = threading.RLock()
 		self.stopping = threading.Event()
@@ -382,6 +391,12 @@ class Relay:
 				self.cancelled = False
 				self.upstream = None
 				self.response_socket = None
+				trace_started = None
+				trace_last = None
+				trace_bytes = 0
+				trace_phase = 'setup'
+				trace_outcome = 'complete'
+				trace_root = trace_request = trace_active = 0
 				try:
 					match = re.fullmatch(r'/r/([A-Za-z0-9_-]{32,})/resource(?:\.[A-Za-z0-9]{1,8})?', self.path)
 					data_request = hmac.compare_digest(self.headers.get('X-Bingie-Data-Request', ''), owner.secret)
@@ -391,6 +406,12 @@ class Relay:
 							root = owner.roots.get(match.group(1))
 							owner.active.setdefault(root, set()).add(self)
 							self.initial_pending = method == 'GET' and root == match.group(1) and root not in owner.started_roots
+							owner.trace_sequence += 1
+							trace_request = owner.trace_sequence
+							if root not in owner.trace_roots and len(owner.trace_roots) < _MAX_ITEMS: owner.trace_roots[root] = trace_request
+							trace_root = owner.trace_roots.get(root, 0)
+							trace_active = sum(len(handlers) for handlers in owner.active.values())
+					if trace_request: _trace_relay('start request=%d root=%d method=%s range=%s active=%d' % (trace_request, trace_root, method, bool(self.headers.get('Range')), trace_active))
 					if not url: return self._error(404)
 					if self.initial_pending:
 						initial_started = time.monotonic()
@@ -410,6 +431,11 @@ class Relay:
 					except ValueError: timeout = 30
 					connection, response, effective_url = owner._open(url, method, dict(self.headers), timeout=timeout, data_request=data_request, handler=self if not data_request else None)
 					content_type = (response.getheader('Content-Type') or '').lower()
+					if trace_request:
+						trace_length = response.getheader('Content-Length') or ''
+						trace_length = int(trace_length) if trace_length.isdecimal() and len(trace_length) <= 20 else -1
+						trace_type = 'transport' if 'mp2t' in content_type else 'playlist' if 'mpegurl' in content_type else 'other'
+						_trace_relay('response request=%d root=%d status=%d length=%d transfer=%s type=%s' % (trace_request, trace_root, response.status, trace_length, bool(response.getheader('Transfer-Encoding')), trace_type))
 					if not data_request and ('dash+xml' in content_type or urlsplit(effective_url).path.lower().endswith('.mpd')): return self._error(502)
 					if response.status == 206: return self._error(502)
 					encoding = (response.getheader('Content-Encoding') or 'identity').strip().lower()
@@ -466,22 +492,40 @@ class Relay:
 					if method == 'GET':
 						if body is not None: self.wfile.write(body)
 						else:
+							if not data_request:
+								trace_started = trace_last = time.monotonic()
 							remaining = end - start + 1 if selection else None
 							if prefix:
 								chunk = prefix[:remaining] if remaining is not None else prefix
+								trace_bytes += len(chunk)
+								trace_phase = 'write'
 								self.wfile.write(chunk)
 								if remaining is not None: remaining -= len(chunk)
 							read_chunk = getattr(response, 'read1', response.read)
 							while remaining is None or remaining > 0:
+								trace_phase = 'read'
 								chunk = read_chunk(min(65536, remaining) if remaining is not None else 65536)
-								if not chunk: break
+								if not chunk:
+									trace_outcome = 'eof'
+									break
+								trace_last = time.monotonic()
+								trace_bytes += len(chunk)
+								trace_phase = 'write'
 								self.wfile.write(chunk)
 								if remaining is not None: remaining -= len(chunk)
-				except Exception:
+				except Exception as exc:
+					trace_outcome = 'timeout' if isinstance(exc, TimeoutError) else 'error'
 					if not sent:
 						try: self._error(502)
 						except OSError: pass
 				finally:
+					if trace_started is not None:
+						try:
+							now = time.monotonic()
+							trace_remaining = response.length if isinstance(response.length, int) else -1
+							with owner.lock: trace_active = sum(len(handlers) for handlers in owner.active.values())
+							_trace_relay('end request=%d root=%d phase=%s outcome=%s elapsed_ms=%d idle_ms=%d bytes=%d remaining=%d active=%d' % (trace_request, trace_root, trace_phase, trace_outcome, round((now - trace_started) * 1000), round((now - trace_last) * 1000), trace_bytes, trace_remaining, trace_active))
+						except Exception: pass
 					if timer:
 						with owner.lock:
 							self.initial_pending = False

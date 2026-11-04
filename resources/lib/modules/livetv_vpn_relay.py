@@ -20,6 +20,7 @@ _MAX_ITEMS = 10000
 _TOKEN_TTL = 12 * 60 * 60
 _MAX_PLAYLIST = 4 * 1024 * 1024
 _MAX_CONTROL = 65536
+_INITIAL_PLAYBACK_SECONDS = 15
 _REDIRECTS = frozenset((301, 302, 303, 307, 308))
 _HEADERS = frozenset(('accept', 'accept-encoding', 'user-agent'))
 _RESPONSE_HEADERS = frozenset(('content-type', 'content-encoding', 'content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified', 'cache-control', 'expires'))
@@ -81,6 +82,17 @@ def _sniff(response):
 				xml = True
 				break
 	return prefix, probe.startswith(b'#EXTM3U'), xml
+
+
+def _response_socket(response):
+	return getattr(getattr(getattr(response, 'fp', None), 'raw', None), '_sock', None)
+
+
+def _playback_timing(started, outcome):
+	try:
+		import xbmc
+		xbmc.log('BINGIE IPTV startup phase=initial_response outcome=%s elapsed_ms=%d' % (outcome, round((time.monotonic() - started) * 1000)), xbmc.LOGINFO)
+	except Exception: pass
 
 
 def _range(value, size):
@@ -163,6 +175,7 @@ class Relay:
 		self.roots = {}
 		self.namespaces = {}
 		self.active = {}
+		self.started_roots = set()
 		self.lock = threading.RLock()
 		self.stopping = threading.Event()
 		self.connections = set()
@@ -185,11 +198,13 @@ class Relay:
 				self.items[old] = (url, now)
 				return '/r/%s/resource%s' % (old, ext)
 			if old:
+				self.started_roots.discard(old)
 				self.tokens.pop(key, None)
 				self.roots.pop(old, None)
 				self.namespaces.pop(old, None)
 			while self.items and (len(self.items) >= _MAX_ITEMS or now - next(iter(self.items.values()))[1] > _TOKEN_TTL):
 				removed_token, (removed_url, _) = self.items.popitem(last=False)
+				self.started_roots.discard(removed_token)
 				removed_root = self.roots.pop(removed_token, removed_token)
 				removed_namespace = self.namespaces.pop(removed_token, 'playback')
 				removed_key = (removed_url, '' if removed_root == removed_token else removed_root, removed_namespace)
@@ -206,6 +221,7 @@ class Relay:
 			item = self.items.pop(token, None)
 			if not item: return None
 			if now - item[1] > _TOKEN_TTL:
+				self.started_roots.discard(token)
 				root = self.roots.pop(token, token)
 				namespace = self.namespaces.pop(token, 'playback')
 				key = (item[0], '' if root == token else root, namespace)
@@ -224,6 +240,7 @@ class Relay:
 		with self.lock:
 			root = self.roots.get(match.group(1))
 			if not root or self.namespaces.get(root) != 'playback': return
+			self.started_roots.discard(root)
 			for token, item_root in list(self.roots.items()):
 				if item_root != root: continue
 				item = self.items.pop(token, None)
@@ -235,7 +252,7 @@ class Relay:
 			handlers = list(self.active.pop(root, ()))
 			for handler in handlers: handler.cancelled = True
 		for handler in handlers:
-			for sock in (handler.connection, getattr(getattr(handler, 'upstream', None), 'sock', None)):
+			for sock in (handler.connection, handler.response_socket, getattr(getattr(handler, 'upstream', None), 'sock', None)):
 				try:
 					if sock: sock.shutdown(socket.SHUT_RDWR)
 				except OSError: pass
@@ -254,11 +271,17 @@ class Relay:
 			cookies.add_cookie_header(request)
 			hop_headers = dict(request.header_items())
 			target_port = parsed.port or (443 if parsed.scheme.lower() == 'https' else 80)
-			connection = (http.client.HTTPSConnection if parsed.scheme.lower() == 'https' else http.client.HTTPConnection)('127.0.0.1', self.proxy_port, timeout=timeout)
+			connect_timeout = timeout
+			if handler and handler.initial_pending:
+				connect_timeout = min(timeout, max(0.001, handler.initial_deadline - time.monotonic()))
+			connection = (http.client.HTTPSConnection if parsed.scheme.lower() == 'https' else http.client.HTTPConnection)('127.0.0.1', self.proxy_port, timeout=connect_timeout)
 			with self.lock:
 				if self.stopping.is_set(): raise OSError('IPTV VPN relay is unavailable')
 				if handler and handler.cancelled: raise OSError('Playback cancelled')
-				if handler: handler.upstream = connection
+				if handler and handler.initial_expired: raise TimeoutError('IPTV initial response timed out')
+				if handler:
+					handler.upstream = connection
+					handler.response_socket = None
 				self.connections.add(connection)
 			auth = base64.b64encode(('bingie:' + self.proxy_password).encode('utf-8')).decode('ascii')
 			connection.set_tunnel(parsed.hostname, target_port, headers={'Proxy-Authorization': 'Basic ' + auth})
@@ -269,6 +292,8 @@ class Relay:
 				connection.request(method, path, headers=hop_headers)
 				if handler and handler.cancelled: raise OSError('Playback cancelled')
 				response = connection.getresponse()
+				if handler:
+					with self.lock: handler.response_socket = _response_socket(response)
 				cookies.extract_cookies(response, request)
 				if response.status not in _REDIRECTS:
 					keep_open = True
@@ -348,8 +373,15 @@ class Relay:
 				connection = None
 				sent = False
 				root = None
+				timer = None
+				initial_started = None
+				initial_outcome = 'failed'
+				initial_logged = False
+				self.initial_pending = False
+				self.initial_expired = False
 				self.cancelled = False
 				self.upstream = None
+				self.response_socket = None
 				try:
 					match = re.fullmatch(r'/r/([A-Za-z0-9_-]{32,})/resource(?:\.[A-Za-z0-9]{1,8})?', self.path)
 					data_request = hmac.compare_digest(self.headers.get('X-Bingie-Data-Request', ''), owner.secret)
@@ -358,7 +390,22 @@ class Relay:
 						if url and not data_request:
 							root = owner.roots.get(match.group(1))
 							owner.active.setdefault(root, set()).add(self)
+							self.initial_pending = method == 'GET' and root == match.group(1) and root not in owner.started_roots
 					if not url: return self._error(404)
+					if self.initial_pending:
+						initial_started = time.monotonic()
+						self.initial_deadline = initial_started + _INITIAL_PLAYBACK_SECONDS
+						def expire():
+							with owner.lock:
+								if not self.initial_pending: return
+								self.initial_expired = True
+								sock = self.response_socket or getattr(self.upstream, 'sock', None)
+								try:
+									if sock: sock.shutdown(socket.SHUT_RDWR)
+								except OSError: pass
+						timer = threading.Timer(_INITIAL_PLAYBACK_SECONDS, expire)
+						timer.daemon = True
+						timer.start()
 					try: timeout = max(1, min(120, float(self.headers.get('X-Bingie-Timeout', '30'))))
 					except ValueError: timeout = 30
 					connection, response, effective_url = owner._open(url, method, dict(self.headers), timeout=timeout, data_request=data_request, handler=self if not data_request else None)
@@ -377,6 +424,18 @@ class Relay:
 							data = prefix + response.read(_MAX_PLAYLIST + 1)
 							if len(data) > _MAX_PLAYLIST: return self._error(502)
 							body = owner._rewrite(data, effective_url, root)
+					if initial_started is not None:
+						with owner.lock:
+							if self.initial_expired: raise TimeoutError('IPTV initial response timed out')
+							if self.cancelled or root not in owner.items: raise OSError('Playback cancelled')
+							if self.response_socket and not playlist and response.fp is not None: self.response_socket.settimeout(timeout)
+							self.initial_pending = False
+							if prefix:
+								owner.started_roots.add(root)
+								initial_outcome = 'ok'
+						timer.cancel()
+						_playback_timing(initial_started, initial_outcome)
+						initial_logged = True
 					selection = None
 					length = response.getheader('Content-Length')
 					if method == 'GET' and response.status == 200 and not playlist and length and length.isdecimal() and not response.getheader('Transfer-Encoding') and not self.headers.get('If-Range'):
@@ -423,6 +482,12 @@ class Relay:
 						try: self._error(502)
 						except OSError: pass
 				finally:
+					if timer:
+						with owner.lock:
+							self.initial_pending = False
+							if self.initial_expired: initial_outcome = 'timeout'
+						timer.cancel()
+						if not initial_logged: _playback_timing(initial_started, initial_outcome)
 					if connection: owner._release(connection)
 					if root:
 						with owner.lock:

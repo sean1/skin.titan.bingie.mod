@@ -86,14 +86,16 @@ def _read(path, key, now):
 		return None
 
 
-def _write(profile, path, payload):
+def _write(profile, path, payload, _deadline=None):
 	temporary = None
 	try:
 		os.makedirs(profile, mode=0o700, exist_ok=True)
 		encoded = json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
 		if len(encoded) > MAX_BYTES: return
+		if _deadline is not None and time.monotonic() >= _deadline: return
 		fd, temporary = tempfile.mkstemp(prefix='.livetv-catalog-', dir=profile)
 		with os.fdopen(fd, 'wb') as target: target.write(encoded)
+		if _deadline is not None and time.monotonic() >= _deadline: return
 		os.replace(temporary, path)
 		temporary = None
 		files = []
@@ -119,13 +121,14 @@ def _usable_streams(items):
 	return isinstance(items, list) and any(isinstance(item, dict) and str(item.get('stream_id') or '').isdecimal() for item in items)
 
 
-def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=None, force_refresh=False, **params):
+def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=None, force_refresh=False, _deadline=None, **params):
 	"""Return the catalog; refresh after two minutes, with a 24-hour offline fallback."""
 	if action not in _FIELDS: return fetch(account, action, **params)
 	now = time.time() if now is None else now
 	key = _key(account, action, params)
 	path = os.path.join(profile, 'livetv-catalog-' + key + '.json')
 	cached = _read(path, key, now)
+	if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
 	full_live_catalog = action == 'get_live_streams' and not params
 	# A full catalogue without playable stream IDs is not a known-good fallback.
 	if full_live_catalog and cached and not _usable_streams(cached[0]['items']): cached = None
@@ -139,11 +142,16 @@ def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=N
 			data = fetch(account, action, **params)
 			if not _usable_streams(data): raise ValueError('Unusable live channel catalog')
 		clean = _clean(data, action, account)
+		if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
 	except (OSError, HTTPException, ValueError, TypeError):
 		if not cached: raise
 		if on_stale: on_stale()
 		if on_status: on_status(cached[0]['created'], True)
 		return cached[0]['items']
-	if clean is not None: _write(profile, path, {'key': key, 'created': now, 'items': clean})
+	if clean is not None:
+		payload = {'key': key, 'created': now, 'items': clean}
+		if _deadline is None: _write(profile, path, payload)
+		else: _write(profile, path, payload, _deadline)
+	if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
 	if on_status: on_status(now, False)
 	return data

@@ -108,6 +108,49 @@ def _handoff(params, query, accounts):
 	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return None
 
 
+
+def _retention_identity(query, accounts):
+	"""Identify a unique live event only while its fixture source is fresh."""
+	from menus import livetv
+	from modules import livetv_sports_progress as progress
+	try:
+		sport = query['sport']
+		cached = progress._cached_fixtures(sport, accounts)
+		cache = progress._read(progress._FIXTURE_CACHE + sport)
+		expires = cache.get('source_expires')
+		if cached is None or cache.get('accounts') != accounts or not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or not time.time() < expires: return ''
+		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
+		matches = [fixture for fixture in cached[0] if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
+		if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: return ''
+		return livetv._fixture_focus_identity(sport, matches[0])
+	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return ''
+
+
+def _request_current(request):
+	from menus import livetv
+	try: return bool(0 <= time.time() - request['created'] < _MAX_AGE and request['accounts'] == livetv._feed_accounts_fingerprint())
+	except (KeyError, TypeError, ValueError, OverflowError): return False
+
+
+def _retainable(request):
+	try:
+		identity = request.get('fixture_identity')
+		return bool(identity and _request_current(request) and _retention_identity(request['query'], request['accounts']) == identity)
+	except (KeyError, TypeError, ValueError, OverflowError): return False
+
+
+
+def _fresh_cache_conflicts(request):
+	from modules import livetv_sports_progress as progress
+	try:
+		sport, accounts = request['query']['sport'], request['accounts']
+		cache = progress._read(progress._FIXTURE_CACHE + sport)
+		expires = cache.get('source_expires')
+		if progress._cached_fixtures(sport, accounts) is None or cache.get('accounts') != accounts or not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or not time.time() < expires: return False
+		return _retention_identity(request['query'], accounts) != request.get('fixture_identity')
+	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return True
+
+
 def prepare(params):
 	"""Return (state, choices) without performing any provider requests."""
 	from menus import livetv
@@ -119,8 +162,23 @@ def prepare(params):
 	request = _read(_REQUEST)
 	try: valid = 0 <= time.time() - request['created'] < _MAX_AGE
 	except (KeyError, TypeError): valid = False
-	if not valid or request.get('query') != query or request.get('accounts') != accounts or (params.get('retry') and params.get('retry') == request.get('id')):
-		request = {'id': uuid.uuid4().hex, 'created': time.time(), 'query': query, 'accounts': accounts, 'handoff': params.get('handoff', '')}
+	compatible = valid and not request.get('validation_failed') and request.get('query') == query and request.get('accounts') == accounts and not (params.get('retry') and params.get('retry') == request.get('id'))
+	if compatible and request.get('validated_until'):
+		try: validated = isinstance(request['validated_until'], (int, float)) and not isinstance(request['validated_until'], bool) and math.isfinite(request['validated_until']) and time.time() < request['validated_until']
+		except (TypeError, ValueError, OverflowError): validated = False
+		if not validated or _fresh_cache_conflicts(request): request['retained'] = True
+	if compatible and request.get('retained') and not _retainable(request):
+		result = _read(_RESULT)
+		if request.get('fixture_identity') and result.get('id') == request.get('id') and result.get('complete') is True and not result.get('seeded') and isinstance(result.get('choices'), list) and not request.get('validation_failed'):
+			if not request.get('validating'):
+				request.pop('validation_started', None)
+				request['validating'] = True
+				request['validation_token'] = uuid.uuid4().hex
+				ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+			return 'loading', []
+		compatible = False
+	if not compatible:
+		request = {'id': uuid.uuid4().hex, 'created': time.time(), 'query': query, 'accounts': accounts, 'handoff': params.get('handoff', ''), 'fixture_identity': _retention_identity(query, accounts)}
 		seed = None if params.get('retry') else _handoff(params, query, accounts)
 		if not seed: request['handoff'] = ''
 		ku.clear_property(_RESULT)
@@ -129,6 +187,12 @@ def prepare(params):
 		if seed:
 			ku.set_property(_RESULT, json.dumps({'id': request['id'], 'choices': seed['choices'], 'revision': 0, 'complete': False, 'incomplete_error': seed['unavailable'], 'seeded': True}, ensure_ascii=False, separators=(',', ':')))
 		else: return 'loading', []
+	elif request.get('retained') and not ku.get_visibility('Player.HasMedia'):
+		request.pop('retained', None)
+		request.pop('validating', None)
+		request.pop('validation_started', None)
+		request.pop('validation_token', None)
+		ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
 	result = _read(_RESULT)
 	if result.get('id') == request.get('id') and result.get('seeded') and not _handoff(params, query, accounts):
 		result['choices'] = result.get('fresh_choices', [])
@@ -202,12 +266,17 @@ class FeedSelection:
 		self.refreshed_id = ''
 		self.slow_refreshed_id = ''
 		self.seed_started = ''
+		self.quick_pending = ''
+		self.validations = SimpleQueue()
+		self.validation_worker = None
+		self.validating_id = ''
 
 	def _work(self, request):
 		revision = 0
 		seed = _handoff(request, request['query'], request['accounts']) if request.get('handoff') else None
 		last_choices = [[ref, feed, False] for ref, feed, _ in seed['choices']] if seed else []
 		last_fresh = []
+		observed_identity = ''
 		try:
 			from menus import livetv
 			if livetv._feed_accounts_fingerprint() != request['accounts']: raise ValueError('Account changed')
@@ -216,6 +285,13 @@ class FeedSelection:
 			query = request['query']
 			sport = query['sport']
 			key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
+			def observe_fixtures(fixtures):
+				nonlocal observed_identity
+				matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
+				if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: return
+				identity = livetv._fixture_focus_identity(sport, matches[0])
+				observed_identity = identity
+				if request.get('fixture_identity') and request['fixture_identity'] != identity: raise ValueError('Fixture changed')
 			secrets = [str(account.get(field) or '') for _, account in livetv._sports_accounts(livetv._load()) for field in ('username', 'password')]
 			def publish(groups, complete, unavailable=False):
 				nonlocal revision, last_choices, last_fresh
@@ -236,7 +312,7 @@ class FeedSelection:
 						choices.extend(additional)
 						using_seed = bool(additional)
 				revision += 1
-				encoded = json.dumps({'id': request['id'], 'choices': choices, 'revision': revision, 'complete': complete, 'incomplete_error': bool(unavailable), 'seeded': using_seed, 'fresh_choices': last_fresh if using_seed else []}, ensure_ascii=False, separators=(',', ':'))
+				encoded = json.dumps({'id': request['id'], 'choices': choices, 'revision': revision, 'complete': complete, 'incomplete_error': bool(unavailable), 'seeded': using_seed, 'fresh_choices': last_fresh if using_seed else [], 'fixture_identity': observed_identity}, ensure_ascii=False, separators=(',', ':'))
 				if len(encoded.encode('utf-8')) > _MAX_RESULT: raise ValueError('Result too large')
 				last_choices = choices
 				self.results.put((request['id'], encoded))
@@ -251,25 +327,62 @@ class FeedSelection:
 				except (TypeError, ValueError, OverflowError): source_fresh = False
 				if not source_fresh or cached is None or fixture_cache.get('accounts') != request['accounts'] or fixture_cache.get('fixtures') != cached[0]: cached = None
 				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=cached[0] if cached is not None else None, overlap_catalogs=cached is None, status_sink=unavailable.append, notify_stale=False,
-					on_partial=lambda groups, unavailable, statuses: publish(groups, False))
+					on_partial=lambda groups, unavailable, statuses: publish(groups, False), on_fixtures=observe_fixtures)
 			else:
 				groups = livetv._soccer_groups(livetv._catalog(account, 'get_live_streams', notify_stale=False))
 			publish(groups, True, unavailable[-1] if unavailable else False)
 		except Exception:
 			revision += 1
+			if observed_identity and request.get('fixture_identity') and observed_identity != request['fixture_identity']:
+				self.results.put((request['id'], json.dumps({'id': request['id'], 'fixture_identity': observed_identity, 'revision': revision, 'complete': True})))
+				return
 			current_seed = _handoff(request, request['query'], request['accounts']) if request.get('handoff') else None
 			known = {choice[0] for choice in last_fresh}
 			additional = [[ref, feed, False] for ref, feed, _ in current_seed['choices'] if ref not in known] if current_seed else []
 			last_choices = last_fresh + additional
 			self.results.put((request['id'], json.dumps({'id': request['id'], 'choices': last_choices, 'incomplete_error': True, 'revision': revision, 'complete': True, 'seeded': bool(additional), 'fresh_choices': last_fresh if additional else []})))
 
+	def _validate_fixture(self, request):
+		"""Recheck the event without fetching the provider catalogs again."""
+		expires = 0
+		try:
+			from menus import livetv
+			if not _request_current(request): raise ValueError('Account changed')
+			query = request['query']
+			sport = query['sport']
+			if sport == 'soccer':
+				(fixtures, _, _, _), expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True)
+			elif sport == 'f1': fixtures, expires = livetv._f1.get_schedule(with_expiry=True)
+			elif sport in ('hockey', 'football', 'basketball', 'tennis'):
+				profile = ku.translate_path(getattr(ku, 'profile_path', ''))
+				service = livetv._tennis_fixtures_service if sport == 'tennis' else livetv._american_fixtures
+				fixtures, expires = service.get_schedule(cache_dir=profile or None, with_expiry=True) if sport == 'tennis' else service.get_schedule(sport, cache_dir=profile or None, with_expiry=True)
+			else: raise ValueError('Unknown sport')
+			if not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or not time.time() < expires: raise ValueError('Stale fixtures')
+			key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
+			matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
+			if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES or livetv._fixture_focus_identity(sport, matches[0]) != request.get('fixture_identity') or not _request_current(request): raise ValueError('Fixture changed')
+		except Exception: expires = 0
+		self.validations.put((request['id'], request.get('validation_token'), expires))
+
 	def tick(self):
 		ku.set_property(_HEARTBEAT, str(time.time()))
 		request = _read(_REQUEST)
 		request_id = request.get('id', '')
 		visible = bool(request_id and _visible(request))
+		seed = _read(_RESULT)
+		quick_play = bool(request_id and not visible and self.seen_id != request_id and request.get('handoff') and seed.get('id') == request_id and seed.get('seeded') and ku.get_visibility('Player.HasMedia') and _retainable(request) and 0 <= time.time() - request['created'] < 30)
+		if quick_play:
+			self.seen_id = request_id
+			self.quick_pending = request_id
+		playing = bool(request_id and self.seen_id == request_id and ku.get_visibility('Player.HasMedia'))
+		if playing and not visible and not request.get('retained') and (_retainable(request) or (request.get('fixture_observed') and _request_current(request) and not _fresh_cache_conflicts(request))) and _read(_REQUEST).get('id') == request_id:
+			request['retained'] = True
+			ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+		retaining = bool(request_id and request.get('retained') and _request_current(request))
+		background = bool(playing and _request_current(request))
 		if visible: self.seen_id = request_id
-		elif request_id and self.seen_id == request_id:
+		elif request_id and self.seen_id == request_id and not retaining and not background:
 			if not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):
 				if _read(_REQUEST).get('id') == request_id:
 					if _read(_RESULT).get('id') == request_id: ku.clear_property(_RESULT)
@@ -279,8 +392,71 @@ class FeedSelection:
 		while True:
 			try: result_id, encoded = self.results.get_nowait()
 			except Empty: break
-			if request_id == result_id and visible: ku.set_property(_RESULT, encoded)
-		if not visible: return
+			if request_id != result_id or request.get('identity_conflict') or not (visible or retaining or background) or not _request_current(request) or _read(_REQUEST).get('id') != request_id: continue
+			try: identity = json.loads(encoded).get('fixture_identity')
+			except (TypeError, ValueError, AttributeError): identity = ''
+			candidate = dict(request, fixture_identity=identity or request.get('fixture_identity'))
+			if (identity and request.get('fixture_identity') and request['fixture_identity'] != identity) or (candidate.get('fixture_identity') and _fresh_cache_conflicts(candidate)):
+				request['identity_conflict'] = True
+				ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+				ku.set_property(_RESULT, json.dumps({'id': request_id, 'error': True, 'complete': True, 'revision': -1}))
+				continue
+			if identity:
+				request['fixture_identity'] = identity
+				request['fixture_observed'] = True
+				if background: request['retained'] = True
+				ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+				retaining = bool(request.get('retained'))
+			if visible or retaining: ku.set_property(_RESULT, encoded)
+		if not visible:
+			# Playback may begin from a handed-off seed before the picker gets a service tick.
+			if self.quick_pending == request_id and retaining and self.seed_started != request_id:
+				self.workers = {key: worker for key, worker in self.workers.items() if worker.is_alive()}
+				if len(self.workers) < 3:
+					worker = Thread(target=self._work, args=(request,), daemon=True)
+					self.workers[request_id] = worker
+					self.seed_started = request_id
+					self.quick_pending = ''
+					worker.start()
+			return
+		while True:
+			try: validation_id, token, expires = self.validations.get_nowait()
+			except Empty: break
+			if validation_id != request_id or token != request.get('validation_token') or not request.get('validating') or _read(_REQUEST).get('id') != request_id: continue
+			request.pop('validating', None)
+			request.pop('validation_started', None)
+			request.pop('validation_token', None)
+			if expires and _request_current(request) and time.time() < expires and not _fresh_cache_conflicts(request):
+				request.pop('retained', None)
+				request['validated_until'] = expires
+			else: request['validation_failed'] = True
+			ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+			self.validating_id = ''
+			self.refreshed_id = ''
+			if not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):
+				ku.execute_builtin('Container.Refresh')
+			return
+		if request.get('validating'):
+			started = request.get('validation_started')
+			if started is None and not ku.get_visibility('Player.HasMedia'):
+				started = request['validation_started'] = time.time()
+				if _read(_REQUEST).get('id') != request_id: return
+				ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+			if isinstance(started, (int, float)) and not isinstance(started, bool) and time.time() - started >= _SLOW_SECONDS:
+				request.pop('validating', None)
+				request.pop('validation_started', None)
+				request.pop('validation_token', None)
+				request['validation_failed'] = True
+				if _read(_REQUEST).get('id') == request_id: ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+				self.refreshed_id = ''
+				if not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): ku.execute_builtin('Container.Refresh')
+				return
+			if ku.get_visibility('Player.HasMedia'): return
+			if self.validating_id != request.get('validation_token') and (self.validation_worker is None or not self.validation_worker.is_alive()):
+				self.validation_worker = Thread(target=self._validate_fixture, args=(request,), daemon=True)
+				self.validating_id = request.get('validation_token')
+				self.validation_worker.start()
+			return
 		result = _read(_RESULT)
 		if result.get('id') == request_id and (result.get('seeded') or (request.get('handoff') and not result.get('complete', True))) and self.seed_started != request_id:
 			self.workers = {key: worker for key, worker in self.workers.items() if worker.is_alive()}

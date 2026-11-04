@@ -37,6 +37,7 @@ _REQUEST_LIMIT = 1024 * 1024
 _RESULT_LIMIT = 4 * 1024 * 1024
 _MAX_AGE = 15 * 60
 _FALLBACK_SECONDS = 60
+_PLAYBACK_RETENTION_SECONDS = 120
 
 
 def _read(name):
@@ -448,10 +449,26 @@ def _current(sport):
 	return query.get('mode') == ['livetv.soccer'] and query.get('sport', ['soccer']) == [sport]
 
 
+def _matching_picker(request):
+	"""Recognize a picker for a fixture in the active sports search."""
+	if not ku.get_visibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.match_feeds)'): return False
+	try:
+		from modules import livetv_feed_selection
+		query = parse_qs(urlsplit(ku.get_infolabel('Container.FolderPath')).query, keep_blank_values=True)
+		sport = request.get('sport')
+		if query.get('mode') != ['livetv.match_feeds'] or query.get('sport', ['']) != [sport]: return False
+		key = query.get('session', [''])[0] if sport == 'f1' else ((query.get('home', [''])[0], query.get('away', [''])[0]), query.get('scope', [''])[0])
+		matches = [fixture for fixture in request['fixtures'] if isinstance(fixture, dict) and livetv_feed_selection._fixture_key(sport, fixture) == key]
+		return len(matches) == 1
+	except (AttributeError, KeyError, TypeError, ValueError, IndexError): return False
+
+
 class SportsProgress:
 	def __init__(self):
 		self.workers = {}
 		self.seen_id = ''
+		self.playback_id = ''
+		self.playback_until = 0
 		self.refreshed_id = ''
 		self.refreshed_at = 0
 		self.results = SimpleQueue()
@@ -510,6 +527,9 @@ class SportsProgress:
 		self.fixture_seen = request_id
 		if _read(_FIXTURE_RESULT).get('id') == request_id:
 			result = _read(_FIXTURE_RESULT)
+			# Keep the completed fixture snapshot until playback ends; preparing it
+			# can replace the current feed search and start new provider requests.
+			if ku.get_visibility('Player.HasMedia'): return
 			if (self.fixture_refreshed != request_id and not request.get('background') and not request.get('reload') and request_id not in self.fixture_matching
 					and not _fixtures_unavailable(request.get('sport'), result) and not ku.get_visibility('Player.HasMedia')):
 				from menus import livetv
@@ -531,6 +551,7 @@ class SportsProgress:
 			self._capture_focus(request, _FIXTURE_ACK)
 			ku.execute_builtin('Container.Refresh')
 			return
+		if ku.get_visibility('Player.HasMedia'): return
 		self.fixture_workers = {key: worker for key, worker in self.fixture_workers.items() if worker.is_alive()}
 		if request_id in self.fixture_workers: return
 		if len(self.fixture_workers) >= 3:
@@ -635,9 +656,23 @@ class SportsProgress:
 		self._fixture_tick()
 		request = _read(_REQUEST)
 		request_id = request.get('id', '')
-		visible = bool(request_id and ku.get_property(_CANCEL) != request_id and _valid(request, request.get('sport')) and _current(request.get('sport')))
+		valid = bool(request_id and ku.get_property(_CANCEL) != request_id and _valid(request, request.get('sport')))
+		visible = bool(valid and _current(request.get('sport')))
+		playing = ku.get_visibility('Player.HasMedia')
+		if request_id != self.playback_id:
+			self.playback_id = ''
+			self.playback_until = 0
+		collecting = visible
+		retained = self.playback_id == request_id and time.monotonic() < self.playback_until
+		if valid and self.seen_id == request_id and (playing or (not visible and (_matching_picker(request) or retained))):
+			from menus import livetv
+			matching_accounts = request.get('accounts') == livetv._feed_accounts_fingerprint()
+			if playing and matching_accounts:
+				self.playback_id = request_id
+				self.playback_until = time.monotonic() + _PLAYBACK_RETENTION_SECONDS
+			if not visible: collecting = matching_accounts
 		self._restore_focus(request, visible)
-		if not visible and self.seen_id and request_id == self.seen_id:
+		if not collecting and self.seen_id and request_id == self.seen_id:
 			if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
 			invalidate(request_id)
 			self.seen_id = ''
@@ -649,11 +684,11 @@ class SportsProgress:
 		while True:
 			try: result_id, encoded = self.results.get_nowait()
 			except Empty: break
-			if visible and request_id == result_id and ku.get_property(_CANCEL) != result_id:
+			if collecting and request_id == result_id and ku.get_property(_CANCEL) != result_id:
 				ku.set_property(_RESULT + '.' + result_id, encoded)
 				result = json.loads(encoded)
 				status = result.get('status')
-				if status and status[1] and result.get('complete', True) is True: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.')
+				if visible and not playing and status and status[1] and result.get('complete', True) is True: ku.dialog.notification('Live TV', 'Showing saved channels; refresh failed.')
 		if not visible: return
 		deadline = ku.get_property(_FALLBACK_DEADLINE + '.' + request_id)
 		if deadline:

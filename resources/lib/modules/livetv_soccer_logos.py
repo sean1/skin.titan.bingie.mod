@@ -26,11 +26,12 @@ _ALIASES = {
 	'usa.1': {'orlando city': '12011', 'dc united': '193', 'new york city': '17606', 'montreal': '9720', 'sporting kc': '186', 'st louis city': '21812', 'sj earthquakes': '191', 'chicago fire': '182',
 		'atlanta united': '18418', 'houston dynamo': '6077', 'inter miami': '20232', 'los angeles': '18966', 'minnesota united': '17362', 'new york rb': '190', 'seattle sounders': '9726'},
 }
+_TRANSLITERATION = str.maketrans({'ł': 'l', 'ø': 'o', 'æ': 'ae', 'œ': 'oe', 'đ': 'd', 'ð': 'd', 'þ': 'th', 'ı': 'i'})
 
 
 def _normalize(value):
 	if not isinstance(value, str): return ''
-	value = unicodedata.normalize('NFKD', value.casefold())
+	value = unicodedata.normalize('NFKD', value.casefold().translate(_TRANSLITERATION))
 	return ' '.join(re.findall(r'[^\W_]+', ''.join(c for c in value if not unicodedata.combining(c))))
 
 

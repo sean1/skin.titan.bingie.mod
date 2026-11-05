@@ -173,8 +173,8 @@ class Sources:
 					self.threads, self.prescrape_sources, self.progress_dialog, self.disabled_ignored,
 					None if self.ignore_scrape_filters else self.results_processor.filter_staged_results, self.force_full_search
 				)
-				if not self.background and not self.autoplay and not self.force_full_search and not self.ignore_scrape_filters:
-					return self._collect_manual_snapshot(args)
+				if not self.background and not self.force_full_search and not self.ignore_scrape_filters:
+					return self._collect_source_snapshot(args)
 				self._collect_provider('external', (ExternalManager, args), False, self.meta['search_info'], self.source_sink)
 			elif self.providers and self.background: [i.join() for i in self.threads]
 		else: self.scrapers_dialog('internal')
@@ -184,7 +184,7 @@ class Sources:
 			self.providers.clear()
 		return self.sources
 
-	def _collect_manual_snapshot(self, args):
+	def _collect_source_snapshot(self, args):
 		meta = dict(self.meta)
 		sink = self.source_sink
 		search_source = copy(self)
@@ -392,8 +392,30 @@ class Sources:
 	def play_source(self, results):
 		results = [item for item in results if item.get('_identity_status') != 'unverified']
 		if self.background: self.pov_background_url = bool(results)
-		elif self.autoplay: return self.play_file(results)
+		elif self.autoplay:
+			self.autoplay_attempted = set()
+			self.autoplay_resume_percent = 0
+			outcome = self.play_file(results)
+			pending = self.pending_search
+			if outcome is not _PLAYBACK_FAILED or not pending: return outcome
+			display = kodi_utils.xbmcgui.DialogProgress() if self.progress_dialog.full_screen else progressDialogBG
+			display.create('BINGIE Lite', 'Searching for remaining sources...')
+			try:
+				while not pending['finished'].wait(0.1):
+					if monitor.abortRequested() or (self.progress_dialog.full_screen and display.iscanceled()): return
+				if monitor.abortRequested() or (self.progress_dialog.full_screen and display.iscanceled()): return
+			finally: display.close()
+			self.pending_search = None
+			self.orig_results = list(self.sources)
+			results = self.results_processor.process(self.orig_results)
+			results = [item for item in results if self._autoplay_source_key(item) not in self.autoplay_attempted]
+			if results: return self.play_file(results)
+			return notification('Playback failed. Search again or adjust filters.', time=10000)
 		else: return self.display_results(results)
+
+	@staticmethod
+	def _autoplay_source_key(item):
+		return tuple(item.get(key) for key in ('hash', 'debrid', 'source', 'provider', 'url', 'unrestricted_link', 'name'))
 
 	@staticmethod
 	def _log_playback_timing(timing, outcome):
@@ -413,9 +435,10 @@ class Sources:
 	def play_file(self, results, source=None):
 		startup_owner = {}
 		try:
+			if not hasattr(self, 'autoplay_attempted'): self.autoplay_attempted = set()
 			selection_started = self.meta.pop('_bingie_selection_started_at', None) or time.monotonic()
 			selection_id = time.monotonic_ns()
-			retry_resume_percent = 0
+			retry_resume_percent = getattr(self, 'autoplay_resume_percent', 0) if source is None else 0
 			manual_selection = source is not None
 			if source is not None and source.get('_identity_status') == 'unverified':
 				source_index, items = None, [source]
@@ -459,6 +482,7 @@ class Sources:
 				if provider not in ('realdebrid', 'alldebrid', 'torbox'): provider = 'other'
 				timing = {'selection_started': selection_started, 'attempt_started': resolve_started, 'selection_id': selection_id, 'attempt': count, 'provider': provider, 'log': self._log_playback_timing}
 				attempted = True
+				if self.autoplay and not manual_selection: self.autoplay_attempted.add(self._autoplay_source_key(item))
 				try:
 					if 'unrestricted_link' in item: link = item['unrestricted_link']
 					else: link = Source(item, self.meta, timing).resolve_sources()
@@ -498,7 +522,7 @@ class Sources:
 				})
 				playback_meta['_playback_timing'] = timing
 				pending = getattr(self, 'pending_search', None)
-				if pending: playback_meta['_search_cancel_event'] = pending['cancelled']
+				if pending and manual_selection: playback_meta['_search_cancel_event'] = pending['cancelled']
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
 				if getattr(self, 'restart_from_beginning', False): playback_meta['_restart_from_beginning'] = True
 				playback_player = POVPlayer()
@@ -515,6 +539,7 @@ class Sources:
 					outcome = 'playback_started_unattributed' if getattr(playback_player, 'startup_playback_started', False) else 'cancelled'
 					self._log_playback_timing(timing, outcome)
 				retry_resume_percent = getattr(playback_player, 'retry_resume_percent', 0)
+				if self.autoplay and not manual_selection: self.autoplay_resume_percent = retry_resume_percent
 				self.restart_from_beginning = getattr(playback_player, 'restart_from_beginning', False)
 				if playback_result is not False: return playback_result
 			else:
@@ -522,6 +547,7 @@ class Sources:
 				if self.progress_dialog.full_screen: self.progress_dialog.kill()
 				else: progressDialogBG.close()
 				if cancelled: return
+				if self.autoplay and not manual_selection and self.pending_search: return _PLAYBACK_FAILED
 				if not attempted: return self._no_results()
 				if manual_selection: return _PLAYBACK_FAILED
 				return notification('Playback failed. Search again or adjust filters.', time=10000)

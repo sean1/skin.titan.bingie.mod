@@ -783,14 +783,14 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=
 	return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
 
 
-def _browse_catalog(account, action, *, status=None, retry=False, **params):
+def _browse_catalog(account, action, *, status=None, retry=False, _saved=None, **params):
 	if retry:
 		def on_status(created, stale):
 			if stale and status is not None: status.append('Showing saved channels · refresh unavailable')
 		return _catalog(account, action, force_refresh=True, on_status=on_status, **params)
 	from modules.livetv_catalog import FRESH_SECONDS, catalog_lock_supported, saved_catalog
 	profile = ku.translate_path(ku.profile_path)
-	saved = saved_catalog(account, action, profile, **params)
+	saved = _saved if _saved is not None else saved_catalog(account, action, profile, **params)
 	if saved:
 		items, created = saved
 		if time.time() - created >= FRESH_SECONDS:
@@ -1868,37 +1868,67 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 
 def f1_channels(params):
 	"""Browse F1 channels without treating different feeds as interchangeable."""
+	from concurrent.futures import ThreadPoolExecutor
+	from modules.livetv_catalog import catalog_lock_supported, saved_catalog
 	legacy = _load()
 	accounts = _sports_accounts(legacy)
 	if not accounts:
 		_error('No Live TV account is available.')
 		_finish(False)
 		return
-	streams, failed, stale = [], [], []
-	for index, (identity, account) in enumerate(accounts):
+	profile = ku.translate_path(ku.profile_path)
+	retry = params.get('refresh') == 'true'
+	saved = {} if retry else {identity: saved_catalog(account, 'get_live_streams', profile) for identity, account in accounts}
+	locking = not retry and catalog_lock_supported(profile)
+	background = any(value is not None for value in saved.values()) and locking
+	def load(entry):
+		identity, account = entry
 		status = []
 		try:
-			catalog = _catalog(account, 'get_live_streams', force_refresh=params.get('refresh') == 'true', notify_stale=False, on_status=lambda created, saved: status.append(saved))
+			if saved.get(identity) is not None and locking:
+				catalog = _browse_catalog(account, 'get_live_streams', status=status, _saved=saved[identity])
+			else:
+				catalog = _catalog(account, 'get_live_streams', force_refresh=retry, notify_stale=False, _deadline=time.monotonic() + _SPORTS_SEARCH_SECONDS, on_status=lambda created, stale: status.append('Showing saved channels · refresh unavailable') if stale else None)
 			if not isinstance(catalog, list): raise ValueError('Invalid channel catalog')
-			if any(status): stale.append(_provider_label(identity, index + 1))
-			for stream in catalog:
-				if not isinstance(stream, dict) or not str(stream.get('stream_id') or '').isdecimal(): continue
-				name = stream.get('name')
-				if not isinstance(name, str) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', name, re.I) or re.match(r'^\s*#+', name): continue
-				streams.append(dict(stream, _provider=identity) if len(accounts) > 1 or not legacy else stream)
-		except (OSError, HTTPException, ValueError, TypeError): failed.append(_provider_label(identity, index + 1))
+			return catalog, 'failed_saved' if status and status[0].endswith('unavailable') else 'saved' if status else ''
+		except (OSError, HTTPException, ValueError, TypeError): return None, 'failed'
+	results, foreground = {}, []
+	for identity, account in accounts:
+		if background and saved.get(identity) is None:
+			from modules.livetv_browse_refresh import request, status as refresh_status
+			state = refresh_status(account, 'get_live_streams', {})
+			request(account, 'get_live_streams', {})
+			results[identity] = (None, 'failed' if state == 'unavailable' else 'pending')
+		elif saved.get(identity) is not None and locking:
+			results[identity] = load((identity, account))
+		else: foreground.append((identity, account))
+	if foreground:
+		with ThreadPoolExecutor(max_workers=min(4, len(foreground))) as pool:
+			for (identity, _), result in zip(foreground, pool.map(load, foreground)): results[identity] = result
+	streams, failed, stale, pending = [], [], [], []
+	for index, (identity, account) in enumerate(accounts):
+		catalog, state = results[identity]
+		label = _provider_label(identity, index + 1)
+		if state in ('failed', 'failed_saved'): failed.append(label)
+		if state in ('saved', 'failed_saved'): stale.append(label)
+		if state == 'pending': pending.append(label)
+		for stream in catalog or []:
+			if not isinstance(stream, dict) or not str(stream.get('stream_id') or '').isdecimal(): continue
+			name = stream.get('name')
+			if not isinstance(name, str) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', name, re.I) or re.match(r'^\s*#+', name): continue
+			streams.append(dict(stream, _provider=identity) if len(accounts) > 1 or not legacy else stream)
 	streams.sort(key=lambda stream: (stream['name'].casefold(), stream.get('_provider', ''), int(stream['stream_id'])))
 	page_streams, page, has_next = _channel_page(streams, params)
-	if failed or stale:
+	if failed or stale or pending:
 		messages = []
 		if failed: messages.append('Unavailable: ' + ', '.join(failed))
 		if stale: messages.append('Saved channels: ' + ', '.join(stale))
-		_item('Retry — ' + ' · '.join(messages) + ' · results may be incomplete', {'mode': 'livetv.f1_channels', 'page': str(page), 'refresh': 'true'}, True, None, False)
+		if pending: messages.append('Updating: ' + ', '.join(pending))
+		_item(('Retry' if failed else 'Reload') + ' — ' + ' · '.join(messages) + ' · results may be incomplete', {'mode': 'livetv.f1_channels', 'page': str(page), **({'refresh': 'true'} if failed else {})}, True, None, False)
 	if page: _item('Previous page', {'mode': 'livetv.f1_channels', 'page': str(page - 1)})
-	for stream in page_streams:
-		_item(stream['name'], {'mode': 'livetv.play', 'id': _sports_ref(stream)}, False, stream.get('stream_icon'))
+	_browse_items([(stream['name'], {'mode': 'livetv.play', 'id': _sports_ref(stream)}, False, stream.get('stream_icon')) for stream in page_streams])
 	if has_next: _item('Next page', {'mode': 'livetv.f1_channels', 'page': str(page + 1)})
-	if not streams and len(failed) < len(accounts): _item('No Formula 1 channels found', {}, False, playable=False)
+	if not streams and not pending and len(failed) < len(accounts): _item('No Formula 1 channels found', {}, False, playable=False)
 	_finish()
 
 

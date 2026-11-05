@@ -63,8 +63,10 @@ class BrowseRefresh:
 		entries = [entry for entry in _requests() if isinstance(entry, dict) and entry.get('id') not in self.seen]
 		if not entries: return
 		from menus import livetv
-		account = livetv._load()
-		if not account: return
+		primary = livetv._load()
+		accounts = [account for _, account in livetv._sports_accounts(primary)]
+		if primary: accounts.append(primary)
+		if not accounts: return
 		profile = ku.translate_path(ku.profile_path)
 		if not catalog_lock_supported(profile): return
 		now = time.monotonic()
@@ -74,7 +76,8 @@ class BrowseRefresh:
 			if not isinstance(identity, str) or identity in self.seen or action not in ('get_live_categories', 'get_live_streams') or not isinstance(params, dict): continue
 			if params and (action != 'get_live_streams' or set(params) != {'category_id'} or not isinstance(params['category_id'], str)): continue
 			self.seen = (self.seen + [identity])[-64:]
-			if key != _key(account, action, params) or now - self.attempted.get(key, float('-inf')) < _COOLDOWN: continue
+			account = next((value for value in accounts if key == _key(value, action, params)), None)
+			if account is None or now - self.attempted.get(key, float('-inf')) < _COOLDOWN: continue
 			self.attempted = {name: when for name, when in self.attempted.items() if now - when < _COOLDOWN}
 			self.attempted[key] = now
 			self.worker = Thread(target=self._work, args=(account, action, params, key, self.results), daemon=True)

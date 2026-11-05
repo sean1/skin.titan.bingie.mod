@@ -9,6 +9,7 @@ from modules import kodi_utils
 
 KEYBOARD, RESULTS, MORE = 200, 500, 501
 SEARCH_DELAY = 0.35
+QUEUED_SEARCH_GRACE = 0.15
 MAX_QUERY_LENGTH = 150
 
 
@@ -46,6 +47,8 @@ class Search(xbmcgui.WindowXML):
 		self.key_position = 0
 		self.status = 'Type a title to find movies and TV shows'
 		self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='bingie-search')
+		self.priority_executor = self.priority_future = None
+		self.priority_at = 0
 
 	def onInit(self):
 		with self.lock: self._initialize()
@@ -81,6 +84,7 @@ class Search(xbmcgui.WindowXML):
 			self.closed = True
 			if self.worker is not None: self.worker.join()
 			self.executor.shutdown(wait=True, cancel_futures=True)
+			if self.priority_executor is not None: self.priority_executor.shutdown(wait=True, cancel_futures=True)
 
 	def _work(self):
 		while not self.closed and not kodi_utils.monitor.abortRequested():
@@ -146,7 +150,12 @@ class Search(xbmcgui.WindowXML):
 
 	def tick(self):
 		if self.future is not None:
-			if not self.future.done(): return
+			if not self.future.done():
+				if (monotonic() >= self.priority_at and (self.priority_future is None or self.priority_future.done()) and self.future.cancel()):
+					# Running requests cannot be interrupted. Give the newest queued query one spare worker.
+					if self.priority_executor is None: self.priority_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='bingie-search-priority')
+					self.future = self.priority_future = self.priority_executor.submit(tmdb_media_search, self.query.strip(), self.request[1])
+				return
 			future, request = self.future, self.request
 			self.future = None
 			if request[0] == self.generation:
@@ -167,6 +176,7 @@ class Search(xbmcgui.WindowXML):
 		self.request = (self.generation, page)
 		self.setProperty('Search.Pending', 'true')
 		self._status('Searching…' if page == 1 else 'Loading more results…')
+		self.priority_at = monotonic() + QUEUED_SEARCH_GRACE
 		self.future = self.executor.submit(tmdb_media_search, self.query.strip(), page)
 
 	def _accept(self, payload, page):

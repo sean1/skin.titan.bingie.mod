@@ -75,6 +75,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.playback_event = True
 		try: playback_file = self.getPlayingFile()
 		except: playback_file = ''
+		timing = getattr(self, 'playback_timing', None)
+		if timing and timing.get('kodi_play_started') and not timing.get('av_started') and playback_file and playback_file == getattr(self, 'playback_timing_url', None):
+			timing['av_started'] = True
+			timing['log'](timing, 'av_started')
 		Thread(target=self._select_preferred_audio, args=(playback_file,), daemon=True).start()
 
 	def _select_preferred_audio(self, playback_file=''):
@@ -269,6 +273,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		preview_handoff = ''
 		try:
 			self.meta = meta or {}
+			self.playback_timing = self.meta.pop('_playback_timing', None)
 			self.playback_health_context = self.meta.pop('_playback_health_context', None)
 			self.playback_health_started_at = self.meta.pop('_playback_health_started_at', None)
 			self.playback_health_bitrate_mbps = self.meta.pop('_playback_health_bitrate_mbps', None)
@@ -319,6 +324,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.ignore_startup_stop = bool(preview_handoff) or self.isPlaying()
 			self.startup_playback_started = False
 			self.playback_event = None
+			if self.playback_timing:
+				self.playback_timing_url = url
+				self.playback_timing['kodi_play_started'] = monotonic()
 			self.play(url, listitem)
 			start_deadline = monotonic() + PLAYBACK_START_TIMEOUT
 			while self.playback_event is None and monotonic() < start_deadline:

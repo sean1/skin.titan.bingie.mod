@@ -14,10 +14,13 @@ from modules import kodi_utils as ku
 _REQUEST = 'LiveTV.FeedSelection.Request'
 _RESULT = 'LiveTV.FeedSelection.Result'
 _HEARTBEAT = 'LiveTV.FeedSelection.Heartbeat'
+_EARLY_RETRY = 'LiveTV.FeedSelection.EarlyRetry'
+_EARLY_ACK = 'LiveTV.FeedSelection.EarlyRetryAcknowledged'
 _FIELDS = ('sport', 'home', 'away', 'scope', 'session')
 _MAX_AGE = 15 * 60
 _MAX_RESULT = 4 * 1024 * 1024
 _SLOW_SECONDS = 30
+_NO_RESULT_RETRY_SECONDS = 10
 _HANDOFF = 'LiveTV.FeedSelection.Handoffs'
 _ORDER = 'LiveTV.FeedSelection.Order'
 _HANDOFF_SECONDS = 120
@@ -38,6 +41,25 @@ def _read(key):
 		value = json.loads(ku.get_property(key) or '{}')
 		return value if isinstance(value, dict) else {}
 	except (TypeError, ValueError): return {}
+
+
+def _current_choices(choices):
+	if not isinstance(choices, list): return [], False
+	now, current, expired = time.time(), [], False
+	for choice in choices:
+		if not isinstance(choice, list) or len(choice) < 2 or not isinstance(choice[1], dict):
+			expired = True
+			continue
+		feed = choice[1]
+		if feed.get('_guide_match'):
+			until = feed.get('_guide_until')
+			try: valid_until = isinstance(until, (int, float)) and not isinstance(until, bool) and math.isfinite(until) and until > now
+			except OverflowError: valid_until = False
+			if not valid_until:
+				expired = True
+				continue
+		current.append(choice)
+	return current, expired
 
 
 def _fixture_key(sport, row):
@@ -236,7 +258,18 @@ def prepare(params):
 		identity = seed['fixture_identity']
 		if _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': identity}): return 'unavailable', []
 		if valid and request.get('query') == query and request.get('accounts') == accounts and request.get('fixture_identity') and request['fixture_identity'] != identity: return 'unavailable', []
-	compatible = valid and not request.get('validation_failed') and request.get('query') == query and request.get('accounts') == accounts and (not expected_identity or request.get('fixture_identity') == expected_identity) and not (params.get('retry') and params.get('retry') == request.get('id'))
+	retry_current = bool(params.get('retry') and params.get('retry') == request.get('id'))
+	if retry_current and params.get('early_retry') == 'true' and valid and request.get('query') == query and request.get('accounts') == accounts:
+		current = _read(_RESULT)
+		if ku.get_property(_EARLY_ACK) == request['id'] or (current.get('id') == request['id'] and _current_choices(current.get('choices'))[0]):
+			ku.set_property(_EARLY_ACK, request['id'])
+			retry_current = False
+		elif current.get('id') != request['id'] or current.get('complete', True) is not True:
+			if _read(_REQUEST).get('id') == request['id']:
+				ku.set_property(_EARLY_RETRY, request['id'])
+				ku.set_property(_EARLY_ACK, request['id'])
+				retry_current = False
+	compatible = valid and not request.get('validation_failed') and request.get('query') == query and request.get('accounts') == accounts and (not expected_identity or request.get('fixture_identity') == expected_identity) and not retry_current
 	if compatible and request.get('validated_until'):
 		try: validated = isinstance(request['validated_until'], (int, float)) and not isinstance(request['validated_until'], bool) and math.isfinite(request['validated_until']) and time.time() < request['validated_until']
 		except (TypeError, ValueError, OverflowError): validated = False
@@ -282,26 +315,15 @@ def prepare(params):
 		result['incomplete_error'] = True
 		ku.set_property(_RESULT, json.dumps(result, ensure_ascii=False, separators=(',', ':')))
 	if result.get('id') != request.get('id'):
-		return ('slow' if time.time() - request['created'] >= _SLOW_SECONDS else 'loading'), []
+		if ku.get_property(_EARLY_RETRY) == request.get('id'): return 'retry_queued', []
+		return ('slow' if time.time() - request['created'] >= _NO_RESULT_RETRY_SECONDS else 'loading'), []
 	if result.get('error'): return 'unavailable', []
 	choices = result.get('choices')
 	if isinstance(choices, list):
-		now = time.time()
-		current = []
-		expired = False
-		for choice in choices:
-			if not isinstance(choice, list) or len(choice) < 2 or not isinstance(choice[1], dict):
-				expired = True
-				continue
-			feed = choice[1]
-			if feed.get('_guide_match'):
-				until = feed.get('_guide_until')
-				try: valid_until = isinstance(until, (int, float)) and not isinstance(until, bool) and math.isfinite(until) and until > now
-				except OverflowError: valid_until = False
-				if not valid_until:
-					expired = True
-					continue
-			current.append(choice)
+		current, expired = _current_choices(choices)
+		if not current and result.get('complete', True) is not True:
+			if ku.get_property(_EARLY_RETRY) == request.get('id'): return 'retry_queued', []
+			if time.time() - request['created'] >= _NO_RESULT_RETRY_SECONDS: return 'slow', []
 		if result.get('incomplete_error') or (expired and result.get('complete', True) is True): return ('partial_saved_unavailable' if result.get('saved') else 'partial_unavailable'), current
 		state = 'ready' if result.get('complete', True) is True else 'partial'
 		return (state + '_saved' if result.get('saved') else state), current
@@ -495,8 +517,11 @@ class FeedSelection:
 			try: result_id, encoded = self.results.get_nowait()
 			except Empty: break
 			if request_id != result_id or request.get('identity_conflict') or not (visible or retaining or background) or not _request_current(request) or _read(_REQUEST).get('id') != request_id: continue
-			try: identity = json.loads(encoded).get('fixture_identity')
-			except (TypeError, ValueError, AttributeError): identity = ''
+			try:
+				payload = json.loads(encoded)
+				identity = payload.get('fixture_identity')
+			except (TypeError, ValueError, AttributeError):
+				payload, identity = {}, ''
 			candidate = dict(request, fixture_identity=identity or request.get('fixture_identity'))
 			if (identity and request.get('fixture_identity') and request['fixture_identity'] != identity) or (candidate.get('fixture_identity') and _fresh_cache_conflicts(candidate)):
 				request['identity_conflict'] = True
@@ -510,6 +535,18 @@ class FeedSelection:
 				ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
 				retaining = bool(request.get('retained'))
 			if visible or retaining: ku.set_property(_RESULT, encoded)
+		if visible and ku.get_property(_EARLY_RETRY) == request_id and _read(_REQUEST).get('id') == request_id:
+			current = _read(_RESULT)
+			if current.get('id') == request_id:
+				if _current_choices(current.get('choices'))[0]: ku.clear_property(_EARLY_RETRY)
+				elif current.get('complete') is True or current.get('error'):
+					ku.clear_property(_EARLY_RETRY)
+					request['id'], request['created'] = uuid.uuid4().hex, time.time()
+					ku.clear_property(_RESULT)
+					ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+					if not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):
+						ku.execute_builtin('Container.Refresh')
+					return
 		if not visible:
 			# Playback may begin from a handed-off seed before the picker gets a service tick.
 			if self.quick_pending == request_id and retaining and self.seed_started != request_id:
@@ -569,7 +606,9 @@ class FeedSelection:
 				worker.start()
 		if result.get('id') == request_id:
 			result_key = request_id + ':' + str(result.get('revision', 0))
-			slow_refresh = result.get('complete', True) is not True and is_slow() and self.slow_refreshed_id != request_id
+			try: no_result_slow = self.slow_refreshed_id != request_id and time.time() - request['created'] >= _NO_RESULT_RETRY_SECONDS and not _current_choices(result.get('choices'))[0]
+			except (KeyError, TypeError): no_result_slow = False
+			slow_refresh = result.get('complete', True) is not True and (is_slow() or no_result_slow) and self.slow_refreshed_id != request_id
 			if self.refreshed_id == result_key and not slow_refresh: return
 			order = _read(_ORDER)
 			focused_label = ku.get_infolabel('Container.ListItem.Label') or ''
@@ -582,7 +621,7 @@ class FeedSelection:
 				self.timed_refresh_id = request_id
 			ku.execute_builtin('Container.Refresh')
 			return
-		try: slow = time.time() - request['created'] >= _SLOW_SECONDS
+		try: slow = time.time() - request['created'] >= _NO_RESULT_RETRY_SECONDS
 		except (KeyError, TypeError): slow = False
 		if slow and self.slow_refreshed_id != request_id and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):
 			self.slow_refreshed_id = request_id

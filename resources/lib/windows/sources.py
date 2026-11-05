@@ -1,4 +1,5 @@
 import json
+import time
 from windows import BaseDialog
 from modules.debrid import Source
 from modules.kodi_utils import media_path, hide_busy_dialog, dialog, select_dialog, notification, local_string as ls
@@ -22,6 +23,7 @@ filter_quality, filter_provider, filter_title, filter_extraInfo = ls(32154), ls(
 run_plugin_str, ignored_str = 'RunPlugin(%s)', '[B][COLOR dodgerblue](%s)[/COLOR][/B]'
 check_str = '[B]CHECK CACHE STATUS[/B]'
 cache_str = ('CACHED', 'CACHED [B]%s[/B]')
+SHORTLIST_LIMIT = 8
 string, upper, lower = str, str.upper, str.lower
 
 class SourceResults(BaseDialog):
@@ -37,6 +39,7 @@ class SourceResults(BaseDialog):
 		self.full_search_available = kwargs.get('full_search_available', False)
 		self.unverified_count = kwargs.get('unverified_count', 0)
 		self.unverified_view = kwargs.get('unverified_view', False)
+		self.show_all = False
 		if kwargs.get('filters_ignored'): self.filters_ignored = ignored_str % filters_ignored
 		else: self.filters_ignored = ''
 		self.make_items()
@@ -45,7 +48,8 @@ class SourceResults(BaseDialog):
 	def onInit(self):
 		self.filter_applied = False
 		self.win = self.getControl(self.window_id)
-		self.win.addItems(self.item_list)
+		self.win.addItems(self.item_list if self.show_all else self.initial_items)
+		self.setProperty('tikiskins.total_results', self.total_results if self.show_all else self.initial_count)
 		self.setFocusId(self.window_id)
 
 	def run(self):
@@ -58,9 +62,17 @@ class SourceResults(BaseDialog):
 		chosen_listitem = self.get_listitem(self.window_id)
 		if action in self.closing_actions:
 			if self.filter_applied: return self.clear_filter()
+			if self.show_all and self.initial_items is not self.item_list:
+				self.show_all = False
+				self.win.reset()
+				return self.onInit()
 			self.selected = (None, '')
 			return self.close()
 		if action in self.selection_actions:
+			if chosen_listitem.getProperty('tikiskins.perform_full_search') == 'show_all':
+				self.show_all = True
+				self.win.reset()
+				return self.onInit()
 			if chosen_listitem.getProperty('tikiskins.perform_full_search') == 'unverified':
 				self.selected = ('show_unverified', '')
 				return self.close()
@@ -69,6 +81,7 @@ class SourceResults(BaseDialog):
 				return self.close()
 			if 'UNCACHED' not in chosen_listitem.getProperty('tikiskins.source_type'):
 #				self.selected = ('play', json.loads(chosen_listitem.getProperty('source')))
+				self.meta['_bingie_selection_started_at'] = time.monotonic()
 				self.selected = ('play', self._results[chosen_listitem.getProperty('source')])
 				return self.close()
 #			source = json.loads(chosen_listitem.getProperty('source'))
@@ -95,6 +108,7 @@ class SourceResults(BaseDialog):
 				link = Source(source, self.meta).browse_packs(highlight)
 				if link == 'cancel': return
 				source['unrestricted_link'] = link
+				self.meta['_bingie_selection_started_at'] = time.monotonic()
 				self.selected = ('play', source)
 				return self.close()
 			elif 'manual_add_magnet_to_cloud' in choice: Source(source, self.meta).manual_add_magnet_to_cloud()
@@ -194,6 +208,28 @@ class SourceResults(BaseDialog):
 				prescrape_listitem.setProperty('tikiskins.perform_full_search', 'true')
 				prescrape_listitem.setProperty('tikiskins.start_full_scrape', '[B]***%s***[/B]' % upper(start_full_scrape))
 				self.item_list.append(prescrape_listitem)
+			self.initial_items = self.item_list
+			self.initial_count = self.total_results
+			if not self.unverified_view and not self.filters_ignored:
+				shortlist, hashes = [], set()
+				for listitem in self.item_list:
+					source = self._results.get(listitem.getProperty('source'))
+					if not source or source.get('_identity_status') == 'unverified': continue
+					cache = source.get('cache_provider') or ''
+					if 'Uncached' in cache or 'Unchecked' in cache: continue
+					if source.get('scrape_provider') == 'external' and not cache: continue
+					identity = str(source.get('hash') or '').lower()
+					if identity and identity in hashes: continue
+					if identity: hashes.add(identity)
+					shortlist.append(listitem)
+					if len(shortlist) == SHORTLIST_LIMIT: break
+				if shortlist and len(shortlist) < int(self.total_results):
+					show_all = self.make_listitem()
+					show_all.setLabel('Show all sources (%s)' % self.total_results)
+					show_all.setProperty('tikiskins.perform_full_search', 'show_all')
+					show_all.setProperty('tikiskins.start_full_scrape', '[B]SHOW ALL SOURCES (%s)[/B]' % self.total_results)
+					self.initial_items = shortlist + [show_all] + [item for item in self.item_list if item.getProperty('tikiskins.perform_full_search')]
+					self.initial_count = string(len(shortlist))
 		except: pass
 
 	def set_properties(self):

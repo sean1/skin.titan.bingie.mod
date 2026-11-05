@@ -284,8 +284,25 @@ class Sources:
 		elif self.autoplay: return self.play_file(results)
 		else: return self.display_results(results)
 
+	@staticmethod
+	def _log_playback_timing(timing, outcome):
+		try:
+			now = time.monotonic()
+			fields = [
+				'selection=%s' % timing['selection_id'], 'attempt=%s' % timing['attempt'], 'provider=%s' % timing['provider'], 'outcome=%s' % outcome,
+				'selection_to_attempt=%.3f' % (timing['attempt_started'] - timing['selection_started']),
+				'attempt_to_event=%.3f' % (now - timing['attempt_started']), 'selection_to_event=%.3f' % (now - timing['selection_started'])
+			]
+			for stage in ('transfer_file_discovery', 'unlock', 'resolve_total'):
+				if stage in timing: fields.append('%s=%.3f' % (stage, timing[stage]))
+			if 'kodi_play_started' in timing: fields.append('kodi_play_to_event=%.3f' % (now - timing['kodi_play_started']))
+			kodi_utils.logger('BINGIE playback timing', ' '.join(fields))
+		except Exception: pass
+
 	def play_file(self, results, source=None):
 		try:
+			selection_started = self.meta.pop('_bingie_selection_started_at', None) or time.monotonic()
+			selection_id = time.monotonic_ns()
 			retry_resume_percent = 0
 			manual_selection = source is not None
 			if source is not None and source.get('_identity_status') == 'unverified':
@@ -326,18 +343,24 @@ class Sources:
 					else: progressDialogBG.update(percent, name)
 				except: pass
 				resolve_started = time.monotonic()
+				provider = item.get('debrid', '')
+				if provider not in ('realdebrid', 'alldebrid', 'torbox'): provider = 'other'
+				timing = {'selection_started': selection_started, 'attempt_started': resolve_started, 'selection_id': selection_id, 'attempt': count, 'provider': provider, 'log': self._log_playback_timing}
 				attempted = True
 				try:
 					if 'unrestricted_link' in item: link = item['unrestricted_link']
-					else: link = Source(item, self.meta).resolve_sources()
+					else: link = Source(item, self.meta, timing).resolve_sources()
 				except: link = None
 				resolve_latency = time.monotonic() - resolve_started
+				timing['resolve_total'] = resolve_latency
 				if link is None:
+					self._log_playback_timing(timing, 'resolve_failed')
 					self._record_playback_health(health_context, 'resolve_fail', latency=resolve_latency)
 					continue
 				health_context = self._playback_health_context(item, link) or health_context
 				if not item.get('_bingie_resolve_recorded'): self._record_playback_health(health_context, 'resolve_ok', latency=resolve_latency)
 				if not manual_selection and not item.get('_bingie_host_deferred') and count < original_total and self._host_health_penalty(health_context) >= 60:
+					self._log_playback_timing(timing, 'deferred')
 					deferred_item = item.copy()
 					deferred_item.update({
 						'unrestricted_link': link, '_bingie_host_deferred': True, '_bingie_resolve_recorded': True,
@@ -357,6 +380,7 @@ class Sources:
 					'_playback_health_allow_stall_recovery': self.autoplay and not manual_selection,
 					'_playback_health_has_stall_fallback': count < len(items)
 				})
+				playback_meta['_playback_timing'] = timing
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
 				if getattr(self, 'restart_from_beginning', False): playback_meta['_restart_from_beginning'] = True
 				playback_player = POVPlayer()
@@ -365,6 +389,10 @@ class Sources:
 					try: kodi_utils.logger('Sources', 'Playback attempt failed: %s' % exc)
 					except: pass
 					playback_result = False
+				if playback_result is False: self._log_playback_timing(timing, 'playback_failed_after_av' if timing.get('av_started') else 'playback_start_failed')
+				elif not timing.get('av_started'):
+					outcome = 'playback_started_unattributed' if getattr(playback_player, 'startup_playback_started', False) else 'cancelled'
+					self._log_playback_timing(timing, outcome)
 				retry_resume_percent = getattr(playback_player, 'retry_resume_percent', 0)
 				self.restart_from_beginning = getattr(playback_player, 'restart_from_beginning', False)
 				if playback_result is not False: return playback_result

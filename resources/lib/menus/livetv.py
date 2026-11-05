@@ -2181,15 +2181,17 @@ def match_feeds(params):
 		except (AttributeError, KeyError, TypeError, ValueError, OverflowError): pass
 		ku.set_property('LiveTV.FeedSelection.Title', title)
 		state, result = livetv_feed_selection.prepare(params)
-		def waiting_row(retry_label=None, preserve_handoff=False):
+		def waiting_row(retry_label=None, preserve_handoff=False, early_retry=False):
 			if retry_label:
 				retry = {key: params.get(key, '') for key in ('sport', 'home', 'away', 'scope', 'session', 'display_title', 'fixture_identity')}
 				if preserve_handoff and params.get('handoff'): retry['handoff'] = params['handoff']
 				retry.update({'mode': 'livetv.match_feeds', 'retry': livetv_feed_selection.retry_request()})
+				if early_retry: retry['early_retry'] = 'true'
 				_item(retry_label, retry)
 			else: _item('Finding more feeds…', {}, False, playable=False)
 		if state not in ('ready', 'ready_saved', 'partial', 'partial_saved', 'partial_saved_unavailable', 'partial_unavailable'):
-			if state == 'slow': waiting_row('Still finding feeds… — select to retry')
+			if state == 'slow': waiting_row('Still finding feeds… — select to retry', early_retry=True)
+			elif state == 'retry_queued': _item('Retry queued — waiting for current search…', {}, False, playable=False)
 			elif state == 'loading': _item('Finding feeds…', {}, False, playable=False)
 			else: waiting_row('Feeds unavailable — select to retry; if needed, refresh the event', preserve_handoff=True)
 			_finish()

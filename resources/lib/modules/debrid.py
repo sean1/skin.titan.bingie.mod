@@ -49,11 +49,12 @@ class Source:
 		from pprint import pformat
 		return pformat(vars(self), depth=depth, width=width)
 
-	def __init__(self, source_dict, meta=None):
+	def __init__(self, source_dict, meta=None, timing=None):
 		self.direct_debrid_link = False
 		self.scrape_provider, self.url = '', ''
 		for k, v in source_dict.items(): setattr(self, k, v)
 		self.meta = meta or {}
+		self.timing = timing
 
 	def resolve_sources(self):
 		try:
@@ -78,7 +79,10 @@ class Source:
 			store_to_cloud = settings.store_resolved_torrent_to_cloud(self.debrid)
 			args = self.url, self.hash, True
 			api = import_debrid(self.debrid)
-			files = api.parse_magnet_pack(*args)
+			stage_started = monotonic()
+			try: files = api.parse_magnet_pack(*args)
+			finally:
+				if self.timing is not None: self.timing['transfer_file_discovery'] = monotonic() - stage_started
 			torrent_id = next((item.get('torrent_id') for item in files or [] if item.get('torrent_id')), '')
 			evidence = getattr(self, 'identity_evidence', {})
 			if isinstance(evidence, dict) and evidence.get('file_match_required'):
@@ -96,7 +100,10 @@ class Source:
 			if not selected_files: raise Exception('selected_files failed')
 			if not season: selected_files.sort(key=lambda k: k['size'], reverse=True)
 			file_key = next((i['link'] for i in selected_files), None)
-			file_url = api.unrestrict_link(file_key)
+			stage_started = monotonic()
+			try: file_url = api.unrestrict_link(file_key)
+			finally:
+				if self.timing is not None: self.timing['unlock'] = monotonic() - stage_started
 			if not api.defaults_to_cloud:
 				if store_to_cloud: Thread(target=api.create_transfer, args=(self.url,)).start()
 			if api.defaults_to_cloud and not store_to_cloud and torrent_id: self._delete(api, torrent_id)

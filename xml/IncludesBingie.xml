@@ -1501,7 +1501,7 @@
                     <font>Plots</font>
                     <label>$VAR[ViewsPlotWithOutline]</label>
                     <include>Default_Visible_Fade</include>
-					<scroll>false</scroll>
+                    <autoscroll delay="3000" time="3000" repeat="8000">true</autoscroll>
                 </control>
 
                 <!-- additional info -->

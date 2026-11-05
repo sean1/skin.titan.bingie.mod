@@ -387,36 +387,6 @@
 						<posx>1</posx>
 						<animation effect="fade" start="100" end="0" time="200" condition="String.IsEqual(Window.Property(AdditionalInfo), plot) | String.IsEqual(Window.Property(AdditionalInfo),similar) | String.IsEqual(Window.Property(AdditionalInfo),cast)">Conditional</animation>
 						<animation effect="slide" start="0,0" end="0,41" time="0" delay="0" condition="String.IsEqual(Window.Property(AdditionalInfo),set)">Conditional</animation>
-						<!-- progress bar for resume buttons -->
-
-							<control type="progress">
-								<visible>Control.HasFocus(90) | [Control.HasFocus(51) + Container(5050).ListItem.IsResumable]</visible>
-								<animation effect="fade" start="0" end="100" time="0" delay="125">Visible</animation>
-								<animation effect="slide" end="0,75" time="0" condition="Control.HasFocus(90) + [Control.IsVisible(51) | Control.IsVisible(54)]">Conditional</animation>
-								<posy>56</posy>
-								<left>25</left>
-								<width>350</width>
-								<height>5</height>
-								<texturebg colordiffuse="ff929699" border="0">diffuse/panel2.png</texturebg>
-								<lefttexture/>
-								<midtexture colordiffuse="ffe50914" border="4">diffuse/panel2.png</midtexture>
-								<righttexture/>
-								<info>ListItem.PercentPlayed</info>
-							</control>
-							<control type="progress">
-								<visible>Control.IsVisible(5050) + String.IsEqual(ListItem.dbtype,tvshow) + [Control.HasFocus(51) + Container(5050).ListItem.IsResumable]</visible>
-								<animation effect="fade" start="0" end="100" time="0" delay="125">Visible</animation>
-								<posy>56</posy>
-								<left>25</left>
-								<width>350</width>
-								<height>5</height>
-								<texturebg colordiffuse="ff929699" border="0">diffuse/panel2.png</texturebg>
-								<lefttexture/>
-								<midtexture colordiffuse="ffe50914" border="4">diffuse/panel2.png</midtexture>
-								<righttexture/>
-								<info>Container(5050).ListItem.PercentPlayed</info>
-							</control>
-
 						<control type="grouplist" id="8000">
 							<width>400</width>
 							<height>215</height>
@@ -592,6 +562,35 @@
 							</control>
 
 						</control>
+						<!-- progress bar for resume buttons -->
+
+							<control type="progress">
+								<visible>Control.HasFocus(90) | [Control.HasFocus(51) + Container(5050).ListItem.IsResumable]</visible>
+								<animation effect="fade" start="0" end="100" time="0" delay="125">Visible</animation>
+								<animation effect="slide" end="0,75" time="0" condition="Control.HasFocus(90) + [Control.IsVisible(51) | Control.IsVisible(54)]">Conditional</animation>
+								<posy>56</posy>
+								<left>25</left>
+								<width>350</width>
+								<height>5</height>
+								<texturebg colordiffuse="ff929699" border="0">diffuse/panel2.png</texturebg>
+								<lefttexture/>
+								<midtexture colordiffuse="ffe50914" border="4">diffuse/panel2.png</midtexture>
+								<righttexture/>
+								<info>ListItem.PercentPlayed</info>
+							</control>
+							<control type="progress">
+								<visible>Control.IsVisible(5050) + String.IsEqual(ListItem.dbtype,tvshow) + [Control.HasFocus(51) + Container(5050).ListItem.IsResumable]</visible>
+								<animation effect="fade" start="0" end="100" time="0" delay="125">Visible</animation>
+								<posy>56</posy>
+								<left>25</left>
+								<width>350</width>
+								<height>5</height>
+								<texturebg colordiffuse="ff929699" border="0">diffuse/panel2.png</texturebg>
+								<lefttexture/>
+								<midtexture colordiffuse="ffe50914" border="4">diffuse/panel2.png</midtexture>
+								<righttexture/>
+								<info>Container(5050).ListItem.PercentPlayed</info>
+							</control>
 					</control>
 				</control>
 			</control>

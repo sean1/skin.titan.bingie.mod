@@ -356,8 +356,8 @@
 				<top>0</top>
 				<left>0</left>
 				<width>880</width>
-				<height>140</height>
-				<font>font14</font>
+				<height>160</height>
+				<font>Reg26</font>
 				<textcolor>FFB7B4BB</textcolor>
 				<align>justify</align>
 				<label>$INFO[Window.Property(tikiskins.extras.plot)]</label>

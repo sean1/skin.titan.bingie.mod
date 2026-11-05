@@ -26,8 +26,8 @@
 				<control type="textbox">
 					<visible>$PARAM[content_visibility]</visible>
 					<width>100%</width>
-					<top>60</top>
-					<height max="160">auto</height>
+					<top>55</top>
+					<height max="165">auto</height>
 					<align>left</align>
 					<font>Reg26</font>
 					<textcolor>b3ffffff</textcolor>

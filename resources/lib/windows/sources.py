@@ -233,9 +233,8 @@ class SourceResults(BaseDialog):
 		elif main_choice == 'keyword_title':
 			keywords = dialog.input('Enter Keyword (Comma Separated for Multiple)')
 			if not keywords: return
-			keywords.replace(' ', '')
-			keywords = keywords.split(',')
-			choice = [upper(i) for i in keywords]
+			choice = [upper(i.strip()) for i in keywords.split(',') if i.strip()]
+			if not choice: return
 			filtered_list = [i for i in self.item_list if all(x in i.getProperty('tikiskins.name') for x in choice)]
 		else:
 			if main_choice == 'provider':

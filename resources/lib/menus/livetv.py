@@ -1205,8 +1205,8 @@ def search_results(params):
 		catalog_status.extend(status)
 		streams.extend(dict(s, _search_provider=identity, _search_provider_number=index + 1) for s in catalog if isinstance(s, dict) and str(s.get('stream_id') or '').isdecimal())
 	if not streams and len(unavailable) == len(accounts):
-		_error('Could not search Live TV channels. Check the VPN and account, then try again.')
-		_finish(False)
+		_item('Providers unavailable — check VPN and account, then select to retry', {'mode': 'livetv.search_results', 'query': query}, True, None, False)
+		_finish()
 		return
 	event_feeds = {}
 	channel_matches = []
@@ -1726,7 +1726,8 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 		from modules import livetv_sports_progress
 		state, fixtures, _ = livetv_sports_progress.load_fixtures('f1', force_refresh=reload in ('refresh', 'schedule'), reload=reload, url_refresh=url_refresh)
 		if state not in ('ready', 'cached', 'cached_unavailable'):
-			_item('Loading Formula 1 sessions…' if state == 'pending' else 'Formula 1 sessions unavailable', {}, False, playable=False)
+			if state == 'pending': _item('Loading Formula 1 sessions…', {}, False, playable=False)
+			else: _sports_retry_item('f1', 'Formula 1 sessions unavailable — select to retry')
 			_item('Browse Formula 1 channels', {'mode': 'livetv.f1_channels'})
 			_finish()
 			return
@@ -1768,10 +1769,12 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 				extra_properties={'LiveTV.EventIdentity': _fixture_focus_identity('f1', fixture), 'LiveTV.Match': title, 'LiveTV.League': 'Formula 1', 'LiveTV.Feeds': feed_label,
 					'LiveTV.MatchState': '' if cached else state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture), 'LiveTV.StandingsKey': 'f1'})
 		if has_groups: _save_feed_matches(feed_cache)
-		if not fixtures: _item(cache_status if cached else 'No upcoming Formula 1 sessions', {}, False, playable=False)
+		if not fixtures:
+			if state == 'cached_unavailable': _sports_retry_item('f1', 'Refresh failed — select to retry')
+			else: _item(cache_status if cached else 'No upcoming Formula 1 sessions', {}, False, playable=False)
 	except (OSError, HTTPException, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Sessions unavailable')
-		_item('Formula 1 sessions unavailable', {}, False, playable=False)
+		_sports_retry_item('f1', 'Formula 1 sessions unavailable — select to retry')
 	_item('Browse Formula 1 channels', {'mode': 'livetv.f1_channels'})
 	_finish()
 	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer) + !Control.IsVisible(523)'):

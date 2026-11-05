@@ -3,6 +3,13 @@ from caches.mylist_cache import MyList, normalize_identity
 from modules import kodi_utils
 
 
+def _add_status(handle, status):
+	item = kodi_utils.make_listitem()
+	item.setLabel('My List is empty' if status == 'empty' else 'Could not load My List')
+	item.setProperty('BingieMyListStatus', status)
+	kodi_utils.add_item(handle, kodi_utils.build_url({'mode': 'navigator.my_list'}), item, False)
+
+
 def build_list(params):
 	from threading import Thread
 	from menus.movies import Movies
@@ -30,10 +37,12 @@ def build_list(params):
 		for thread in TaskPool(LIST_WORKERS).tasks(build, [(position, item, mediatype) for position, (item, mediatype) in enumerate(entries)], Thread): thread.join()
 		items = [item for builder in builders.values() for item in builder.items]
 		items.sort(key=lambda item: int(item[1].getProperty('pov_lite_sort_order')))
-		kodi_utils.add_items(handle, items)
+		if items: kodi_utils.add_items(handle, items)
+		elif entries: _add_status(handle, 'error')
+		else: _add_status(handle, 'empty')
 	except Exception as error:
 		kodi_utils.logger('My List', 'Could not load saved list: %s' % type(error).__name__)
-		kodi_utils.notification('Could not load My List')
+		_add_status(handle, 'error')
 	kodi_utils.set_content(handle, 'videos')
 	kodi_utils.end_directory(handle, False)
 

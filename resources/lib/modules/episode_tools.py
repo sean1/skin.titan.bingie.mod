@@ -173,11 +173,13 @@ def _confirm_threshold(nextep_settings, nextep_meta):
 def _control_playback(player, nextep_settings, nextep_meta):
 	confirm_threshold = False
 	final_action = 'cancel'
+	failures = 0
 	run_popup = nextep_settings['run_popup']
 	display_nextep_popup = nextep_settings['window_time']
 	nextep_threshold_check = nextep_settings['threshold_check']
-	while player.isPlayingVideo():
+	while not kodi_utils.monitor.abortRequested():
 		try:
+			if not player.isPlayingVideo(): break
 			total_time = player.getTotalTime()
 			curr_time = player.getTime()
 			remaining_time = round(total_time - curr_time)
@@ -190,6 +192,9 @@ def _control_playback(player, nextep_settings, nextep_meta):
 			if remaining_time <= display_nextep_popup:
 				final_action = _continue_action(run_popup, nextep_meta)
 				break
-			kodi_utils.sleep(200)
-		except: pass
+			failures = 0
+		except Exception:
+			failures += 1
+			if failures >= 5: break
+		if kodi_utils.monitor.waitForAbort(0.2): break
 	return final_action

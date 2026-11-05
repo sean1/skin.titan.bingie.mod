@@ -46,6 +46,7 @@
                         <param name="id" value="9000" />
                         <param name="image" value="$VAR[BingieInfoClearlogo]" />
                         <param name="text" value="$VAR[BingieInfoLabel]" />
+                        <param name="text_visibility" value="!ControlGroup(77777).HasFocus() | $EXP[IsCategoryDBType] | String.IsEqual(ListItem.Label,..)" />
                     </include>
 
                     <!-- Details Row at Top-->
@@ -179,18 +180,21 @@
                         <visible>!Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
                         <include>Default_Visible_Fade</include>
 						<top>5</top>
-						<height min="30" max="121">auto</height>
+						<height min="30" max="200">auto</height>
                         <width max="820">auto</width>
                         <align>left</align>
                         <font>Plots</font>
 						<textcolor>b3ffffff</textcolor>
                         <label>$VAR[BingiePlot]</label>
+                        <autoscroll delay="3000" time="3000" repeat="8000">true</autoscroll>
                     </control>
 
                     <!-- Additional Info -->
 					<control type="group">
 						<top>5</top>
                     <include content="Bingie_Additional_Info">
+                        <param name="height" value="80" />
+                        <param name="icontop" value="5" />
                         <param name="visibility" value="!$EXP[IsEpisodeDBType] + !$EXP[IsCategoryDBType] + !$EXP[IsMainMenuOpened] + !$EXP[IsTVShowInLastEpisodes]"/>
                     </include>
 					</control>

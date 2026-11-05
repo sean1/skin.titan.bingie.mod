@@ -1,4 +1,6 @@
 from windows import BaseDialog
+from math import isfinite
+from modules import kodi_utils
 from modules.kodi_utils import media_path
 from modules.settings import get_art_provider
 # from modules.kodi_utils import logger
@@ -56,25 +58,50 @@ class NextEpisode(BaseDialog):
 		self.setProperty('tikiskins.nextep_function', self.function)
 
 	def monitor(self):
-		progress_bar = self.getControl(5000)
+		try: progress_bar = self.getControl(5000)
+		except Exception:
+			if self.function == 'next_ep' and not self.closed: self.selected = 'cancel'
+			self.close()
+			return
 		if self.function == 'next_ep':
-			total_time = self.player.getTotalTime()
-			total_remaining = total_time - self.player.getTime()
-			while self.player.isPlaying():
+			total_time = total_remaining = None
+			for attempt in range(5):
+				if self.closed or kodi_utils.monitor.abortRequested(): break
 				try:
-					if self.closed: break
+					total_time = float(self.player.getTotalTime())
+					total_remaining = total_time - float(self.player.getTime())
+				except Exception:
+					if attempt < 4 and not kodi_utils.monitor.waitForAbort(0.2): continue
+					break
+				break
+			if self.closed:
+				self.close()
+				return
+			if kodi_utils.monitor.abortRequested() or total_remaining is None or not isfinite(total_time) or not isfinite(total_remaining) or total_remaining <= 0:
+				self.selected = 'cancel'
+				self.close()
+				return
+			failures = 0
+			while not self.closed and not kodi_utils.monitor.abortRequested():
+				try:
+					if not self.player.isPlaying(): break
 					remaining = round(total_time - self.player.getTime())
 					current_point = (remaining / float(total_remaining)) * 100
 					progress_bar.setPercent(current_point)
-					self.sleep(1000)
-				except: pass
+					failures = 0
+				except Exception:
+					failures += 1
+					if failures >= 5:
+						if not self.closed: self.selected = 'cancel'
+						break
+				if kodi_utils.monitor.waitForAbort(1): break
+			if kodi_utils.monitor.abortRequested() and not self.closed: self.selected = 'cancel'
 		else:
 			for current_point in range(100, 0, -5):
+				if self.closed or kodi_utils.monitor.abortRequested(): break
 				try:
-					if self.closed: break
-					if current_point == 0: break
 					progress_bar.setPercent(current_point)
-					self.sleep(1000)
-				except: pass
+				except Exception: pass
+				if kodi_utils.monitor.waitForAbort(1): break
 		self.close()
 

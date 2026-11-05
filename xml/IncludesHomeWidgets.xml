@@ -189,6 +189,10 @@
                     <param name="visibility" value="Control.HasFocus($PARAM[widgetid])" />
                 </include>
                 <include>New_Episodes_Tag_Overlay</include>
+                <control type="group">
+                    <visible>Control.HasFocus($PARAM[widgetid])</visible>
+                    <include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include>
+                </control>
             </control>
         </focusedlayout>
     </include>

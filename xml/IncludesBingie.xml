@@ -93,7 +93,7 @@
             <aligny>center</aligny>
             <font>bold26</font>
             <textcolor>ff41b957</textcolor>
-            <label>$VAR[RatingDecimalToPercentage,,% $LOCALIZE[31857]]</label>
+            <label>$VAR[BingieRating,Rating ,/10]</label>
             <include>Default_Visible_Fade</include>
         </control>
     </include>
@@ -101,14 +101,14 @@
 	<!-- Percentage Based Rating for Episodes in Bingie Season View -->
     <include name="Percentage_Rating_Details_Row_Seasons">
         <control type="label" id="61132">
-            <visible>!String.IsEmpty(Control.GetLabel(61132))</visible>
+            <visible>!String.IsEmpty(Container(5027).ListItem.Property(pov_lite_rating_percent)) + !String.IsEmpty(Container(5027).ListItem.Rating)</visible>
             <posy>7</posy>
             <height>35</height>
             <width>auto</width>
             <aligny>center</aligny>
             <font>bold26</font>
             <textcolor>ff41b957</textcolor>
-            <label>$VAR[RatingDecimalToPercentageSeasons,,% $LOCALIZE[31857]]</label>
+            <label>$INFO[Container(5027).ListItem.Rating,Rating ,/10]</label>
             <include>Default_Visible_Fade</include>
         </control>
     </include>
@@ -291,6 +291,8 @@
     <!-- Bingie additional info-->
     <include name="Bingie_Additional_Info">
         <param name="top" default="13" />
+		<param name="height" default="115" />
+		<param name="icontop" default="23" />
 		<param name="visibility" default="true" />
           <definition>
               <control type="grouplist">
@@ -301,7 +303,7 @@
 				  [$EXP[IsMainMenuOpened] + Integer.IsGreater(Window(Home).Property(ListItem.PercentPlayed),1)]
 				  </visible>
                   <top>$PARAM[top]</top>
-                  <height>115</height>
+                  <height>$PARAM[height]</height>
 	  <width>800</width>
                   <itemgap>25</itemgap>
                   <orientation>horizontal</orientation>
@@ -309,7 +311,7 @@
                   <include>Default_Visible_Fade</include>
 
                   <control type="group">
-                      <top>23</top>
+                      <top>$PARAM[icontop]</top>
                       <height>70</height>
                       <width>70</width>
 					  <posx>1</posx>
@@ -325,7 +327,7 @@
 				  <!-- Red Circle More Details - Under Movie Info -->
 				  <control type="textbox" id="84">
                       <animation effect="fade" time="150">Visible</animation>
-                      <height>115</height>
+					  <height>$PARAM[height]</height>
 					  <bottom>0</bottom>
                       <width>650</width>
                       <label>$VAR[BingieMoreDetails]</label>
@@ -1212,6 +1214,7 @@
 <!-- CLEARLOGO - Home Screen Widgets - Info/Text/Clearlogo -->
     <include name="Bingie_Headline_Item">
         <param name="genre_adjust" default="false" />
+        <param name="text_visibility" default="true" />
         <definition>
             <control type="image" id="$PARAM[id]5">
                 <height>190</height>
@@ -1223,7 +1226,8 @@
             </control>
 <!-- Movie Title with no Clearlogo -->
 			<control type="textbox" id="$PARAM[id]6">
-                <visible>String.EndsWith(Control.GetLabel($PARAM[id]5),color_transparent.png)</visible>
+				<visible>$PARAM[text_visibility]</visible>
+				<visible>String.EndsWith(Control.GetLabel($PARAM[id]5),color_transparent.png)</visible>
                 <top>-194</top>
                 <height>184</height>
                 <width max="650">auto</width>
@@ -1540,6 +1544,16 @@
     </variable>
 
     <!-- POV supplies these arithmetic values once when each item is built. -->
+    <variable name="BingieRating">
+		<value condition="!String.IsEmpty(ListItem.Property(pov_lite_rating_percent))">$INFO[ListItem.Rating]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEmpty(ListItem.Property(pov_lite_rating_percent)) + String.IsEqual(Window(Home).Property(CurrentWidgetID),2510) + !String.IsEmpty(Container(2510).ListItem.Property(pov_lite_rating_percent))">$INFO[Container(2510).ListItem.Rating]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEmpty(ListItem.Property(pov_lite_rating_percent)) + String.IsEqual(Window(Home).Property(CurrentWidgetID),2520) + !String.IsEmpty(Container(2520).ListItem.Property(pov_lite_rating_percent))">$INFO[Container(2520).ListItem.Rating]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEmpty(ListItem.Property(pov_lite_rating_percent)) + String.IsEqual(Window(Home).Property(CurrentWidgetID),2530) + !String.IsEmpty(Container(2530).ListItem.Property(pov_lite_rating_percent))">$INFO[Container(2530).ListItem.Rating]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEmpty(ListItem.Property(pov_lite_rating_percent)) + String.IsEqual(Window(Home).Property(CurrentWidgetID),2540) + !String.IsEmpty(Container(2540).ListItem.Property(pov_lite_rating_percent))">$INFO[Container(2540).ListItem.Rating]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEmpty(ListItem.Property(pov_lite_rating_percent)) + String.IsEqual(Window(Home).Property(CurrentWidgetID),2550) + !String.IsEmpty(Container(2550).ListItem.Property(pov_lite_rating_percent))">$INFO[Container(2550).ListItem.Rating]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEmpty(ListItem.Property(pov_lite_rating_percent)) + String.IsEqual(Window(Home).Property(CurrentWidgetID),2560) + !String.IsEmpty(Container(2560).ListItem.Property(pov_lite_rating_percent))">$INFO[Container(2560).ListItem.Rating]</value>
+    </variable>
+
     <variable name="RatingDecimalToPercentage">
 		<value condition="!String.IsEmpty(ListItem.Property(pov_lite_rating_percent))">$INFO[ListItem.Property(pov_lite_rating_percent)]</value>
 		<value condition="$EXP[IsMainMenuOpened]">$VAR[HomeFocusedPovRatingPercent]</value>

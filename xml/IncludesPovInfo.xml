@@ -101,28 +101,30 @@
 				<left>138</left>
 				<top>275</top>
 				<width>820</width>
-				<height>135</height>
+				<height>205</height>
 				<font>Plots</font>
 				<textcolor>b3ffffff</textcolor>
 				<align>left</align>
 				<aligny>top</aligny>
 				<label>$VAR[PovInfoResolvedPlot]</label>
-				<autoscroll delay="8000" time="3000" repeat="8000">true</autoscroll>
+				<autoscroll delay="3000" time="3000" repeat="8000">true</autoscroll>
 			</control>
 
 			<control type="grouplist" id="8000">
 				<left>138</left>
-				<top>430</top>
-				<width>550</width>
-				<height>220</height>
+				<top>500</top>
+				<width>400</width>
+				<height>140</height>
 				<orientation>vertical</orientation>
 				<itemgap>10</itemgap>
 				<onup>noop</onup>
+				<onleft>noop</onleft>
 				<ondown>8010</ondown>
 				<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				<control type="radiobutton" id="80">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),movie)</visible>
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<width>400</width>
 					<include content="Bingie_InfoDialog_Button_Texture">
 						<param name="radiotexture" value="dialogs/videoinfo/info/play2.png" />
 					</include>
@@ -131,11 +133,13 @@
 					<radiowidth>22</radiowidth>
 					<radioheight>22</radioheight>
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=play_from_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)])</onclick>
+					<onright>54</onright>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
 				<control type="radiobutton" id="55">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),movie) | String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<width>400</width>
 					<include content="Bingie_InfoDialog_Button_Texture">
 						<param name="radiotexture" value="dialogs/videoinfo/info/play2.png" />
 					</include>
@@ -144,11 +148,14 @@
 					<radiowidth>22</radiowidth>
 					<radioheight>22</radioheight>
 					<onclick>SetProperty(BingieTrailerPreviewRequest,true,Home)</onclick>
+					<onright condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">54</onright>
+					<onright condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">53</onright>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
 				<control type="radiobutton" id="51">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<width>400</width>
 					<include content="Bingie_InfoDialog_Button_Texture">
 						<param name="radiotexture" value="dialogs/videoinfo/info/play2.png" />
 					</include>
@@ -157,11 +164,24 @@
 					<radiowidth>22</radiowidth>
 					<radioheight>22</radioheight>
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=play_from_info&amp;mediatype=tvshow&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)])</onclick>
+					<onright>54</onright>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
+			</control>
+			<control type="grouplist" id="8002">
+				<left>558</left>
+				<top>500</top>
+				<width>400</width>
+				<height>140</height>
+				<orientation>vertical</orientation>
+				<itemgap>10</itemgap>
+				<onup>noop</onup>
+				<onright>noop</onright>
+				<ondown>8010</ondown>
 				<control type="radiobutton" id="53">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<width>400</width>
 					<include content="Bingie_InfoDialog_Button_Texture">
 						<param name="radiotexture" value="dialogs/videoinfo/info/more_episodes.png" />
 					</include>
@@ -172,10 +192,12 @@
 					<radioheight>24</radioheight>
 					<onclick condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb))">ActivateWindow(1124,return)</onclick>
 					<onclick condition="String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">ActivateWindow(1124,return)</onclick>
+					<onleft>55</onleft>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
 				<control type="radiobutton" id="54">
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>
+					<width>400</width>
 					<include content="Bingie_InfoDialog_Button_Texture">
 						<param name="radiotexture" value="shortcuts/mylist.png" />
 					</include>
@@ -185,6 +207,8 @@
 					<radiowidth>22</radiowidth>
 					<radioheight>22</radioheight>
 					<onclick>$INFO[Window(Home).Property(PovInfoMyListCommand)]</onclick>
+					<onleft condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">80</onleft>
+					<onleft condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">51</onleft>
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
 			</control>
@@ -224,7 +248,7 @@
 
 			<control type="grouplist">
 				<left>126</left>
-				<top>650</top>
+				<top>655</top>
 				<width>1668</width>
 				<height>924</height>
 				<orientation>vertical</orientation>

@@ -914,8 +914,9 @@ def news(params):
 			message = 'Finding feeds…' if state in ('loading', 'partial') else 'Feeds unavailable' if state in ('stale', 'unavailable') else 'No matching feeds'
 			_item(message, {'mode': 'livetv.news', 'channel': channel}, False, playable=False, extra_context=refresh)
 	_finish()
-	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.news) + !Control.IsVisible(524)'):
-		xbmc.executebuiltin('Container.SetViewMode(524)')
+	view = 50 if channel else 524
+	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.news) + !Control.IsVisible(%d)' % view):
+		xbmc.executebuiltin('Container.SetViewMode(%d)' % view)
 
 
 def _guide_url(account):

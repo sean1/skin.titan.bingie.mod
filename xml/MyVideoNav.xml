@@ -5,7 +5,7 @@
 	    <include>videoViewIds</include>
     <onload condition="$EXP[IsPovLiteNavigationMenu]">Container.SetViewMode(50)</onload>
 	<onload condition="String.Contains(Container.FolderPath,mode=livetv.refine) | String.Contains(Container.FolderPath,mode=livetv.soccer)">Container.SetViewMode(523)</onload>
-	<onload condition="String.Contains(Container.FolderPath,mode=livetv.news)">Container.SetViewMode(524)</onload>
+	<onload condition="String.Contains(Container.FolderPath,mode=livetv.news) + !String.Contains(Container.FolderPath,channel=)">Container.SetViewMode(524)</onload>
 	<onload condition="String.IsEqual(Container.FolderPath,sources://video/)">Container.SetViewMode(50)</onload>
 	<onload>ClearProperty(ShowViewSubMenu,Home)</onload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
@@ -27,6 +27,11 @@
         <control type="label">
             <visible>String.Contains(Container.FolderPath,mode=livetv.match_feeds)</visible>
             <left>138</left><top>35</top><width>1600</width><height>58</height><font>Bold36</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.FeedSelection.Title)]</label><scroll>true</scroll>
+        </control>
+
+        <control type="label">
+            <visible>String.Contains(Container.FolderPath,mode=livetv.news) + String.Contains(Container.FolderPath,channel=) + Control.IsVisible(50)</visible>
+            <left>138</left><top>35</top><width>1600</width><height>58</height><font>Bold36</font><textcolor>ffffffff</textcolor><label>$VAR[BingieNewsHeading]</label><scroll>true</scroll>
         </control>
 
         <control type="group">

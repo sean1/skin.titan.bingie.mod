@@ -174,9 +174,11 @@ class NewsRefresh:
 		if not visible: return
 		# Kodi can restore the destination folder's saved view after the plugin
 		# directory has completed, so correct the view only once loading settles.
-		if time.monotonic() >= self.next_view_check and not ku.get_visibility('Control.IsVisible(524) | Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):
+		params = parse_qs(urlsplit(ku.get_infolabel('Container.FolderPath')).query, keep_blank_values=True)
+		view = 50 if 'channel' in params else 524
+		if time.monotonic() >= self.next_view_check and not ku.get_visibility('Control.IsVisible(%d) | Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)' % view):
 			self.next_view_check = time.monotonic() + 2
-			ku.execute_builtin('Container.SetViewMode(524)')
+			ku.execute_builtin('Container.SetViewMode(%d)' % view)
 			return
 		result = _read(_RESULT)
 		if request_id and (result.get('id') != request_id or not result.get('complete')) and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):

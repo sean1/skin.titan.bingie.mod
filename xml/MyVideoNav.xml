@@ -9,6 +9,7 @@
 	<onload condition="String.IsEqual(Container.FolderPath,sources://video/)">Container.SetViewMode(50)</onload>
 	<onload>ClearProperty(ShowViewSubMenu,Home)</onload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
+    <onunload>ClearProperty(LiveTV.FeedSelection.Title,Home)</onunload>
     <!-- return to infodialog if previous window -->
     <onunload condition="!String.IsEmpty(Window(Home).Property(BaseWindow)) + String.IsEmpty(Window(Home).Property(ListItem.TVShowID)) + !Player.HasVideo">AlarmClock(loadinfo,Action(Info),00:00,silent)</onunload>
     <!-- clear tvshowid property -->
@@ -22,6 +23,11 @@
 		<!--NowPlaying-->
         <!-- all Views -->
         <include>allViews</include>
+
+        <control type="label">
+            <visible>String.Contains(Container.FolderPath,mode=livetv.match_feeds)</visible>
+            <left>138</left><top>35</top><width>1600</width><height>58</height><font>Bold36</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.FeedSelection.Title)]</label><scroll>true</scroll>
+        </control>
 
         <control type="group">
             <visible>String.Contains(Container.FolderPath,mode=livetv.soccer) + String.IsEqual(Window(Home).Property(LiveTV.Sport),all) + Control.IsVisible(523)</visible>

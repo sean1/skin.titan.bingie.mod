@@ -92,7 +92,7 @@
 			<property name="id">$NUMBER[7]</property>
 			<label>Live Sports</label>
 			<label2>Live Sports</label2>
-			<icon>shortcuts/tv.png</icon>
+			<icon>shortcuts/live-sports.png</icon>
 			<thumb />
 			<property name="labelID">live-tv</property>
 			<property name="defaultID">live-tv</property>
@@ -109,7 +109,7 @@
 			<property name="id">$NUMBER[9]</property>
 			<label>News</label>
 			<label2>News</label2>
-			<icon>shortcuts/tv.png</icon>
+			<icon>shortcuts/news.png</icon>
 			<thumb />
 			<property name="labelID">news</property>
 			<property name="defaultID">news</property>

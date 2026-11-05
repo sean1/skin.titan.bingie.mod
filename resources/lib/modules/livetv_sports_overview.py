@@ -220,7 +220,7 @@ class SportsOverview:
 				if data.get('accounts') == accounts and (data.get('unavailable') or data.get('schedule_unavailable')): unavailable = True
 				if data.get('accounts') == accounts and data.get('stale'): stale = True
 				if data.get('accounts') == accounts and any(livetv._schedule_state(fixture, time.time())[0] == 'Live' for fixture in data.get('fixtures', []) if isinstance(fixture, dict)): events = True
-			status = ' · '.join(part for part in ('Loading sports schedules…' if loading else '', 'Some sports unavailable' if unavailable else '', 'Some feeds are saved' if stale else '') if part)
+			status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable else '', 'Some feed information may be out of date' if stale else '') if part)
 			ku.set_property('LiveTV.Sports.OverviewEmpty', 'true' if not loading and not unavailable and not events else '')
 			ku.set_property('LiveTV.Sports.OverviewStatus', status)
 			for sport in tuple(self.pending_refresh):

@@ -26,6 +26,8 @@ pack_enable_check, sources_quality_count = source_utils.pack_enable_check, sourc
 get_cache_expiry, get_file_info = source_utils.get_cache_expiry, source_utils.get_file_info
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
 DEFERRED_LINK_TTL = 30.0
+_PLAYBACK_FAILED = object()
+_RETRY_SEARCH = object()
 av1_filter_key, hevc_filter_key, hdr_filter_key, dolby_vision_filter_key = '[B]AV1[/B]', '[B]HEVC[/B]', '[B]HDR[/B]', '[B]D/VISION[/B]'
 total_format, int_format, ext_format = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR %s][B]Int: [/B][/COLOR]%s', '[COLOR %s][B]Ext: [/B][/COLOR]%s'
 ext_scr_format, unfinshed_import_format, format_line = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR red]+%s[/COLOR]', '%s[CR]%s[CR]%s'
@@ -102,12 +104,16 @@ class Sources:
 		self.results_processor = ResultsProcessor(self)
 
 	def source_select(self, params=None):
-		if self.clear_properties: self._clear_properties()
-		self.config_loader.apply(self, params)
-		if not hasattr(self, 'meta'): self.meta = self.meta_builder.get(self)
-		results = self.get_sources()
-		if not results and not getattr(self, 'unverified_results', []): return self._process_post_results()
-		self.play_source(results)
+		while True:
+			if self.clear_properties: self._clear_properties()
+			self.config_loader.apply(self, params)
+			if not hasattr(self, 'meta'): self.meta = self.meta_builder.get(self)
+			results = self.get_sources()
+			outcome = self._process_post_results() if not results and not getattr(self, 'unverified_results', []) else self.play_source(results)
+			if outcome is not _RETRY_SEARCH: return outcome
+			params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false', 'autoplay': 'false'}
+			params.pop('autoplay_next', None)
+			self.__init__()
 
 	def get_sources(self):
 		start_time = time.monotonic()
@@ -236,33 +242,36 @@ class Sources:
 		for item in default_internal_scrapers: clear_property('pov_lite_%s.internal_results' % item)
 
 	def display_results(self, results, unverified_view=False):
-		window_style = results_xml_style()
-		chosen_item = open_window(
-			('windows.sources', 'SourceResults'),
-			'sources_results.xml',
-			window_style=window_style,
-			window_id=results_xml_window_number(window_style),
-			results=results,
-			meta=self.meta,
-			scraper_settings=self.scraper_settings,
-			prescrape=self.prescrape,
-			filters_ignored=self.filters_ignored,
-			full_search_available=self.meta.get('full_search_available', False) and not unverified_view,
-			unverified_count=0 if unverified_view else len(getattr(self, 'unverified_results', [])),
-			unverified_view=unverified_view
-		)
-		if not chosen_item: return self.progress_dialog.kill()
-		action, chosen_item = chosen_item
-		if action == 'play':
-			return self.play_file(results, chosen_item)
-		if action == 'show_unverified':
-			return self.display_results(self.unverified_results, unverified_view=True)
-		if action == 'perform_full_search':
-			self.prescrape, self.clear_properties, self.force_full_search = False, False, True
-			self.params['force_full_search'] = 'true'
-			self.source_sink = SourceResultSink()
-			self.sources, self.threads, self.providers = self.source_sink.items, [], []
-			return self.source_select()
+		while True:
+			window_style = results_xml_style()
+			chosen_item = open_window(
+				('windows.sources', 'SourceResults'),
+				'sources_results.xml',
+				window_style=window_style,
+				window_id=results_xml_window_number(window_style),
+				results=results,
+				meta=self.meta,
+				scraper_settings=self.scraper_settings,
+				prescrape=self.prescrape,
+				filters_ignored=self.filters_ignored,
+				full_search_available=self.meta.get('full_search_available', False) and not unverified_view,
+				unverified_count=0 if unverified_view else len(getattr(self, 'unverified_results', [])),
+				unverified_view=unverified_view
+			)
+			if not chosen_item: return self.progress_dialog.kill()
+			action, chosen_item = chosen_item
+			if action == 'play':
+				outcome = self.play_file(results, chosen_item)
+				if outcome is not _PLAYBACK_FAILED: return outcome
+				choice = kodi_utils.dialog.select('Playback failed', ['Search again', 'Choose a source or adjust filters'])
+				if choice == 0: return _RETRY_SEARCH
+				if choice == 1: continue
+				return
+			if action == 'show_unverified':
+				results, unverified_view = self.unverified_results, True
+				continue
+			if action == 'perform_full_search': return _RETRY_SEARCH
+			return
 
 	def play_source(self, results):
 		results = [item for item in results if item.get('_identity_status') != 'unverified']
@@ -290,6 +299,7 @@ class Sources:
 				progressDialogBG.create('BINGIE Lite', 'BINGIE Lite loading...')
 				progress_media = None
 			original_total = len(items)
+			attempted = False
 			for count, item in enumerate(items, 1):
 				link = None
 				health_context = self._playback_health_context(item)
@@ -311,6 +321,7 @@ class Sources:
 					else: progressDialogBG.update(percent, name)
 				except: pass
 				resolve_started = time.monotonic()
+				attempted = True
 				try:
 					if 'unrestricted_link' in item: link = item['unrestricted_link']
 					else: link = Source(item, self.meta).resolve_sources()
@@ -351,9 +362,15 @@ class Sources:
 				retry_resume_percent = getattr(playback_player, 'retry_resume_percent', 0)
 				if playback_result is not False: return playback_result
 			else:
+				cancelled = monitor.abortRequested() or (self.progress_dialog.full_screen and self.progress_dialog.iscanceled())
 				if self.progress_dialog.full_screen: self.progress_dialog.kill()
 				else: progressDialogBG.close()
-				return self._no_results()
+				if cancelled: return
+				if not attempted: return self._no_results()
+				if manual_selection: return _PLAYBACK_FAILED
+				return notification('Playback failed. Search again or adjust filters.', time=10000)
+			if self.progress_dialog.full_screen: self.progress_dialog.kill()
+			else: progressDialogBG.close()
 		except: pass
 
 	@staticmethod

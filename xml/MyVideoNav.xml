@@ -89,6 +89,13 @@
                 <control type="button" id="9314"><include>SideBladeMenuButton</include><label>Basketball</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=basketball)</onclick></control>
                 <control type="button" id="9317"><include>SideBladeMenuButton</include><label>Tennis</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=tennis)</onclick></control>
                 <control type="button" id="9319"><include>SideBladeMenuButton</include><label>Formula 1</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=f1)</onclick></control>
+                <control type="button" id="9324">
+                    <include>SideBladeMenuButton</include><label>Search providers</label>
+                    <onclick>ClearProperty(ShowViewSubMenu,Home)</onclick>
+                    <onclick condition="String.IsEqual(Window(Home).Property(LiveTV.Sport),all) + !String.IsEmpty(Window(Home).Property(LiveTV.Sports.OverviewFocus))">SetFocus($INFO[Window(Home).Property(LiveTV.Sports.OverviewFocus)])</onclick>
+                    <onclick condition="!String.IsEqual(Window(Home).Property(LiveTV.Sport),all) | String.IsEmpty(Window(Home).Property(LiveTV.Sports.OverviewFocus))">SetFocus(523)</onclick>
+                    <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.search)</onclick>
+                </control>
                 <control type="button" id="9301"><include>SideBladeMenuButton</include><label>League: $INFO[Window(Home).Property(LiveTV.Soccer.League)]</label><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),soccer)</visible><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=soccer&amp;action=league)</onclick></control>
                 <control type="button" id="9313"><include>SideBladeMenuButton</include><label>Scroll standings</label><visible>String.IsEqual(Window(Home).Property(LiveTV.Standings.Layout),ncaa) + String.IsEqual(Window(Home).Property(LiveTV.Standings.Key),Container(523).ListItem.Property(LiveTV.StandingsKey)) + !String.IsEmpty(Window(Home).Property(LiveTV.Standings.AllText))</visible><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>SetFocus(9321)</onclick></control>
                 <control type="button" id="9323"><include>SideBladeMenuButton</include><label>Refresh events</label><visible>String.IsEqual(Window(Home).Property(LiveTV.Sport),all)</visible><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.soccer&amp;sport=all&amp;action=refresh)</onclick></control>
@@ -123,7 +130,6 @@
                 <control type="button" id="9202"><include>SideBladeMenuButton</include><label>Channel name: $INFO[Window(Home).Property(LiveTV.Refine.Name)]</label><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.refine&amp;action=name)</onclick></control>
                 <control type="button" id="9203"><include>SideBladeMenuButton</include><label>SHOW RESULTS</label><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.refine&amp;action=apply)</onclick></control>
                 <control type="button" id="9204"><include>SideBladeMenuButton</include><label>CLEAR REFINEMENTS</label><onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.refine&amp;action=clear)</onclick></control>
-                <control type="button" id="9205"><include>SideBladeMenuButton</include><label>Live TV menu and search</label><onclick>ClearProperty(ShowViewSubMenu,Home)</onclick><onclick>SetFocus(523)</onclick><onclick>Container.Update(plugin://skin.titan.bingie.lite/?mode=livetv.browse)</onclick></control>
             </control>
         </control>
 

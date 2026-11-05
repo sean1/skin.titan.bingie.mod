@@ -1814,6 +1814,10 @@ def f1_channels(params):
 	_finish()
 
 
+def _sports_retry_item(sport, label='Fixtures unavailable — select to retry'):
+	_item(label, {'mode': 'livetv.soccer', 'sport': sport, 'action': 'refresh', 'isFolder': 'false'}, False, None, False)
+
+
 def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=False):
 	try:
 		from modules import livetv_sports_progress
@@ -1821,7 +1825,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 		if state not in ('ready', 'cached', 'cached_unavailable'):
 			ku.set_property('LiveTV.Soccer.FixtureStatus', 'Loading fixtures' if state == 'pending' else 'Live fixtures unavailable')
 			if state == 'pending': _item('Loading fixtures…', {}, False, playable=False)
-			else: _item('Fixtures unavailable — browse channels', {'mode': 'livetv.refine'})
+			else: _sports_retry_item(sport)
 			_finish()
 			return
 		cached = state in ('cached', 'cached_unavailable')
@@ -1901,8 +1905,10 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 					'LiveTV.StandingsKey': standings_key, 'LiveTV.StandingsMatchKey': standings_match_key, **team_properties})
 		if has_groups: _save_feed_matches(feed_cache)
 		if not rows:
-			message = cache_status if cached else 'Fixtures unavailable — browse channels' if ku.get_property('LiveTV.Soccer.FixtureStatus') == 'Live fixtures unavailable' else 'No live or upcoming %s matches — browse channels' % sport
-			_item(message, {} if cached else {'mode': 'livetv.refine'}, False if cached else True, playable=False if cached else True)
+			if cached and cache_status == 'Refresh failed': _sports_retry_item(sport, 'Refresh failed — select to retry')
+			elif cached: _item(cache_status, {}, False, playable=False)
+			elif ku.get_property('LiveTV.Soccer.FixtureStatus') == 'Live fixtures unavailable': _sports_retry_item(sport)
+			else: _item('No live or upcoming %s matches' % sport, {}, False, playable=False)
 	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load Live TV channels.')
 		_finish(False)
@@ -2046,7 +2052,7 @@ def soccer(params):
 				ku.dialog.notification('Live TV', 'Loading fixtures…' if state == 'pending' else 'Fixtures unavailable.')
 			else:
 				if state == 'pending': _item('Loading fixtures…', {}, False, playable=False)
-				else: _item('Fixtures unavailable — browse channels', {'mode': 'livetv.refine'})
+				else: _sports_retry_item(sport)
 				_finish()
 			return
 		sport_fixtures, status_text = auxiliary['sport_fixtures'], auxiliary['status_text']
@@ -2134,8 +2140,10 @@ def soccer(params):
 					'LiveTV.StandingsKey': 'mls' if is_mls else standings_keys.get((event, scope), ''), 'LiveTV.StandingsMatchKey': title if is_mls else standings_teams.get((event, scope), ''), **team_properties})
 		if has_groups: _save_feed_matches(feed_cache)
 		if not rows:
-			if cached: _item(cache_status, {}, False, playable=False)
-			else: _item('Fixtures unavailable — browse channels' if status_text == 'Live fixtures unavailable' else 'No live or upcoming soccer matches — browse channels', {'mode': 'livetv.refine'})
+			if cached and cache_status == 'Refresh failed': _sports_retry_item(sport, 'Refresh failed — select to retry')
+			elif cached: _item(cache_status, {}, False, playable=False)
+			elif status_text == 'Live fixtures unavailable': _sports_retry_item(sport)
+			else: _item('No live or upcoming soccer matches', {}, False, playable=False)
 	except (OSError, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.Status', 'Could not load channels')
 		_error('Could not load Live TV channels.')

@@ -248,18 +248,34 @@ class LiveTVFailover(ku.xbmc_player):
 		previous_id, previous_url = session['id'], self._url(session['id'])
 		outgoing = self._playing_file() or previous_url
 		if ku.get_property(STOP_REQUEST):
-			self._clear()
 			return False
 		session.setdefault('urls', {}).pop(selected, None)
 		url = self._url(selected)
 		if not url:
 			ku.dialog.notification('Live TV', 'Live TV VPN unavailable. Check the VPN connection and try again.')
 			return False
-		if ku.get_property(STOP_REQUEST):
-			self._clear()
+		if url == previous_url:
+			session['urls'].pop(selected, None)
+			if not ku.get_property(STOP_REQUEST): ku.dialog.notification('Live TV', 'The selected feed is already playing.')
 			return False
+		if ku.get_property(STOP_REQUEST):
+			try: cancel(url)
+			except (OSError, HTTPException, ValueError, TypeError): pass
+			session['urls'].pop(selected, None)
+			return False
+		try:
+			if not previous_url: raise ValueError('Missing outgoing relay capability')
+			cancel(previous_url)
+		except (OSError, HTTPException, ValueError, TypeError):
+			try: cancel(url)
+			except (OSError, HTTPException, ValueError, TypeError): pass
+			session['urls'].pop(selected, None)
+			if not ku.get_property(STOP_REQUEST): ku.dialog.notification('Live TV', 'Could not switch feed.')
+			return False
+		session['urls'].pop(previous_id, None)
 		session.update(id=selected, active=False, switching=True, outgoing=outgoing, opening_at=self.clock())
 		self.event = None
+		if ku.get_property(STOP_REQUEST): return False
 		self._publish_choices()
 		ku.set_property(OPENING, url)
 		try:
@@ -269,9 +285,11 @@ class LiveTVFailover(ku.xbmc_player):
 			self.play(url, item)
 		except Exception:
 			if ku.get_property(OPENING) == url: ku.clear_property(OPENING)
-			session.update(id=previous_id, active=self._playing_file() == previous_url, switching=False)
-			self._publish_choices()
-			ku.dialog.notification('Live TV', 'Could not switch feed.')
+			try: cancel(url)
+			except (OSError, HTTPException, ValueError, TypeError): pass
+			if not ku.get_property(STOP_REQUEST):
+				self._clear()
+				ku.dialog.notification('Live TV', 'Could not switch feed.')
 			return False
 		return True
 

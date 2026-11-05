@@ -42,4 +42,3 @@ Configure all Xtream-compatible accounts in `resources/private/livetv-account.js
 ```
 
 Use a unique, stable ID containing letters, numbers, underscores or hyphens. The `primary` account is used for ordinary Live TV; enabled accounts contribute sports feeds. Set `enabled` to `true` once an account is configured. Use the provider's server base URL, without a playlist path. Keep this file private with permissions `0600`: it contains passwords. The package script includes this entire file, including all configured account credentials. Treat the resulting ZIP as private.
-

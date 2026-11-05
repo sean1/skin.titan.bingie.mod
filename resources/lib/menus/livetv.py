@@ -523,6 +523,11 @@ def _sports_ref(stream):
 	return identity + ':' + str(stream['stream_id']) if identity else str(stream['stream_id'])
 
 
+def _provider_label(identity, number):
+	backup = re.fullmatch(r'backup_([1-9][0-9]{0,2})', identity, re.I)
+	return 'Primary' if number == 1 else 'Backup %s' % backup.group(1) if backup else 'Provider %d' % number
+
+
 def _bundled_credentials_path():
 	return os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', 'livetv-account.json')
 
@@ -1220,8 +1225,7 @@ def search_results(params):
 		key = (event, scope)
 		feeds = event_feeds.get(key, {}) if stream['_search_provider_number'] == 1 else {}
 		identity = stream['_search_provider']
-		backup = re.fullmatch(r'backup_([1-9][0-9]{0,2})', identity, re.I)
-		label = 'Primary' if stream['_search_provider_number'] == 1 else 'Backup %s' % backup.group(1) if backup else 'Provider %d' % stream['_search_provider_number']
+		label = _provider_label(identity, stream['_search_provider_number'])
 		provider_label = ' · ' + label if len(accounts) > 1 else ''
 		if event and len(feeds) > 1:
 			if key in seen_events: continue
@@ -1782,25 +1786,31 @@ def f1_channels(params):
 		_error('No Live TV account is available.')
 		_finish(False)
 		return
-	streams, failed = [], False
-	for identity, account in accounts:
+	streams, failed, stale = [], [], []
+	for index, (identity, account) in enumerate(accounts):
+		status = []
 		try:
-			catalog = _catalog(account, 'get_live_streams')
+			catalog = _catalog(account, 'get_live_streams', force_refresh=params.get('refresh') == 'true', notify_stale=False, on_status=lambda created, saved: status.append(saved))
 			if not isinstance(catalog, list): raise ValueError('Invalid channel catalog')
+			if any(status): stale.append(_provider_label(identity, index + 1))
 			for stream in catalog:
 				if not isinstance(stream, dict) or not str(stream.get('stream_id') or '').isdecimal(): continue
 				name = stream.get('name')
 				if not isinstance(name, str) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', name, re.I) or re.match(r'^\s*#+', name): continue
 				streams.append(dict(stream, _provider=identity) if len(accounts) > 1 or not legacy else stream)
-		except (OSError, HTTPException, ValueError, TypeError): failed = True
+		except (OSError, HTTPException, ValueError, TypeError): failed.append(_provider_label(identity, index + 1))
 	streams.sort(key=lambda stream: (stream['name'].casefold(), stream.get('_provider', ''), int(stream['stream_id'])))
 	page_streams, page, has_next = _channel_page(streams, params)
+	if failed or stale:
+		messages = []
+		if failed: messages.append('Unavailable: ' + ', '.join(failed))
+		if stale: messages.append('Saved channels: ' + ', '.join(stale))
+		_item('Retry — ' + ' · '.join(messages) + ' · results may be incomplete', {'mode': 'livetv.f1_channels', 'page': str(page), 'refresh': 'true'}, True, None, False)
 	if page: _item('Previous page', {'mode': 'livetv.f1_channels', 'page': str(page - 1)})
 	for stream in page_streams:
 		_item(stream['name'], {'mode': 'livetv.play', 'id': _sports_ref(stream)}, False, stream.get('stream_icon'))
 	if has_next: _item('Next page', {'mode': 'livetv.f1_channels', 'page': str(page + 1)})
-	if not streams: _item('Formula 1 channels unavailable' if failed else 'No Formula 1 channels found', {}, False, playable=False)
-	elif failed: ku.dialog.notification('Live TV', 'Some providers are unavailable.')
+	if not streams and len(failed) < len(accounts): _item('No Formula 1 channels found', {}, False, playable=False)
 	_finish()
 
 

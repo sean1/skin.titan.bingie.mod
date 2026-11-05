@@ -45,7 +45,7 @@ class Search(xbmcgui.WindowXML):
 		self.focus_id, self.position = KEYBOARD, 0
 		self.key_position = 0
 		self.status = 'Type a title to find movies and TV shows'
-		self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='bingie-search')
+		self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='bingie-search')
 
 	def onInit(self):
 		with self.lock: self._initialize()
@@ -129,17 +129,20 @@ class Search(xbmcgui.WindowXML):
 		if query == self.query: return
 		self.query = query
 		self.generation += 1
+		if self.future is not None:
+			self.future.cancel()
+			self.future = None
+			self.request = None
 		self.ready_at = monotonic() + SEARCH_DELAY
 		self.page, self.total_pages, self.load_more = 0, 0, False
+		self.items = []
 		self.failed = False
 		self.setProperty('Search.Query', query)
 		self.setProperty('Search.HasMore', 'false')
 		self.setProperty('Search.MoreLabel', 'More results')
 		self.setProperty('Search.Pending', 'true' if query.strip() else 'false')
 		self._status('Searching…' if query.strip() else 'Type a title to find movies and TV shows')
-		if not query.strip():
-			self.items = []
-			self._render_results()
+		self._render_results()
 
 	def tick(self):
 		if self.future is not None:

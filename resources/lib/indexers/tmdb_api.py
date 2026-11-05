@@ -27,11 +27,11 @@ session = requests.Session()
 retry = requests.adapters.Retry(total=2, connect=2, read=2, status=1, backoff_factor=0.25, status_forcelist=(429, 502, 503, 504))
 session.mount('https://api.themoviedb.org', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
 
-def get_tmdb(url, params=None):
+def get_tmdb(url, params=None, http_session=None):
 	try:
 		request_kwargs = {'headers': {'Authorization': 'Bearer %s' % READ_TOKEN}, 'timeout': timeout}
 		if params is not None: request_kwargs['params'] = params
-		response = session.get(url, **request_kwargs)
+		response = (http_session or session).get(url, **request_kwargs)
 		result = response.json() if 'json' in response.headers.get('Content-Type', '') else response.text
 		if not response.ok: response.raise_for_status()
 		return result
@@ -212,7 +212,12 @@ def tmdb_media_search(query, page_no):
 	string = 'tmdb_media_search_%s_%s' % (query, page_no)
 	url = '%s/search/multi' % base_url
 	params = {'language': 'en-US', 'query': query, 'page': page_no, 'include_adult': False}
-	return cache_object(get_tmdb, string, [url, params], expiration=EXPIRES_4_HOURS)
+	return cache_object(_get_tmdb_search, string, [url, params], expiration=EXPIRES_4_HOURS)
+
+def _get_tmdb_search(url, params):
+	with requests.Session() as search_session:
+		search_session.mount('https://api.themoviedb.org', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
+		return get_tmdb(url, params, search_session)
 
 def tmdb_movies_search_collections(query, page_no):
 	string = 'tmdb_movies_search_collections_%s_%s' % (query, page_no)

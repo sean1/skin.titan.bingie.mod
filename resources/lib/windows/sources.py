@@ -23,7 +23,6 @@ filter_quality, filter_provider, filter_title, filter_extraInfo = ls(32154), ls(
 run_plugin_str, ignored_str = 'RunPlugin(%s)', '[B][COLOR dodgerblue](%s)[/COLOR][/B]'
 check_str = '[B]CHECK CACHE STATUS[/B]'
 cache_str = ('CACHED', 'CACHED [B]%s[/B]')
-SHORTLIST_LIMIT = 8
 string, upper, lower = str, str.upper, str.lower
 
 class SourceResults(BaseDialog):
@@ -222,7 +221,6 @@ class SourceResults(BaseDialog):
 					if identity and identity in hashes: continue
 					if identity: hashes.add(identity)
 					shortlist.append(listitem)
-					if len(shortlist) == SHORTLIST_LIMIT: break
 				if shortlist and len(shortlist) < int(self.total_results):
 					show_all = self.make_listitem()
 					show_all.setLabel('Show all sources (%s)' % self.total_results)

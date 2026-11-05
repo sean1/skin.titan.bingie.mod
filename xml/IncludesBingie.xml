@@ -1186,6 +1186,21 @@
         <value condition="!Control.HasFocus(10034)">ffffffff</value>
     </variable>
 
+    <include name="BingieSpotlightBottomFade">
+        <param name="visibility" default="true" />
+        <param name="fadetop" default="420" />
+        <param name="boundary" default="560" />
+        <param name="coverheight" default="140" />
+        <definition>
+            <control type="group">
+                <visible>$PARAM[visibility]</visible>
+                <right>-2</right><width>1222</width><height>700</height>
+                <control type="image"><top>$PARAM[fadetop]</top><width>1222</width><height>140</height><texture>overlays/gradient_episodes.png</texture><aspectratio>stretch</aspectratio></control>
+                <control type="image"><top>$PARAM[boundary]</top><width>1222</width><height>$PARAM[coverheight]</height><texture>colors/color_black.png</texture></control>
+            </control>
+        </definition>
+    </include>
+
 <!-- SPOTLIGHT IMAGE MAIN HOME-->
 <!--the whole fanart image now fits the spotlight like Netflix -->
     <include name="BingieSpotlightCornerImage">
@@ -1298,6 +1313,9 @@
 				<param name="visibility" value="[!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + !$EXP[BingieTrailerPreviewVisible]]] + [!$EXP[IsPlayingRecognizedContent] | [$EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]]]" />
                 <param name="image" value="$VAR[bingieThumb]" />
             </include>
+			<include content="BingieSpotlightBottomFade">
+				<param name="visibility" value="$EXP[BingieTrailerPreviewVisible] | [[!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + !$EXP[BingieTrailerPreviewVisible]]] + [!$EXP[IsPlayingRecognizedContent] | [$EXP[IsPlayingRecognizedContent] + [Control.HasFocus(526) | Control.HasFocus(523)]]]]" />
+			</include>
 
 
             <!-- bingie details -->

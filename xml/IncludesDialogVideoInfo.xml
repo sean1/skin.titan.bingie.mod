@@ -13,6 +13,9 @@
 				<param name="visibility" value="!$EXP[BingieTrailerPreviewVisible]" />
 				<param name="image" value="$VAR[PovInfoResolvedFanart]" />
 			</include>
+			<include content="BingieSpotlightBottomFade">
+				<param name="fadetop" value="510" /><param name="boundary" value="650" /><param name="coverheight" value="50" />
+			</include>
 			<!-- Dialog Info -->
 			<control type="group">
 				<animation effect="fade" start="0" end="100" time="200">Visible</animation>

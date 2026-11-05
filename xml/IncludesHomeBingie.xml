@@ -27,6 +27,10 @@
                     <param name="visibility" value="!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + !$EXP[BingieTrailerPreviewVisible]]" />
                     <param name="image" value="$INFO[Control.GetLabel(99004)]" />
                 </include>
+				<include content="BingieSpotlightBottomFade">
+					<param name="visibility" value="$EXP[BingieTrailerPreviewVisible] | !Player.HasVideo | !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))" />
+					<param name="fadetop" value="471" /><param name="boundary" value="611" /><param name="coverheight" value="89" />
+				</include>
 
                 <!-- Widgets Display -->
                 <control type="grouplist">

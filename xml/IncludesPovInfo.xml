@@ -20,6 +20,9 @@
 				<param name="visibility" value="!$EXP[BingieTrailerPreviewVisible]" />
 				<param name="image" value="$VAR[PovInfoResolvedFanart]" />
 			</include>
+			<include content="BingieSpotlightBottomFade">
+				<param name="fadetop" value="515" /><param name="boundary" value="655" /><param name="coverheight" value="45" />
+			</include>
 
 			<control type="image" id="9105">
 				<left>138</left>

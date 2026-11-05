@@ -2006,8 +2006,9 @@ def _sports_overview(sport_filter=None, revision=''):
 		else: title, league = '%s vs %s' % (fixture['home']['name'], fixture['away']['name']), fixture.get('league_label', str(fixture.get('league') or '').upper())
 		feed_label = ('%d %s' % (len(feeds), 'feed' if len(feeds) == 1 else 'feeds')) if feeds else ('Finding feeds…' if sport in loading else 'Feeds unavailable' if sport in unavailable else '0 feeds') if state == 'Live' else ''
 		context = []
-		if feeds:
-			params = {'mode': 'livetv.match_feeds', 'sport': sport, 'display_title': title, 'fixture_identity': _fixture_focus_identity(sport, fixture)}
+		identity = _fixture_focus_identity(sport, fixture)
+		if feeds and identity:
+			params = {'mode': 'livetv.match_feeds', 'sport': sport, 'display_title': title, 'fixture_identity': identity}
 			if sport == 'f1': params['session'] = key
 			else: params.update({'home': key[0][0], 'away': key[0][1], 'scope': key[1]})
 			from modules import livetv_feed_selection
@@ -2021,7 +2022,7 @@ def _sports_overview(sport_filter=None, revision=''):
 				properties['LiveTV.%sTeam' % side.title()] = fixture[side] if sport == 'soccer' else fixture[side]['name']
 				if sport == 'soccer': properties['LiveTV.%sLogo' % side.title()] = _soccer_logos.team_logo(fixture, side)
 				elif sport != 'tennis': properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.team_logo(sport, fixture[side].get('abbreviation'))
-		_item(title + (' — ' + feed_label if feed_label and not feeds else ''), params if feeds else {}, bool(feeds), stream.get('stream_icon') if stream else None, playable=False, extra_context=context, extra_properties=properties)
+		_item(title + (' — ' + feed_label if feed_label and not feeds else ''), params if feeds and identity else {}, bool(feeds and identity), stream.get('stream_icon') if stream else None, playable=False, extra_context=context, extra_properties=properties)
 	status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable or schedule_unavailable else '') if part)
 	if not sport_filter: ku.set_property('LiveTV.Sports.OverviewStatus', status)
 	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport_filter or ''})

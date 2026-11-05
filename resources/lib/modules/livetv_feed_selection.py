@@ -220,8 +220,13 @@ def prepare(params):
 	if not alive: return 'unavailable', []
 	query = {key: params.get(key, '') for key in _FIELDS}
 	accounts = livetv._feed_accounts_fingerprint()
+	expected_identity = params.get('fixture_identity', '')
+	if expected_identity and (not isinstance(expected_identity, str) or len(expected_identity) != 64 or any(char not in '0123456789abcdef' for char in expected_identity)): return 'unavailable', []
 	request = _read(_REQUEST)
 	token = params.get('handoff', '')
+	if isinstance(token, str) and token.startswith('o') and expected_identity and not _overview_handoff(token, query, accounts):
+		token = ''
+		params = dict(params, handoff='')
 	try: valid = 0 <= time.time() - request['created'] < _MAX_AGE
 	except (KeyError, TypeError): valid = False
 	same_handoff = valid and not request.get('validation_failed') and request.get('handoff') == token and request.get('query') == query and request.get('accounts') == accounts
@@ -231,7 +236,7 @@ def prepare(params):
 		identity = seed['fixture_identity']
 		if _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': identity}): return 'unavailable', []
 		if valid and request.get('query') == query and request.get('accounts') == accounts and request.get('fixture_identity') and request['fixture_identity'] != identity: return 'unavailable', []
-	compatible = valid and not request.get('validation_failed') and request.get('query') == query and request.get('accounts') == accounts and not (params.get('retry') and params.get('retry') == request.get('id'))
+	compatible = valid and not request.get('validation_failed') and request.get('query') == query and request.get('accounts') == accounts and (not expected_identity or request.get('fixture_identity') == expected_identity) and not (params.get('retry') and params.get('retry') == request.get('id'))
 	if compatible and request.get('validated_until'):
 		try: validated = isinstance(request['validated_until'], (int, float)) and not isinstance(request['validated_until'], bool) and math.isfinite(request['validated_until']) and time.time() < request['validated_until']
 		except (TypeError, ValueError, OverflowError): validated = False
@@ -250,7 +255,7 @@ def prepare(params):
 		if isinstance(token, str) and token.startswith('o'):
 			seed = _overview_handoff(token, query, accounts)
 			if not seed or _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': seed['fixture_identity']}): return 'unavailable', []
-		request = {'id': uuid.uuid4().hex, 'created': time.time(), 'query': query, 'accounts': accounts, 'handoff': params.get('handoff', ''), 'fixture_identity': _retention_identity(query, accounts)}
+		request = {'id': uuid.uuid4().hex, 'created': time.time(), 'query': query, 'accounts': accounts, 'handoff': params.get('handoff', ''), 'fixture_identity': expected_identity or _retention_identity(query, accounts)}
 		_timing('request', request['created'])
 		seed = None if params.get('retry') else _handoff(params, query, accounts)
 		if seed and seed.get('fixture_identity') and request['fixture_identity'] and seed['fixture_identity'] != request['fixture_identity']: seed = None

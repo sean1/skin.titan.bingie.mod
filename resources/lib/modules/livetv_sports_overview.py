@@ -9,6 +9,13 @@ from modules import kodi_utils as ku
 SPORTS = ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1')
 PREFIX = 'LiveTV.Sports.Overview.'
 ROW_IDS = dict(zip(SPORTS, range(9501, 9507)))
+
+
+def _next_refresh(wall):
+	local = time.localtime(wall)
+	return wall + (30 - local.tm_min % 30) * 60 - local.tm_sec - wall % 1
+
+
 class _SharedCatalog:
 	"""Coalesce each provider download within one overview refresh generation."""
 	def __init__(self, accounts, force):
@@ -126,7 +133,6 @@ class SportsOverview:
 		self.forced = set()
 		self.catalog_generation = None
 		self.catalog = None
-		self.expired = {}
 
 	def tick(self, active, now):
 		from menus import livetv
@@ -143,7 +149,7 @@ class SportsOverview:
 			ku.clear_property('LiveTV.Sports.OverviewEmpty')
 			self.active = True
 			self.due = set(SPORTS)
-			self.next_refresh = now + 120
+			self.next_refresh = _next_refresh(time.time())
 		accounts = livetv._feed_accounts_fingerprint()
 		if accounts != self.accounts:
 			self.accounts = accounts
@@ -151,7 +157,7 @@ class SportsOverview:
 			self.next_guide = 0
 			self.generation += 1
 			self.due = set(SPORTS)
-			self.next_refresh = now + 120
+			self.next_refresh = _next_refresh(time.time())
 			ku.clear_property('LiveTV.Sports.OverviewEmpty')
 			for sport in SPORTS:
 				try:
@@ -165,7 +171,16 @@ class SportsOverview:
 			self.forced = set(SPORTS)
 			self.generation += 1
 			self.due = set(SPORTS)
-			self.next_refresh = now + 120
+			if self.guide_cancel: self.guide_cancel.set()
+			self.next_guide = 0
+		wall = time.time()
+		next_refresh = _next_refresh(wall)
+		if wall >= self.next_refresh:
+			self.generation += 1
+			self.due = set(SPORTS)
+			if self.guide_cancel: self.guide_cancel.set()
+			self.next_guide = 0
+		self.next_refresh = min(self.next_refresh, next_refresh) if wall < self.next_refresh else next_refresh
 		while True:
 			try: guide_generation = self.guide_results.get_nowait()
 			except Empty: break
@@ -174,32 +189,19 @@ class SportsOverview:
 			self.guide_cancel = Event()
 			self.guide_worker = Thread(target=_refresh_guides, args=(self.guide_cancel, self.guide_results, self.generation), daemon=True)
 			self.guide_worker.start()
-			self.next_guide = now + 300
+			self.next_guide = float('inf')
 		while True:
 			try: sport, result_accounts, generation, encoded = self.results.get_nowait()
 			except Empty: break
 			if result_accounts == accounts and generation == self.generation:
 				ku.set_property(PREFIX + sport, encoded)
 				self.pending_refresh.add(sport)
-		for sport in SPORTS:
-			try:
-				data = json.loads(ku.get_property(PREFIX + sport) or '{}')
-				expires = data.get('fixture_expires')
-				if data.get('accounts') == accounts and isinstance(expires, (int, float)) and not isinstance(expires, bool) and time.time() >= expires and self.expired.get(sport) != expires:
-					self.expired[sport] = expires
-					self.pending_refresh.add(sport)
-					self.due.add(sport)
-			except (TypeError, ValueError): pass
 		if self.focus:
 			control, revision = self.focus
 			if not ku.get_visibility('Control.HasFocus(%d)' % control): self.focus = None
 			elif not ku.get_visibility('Container(%d).IsUpdating' % control) and ku.get_infolabel('Container(%d).ListItemAbsolute(0).Property(LiveTV.OverviewRevision)' % control) == revision:
 				ku.execute_builtin('Control.SetFocus(%d,0,absolute)' % control)
 				self.focus = None
-		if now >= self.next_refresh:
-			self.generation += 1
-			self.due = set(SPORTS)
-			self.next_refresh = now + 120
 		if not ku.get_visibility('Player.HasMedia'):
 			if self.catalog_generation != self.generation:
 				self.catalog = _SharedCatalog(accounts, bool(self.forced))

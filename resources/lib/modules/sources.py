@@ -411,6 +411,7 @@ class Sources:
 		except Exception: pass
 
 	def play_file(self, results, source=None):
+		startup_owner = {}
 		try:
 			selection_started = self.meta.pop('_bingie_selection_started_at', None) or time.monotonic()
 			selection_id = time.monotonic_ns()
@@ -489,7 +490,11 @@ class Sources:
 					'_playback_health_started_at': time.monotonic(),
 					'_playback_health_bitrate_mbps': self._source_bitrate_mbps(item),
 					'_playback_health_allow_stall_recovery': self.autoplay and not manual_selection,
-					'_playback_health_has_stall_fallback': count < len(items)
+					'_playback_health_has_stall_fallback': count < len(items),
+					'_autoplay_startup_fallback': self.autoplay and not manual_selection and any(
+						candidate.get('_identity_status') != 'unverified' and 'Uncached' not in candidate.get('cache_provider', '')
+						and (not candidate.get('_bingie_host_deferred') or candidate.get('_bingie_can_reresolve')) for candidate in items[count:]
+					)
 				})
 				playback_meta['_playback_timing'] = timing
 				pending = getattr(self, 'pending_search', None)
@@ -497,6 +502,9 @@ class Sources:
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
 				if getattr(self, 'restart_from_beginning', False): playback_meta['_restart_from_beginning'] = True
 				playback_player = POVPlayer()
+				if self.autoplay and not manual_selection:
+					startup_owner.update({'player': playback_player, 'previous_url': startup_owner.get('url'), 'url': link})
+					playback_player.startup_owner = startup_owner
 				try: playback_result = playback_player.run(link, playback_meta, progress_media)
 				except Exception as exc:
 					try: kodi_utils.logger('Sources', 'Playback attempt failed: %s' % exc)
@@ -520,6 +528,7 @@ class Sources:
 			if self.progress_dialog.full_screen: self.progress_dialog.kill()
 			else: progressDialogBG.close()
 		except: pass
+		finally: startup_owner['player'] = None
 
 	@staticmethod
 	def _playback_health_context(item, link=None):

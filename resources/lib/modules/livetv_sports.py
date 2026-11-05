@@ -22,8 +22,8 @@ _WORD = re.compile(r'\w+')
 
 def record_timing(phase, elapsed, sport='', outcome=''):
 	"""Log bounded, non-identifying timing data for sports loading stages."""
-	if phase not in ('catalog_fetch', 'direct_match', 'guide_match', 'guide_fetch', 'guide_refresh', 'lookup', 'lookup_deadline', 'ui_handoff', 'fixture_fetch'): return
-	if sport not in ('', 'soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1') or outcome not in ('', 'ok', 'unavailable', 'cancelled', 'partial', 'network', 'cache', 'stale', 'catalog', 'guide', 'saved'): return
+	if phase not in ('catalog_fetch', 'catalog_queue', 'catalog_open', 'catalog_read', 'catalog_parse', 'catalog_clean', 'catalog_write', 'direct_match', 'guide_match', 'guide_fetch', 'guide_refresh', 'lookup', 'lookup_deadline', 'ui_handoff', 'fixture_fetch', 'first_feed'): return
+	if sport not in ('', 'soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1') or outcome not in ('', 'ok', 'unavailable', 'cancelled', 'partial', 'network', 'cache', 'stale', 'catalog', 'guide', 'saved', 'match', 'attempted'): return
 	try:
 		if not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool) or not math.isfinite(elapsed) or not 0 <= elapsed <= 86400: return
 		import xbmc

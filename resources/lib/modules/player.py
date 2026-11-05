@@ -19,6 +19,7 @@ get_art_provider, meta_user_info = settings.get_art_provider, settings.metadata_
 fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 PLAYBACK_START_TIMEOUT = 30.0
+AUTOPLAY_FALLBACK_START_TIMEOUT = 20.0
 PLAYBACK_DURATION_TIMEOUT = 5.0
 PLAYBACK_STOP_TIMEOUT = 5.0
 PLAYBACK_SETTLE_TIME = 0.5
@@ -66,15 +67,22 @@ class POVPlayer(kodi_utils.xbmc_player):
 
 	def onAVStarted(self):
 		if getattr(self, 'awaiting_preview_handoff', False): return
+		owner = getattr(self, 'startup_owner', None)
+		if owner and owner.get('player') is not self: return
 		if getattr(self, 'startup_cancel_requested', False):
 			self.playback_event = False
+			if getattr(self, 'startup_fast_retry', False):
+				try: playback_file = self.getPlayingFile()
+				except: playback_file = ''
+				if not playback_file or playback_file != getattr(self, 'startup_expected_url', None): return
 			try: self.stop()
 			except: pass
 			return
-		self.playback_generation = getattr(self, 'playback_generation', 0) + 1
-		self.playback_event = True
 		try: playback_file = self.getPlayingFile()
 		except: playback_file = ''
+		if owner and playback_file and playback_file == owner.get('previous_url') and playback_file != owner.get('url'): return
+		self.playback_generation = getattr(self, 'playback_generation', 0) + 1
+		self.playback_event = True
 		timing = getattr(self, 'playback_timing', None)
 		if timing and timing.get('kodi_play_started') and not timing.get('av_started') and playback_file and playback_file == getattr(self, 'playback_timing_url', None):
 			timing['av_started'] = True
@@ -280,6 +288,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.playback_health_bitrate_mbps = self.meta.pop('_playback_health_bitrate_mbps', None)
 			self.allow_stall_recovery = bool(self.meta.pop('_playback_health_allow_stall_recovery', False))
 			self.has_stall_fallback = bool(self.meta.pop('_playback_health_has_stall_fallback', False))
+			self.startup_fast_retry = bool(self.meta.pop('_autoplay_startup_fallback', False))
 			self.playback_health_finalized, self.playback_health_qualified = False, False
 			self.playback_paused, self.playback_seek_grace_until = False, 0
 			self.playback_sample_wall, self.playback_sample_media = None, None
@@ -328,8 +337,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if self.playback_timing:
 				self.playback_timing_url = url
 				self.playback_timing['kodi_play_started'] = monotonic()
+			self.startup_expected_url = url
 			self.play(url, listitem)
-			start_deadline = monotonic() + PLAYBACK_START_TIMEOUT
+			start_deadline = monotonic() + (AUTOPLAY_FALLBACK_START_TIMEOUT if self.startup_fast_retry else PLAYBACK_START_TIMEOUT)
 			while self.playback_event is None and monotonic() < start_deadline:
 				if kodi_utils.monitor.waitForAbort(0.1): return
 			if self.playback_event is not True:

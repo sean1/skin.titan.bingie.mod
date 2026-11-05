@@ -626,6 +626,7 @@ class SportsProgress:
 		outcome = 'unavailable'
 		revision = 0
 		last_cleaned = []
+		first_feed = False
 		try:
 			from menus import livetv
 			statuses, unavailable = [], []
@@ -633,7 +634,7 @@ class SportsProgress:
 			if not account or livetv._feed_accounts_fingerprint() != request['accounts']: raise ValueError('Account changed')
 			secrets = [str(a.get(key) or '') for _, a in livetv._sports_accounts(livetv._load()) for key in ('username', 'password')]
 			def publish(groups, unavailable_value, status_values, complete):
-				nonlocal revision, last_cleaned
+				nonlocal revision, last_cleaned, first_feed
 				cleaned = []
 				for key, feeds in groups.items():
 					safe_feeds = {}
@@ -651,6 +652,9 @@ class SportsProgress:
 				if len(encoded.encode('utf-8')) > _RESULT_LIMIT: raise ValueError('Result too large')
 				last_cleaned = cleaned
 				self.results.put((request['id'], encoded))
+				if not first_feed and any(feeds for _, feeds in cleaned):
+					record_timing('first_feed', time.monotonic() - started, request.get('sport', ''), 'ok' if complete else 'partial')
+					first_feed = True
 			groups, _ = livetv._sports_catalog_groups(account, request['sport'], request['reload'], on_status=lambda created, stale: statuses.append((created, stale)), fixtures=request['fixtures'],
 				status_sink=unavailable.append, notify_stale=False, on_partial=lambda groups, unavailable_value, status_values: publish(groups, unavailable_value, status_values, False))
 			publish(groups, unavailable[-1] if unavailable else '', statuses, True)

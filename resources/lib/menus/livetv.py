@@ -42,6 +42,7 @@ _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
 _GUIDE_FRESH_SECONDS = 2 * 60 * 60
 _GUIDE_MATCH_SLOTS = threading.BoundedSemaphore(2)
+_DIRECT_MATCH_SLOTS = threading.BoundedSemaphore(2)
 _CATALOG_PREFETCH_SLOTS = threading.BoundedSemaphore(4)
 _SAVED_MATCH_SLOTS = threading.BoundedSemaphore(2)
 _SPORTS_SEARCH_SECONDS = 45
@@ -304,6 +305,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			if not notify_stale: kwargs['notify_stale'] = False
 			kwargs['on_status'] = lambda created, stale: account_status.append((created, stale))
 			kwargs['on_source'] = sources.append
+			kwargs['on_timing'] = lambda phase, elapsed, outcome: _sports.record_timing(phase, elapsed, sport, outcome)
 			if catalog_fetch:
 				# The overview coalesces requests and limits the owning download;
 				# waiters must not occupy slots needed by other providers.
@@ -311,14 +313,17 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 				streams = catalog_fetch(identity, account, **kwargs)
 				if isinstance(streams, list): outcome = sources[-1] if sources else 'ok'
 				return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
+			queued = time.monotonic()
 			while not prefetch_canceled.is_set() and time.monotonic() < deadline:
 				if not _CATALOG_PREFETCH_SLOTS.acquire(timeout=min(0.1, max(0, deadline - time.monotonic()))): continue
 				try:
+					_sports.record_timing('catalog_queue', time.monotonic() - queued, sport, 'ok')
 					if prefetch_canceled.is_set() or time.monotonic() >= deadline: break
 					streams = _catalog(account, 'get_live_streams', **kwargs)
 					if isinstance(streams, list): outcome = sources[-1] if sources else 'ok'
 					return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
 				finally: _CATALOG_PREFETCH_SLOTS.release()
+			_sports.record_timing('catalog_queue', time.monotonic() - queued, sport, 'unavailable')
 			return identity, [], False, account_status
 		except (OSError, HTTPException, ValueError, TypeError): return identity, [], False, account_status
 		finally: _sports.record_timing('catalog_fetch', time.monotonic() - started, sport, outcome)
@@ -414,12 +419,21 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 				return True, timed_match('guide_match', lambda: _sports_guide_groups(account, streams, sport, fixtures, local, time.time()))
 			finally: _GUIDE_MATCH_SLOTS.release()
 		return False, {}
+	def match_groups(streams):
+		while not prefetch_canceled.is_set() and time.monotonic() < deadline:
+			if not _DIRECT_MATCH_SLOTS.acquire(timeout=min(0.1, max(0, deadline - time.monotonic()))): continue
+			try:
+				if prefetch_canceled.is_set() or time.monotonic() >= deadline: return False, {}
+				return True, timed_match('direct_match', lambda: direct_groups(streams))
+			finally: _DIRECT_MATCH_SLOTS.release()
+		return False, {}
 	pool = prefetch_pool or ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts))))
 	guide_pool = ThreadPoolExecutor(max_workers=1)
+	match_pool = ThreadPoolExecutor(max_workers=min(2, max(1, len(accounts))))
 	saved_pool = ThreadPoolExecutor(max_workers=min(2, max(1, len(accounts))))
 	try:
 		catalog_futures = prefetched if prefetched is not None else {pool.submit(fetch, entry) for entry in accounts}
-		guide_futures = {}
+		guide_futures, match_futures, pending_statuses = {}, {}, {}
 		saved_futures, completed_accounts = {}, set()
 		# Start the provider requests first, then offer saved direct matches while
 		# they run. The ordinary refresh remains authoritative when it completes.
@@ -447,15 +461,15 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 					finally: _SAVED_MATCH_SLOTS.release()
 				return identity, None, None
 			saved_futures = {saved_pool.submit(saved_match, entry): entry[0] for entry in accounts}
-		while catalog_futures or guide_futures or saved_futures:
-			futures = catalog_futures | guide_futures.keys() | saved_futures.keys()
+		while catalog_futures or guide_futures or saved_futures or match_futures:
+			futures = catalog_futures | guide_futures.keys() | saved_futures.keys() | match_futures.keys()
 			done = {future for future in futures if future.done()}
 			if not done:
 				remaining = deadline - time.monotonic()
 				if remaining > 0: done, _ = wait(futures, timeout=remaining, return_when=FIRST_COMPLETED)
 			if not done:
 				elapsed = time.monotonic() - (deadline - _SPORTS_SEARCH_SECONDS)
-				for category, pending in (('catalog', catalog_futures), ('guide', guide_futures), ('saved', saved_futures)):
+				for category, pending in (('catalog', catalog_futures), ('guide', guide_futures), ('saved', saved_futures), ('match', match_futures)):
 					if any(not future.done() for future in pending): _sports.record_timing('lookup_deadline', elapsed, sport, category)
 				failed = True
 				break
@@ -472,6 +486,30 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 						account_statuses[identity] = (created, True)
 						publish()
 					continue
+				ready_matches = [future for future in match_futures if future.done()]
+				if ready_matches:
+					future = ready_matches[0]
+					identity = match_futures.pop(future)
+					try: available, local = future.result()
+					except (OSError, HTTPException, ValueError, TypeError):
+						failed = True
+						publish()
+						continue
+					if not available:
+						failed = True
+						continue
+					completed_accounts.add(identity)
+					status = pending_statuses.pop(identity, None)
+					if status: account_statuses[identity] = status
+					else: account_statuses.pop(identity, None)
+					for saved_future, saved_identity in list(saved_futures.items()):
+						if saved_identity == identity:
+							saved_futures.pop(saved_future)
+							saved_future.cancel()
+					account_groups[identity] = local
+					publish()
+					guide_futures[guide_pool.submit(guide_groups, account_map[identity], account_streams[identity], local)] = identity
+					continue
 				future = next(future for future in guide_futures if future.done())
 				identity = guide_futures.pop(future)
 				available, guide = future.result()
@@ -486,28 +524,23 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 				if not available:
 					publish()
 					continue
-				completed_accounts.add(identity)
-				for saved_future, saved_identity in list(saved_futures.items()):
-					if saved_identity == identity:
-						saved_futures.pop(saved_future)
-						saved_future.cancel()
-				if account_status: account_statuses[identity] = account_status[-1]
-				elif available: account_statuses.pop(identity, None)
+				pending_statuses[identity] = account_status[-1] if account_status else None
 				streams = [dict(stream, _provider=identity, _primary=identity == primary_id) if len(accounts) > 1 or not legacy else stream for stream in streams if isinstance(stream, dict)]
 				account_streams[identity] = streams
 				if target_fixtures and on_partial:
 					selected = timed_match('direct_match', lambda: selected_groups(streams))
 					if selected:
+						completed_accounts.add(identity)
+						if account_status: account_statuses[identity] = account_status[-1]
+						else: account_statuses.pop(identity, None)
 						account_groups[identity] = {selected_fixture: selected}
 						publish()
-				local = timed_match('direct_match', lambda: direct_groups(streams))
-				account_groups[identity] = local
-				publish()
-				guide_futures[guide_pool.submit(guide_groups, account_map[identity], streams, local)] = identity
+				match_futures[match_pool.submit(match_groups, streams)] = identity
 	finally:
 		prefetch_canceled.set()
 		pool.shutdown(wait=False, cancel_futures=True)
 		guide_pool.shutdown(wait=False, cancel_futures=True)
+		match_pool.shutdown(wait=False, cancel_futures=True)
 		saved_pool.shutdown(wait=False, cancel_futures=True)
 	groups = collect()
 	all_streams = [stream for identity, _ in accounts for stream in account_streams.get(identity, [])]
@@ -689,7 +722,7 @@ def _finish(success=True):
 	xbmcplugin.endOfDirectory(_handle(), succeeded=success, cacheToDisc=False)
 
 
-def _request(account, action, *, _deadline=None, **params):
+def _request(account, action, *, _deadline=None, _on_timing=None, **params):
 	query = {'username': account['username'], 'password': account['password'], 'action': action, **params}
 	url = account['server'] + '/player_api.php?' + urlencode(query)
 	headers = {'User-Agent': 'BINGIE Live TV'}
@@ -698,24 +731,37 @@ def _request(account, action, *, _deadline=None, **params):
 	if _deadline is not None:
 		timeout = min(timeout, _deadline - time.monotonic())
 		if timeout <= 0: raise OSError('Live TV catalog timed out')
-	with _vpn_open(url, headers=headers, timeout=timeout) as response:
+	started = time.monotonic()
+	try: response = _vpn_open(url, headers=headers, timeout=timeout)
+	except Exception:
+		if _on_timing: _on_timing('catalog_open', time.monotonic() - started, 'unavailable')
+		raise
+	with response:
+		if _on_timing: _on_timing('catalog_open', time.monotonic() - started, 'ok')
+		started = time.monotonic()
 		encoding = response.headers.get('Content-Encoding', '').strip().lower() if action == 'get_live_streams' else ''
 		if encoding not in ('', 'identity', 'gzip'): raise ValueError('Unsupported response encoding')
-		if _deadline is None:
-			data = response.read(_API_RESPONSE_LIMIT + 1)
-		else:
-			# read1 returns as bytes arrive, allowing a wall deadline even when a
-			# provider trickles a response without ever hitting the socket timeout.
-			chunks, size = [], 0
-			while True:
-				if time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
-				chunk = response.read1(min(65536, _API_RESPONSE_LIMIT + 1 - size)) if hasattr(response, 'read1') else response.read(1)
-				if not chunk: break
-				size += len(chunk)
-				if size > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
-				chunks.append(chunk)
-			data = b''.join(chunks)
-		if len(data) > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
+		try:
+			if _deadline is None:
+				data = response.read(_API_RESPONSE_LIMIT + 1)
+			else:
+				# read1 returns as bytes arrive, allowing a wall deadline even when a
+				# provider trickles a response without ever hitting the socket timeout.
+				chunks, size = [], 0
+				while True:
+					if time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
+					chunk = response.read1(min(65536, _API_RESPONSE_LIMIT + 1 - size)) if hasattr(response, 'read1') else response.read(1)
+					if not chunk: break
+					size += len(chunk)
+					if size > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
+					chunks.append(chunk)
+				data = b''.join(chunks)
+			if len(data) > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
+		except Exception:
+			if _on_timing: _on_timing('catalog_read', time.monotonic() - started, 'unavailable')
+			raise
+		if _on_timing: _on_timing('catalog_read', time.monotonic() - started, 'ok')
+	started = time.monotonic()
 	if encoding == 'gzip':
 		try:
 			with gzip.GzipFile(fileobj=io.BytesIO(data)) as compressed: data = compressed.read(_API_RESPONSE_LIMIT + 1)
@@ -723,15 +769,17 @@ def _request(account, action, *, _deadline=None, **params):
 		if len(data) > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
 	if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
 	result = json.loads(data.decode('utf-8-sig'))
+	if _on_timing: _on_timing('catalog_parse', time.monotonic() - started, 'ok')
 	if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
 	return result
 
 
-def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=None, notify_stale=True, _deadline=None, **params):
+def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=None, on_timing=None, notify_stale=True, _deadline=None, **params):
 	on_stale = (lambda: _error(_vpn_failure_message() or 'Showing saved channels; check the VPN or provider connection.')) if notify_stale else None
-	fetch = _request if _deadline is None else lambda account, action, **options: _request(account, action, _deadline=_deadline, **options)
+	fetch = _request if _deadline is None and on_timing is None else lambda account, action, **options: _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
 	deadline_option = {} if _deadline is None else {'_deadline': _deadline}
 	if on_source: deadline_option['on_source'] = on_source
+	if on_timing: deadline_option['on_timing'] = on_timing
 	return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
 
 

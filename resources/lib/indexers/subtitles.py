@@ -153,6 +153,7 @@ class Subtitles(kodi_utils.xbmc_player):
 			'quality': quality or '', 'extra_info': extra_info or '', 'year': year or '', 'tmdb_id': tmdb_id or '', 'mediatype': self.mediatype, 'title': self.title
 		}
 		self.provider_manager = None
+		self.early_remote_attempt = None
 		self.automatic, self.automatic_subtitle_index, self.automatic_subtitle_enabled = False, None, None
 		self.early_subtitle_observation = None
 		self.media_identity = stable_media_identity(imdb_id, tmdb_id, self.mediatype, self.title, year, season, episode)
@@ -203,11 +204,13 @@ class Subtitles(kodi_utils.xbmc_player):
 	def _manager(self):
 		if self.provider_manager is None:
 			from indexers.subtitle_providers import ProviderManager
-			self.provider_manager = ProviderManager(self.media, self._cancelled)
+			self.provider_manager = ProviderManager(self.media, self._cancelled, preferred_language=self.languages[0],
+				try_early_match=self._try_early_remote_subtitle if self.automatic else None)
 		return self.provider_manager
 
 	def subtitles_search(self):
 		try: return self._manager().search()
+		except SubtitleCancelled: raise
 		except Exception as error:
 			from indexers.subtitle_providers import ProviderCancelled
 			if isinstance(error, ProviderCancelled): raise SubtitleCancelled
@@ -355,28 +358,42 @@ class Subtitles(kodi_utils.xbmc_player):
 
 	def _searched_subs(self):
 		candidates = self.subtitles_search()
+		if candidates is None: return True
 		self._ensure_current_playback()
 		self._set_context(candidates)
 		eligible = [candidate for candidate in candidates if candidate.get('lang') in self.languages and subtitle_coverage(candidate) != 'partial']
 		eligible.sort(key=lambda candidate: (self.languages.index(candidate['lang']), ('full', 'unknown').index(subtitle_coverage(candidate))))
 		if not eligible: return self._notify_no_results()
 		for candidate in eligible:
-			self._ensure_current_playback()
-			payload = self.download_candidate({**candidate, 'full_dialogue_only': True})
-			if not payload: continue
-			extension = self._safe_extension(payload.get('extension'))
-			if not extension: continue
-			final_path = '%s%s' % (self.subtitle_path, self._search_filename(candidate['lang'], extension))
-			if not self.save_subtitle(payload, final_path): continue
-			self._ensure_current_playback()
-			try: self.setSubtitles(final_path)
-			except Exception as error:
-				_failure('attach', 'runtime', type(error).__name__)
-				try: kodi_utils.delete_file(final_path)
-				except Exception: pass
-				continue
-			return True
+			if self._remote_candidate_key(candidate) == getattr(self, 'early_remote_attempt', None): continue
+			if self._attach_remote_subtitle(candidate): return True
 		return self._notify_failure()
+
+	@staticmethod
+	def _remote_candidate_key(candidate):
+		return candidate.get('provider'), candidate.get('id'), candidate['lang']
+
+	def _try_early_remote_subtitle(self, candidate):
+		self.early_remote_attempt = self._remote_candidate_key(candidate)
+		return self._attach_remote_subtitle(candidate)
+
+	def _attach_remote_subtitle(self, candidate):
+		self._ensure_current_playback()
+		payload = self.download_candidate({**candidate, 'full_dialogue_only': True})
+		if not payload: return False
+		extension = self._safe_extension(payload.get('extension'))
+		if not extension: return False
+		self._ensure_current_playback()
+		final_path = '%s%s' % (self.subtitle_path, self._search_filename(candidate['lang'], extension))
+		if not self.save_subtitle(payload, final_path): return False
+		self._ensure_current_playback()
+		try: self.setSubtitles(final_path)
+		except Exception as error:
+			_failure('attach', 'runtime', type(error).__name__)
+			try: kodi_utils.delete_file(final_path)
+			except Exception: pass
+			return False
+		return True
 
 	@staticmethod
 	def _safe_extension(extension):

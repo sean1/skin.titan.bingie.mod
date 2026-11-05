@@ -14,6 +14,7 @@ fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 extras_str, options_str = ls(32645), ls(32646)
 clearprog_str, season_str, unaired_label = ls(32651), ls(32537), 'cyan'
+ALL_EPISODES_SEASONS_PER_PAGE = 2
 
 class BaseSeason:
 	def __init__(self, params):
@@ -38,9 +39,9 @@ class BaseSeason:
 		else: content_type, view_type = 'seasons', 'view.seasons'
 		kodi_utils.add_items(__handle__, self.build_season_list(self.params))
 		kodi_utils.set_category(__handle__, self.params.get('show_title'))
-		kodi_utils.set_sort_method(__handle__, content_type)
+		kodi_utils.set_sort_method(__handle__, 'unsorted' if getattr(self, 'paged_episodes', False) else content_type)
 		kodi_utils.set_content(__handle__, content_type)
-		kodi_utils.end_directory(__handle__, False if is_widget or self.params.get('actor_id') else None)
+		kodi_utils.end_directory(__handle__, False if is_widget or self.params.get('actor_id') or getattr(self, 'paged_episodes', False) else None)
 		kodi_utils.set_view_mode(view_type, content_type, is_widget)
 
 	def build_season_list(self, params):
@@ -134,7 +135,26 @@ class Episodes(BaseSeason):
 		show = MetaParser(params['tmdb_id'], self.meta_user_info, self.current_date,
 			self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup)
 		if params.get('season') == 'all':
-			episodes_data = all_episodes_meta(show.meta, self.meta_user_info, Thread, include_specials=show_specials())
+			include_specials = show_specials()
+			season_data = []
+			if not params.get('actor_id'):
+				try: season_data = sorted((season for season in show.meta.get('season_data', []) if include_specials or season.get('season_number') not in (0, '0')), key=lambda season: int(season['season_number']))
+				except (TypeError, ValueError, KeyError, AttributeError): season_data = []
+			self.paged_episodes = len(season_data) > ALL_EPISODES_SEASONS_PER_PAGE
+			if self.paged_episodes:
+				pages = (len(season_data) + ALL_EPISODES_SEASONS_PER_PAGE - 1) // ALL_EPISODES_SEASONS_PER_PAGE
+				try: page = min(pages, max(1, int(params.get('page', '1'))))
+				except (TypeError, ValueError): page = 1
+				start = (page - 1) * ALL_EPISODES_SEASONS_PER_PAGE
+				meta = {**show.meta, 'season_data': season_data[start:start + ALL_EPISODES_SEASONS_PER_PAGE]}
+			else: meta = show.meta
+			episodes_data = all_episodes_meta(meta, self.meta_user_info, Thread, include_specials=include_specials)
+			if self.paged_episodes:
+				def episode_order(item):
+					try: return int(item['season']), int(item['episode'])
+					except (TypeError, ValueError, KeyError, AttributeError): return float('inf'), float('inf')
+				episodes_data.sort(key=episode_order)
+				if page > 1: self._add_episode_page(params, page - 1, 'Previous page')
 		else: episodes_data = season_episodes_meta(params['season'], show.meta, self.meta_user_info)
 		if params.get('actor_id'):
 			from menus.actor_episodes import filter_actor_episodes
@@ -206,8 +226,16 @@ class Episodes(BaseSeason):
 					videoinfo.setResumePoint(*set_resumetime(resumetime, progress, videoinfo.getDuration()))
 				self.append((url_params, listitem, False))
 			except: pass
+		if getattr(self, 'paged_episodes', False) and page < pages: self._add_episode_page(params, page + 1, 'Next page')
 		self.params['show_title'] = '%s — Episodes featuring %s' % (show.title, params.get('actor_name') or 'this actor') if params.get('actor_id') else show.title
 		return self.items
+
+	def _add_episode_page(self, params, page, label):
+		item = kodi_utils.make_listitem()
+		item.setLabel(label)
+		item.setProperty('BingieEpisodePage', 'true')
+		item.setArt({'icon': poster_empty, 'thumb': poster_empty})
+		self.append((build_url({**params, 'mode': 'build_episode_list', 'page': page}), item, True))
 
 class MetaParser:
 	direct = 'tmdb_id', 'tvdb_id', 'imdb_id', 'title', 'year', 'total_seasons', 'total_aired_eps', 'duration'

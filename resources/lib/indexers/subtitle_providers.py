@@ -6,7 +6,7 @@ import re
 import stat
 import unicodedata
 import zipfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
 from threading import Lock
@@ -23,6 +23,7 @@ LANGUAGE_CODES = {'en': 'eng', 'eng': 'eng', 'english': 'eng', 'vi': 'vie', 'vie
 SUPPORTED_EXTENSIONS = ('.srt', '.ass', '.ssa', '.vtt', '.sub')
 RETRYABLE_STATUS_CODES = (429, 502, 503, 504)
 REQUEST_TIMEOUT = 20.0
+EARLY_MATCH_GRACE = 0.5
 MAX_ARCHIVE_BYTES = 10 * 1024 * 1024
 MAX_SUBTITLE_BYTES = 5 * 1024 * 1024
 MAX_ARCHIVE_ENTRIES = 100
@@ -857,8 +858,9 @@ def public_candidate(candidate):
 
 
 class ProviderManager:
-	def __init__(self, media, cancelled=None, config=None, provider_classes=None):
+	def __init__(self, media, cancelled=None, config=None, provider_classes=None, *, preferred_language=None, try_early_match=None):
 		self.media, self.cancelled = media, cancelled
+		self.preferred_language, self.try_early_match = preferred_language, try_early_match
 		if config is None: config, self.config_error = _load_provider_config()
 		else: self.config_error = ''
 		classes = PROVIDER_CLASSES if provider_classes is None else provider_classes
@@ -866,20 +868,39 @@ class ProviderManager:
 		self.failed_providers = []
 
 	def search(self):
+		"""Return ranked results, or None when automatic playback attached an early match."""
 		if not self.providers: return []
 		results = []
+		try_early_match, grace_deadline = self.try_early_match, None
 		executor = ThreadPoolExecutor(max_workers=len(self.providers), thread_name_prefix='subtitle-provider')
 		try:
 			futures = {executor.submit(provider.search): name for name, provider in self.providers.items()}
-			for future in as_completed(futures):
-				name = futures[future]
-				try:
-					results.extend(future.result() or ())
-					if getattr(self.providers[name], 'failed', False): self.failed_providers.append(name)
-				except ProviderCancelled: raise
-				except Exception as error:
-					self.failed_providers.append(name)
-					_log('search', 'failed', name, type(error).__name__)
+			while futures:
+				timeout = EARLY_MATCH_GRACE if self.try_early_match else None
+				if grace_deadline is not None: timeout = max(0, grace_deadline - monotonic())
+				done, _ = wait(futures, timeout=timeout, return_when=FIRST_COMPLETED)
+				if self.try_early_match: _cancelled(self.cancelled)
+				for future in done:
+					name = futures.pop(future)
+					try:
+						results.extend(future.result() or ())
+						if getattr(self.providers[name], 'failed', False): self.failed_providers.append(name)
+					except ProviderCancelled: raise
+					except Exception as error:
+						self.failed_providers.append(name)
+						_log('search', 'failed', name, type(error).__name__)
+				if not futures or try_early_match is None or not done and grace_deadline is None: continue
+				if grace_deadline is not None and monotonic() < grace_deadline: continue
+				candidate = next((item for item in rank_candidates(results, self.media)
+					if item['lang'] == self.preferred_language and item['sync'] and subtitle_coverage(item) == 'full'), None)
+				if candidate is None: continue
+				if grace_deadline is None:
+					grace_deadline = monotonic() + EARLY_MATCH_GRACE
+					continue
+				_cancelled(self.cancelled)
+				if try_early_match(candidate): return None
+				# Keep the pending provider results for the ordinary fallback.
+				try_early_match, grace_deadline = None, None
 		finally: executor.shutdown(wait=False, cancel_futures=True)
 		_cancelled(self.cancelled)
 		return rank_candidates(results, self.media)

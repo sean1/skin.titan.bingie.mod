@@ -438,7 +438,8 @@
                 <!-- main container -->
                 <control type="fixedlist" id="525">
 					<visible>Container.Content(episodes)</visible>
-					<onclick>Action(Info)</onclick>
+					<onclick condition="String.IsEqual(ListItem.Property(BingieEpisodePage),true)">ActivateWindow(Videos,$ESCINFO[ListItem.FileNameAndPath],return)</onclick>
+					<onclick condition="!String.IsEqual(ListItem.Property(BingieEpisodePage),true)">Action(Info)</onclick>
                     <viewtype label="31827">wide</viewtype>
                     <top>-153</top>
                     <posx>781</posx>

@@ -14,8 +14,7 @@ _MONTH_NUMBERS.update({name[:3]: index for index, name in enumerate(_MONTHS, 1)}
 _MONTH_NUMBERS['sept'] = 9
 _METADATA_DATE = re.compile(r'(?<![\d/.-])(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/](?:\d{4}|\d{2})|'
 	r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?|'
-	r'\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:,?\s+\d{4})?|'
-	r'(?!24/07(?:\D|$))\d{2}/\d{2})(?![\d/.-])', re.I)
+	r'\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:,?\s+\d{4})?)(?![\d/.-])', re.I)
 _EVENT = re.compile(r"^([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?|at|@)\s+([\w .&'’\-]{2,80}?)$", re.I)
 _NON_LIVE_TITLE = re.compile(r'\b(?:end|ended|highlights?|recaps?|previews?|replays?|delayed|encore|re-?runs?|repeats?|recorded)\b', re.I)
 _WORD = re.compile(r'\w+')

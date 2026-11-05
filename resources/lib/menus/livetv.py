@@ -215,17 +215,6 @@ def _sports_accounts(primary):
 		return [('primary', primary)] if primary else []
 
 
-def _feed_provider_labels():
-	"""Name configured providers without exposing their opaque account identities."""
-	labels, backup = {}, 0
-	for identity, _ in _sports_accounts(_load()):
-		if identity == 'primary': labels[identity] = 'Primary'
-		else:
-			backup += 1
-			labels[identity] = 'Backup %d' % backup
-	return labels
-
-
 def _feed_display_name(name):
 	"""Hide recognizable provider clocks while leaving playback metadata intact."""
 	name = re.sub(r'\s+@\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}\s+\d{1,2}:\d{2}\s*(?:am|pm)?\s*:\s*', ' · ', name, flags=re.I)
@@ -235,9 +224,8 @@ def _feed_display_name(name):
 	return name
 
 
-def _feed_display_label(number, reference, name, providers):
-	identity = reference.partition(':')[0] if ':' in reference else 'primary'
-	return ' · '.join(part for part in ('Feed %d' % number, providers.get(identity, ''), _feed_display_name(name)) if part)
+def _feed_display_label(number, name):
+	return ' · '.join(part for part in ('Feed %d' % number, _feed_display_name(name)) if part)
 
 
 def _sports_primary():
@@ -911,7 +899,6 @@ def news(params):
 			_item(label, {'mode': 'livetv.news', 'channel': key}, icon=icon, extra_context=refresh, extra_properties={'BingieNewsStatus': status})
 	else:
 		feeds = groups.get(channel, [])
-		providers = _feed_provider_labels()
 		icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % channel
 		counts = {}
 		for ref, _ in feeds: counts[ref] = counts.get(ref, 0) + 1
@@ -932,7 +919,7 @@ def news(params):
 			name = str(feed.get('name') or _NEWS_LABELS[channel])
 			play_params = _play_params(ref, name, 'news') if ref in tokens else _play_params(ref, name)
 			if ref in tokens: play_params['feeds_token'] = tokens[ref]
-			_item(_feed_display_label(index, ref, name, providers), play_params, False, icon, extra_context=refresh)
+			_item(_feed_display_label(index, name), play_params, False, icon, extra_context=refresh)
 		if feed_cache:
 			snapshot_accounts = {feed.get('_news_accounts') for _, feed in choices}
 			if len(snapshot_accounts) == 1 and isinstance(next(iter(snapshot_accounts)), str): _save_feed_matches(feed_cache, expected_accounts=next(iter(snapshot_accounts)))
@@ -2231,13 +2218,12 @@ def match_feeds(params):
 		playable_choices = [(ref, feed) for ref, feed in choices if not feed.get('_unavailable')]
 		feed_cache = {}
 		if choices:
-			providers = _feed_provider_labels()
 			for number, (stream_id, stream) in enumerate(choices, 1):
 				if stream.get('_unavailable'):
 					_item('Feed %d — no longer available' % number, {}, False, playable=False)
 					continue
 				name = str(stream.get('name') or 'Live channel')
-				label = _feed_display_label(number, stream_id, name, providers)
+				label = _feed_display_label(number, name)
 				_item(label, _matched_play_params(stream_id, name, sport, playable_choices if unique.get(stream_id) else [], feed_cache), False)
 		elif state in ('ready', 'ready_saved'):
 			_item('No matching live feeds are currently available', {}, False, playable=False)

@@ -60,6 +60,14 @@ class source:
 				name = source_utils.clean_name(file_title[0])
 
 				release = stremio_utils.classify_release(context, name)
+				if release is None and 'season' in context and len(file_title) > 1:
+					# Torrentio may return a pack title followed by the selected episode filename.
+					# Classify that filename independently so both the show and episode must match.
+					filename = file_title[1]
+					if re.search(r'\.(?:mkv|mp4|avi|m4v|mov|wmv|ts|webm)$', filename, re.I):
+						name = source_utils.clean_name(filename)
+						if re.search(re.escape(context['hdlr']) + r'(?!\d)', name, re.I) and source_utils.check_title(context['title'], context['aliases'], name, context['hdlr'], context['year']):
+							release = stremio_utils.classify_release(context, name)
 				if release is None: continue
 				url = stremio_utils.magnet_url(hash, name)
 				# if not episode_title: #filter for eps returned in movie query (rare but movie and show exists for Run in 2020)

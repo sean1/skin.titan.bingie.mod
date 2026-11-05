@@ -4,7 +4,7 @@ from time import monotonic
 
 
 EXTERNAL_PROVIDERS = (
-	'bitmagnet', 'bitsearch', 'comet', 'dmm', 'mediafusion', 'nyaa',
+	'bitmagnet', 'bitsearch', 'comet', 'mediafusion', 'nyaa',
 	'piratebay', 'torrentdownload', 'torrentio', 'torrentsdb', 'torz', 'zilean'
 )
 CORE_EXTERNAL_PROVIDERS = frozenset(('comet', 'mediafusion', 'torrentio', 'zilean'))

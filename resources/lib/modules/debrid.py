@@ -223,18 +223,9 @@ class DebridCheck:
 		return self.result()
 
 	def external_check_cache(self, unchecked_hashes):
-		checked_hashes, tio_hashes, dmm_hashes = [], [], []
-		threads = (
-			Thread(target=lambda: tio_hashes.extend(_tio_results(self.imdb, self.season, self.episode))),
-			Thread(target=lambda: dmm_hashes.extend(_dmm_results(unchecked_hashes, self.imdb)))
-		)
-		for i in threads: i.start()
-		for i in threads: i.join()
-		checked_hashes.extend(tio_hashes)
-		checked_hashes.extend(dmm_hashes)
-		return checked_hashes
+		return _tio_results(self.imdb, self.season, self.episode)
 
-import re, random, requests
+import re, requests
 from fenom.client import randomagent
 
 session = requests.session()
@@ -282,11 +273,6 @@ def _tio_results(imdb, season, episode):
 	key = ('torrentio', imdb, season, episode)
 	return _coalesced_auxiliary_results(key, lambda collector: tio_check_cache(imdb, season, episode, collector))
 
-def _dmm_results(unchecked_hashes, imdb):
-	hashes = tuple(sorted(set(unchecked_hashes)))
-	key = ('dmm', imdb, hashes)
-	return _coalesced_auxiliary_results(key, lambda collector: dmm_check_cache(hashes, imdb, collector))
-
 def tio_check_cache(imdb, season, episode, collector):
 	if str(season).isdigit(): url = 'series/%s:%s:%s.json' % (imdb, season, episode)
 	else: url = 'movie/%s.json' % (imdb)
@@ -303,25 +289,4 @@ def tio_check_cache(imdb, season, episode, collector):
 		return True
 	except Exception as e:
 		kodi_utils.logger('tio error', str(e))
-		return False
-
-def dmm_check_cache(unchecked_hashes_chunk, imdb, collector): # DMM API Allows max 100 hashes per request.
-	""" do not thread multiple calls, abusing the api will get it turned off
-		100 sample size should be enough """
-	from magneto.dmm import get_secret
-	unchecked_hashes_chunk = [i for i in unchecked_hashes_chunk if len(i) == 40]
-	if len(unchecked_hashes_chunk) > 100: unchecked_hashes_chunk = random.sample(unchecked_hashes_chunk, 100)
-	url = 'https://debridmediamanager.com/api/availability/check'
-	dmmProblemKey, solution = get_secret()
-	data = {'dmmProblemKey': dmmProblemKey, 'solution': solution, 'imdbId': imdb, 'hashes': unchecked_hashes_chunk}
-	try:
-		results = session.post(url, json=data, timeout=7.05)
-		results.raise_for_status()
-		payload = results.json()
-		files = payload.get('available') if isinstance(payload, dict) else None
-		if not isinstance(files, list) or not all(isinstance(file, dict) and isinstance(file.get('hash'), str) and len(file['hash']) == 40 for file in files): raise ValueError('invalid DMM response schema')
-		collector.extend(file['hash'] for file in files)
-		return True
-	except Exception as e:
-		kodi_utils.logger('dmm error', str(e))
 		return False

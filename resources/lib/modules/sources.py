@@ -1052,7 +1052,7 @@ class ExternalSource:
 		if pack in pack_check: s_check, e_check = '' if pack == show_display else self.season, ''
 		else: s_check, e_check = self.season, self.episode
 		epc = ExternalProvidersCache()
-		cache_provider = provider + ':tv_identity_v3'
+		cache_provider = provider + (':tv_identity_v4' if provider == 'torrentio' else ':tv_identity_v3')
 		try:
 			outcome = epc.get(cache_provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
 			if outcome is None:

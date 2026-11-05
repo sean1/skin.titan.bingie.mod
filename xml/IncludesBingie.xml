@@ -98,6 +98,25 @@
         </control>
     </include>
 
+    <include name="Spotlight_Rating_Badge">
+        <control type="button" id="6113">
+            <visible>!String.IsEmpty(Control.GetLabel(6113))</visible>
+            <enable>false</enable>
+            <posy>7</posy>
+            <height>36</height>
+            <width>auto</width>
+            <align>center</align>
+            <aligny>center</aligny>
+            <font>Bold22</font>
+            <textoffsetx>12</textoffsetx>
+            <textcolor>ff9ceab3</textcolor>
+            <disabledcolor>ff9ceab3</disabledcolor>
+            <texturenofocus colordiffuse="ff183b2b" border="10">bingie/square-rounded.png</texturenofocus>
+            <label>$VAR[BingieRating,TMDB ]</label>
+            <include>Default_Visible_Fade</include>
+        </control>
+    </include>
+
 	<!-- Percentage Based Rating for Episodes in Bingie Season View -->
     <include name="Percentage_Rating_Details_Row_Seasons">
         <control type="label" id="61132">
@@ -254,6 +273,8 @@
 
 	<!-- Spotlight Row Details Gap -->
 	<include name="SpotlightRowDetails">
+		<param name="rating_badge" default="false" />
+		<definition>
 		<control type="grouplist">
 			<orientation>horizontal</orientation>
 			<usecontrolcoords>true</usecontrolcoords>
@@ -261,7 +282,8 @@
 			<height>50</height>
 			<itemgap>15</itemgap>
 			<include>New_Tag_Details_Row</include>
-            <include>Percentage_Rating_Details_Row</include>
+			<include condition="$PARAM[rating_badge]">Spotlight_Rating_Badge</include>
+			<include condition="!$PARAM[rating_badge]">Percentage_Rating_Details_Row</include>
 			<include>Year_Premiered_Details_Row</include>
 			<include>MPAA_Details_Row</include>
 			<include>Duration_TotalSeasonsEpisodes_Details_Row</include>
@@ -274,6 +296,7 @@
 			<include>Audio_Channels_Details_Row</include>
 			<include>Audiocodec1</include>
 		</control>
+		</definition>
 	</include>
 
 	<include name="PlaySomethingRowDetails">

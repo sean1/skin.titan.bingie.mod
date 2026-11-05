@@ -153,8 +153,9 @@ def _service_poll_interval(fanart_pending, fanart_stable, preview_active):
 	if fanart_stable: return FOCUSED_FANART_STABLE_POLL
 	return TRAILER_PREVIEW_IDLE_POLL
 
-def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=None):
+def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=None, livetv=None):
 	if wake_event is not None:
+		from modules.livetv_failover import PICKER_BACK, STOP_REQUEST, SWITCH_REQUEST
 		remaining = poll_interval
 		menu_focused = poll_interval == TRAILER_PREVIEW_IDLE_POLL and kodi_utils.get_visibility(MAIN_MENU_FOCUS)
 		while remaining > 0.0:
@@ -163,7 +164,20 @@ def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=No
 				return monitor.abortRequested()
 			delay = min(TRAILER_PREVIEW_ACTIVE_POLL, remaining)
 			# Kodi dispatches Python playback callbacks inside waitForAbort, not Event.wait.
-			if monitor.waitForAbort(delay): return True
+			# Check Live TV input more often without running the entire service loop more often.
+			wait_remaining = delay
+			while wait_remaining > 0.0:
+				session = livetv.session if livetv else None
+				step = min(0.05, wait_remaining) if session else wait_remaining
+				if monitor.waitForAbort(step): return True
+				wait_remaining -= step
+				if wake_event.is_set():
+					wake_event.clear()
+					return monitor.abortRequested()
+				if session:
+					stop = get_property(STOP_REQUEST) and not (livetv.stop_pending and livetv.stop_ack_queued)
+					picker = session.get('picker')
+					if stop or get_property(SWITCH_REQUEST) or (picker and get_property(PICKER_BACK) == picker): return False
 			remaining -= delay
 			if standings and standings.identity and standings._focused()[0] != standings.identity: return False
 			if menu_focused and not kodi_utils.get_visibility(MAIN_MENU_FOCUS): return False
@@ -974,7 +988,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 			except: pass
 			poll_interval = TRAILER_PREVIEW_IDLE_POLL
 			standings_identity, standings_active_until = '', 0.0
-			while not _wait_for_service_tick(self, poll_interval, self.trailer_preview.wake_event, self.focused_standings):
+			while not _wait_for_service_tick(self, poll_interval, self.trailer_preview.wake_event, self.focused_standings, self.livetv_failover):
 				self._sync_keymap()
 				live_tv_active = self.livetv_failover.tick()
 				if get_property('pov_lite_pause_services'):

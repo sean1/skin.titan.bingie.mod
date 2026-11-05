@@ -163,25 +163,25 @@ def seas_ep_filter(season, episode, release_title, split=False, return_match=Fal
 		return '' if (split or return_match) else False
 
 	season, episode = int(season), int(episode)
-	file_season, file_episode_start, file_episode_end = None, None, None
+	file_season, file_episode_start, file_episode_second = None, None, None
 	g = match.groups()
 
 	if   g[0] is not None:
 		file_season = int(g[0])
 		file_episode_start = int(g[1])
-#		if g[2] is not None: file_episode_end = int(g[2])
+		if g[2] is not None and re.fullmatch(r'[._-]*e(?:p(?:isode)?)?[._-]*', cleaned_title[match.end(2):match.start(3)]):
+			file_episode_second = int(g[2])
 	elif g[3] is not None:
 		file_season = int(g[3])
 		file_episode_start = int(g[4])
-#		if g[5] is not None: file_episode_end = int(g[5])
 	elif g[6] is not None:
 		file_episode_start = int(g[6])
 
 	if file_season is not None and file_season != season:
 		return '' if (split or return_match) else False
 
-	if file_episode_end is not None:
-		ep_matches = file_episode_start <= episode <= file_episode_end
+	if file_episode_second is not None:
+		ep_matches = episode in (file_episode_start, file_episode_second)
 	else: ep_matches = file_episode_start == episode
 
 	if not ep_matches:

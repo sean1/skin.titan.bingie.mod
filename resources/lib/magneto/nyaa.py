@@ -7,6 +7,7 @@ import re
 from urllib.parse import quote_plus, unquote_plus
 from fenom import client
 from fenom import source_utils
+from modules.source_utils import ALTERNATE_EP_RANGE_REGEX
 
 
 class source:
@@ -78,11 +79,13 @@ class source:
 						matching_name = name
 						if 'tvshowtitle' in data:
 							# Nyaa also uses names such as "S1 - 34", whose spaces clean_name turns into dots.
-							marker = r'(?<![a-z0-9])(?:%s|S0*%d[.\-]+0*%d)(?!\d)' % (re.escape(hdlr), int(data['season']), int(data['episode']))
+							marker = r'(?<![a-z0-9])(?:%s|S0*%d[.]*-[.]*0*%d)(?!\d)' % (re.escape(hdlr), int(data['season']), int(data['episode']))
 							match = re.search(marker, name, re.I)
 							if not match: continue
+							suffix = name[match.end():]
+							if ALTERNATE_EP_RANGE_REGEX.match(suffix): continue
 							matching_name = name[:match.start()] + hdlr + name[match.end():]
-							if not source_utils.check_title(title, aliases, matching_name, hdlr, year): continue
+							if not source_utils.check_title(title, aliases, name[:match.start()] + hdlr, hdlr, year): continue
 						elif hdlr not in name: continue
 						if source_utils.remove_lang(name, check_foreign_audio): continue
 						name_info = source_utils.info_from_name(matching_name, title, year, hdlr, episode_title)

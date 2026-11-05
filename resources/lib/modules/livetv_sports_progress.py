@@ -194,6 +194,16 @@ def _fixtures_unavailable(sport, result):
 	return not isinstance(auxiliary, dict) or not isinstance(auxiliary.get('sport_fixtures'), list) or not isinstance(auxiliary.get('status_text'), str) or auxiliary['status_text'].startswith('Live fixtures unavailable')
 
 
+def _fixture_revision(result):
+	request_id = result['id']
+	return request_id + ':primary' if result.get('complete') is False else request_id
+
+
+def _current_primary_fixtures(result):
+	expires = result.get('expires')
+	return isinstance(result.get('fixtures'), list) and isinstance(expires, (int, float)) and not isinstance(expires, bool) and math.isfinite(expires) and time.time() < expires
+
+
 def next_half_hour(timestamp):
 	local = datetime.fromtimestamp(timestamp).astimezone()
 	seconds = (local.minute % 30) * 60 + local.second + local.microsecond / 1000000
@@ -331,7 +341,12 @@ def load_fixtures(sport, force_refresh=False, reload='', url_refresh=False):
 		if request.pop('reload', ''): ku.set_property(_FIXTURE_REQUEST, json.dumps(request, separators=(',', ':')))
 		ku.set_property(_FIXTURE_ACK, request['id'])
 		cached = _cached_fixtures(sport, accounts)
+		if cached is None and _current_primary_fixtures(result): cached = result['fixtures'], result.get('auxiliary')
 		return ('cached_unavailable', cached[0], cached[1]) if cached is not None else ('unavailable', None, None)
+	if result.get('complete') is False:
+		if not _current_primary_fixtures(result): return 'pending', None, None
+		ku.set_property(_FIXTURE_ACK, _fixture_revision(result))
+		return 'partial', result['fixtures'], result.get('auxiliary')
 	return 'ready', result['fixtures'], result.get('auxiliary')
 
 
@@ -437,7 +452,9 @@ def prepare(sport, reload, fixtures, force_refresh=False, auxiliary=None):
 def pending():
 	fixture_request = _read(_FIXTURE_REQUEST)
 	fixture_id = fixture_request.get('id', '')
-	if fixture_id and _current(fixture_request.get('sport')) and _read(_FIXTURE_RESULT).get('id') != fixture_id: return True
+	if fixture_id and _current(fixture_request.get('sport')):
+		fixture_result = _read(_FIXTURE_RESULT)
+		if fixture_result.get('id') != fixture_id or fixture_result.get('complete') is False: return True
 	request = _read(_REQUEST)
 	request_id = request.get('id', '')
 	if not request_id or ku.get_property(_CANCEL) == request_id: return False
@@ -491,24 +508,33 @@ class SportsProgress:
 	def _fixture_work(self, request):
 		started = time.monotonic()
 		outcome = 'unavailable'
+		def publish(fixtures, auxiliary, expires, complete=True):
+			encoded = json.dumps({'id': request['id'], 'fixtures': fixtures, 'auxiliary': auxiliary, 'captured': time.time(), 'expires': expires, 'complete': complete}, ensure_ascii=False, separators=(',', ':'))
+			if len(encoded.encode('utf-8')) > _RESULT_LIMIT:
+				if complete: raise ValueError('Result too large')
+				return
+			self.fixture_results.put((request['id'], encoded))
+
+		def primary(result, expires):
+			fixtures, _, other, status = result
+			publish(fixtures, {'sport_fixtures': other, 'status_text': status}, expires, complete=False)
+
 		try:
 			from menus import livetv
 			if livetv._feed_accounts_fingerprint() != request['accounts']: raise ValueError('Account changed')
 			sport = request['sport']
 			auxiliary = None
 			if sport == 'soccer':
-				(fixtures, _, other, status), expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True)
+				(fixtures, _, other, status), expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True, on_primary=None if request.get('background') else primary)
 				auxiliary = {'sport_fixtures': other, 'status_text': status}
 			elif sport == 'f1': fixtures, expires = livetv._f1.get_schedule(with_expiry=True)
 			else:
 				profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 				fixtures, expires = livetv._tennis_fixtures_service.get_schedule(cache_dir=profile or None, with_expiry=True) if sport == 'tennis' else livetv._american_fixtures.get_schedule(sport, cache_dir=profile or None, with_expiry=True)
-			encoded = json.dumps({'id': request['id'], 'fixtures': fixtures, 'auxiliary': auxiliary, 'captured': time.time(), 'expires': expires}, ensure_ascii=False, separators=(',', ':'))
-			if len(encoded.encode('utf-8')) > _RESULT_LIMIT: raise ValueError('Result too large')
+			publish(fixtures, auxiliary, expires)
 			outcome = 'ok'
-		except Exception: encoded = json.dumps({'id': request['id'], 'unavailable': True})
+		except Exception: self.fixture_results.put((request['id'], json.dumps({'id': request['id'], 'unavailable': True})))
 		record_timing('fixture_fetch', time.monotonic() - started, request.get('sport', ''), outcome)
-		self.fixture_results.put((request['id'], encoded))
 
 	def _fixture_tick(self):
 		request = _read(_FIXTURE_REQUEST)
@@ -517,9 +543,18 @@ class SportsProgress:
 		while True:
 			try: result_id, encoded = self.fixture_results.get_nowait()
 			except Empty: break
-			if visible and result_id == request_id:
+			if visible and result_id == request_id and _read(_FIXTURE_REQUEST).get('id') == request_id:
+				from menus import livetv
+				if request.get('accounts') != livetv._feed_accounts_fingerprint(): continue
 				result = json.loads(encoded)
-				if not _fixtures_unavailable(request.get('sport'), result) and request.get('sport') in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1') and _read(_FIXTURE_REQUEST).get('id') == request_id:
+				sport = request.get('sport')
+				if result.get('complete') is False:
+					if not _current_primary_fixtures(result) or _cached_fixtures(sport, request.get('accounts')) is not None: continue
+				elif result.get('unavailable') and sport == 'soccer':
+					previous = _read(_FIXTURE_RESULT)
+					if previous.get('id') == request_id and previous.get('complete') is False and _current_primary_fixtures(previous):
+						encoded = json.dumps(dict(previous, complete=True, unavailable=True), ensure_ascii=False, separators=(',', ':'))
+				elif not _fixtures_unavailable(sport, result) and sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'):
 					captured = result.get('captured')
 					if isinstance(captured, (int, float)) and not isinstance(captured, bool) and math.isfinite(captured):
 						cache = {'captured': captured, 'expires': next_half_hour(captured), 'source_expires': result.get('expires'), 'accounts': request.get('accounts'), 'fixtures': result['fixtures'], 'auxiliary': result.get('auxiliary')}
@@ -533,18 +568,20 @@ class SportsProgress:
 				self.fixture_seen = ''
 			return
 		self.fixture_seen = request_id
-		if _read(_FIXTURE_RESULT).get('id') == request_id:
-			result = _read(_FIXTURE_RESULT)
+		result = _read(_FIXTURE_RESULT)
+		if result.get('id') == request_id:
+			revision = _fixture_revision(result)
+			complete = result.get('complete') is not False
 			# Keep the completed fixture snapshot until playback ends; preparing it
 			# can replace the current feed search and start new provider requests.
 			if ku.get_visibility('Player.HasMedia'): return
-			if (self.fixture_refreshed != request_id and not request.get('background') and not request.get('reload') and request_id not in self.fixture_matching
+			if (complete and self.fixture_refreshed != revision and not request.get('background') and not request.get('reload') and request_id not in self.fixture_matching
 					and not _fixtures_unavailable(request.get('sport'), result) and not ku.get_visibility('Player.HasMedia')):
 				from menus import livetv
 				if request.get('accounts') == livetv._feed_accounts_fingerprint():
 					_, groups = prepare(request['sport'], '', result['fixtures'], auxiliary=result.get('auxiliary'))
 					self.fixture_matching = {request_id: _read(_REQUEST).get('id', '') if groups is None else ''}
-			if self.fixture_refreshed != request_id and request.get('background') and not _fixtures_unavailable(request.get('sport'), result):
+			if complete and self.fixture_refreshed != revision and request.get('background') and not _fixtures_unavailable(request.get('sport'), result):
 				if request_id not in self.fixture_matching:
 					_, groups = prepare(request['sport'], request.get('reload', 'schedule'), result['fixtures'], auxiliary=result.get('auxiliary'))
 					self.fixture_matching = {request_id: _read(_REQUEST).get('id', '') if groups is None else ''}
@@ -552,11 +589,13 @@ class SportsProgress:
 				if feed_id:
 					if _read(_RESULT + '.' + feed_id).get('id') != feed_id: return
 					ku.set_property(_CONSUME, feed_id)
-			if self.fixture_refreshed == request_id: return
+			if self.fixture_refreshed == revision or ku.get_property(_FIXTURE_ACK) == revision: return
+			if not complete and not _current_primary_fixtures(result): return
 			if ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'): return
+			if ku.get_visibility('Container.Scrolling'): return
 			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
-			self.fixture_refreshed = request_id
-			self._capture_focus(request, _FIXTURE_ACK)
+			self.fixture_refreshed = revision
+			self._capture_focus(request, _FIXTURE_ACK, revision)
 			ku.execute_builtin('Container.Refresh')
 			return
 		if ku.get_visibility('Player.HasMedia'): return
@@ -603,6 +642,7 @@ class SportsProgress:
 			self.focus = None
 			return
 		acknowledged = ku.get_property(focus['ack'])
+		if focus['ack'] == _FIXTURE_ACK and acknowledged == focus['id'] and focus['expected'] == focus['id'] + ':primary': acknowledged = focus['expected']
 		if acknowledged != focus['expected']:
 			if focus['ack'] != _ACK_REVISION: return
 			try:

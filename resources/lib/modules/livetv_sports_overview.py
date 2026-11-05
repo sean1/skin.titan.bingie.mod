@@ -68,9 +68,21 @@ def _load(sport, accounts, generation, catalog, results):
 	from menus import livetv
 	fixtures = None
 	partial = False
+	early = None
 	try:
 		if sport == 'soccer':
-			(fixtures, _, _, status), fixture_expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True)
+			def publish_primary(result, expires):
+				nonlocal early
+				try:
+					previous = json.loads(ku.get_property(PREFIX + sport) or '{}')
+					if previous.get('accounts') == accounts and time.time() < previous.get('fixture_expires', 0) and previous.get('fixtures'): return
+				except (TypeError, ValueError): pass
+				data = {'accounts': accounts, 'fixtures': result[0], 'fixture_expires': expires, 'groups': [], 'matching': True, 'fixture_partial': True, 'created': time.time()}
+				encoded = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+				if len(encoded.encode('utf-8')) > 4 * 1024 * 1024: return
+				early = data
+				results.put((sport, accounts, generation, encoded))
+			(fixtures, _, _, status), fixture_expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True, on_primary=publish_primary)
 			if status.startswith('Live fixtures unavailable'): raise ValueError('Fixtures unavailable')
 			partial = any(part in ('Canadian Premier League unavailable', 'Canadian Championship live status unavailable') for part in status.split(' · ')[1:])
 		elif sport == 'f1': fixtures, fixture_expires = livetv._f1.get_schedule(with_expiry=True)
@@ -107,7 +119,8 @@ def _load(sport, accounts, generation, catalog, results):
 		groups, _ = livetv._sports_catalog_groups(livetv._sports_primary(), sport, fixtures=fixtures, status_sink=failures.append, notify_stale=False, on_status=lambda created, stale: catalog_status.append((created, stale)), catalog_fetch=catalog.get, on_partial=lambda groups, unavailable, statuses: publish(groups, unavailable, statuses, True))
 		publish(groups, failures and failures[-1], catalog_status, False)
 	except Exception:
-		results.put((sport, accounts, generation, json.dumps({'accounts': accounts, 'fixtures': fixtures if isinstance(fixtures, list) else [], 'unavailable': True, 'created': time.time()})))
+		data = dict(early, matching=False, unavailable=True, fixture_partial=True) if early and time.time() < early['fixture_expires'] else {'accounts': accounts, 'fixtures': fixtures if isinstance(fixtures, list) else [], 'unavailable': True, 'created': time.time()}
+		results.put((sport, accounts, generation, json.dumps(data, ensure_ascii=False, separators=(',', ':'))))
 
 
 def _refresh_guides(cancel, results, generation):

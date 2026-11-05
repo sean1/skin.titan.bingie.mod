@@ -1506,12 +1506,12 @@ def _valid_soccer_fixture(item):
 	return isinstance(item, dict) and isinstance(item.get('date'), str) and all(isinstance(item.get(key), str) and item[key] for key in ('home', 'away', 'league', 'status'))
 
 
-def _live_soccer_fixtures(include_upcoming=False, with_expiry=False):
+def _live_soccer_fixtures(include_upcoming=False, with_expiry=False, on_primary=None):
 	"""Get one authoritative live-fixture set, falling back when SportAPI is unavailable."""
 	profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 	base = os.path.join(ku.translate_path(getattr(ku, 'addon_path', '')), 'resources', 'private')
 	def fetch(method, *args, **kwargs):
-		if with_expiry: return method(*args, with_expiry=True, **kwargs)
+		if with_expiry or on_primary: return method(*args, with_expiry=True, **kwargs)
 		return method(*args, **kwargs), None
 	from concurrent.futures import ThreadPoolExecutor
 	with ThreadPoolExecutor(max_workers=3) as pool:
@@ -1520,19 +1520,32 @@ def _live_soccer_fixtures(include_upcoming=False, with_expiry=False):
 		schedule_future = pool.submit(fetch, _canadian_championship.get_schedule, cache_dir=profile or None) if include_upcoming else None
 		(sport, sport_status), sport_expiry = fetch(_sportapi_service.get, profile, bundled=os.path.join(base, _sportapi_service.KEY_FILE)) if profile else (([], 'not configured'), None)
 		(football, football_status), football_expiry = (([], 'not needed'), None) if sport_status.startswith('updated ') else (fetch(_fixture_service.get, profile, bundled=os.path.join(base, _fixture_service.KEY_FILE)) if profile else (([], 'not configured'), None))
-		(canadian, canadian_status), canadian_expiry = canadian_future.result() if canadian_future else (([], 'unavailable'), None)
+		sport = [item for item in sport if _valid_soccer_fixture(item)] if isinstance(sport, list) else []
+		football = [item for item in football if _valid_soccer_fixture(item)] if isinstance(football, list) else []
+		available = sport_status.startswith('updated ') or football_status.startswith('updated ')
+		selected = sport if sport_status.startswith('updated ') else football if football_status.startswith('updated ') else []
+		source = 'sportapi' if sport_status.startswith('updated ') else 'api-football'
+		def primary_live(now):
+			return [item for item in selected if isinstance(item, dict) and _selected_soccer_fixture(item, source) and (item.get('status') in _fixture_service.LIVE_STATUSES or (include_upcoming and _schedule_state(item, now)[0] == 'Upcoming'))]
+		live = primary_live(time.time())
+		primary_expiry = sport_expiry if source == 'sportapi' else football_expiry
+		if on_primary and available and live and isinstance(primary_expiry, (int, float)) and not isinstance(primary_expiry, bool) and math.isfinite(primary_expiry) and primary_expiry > time.time():
+			expiries = [primary_expiry]
+			now = time.time()
+			for fixture in live:
+				state, kickoff = _schedule_state(fixture, now)
+				if state == 'Upcoming' and kickoff > now: expiries.append(kickoff)
+			try: on_primary((list(live), football, sport, 'API-Football: %s · SportAPI: %s' % (football_status, sport_status)), min(expiries))
+			except Exception: pass
+		try: (canadian, canadian_status), canadian_expiry = canadian_future.result() if canadian_future else (([], 'unavailable'), None)
+		except (OSError, HTTPException, ValueError, TypeError): canadian, canadian_status, canadian_expiry = [], 'unavailable', None
 		championship_live_status = 'updated'
 		try: championship_live, championship_live_expiry = live_future.result()
 		except (OSError, HTTPException, ValueError, TypeError): championship_live, championship_live_status, championship_live_expiry = [], 'unavailable', None
 		championship_status = 'updated'
 		try: championship_schedule, championship_expiry = schedule_future.result() if schedule_future else ([], None)
 		except (OSError, HTTPException, ValueError, TypeError, KeyError): championship_schedule, championship_status, championship_expiry = [], 'unavailable', None
-	sport = [item for item in sport if _valid_soccer_fixture(item)] if isinstance(sport, list) else []
-	football = [item for item in football if _valid_soccer_fixture(item)] if isinstance(football, list) else []
-	available = sport_status.startswith('updated ') or football_status.startswith('updated ')
-	selected = sport if sport_status.startswith('updated ') else football if football_status.startswith('updated ') else []
-	source = 'sportapi' if sport_status.startswith('updated ') else 'api-football'
-	live = [item for item in selected if isinstance(item, dict) and _selected_soccer_fixture(item, source) and (item.get('status') in _fixture_service.LIVE_STATUSES or (include_upcoming and _schedule_state(item, time.time())[0] == 'Upcoming'))]
+	live = primary_live(time.time())
 	seen = {_soccer_fixture_key(item) for item in live}
 	def add_fixture(item):
 		if not _valid_soccer_fixture(item): return
@@ -2044,6 +2057,13 @@ def _sports_overview(sport_filter=None, revision=''):
 		try: data = json.loads(ku.get_property(overview.PREFIX + sport) or '{}')
 		except (TypeError, ValueError): data = {}
 		if data.get('accounts') != accounts or not data: loading.append(sport); continue
+		if data.get('fixture_partial'):
+			try: valid_partial = time.time() < data['fixture_expires']
+			except (KeyError, TypeError, ValueError): valid_partial = False
+			if not valid_partial:
+				if data.get('matching'): loading.append(sport)
+				else: unavailable.append(sport)
+				continue
 		if data.get('unavailable'): unavailable.append(sport)
 		if data.get('schedule_unavailable'): schedule_unavailable.append(sport)
 		if data.get('matching'): loading.append(sport)
@@ -2165,7 +2185,7 @@ def soccer(params):
 	try:
 		from modules import livetv_sports_progress
 		state, fixtures, auxiliary = livetv_sports_progress.load_fixtures('soccer', force_refresh=reload in ('refresh', 'schedule'), reload=reload, url_refresh=url_refresh)
-		if state not in ('ready', 'cached', 'cached_unavailable'):
+		if state not in ('ready', 'cached', 'cached_unavailable', 'partial'):
 			if action:
 				ku.dialog.notification('Live TV', 'Loading fixtures…' if state == 'pending' else 'Fixtures unavailable.')
 			else:
@@ -2186,7 +2206,7 @@ def soccer(params):
 			ku.set_property('LiveTV.Soccer.Reload', 'league')
 			xbmc.executebuiltin('Container.Refresh')
 			return
-		cached = state in ('cached', 'cached_unavailable')
+		cached = state in ('cached', 'cached_unavailable', 'partial')
 		cache_status = 'Refresh failed' if state == 'cached_unavailable' else 'Updating fixtures…'
 		if cached: groups = None
 		else:

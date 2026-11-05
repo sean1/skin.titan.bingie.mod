@@ -14,7 +14,7 @@ def credited_actor(credits, actor_id):
 	return any(str(person.get('id')) == str(actor_id) for person in credits['cast'] + credits['guest_stars'])
 
 
-def filter_actor_episodes(tmdb_id, episodes, actor_id, actor_name):
+def filter_actor_episodes(tmdb_id, episodes, actor_id, actor_name, paged=False):
 	items = sorted(episodes, key=lambda item: (int(item['season']), int(item['episode'])))
 	matches, failed = [], 0
 	progress = kodi_utils.progressDialog
@@ -24,7 +24,7 @@ def filter_actor_episodes(tmdb_id, episodes, actor_id, actor_name):
 	try:
 		completed = 0
 		while True:
-			if progress.iscanceled() or kodi_utils.monitor.abortRequested(): return []
+			if progress.iscanceled() or kodi_utils.monitor.abortRequested(): return None
 			while len(pending) < 4:
 				item = next(remaining, None)
 				if item is None: break
@@ -43,5 +43,5 @@ def filter_actor_episodes(tmdb_id, episodes, actor_id, actor_name):
 		pool.shutdown(wait=False)
 		progress.close()
 	if failed: kodi_utils.notification('Could not check %s episodes. Results may be incomplete.' % failed)
-	elif not matches: kodi_utils.notification('No credited episodes found for %s.' % actor_name)
+	elif not matches: kodi_utils.notification('No credited episodes found for %s%s.' % (actor_name, ' on this page' if paged else ''))
 	return sorted(matches, key=lambda item: (int(item['season']), int(item['episode'])))

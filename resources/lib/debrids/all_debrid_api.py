@@ -1,4 +1,5 @@
 import requests
+from threading import BoundedSemaphore, Lock, Thread, local
 from modules import kodi_utils
 
 
@@ -6,9 +7,13 @@ get_setting = kodi_utils.get_setting
 base_url = 'https://api.alldebrid.com/'
 timeout = 10.0
 cache_check_chunk_size = 25
+cache_cleanup_workers = 3
 session = requests.Session()
 session.custom_errors = requests.exceptions.ConnectionError, requests.exceptions.Timeout
 session.mount('https://api.alldebrid.com', requests.adapters.HTTPAdapter(max_retries=1))
+cleanup_context = local()
+cleanup_slots = BoundedSemaphore(cache_cleanup_workers)
+cleanup_fallback_lock = Lock()
 
 
 class AllDebridAPI:
@@ -21,7 +26,8 @@ class AllDebridAPI:
 	def _request(self, method, path, params=None, data=None):
 		url = base_url + path
 		headers = {'Authorization': 'Bearer %s' % self.token} if self.token else {}
-		try: response = session.request(method, url, headers=headers, params=params, data=data, timeout=timeout)
+		request_session = getattr(cleanup_context, 'session', session)
+		try: response = request_session.request(method, url, headers=headers, params=params, data=data, timeout=timeout)
 		except session.custom_errors:
 			kodi_utils.notification("Can't reach AllDebrid. Check connection and retry.", time=10000)
 			return None
@@ -86,6 +92,51 @@ class AllDebridAPI:
 		if magnets is None: return None
 		return {str(item['id']) for item in magnets if item.get('id') is not None}
 
+	def _cleanup_cache_transfers(self, transfer_ids):
+		transfer_ids = list({str(item): item for item in transfer_ids}.values())
+		if not transfer_ids: return
+		workers = min(cache_cleanup_workers, len(transfer_ids))
+		sessions = []
+		try:
+			for _ in range(workers):
+				worker_session = requests.Session()
+				sessions.append(worker_session)
+				worker_session.mount('https://api.alldebrid.com', requests.adapters.HTTPAdapter(max_retries=1))
+		except Exception:
+			for worker_session in sessions:
+				try: worker_session.close()
+				except Exception: pass
+			with cleanup_fallback_lock:
+				for transfer_id in transfer_ids:
+					try:
+						with cleanup_slots: self.delete_torrent(transfer_id)
+					except Exception: pass
+			return
+		def cleanup_batch(worker_session, batch):
+			cleanup_context.session = worker_session
+			try:
+				for transfer_id in batch:
+					try:
+						with cleanup_slots: self.delete_torrent(transfer_id)
+					except Exception: pass
+			finally:
+				del cleanup_context.session
+				try: worker_session.close()
+				except Exception: pass
+		threads = []
+		for index, worker_session in enumerate(sessions):
+			batch = transfer_ids[index::workers]
+			worker = None
+			try:
+				worker = Thread(target=cleanup_batch, args=(worker_session, batch))
+				worker.start()
+			except Exception:
+				if worker is not None and worker.ident is not None: threads.append(worker)
+				else: cleanup_batch(worker_session, batch)
+				continue
+			threads.append(worker)
+		for worker in threads: worker.join()
+
 	def check_cache(self, hashes):
 		"""Check a bounded batch while preserving every pre-existing cloud transfer."""
 		existing_ids = self._existing_transfer_ids()
@@ -103,7 +154,7 @@ class AllDebridAPI:
 				info_hash = str(item.get('hash') or item.get('magnet') or '').lower()
 				if info_hash in original_hashes: checked[original_hashes[info_hash]] = bool(item.get('ready'))
 		finally:
-			for transfer_id in created_ids: self.delete_torrent(transfer_id)
+			self._cleanup_cache_transfers(created_ids)
 		return checked
 
 	@staticmethod

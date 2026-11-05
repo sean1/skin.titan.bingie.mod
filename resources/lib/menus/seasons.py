@@ -136,10 +136,8 @@ class Episodes(BaseSeason):
 			self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup)
 		if params.get('season') == 'all':
 			include_specials = show_specials()
-			season_data = []
-			if not params.get('actor_id'):
-				try: season_data = sorted((season for season in show.meta.get('season_data', []) if include_specials or season.get('season_number') not in (0, '0')), key=lambda season: int(season['season_number']))
-				except (TypeError, ValueError, KeyError, AttributeError): season_data = []
+			try: season_data = sorted((season for season in show.meta.get('season_data', []) if include_specials or season.get('season_number') not in (0, '0')), key=lambda season: int(season['season_number']))
+			except (TypeError, ValueError, KeyError, AttributeError): season_data = []
 			self.paged_episodes = len(season_data) > ALL_EPISODES_SEASONS_PER_PAGE
 			if self.paged_episodes:
 				pages = (len(season_data) + ALL_EPISODES_SEASONS_PER_PAGE - 1) // ALL_EPISODES_SEASONS_PER_PAGE
@@ -158,7 +156,10 @@ class Episodes(BaseSeason):
 		else: episodes_data = season_episodes_meta(params['season'], show.meta, self.meta_user_info)
 		if params.get('actor_id'):
 			from menus.actor_episodes import filter_actor_episodes
-			episodes_data = filter_actor_episodes(show.tmdb_id, episodes_data, params['actor_id'], params.get('actor_name') or 'this actor')
+			episodes_data = filter_actor_episodes(show.tmdb_id, episodes_data, params['actor_id'], params.get('actor_name') or 'this actor', paged=getattr(self, 'paged_episodes', False))
+			if episodes_data is None:
+				self.items.clear()
+				return self.items
 		for item in episodes_data:
 			try:
 				cm = []

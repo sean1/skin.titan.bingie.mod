@@ -21,7 +21,7 @@ class TorBoxAPI:
 		headers = {'Authorization': 'Bearer %s' % self.token} if self.token else {}
 		try: response = session.request(method, base_url + path, headers=headers, params=params, json=json, data=data, files=files, timeout=timeout)
 		except session.custom_errors:
-			kodi_utils.notification('%s timeout' % __name__)
+			kodi_utils.notification("Can't reach TorBox. Check connection and retry.", time=10000)
 			return None
 		try: result = response.json()
 		except Exception:

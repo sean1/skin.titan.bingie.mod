@@ -26,7 +26,7 @@ class RealDebridAPI:
 			if response.status_code in (401,) and self.refresh_token() is True:
 				response.request.headers['Authorization'] = 'Bearer %s' % self.token
 				response = session.send(response.request, timeout=timeout)
-		except session.custom_errors: return kodi_utils.notification('%s timeout' % __name__)
+		except session.custom_errors: return kodi_utils.notification("Can't reach Real-Debrid. Check connection and retry.", time=10000)
 		if not response.ok: kodi_utils.logger(__name__, f"{response.reason}\n{response.url}")
 		if raw: return response
 		return response.json() if response.content else response

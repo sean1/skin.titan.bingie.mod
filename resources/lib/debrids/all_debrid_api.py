@@ -23,7 +23,7 @@ class AllDebridAPI:
 		headers = {'Authorization': 'Bearer %s' % self.token} if self.token else {}
 		try: response = session.request(method, url, headers=headers, params=params, data=data, timeout=timeout)
 		except session.custom_errors:
-			kodi_utils.notification('%s timeout' % __name__)
+			kodi_utils.notification("Can't reach AllDebrid. Check connection and retry.", time=10000)
 			return None
 		try: result = response.json()
 		except Exception:

@@ -523,10 +523,6 @@ def _sports_ref(stream):
 	return identity + ':' + str(stream['stream_id']) if identity else str(stream['stream_id'])
 
 
-def _credentials_path():
-	return os.path.join(ku.translate_path(ku.profile_path), 'livetv-account.json')
-
-
 def _bundled_credentials_path():
 	return os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', 'livetv-account.json')
 
@@ -548,34 +544,11 @@ def _account_fingerprint(account):
 
 
 def _load():
-	path = _bundled_credentials_path()
-	if not os.path.exists(path):
-		account = _read_account(_credentials_path())
-		if account: return account
-		accounts = _sports_accounts(None)
-		return accounts[0][1] if accounts else None
-	account = _read_account(path)
+	account = _read_account(_bundled_credentials_path())
 	if not account:
 		accounts = _sports_accounts(None)
 		account = accounts[0][1] if accounts else None
-	if not account: return None
-	profile = _read_account(_credentials_path())
-	if profile and profile.get('guide_override_base') == _account_fingerprint(account):
-		account['epg_url'] = profile['epg_url'] if isinstance(profile.get('epg_url'), str) else account.get('epg_url', '')
 	return account
-
-
-def _save(data):
-	path = _credentials_path()
-	os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
-	fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-	try:
-		os.fchmod(fd, 0o600)
-		with os.fdopen(fd, 'w', encoding='utf-8') as account:
-			fd = None
-			json.dump(data, account)
-	finally:
-		if fd is not None: os.close(fd)
 
 
 def _handle():
@@ -763,43 +736,16 @@ def next_feed(params):
 	request_manual_switch()
 
 
-def settings(params):
-	current = _load() or {}
-	server = ku.dialog.input('Server URL', defaultt=current.get('server', '')).strip().rstrip('/')
-	if not server:
-		return
-	try:
-		parts = urlsplit(server)
-		valid = parts.scheme in ('http', 'https') and parts.hostname and not (parts.username or parts.password or parts.query or parts.fragment)
-	except ValueError:
-		valid = False
-	if not valid:
-		_error('Enter a server URL beginning with http:// or https://, without a username, password, or query string.')
-		return
-	username = ku.dialog.input('Username', defaultt=current.get('username', '')).strip()
-	if not username:
-		return
-	password = ku.dialog.input('Password', option=xbmcgui.ALPHANUM_HIDE_INPUT)
-	if not password:
-		return
-	try:
-		_save({'server': server, 'username': username, 'password': password, **({'epg_url': current['epg_url']} if current.get('epg_url') else {})})
-	except OSError:
-		_error('Could not save the account in the Kodi profile.')
-		return
-	ku.dialog.notification('Live TV', 'Live TV account saved.', time=5000)
-
-
 def browse(params):
 	account = _load()
 	if not account:
 		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
 		_finish(False)
 		return
+	_item('Search providers', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 	try:
 		categories = _catalog(account, 'get_live_categories')
 		if not isinstance(categories, list): raise ValueError('Invalid response')
-		_item('Search primary provider', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 		_item('Try another feed', {'mode': 'livetv.next', 'isFolder': 'false'}, False, None, False)
 		_item('All channels', {'mode': 'livetv.channels'})
 		for category in categories:
@@ -1208,7 +1154,7 @@ def _context_fixture(event, scope, streams, sources, created, stale, now=None, i
 
 
 def search(params):
-	query = (ku.dialog.input('Search primary provider: team, league or channel') or '').strip()
+	query = (ku.dialog.input('Search providers: team, league or channel') or '').strip()
 	if not query: return
 	url = ku.build_url({'mode': 'livetv.search_results', 'query': query})
 	xbmc.executebuiltin('Container.Update(%s)' % url)
@@ -1225,21 +1171,44 @@ def search_results(params):
 		_finish()
 		return
 	terms = query.casefold().split()
-	catalog_status = []
-	try:
-		streams = _catalog(account, 'get_live_streams', on_status=lambda created, stale: catalog_status.append(stale))
-		if not isinstance(streams, list): raise ValueError('Invalid response')
-	except (OSError, HTTPException, ValueError, TypeError):
+	accounts = _sports_accounts(account)
+	streams, catalog_status, unavailable = [], [], []
+	from concurrent.futures import ThreadPoolExecutor
+	deadline = time.monotonic() + _SPORTS_SEARCH_SECONDS
+	def fetch(entry):
+		identity, provider = entry
+		status = []
+		def cached():
+			def expired(*args, **kwargs): raise OSError('Live TV catalog timed out')
+			return _catalog_get(provider, 'get_live_streams', expired, ku.translate_path(ku.profile_path), on_status=lambda created, stale: status.append(stale))
+		try:
+			try:
+				catalog = cached() if time.monotonic() >= deadline else _catalog(provider, 'get_live_streams', notify_stale=False, on_status=lambda created, stale: status.append(stale), _deadline=deadline)
+			except (OSError, HTTPException, ValueError, TypeError):
+				if time.monotonic() < deadline: raise
+				catalog = cached()
+			if not isinstance(catalog, list): raise ValueError('Invalid response')
+		except (OSError, HTTPException, ValueError, TypeError):
+			return identity, None, status
+		return identity, catalog, status
+	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
+		results = list(pool.map(fetch, accounts))
+	for index, (identity, catalog, status) in enumerate(results):
+		if catalog is None:
+			unavailable.append(index + 1)
+			continue
+		catalog_status.extend(status)
+		streams.extend(dict(s, _search_provider=identity, _search_provider_number=index + 1) for s in catalog if isinstance(s, dict) and str(s.get('stream_id') or '').isdecimal())
+	if not streams and len(unavailable) == len(accounts):
 		_error('Could not search Live TV channels. Check the VPN and account, then try again.')
 		_finish(False)
 		return
-	streams = [s for s in streams if isinstance(s, dict) and str(s.get('stream_id') or '').isdecimal()]
 	event_feeds = {}
 	channel_matches = []
 	for stream in streams:
 		name = str(stream.get('name') or 'Live channel')
 		event = _soccer_event(name)
-		if event: event_feeds.setdefault((event, _fixture_scope(name)), {})[str(stream['stream_id'])] = stream
+		if event and stream['_search_provider_number'] == 1: event_feeds.setdefault((event, _fixture_scope(name)), {})[str(stream['stream_id'])] = stream
 		if all(term in name.casefold() for term in terms): channel_matches.append(stream)
 	channel_matches.sort(key=lambda stream: (0 if str(stream.get('name') or '').casefold().startswith('live |') else 2 if str(stream.get('name') or '').casefold().startswith('end |') else 1))
 	rows = []
@@ -1249,18 +1218,26 @@ def search_results(params):
 		event = _soccer_event(name)
 		scope = _fixture_scope(name) if event else ''
 		key = (event, scope)
-		feeds = event_feeds.get(key, {})
+		feeds = event_feeds.get(key, {}) if stream['_search_provider_number'] == 1 else {}
+		identity = stream['_search_provider']
+		backup = re.fullmatch(r'backup_([1-9][0-9]{0,2})', identity, re.I)
+		label = 'Primary' if stream['_search_provider_number'] == 1 else 'Backup %s' % backup.group(1) if backup else 'Provider %d' % stream['_search_provider_number']
+		provider_label = ' · ' + label if len(accounts) > 1 else ''
 		if event and len(feeds) > 1:
 			if key in seen_events: continue
 			seen_events.add(key)
-			rows.append((name.split('|')[1].strip() + (' — ' + scope if scope else '') + ' — %d feeds' % len(feeds), {'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope}, True, stream.get('stream_icon')))
+			rows.append((name.split('|')[1].strip() + (' — ' + scope if scope else '') + ' — %d feeds' % len(feeds) + provider_label, {'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope}, True, stream.get('stream_icon')))
 		else:
-			rows.append((name + ' (play channel)', _play_params(str(stream['stream_id']), name), False, stream.get('stream_icon')))
+			ref = str(stream['stream_id']) if stream['_search_provider_number'] == 1 else stream['_search_provider'] + ':' + str(stream['stream_id'])
+			rows.append((name + provider_label + ' (play channel)', _play_params(ref, name), False, stream.get('stream_icon')))
+	if unavailable:
+		_item('Some providers are unavailable — select to retry', {'mode': 'livetv.search_results', 'query': query}, True, None, False)
+	if any(catalog_status):
+		_item('Some results are from saved channels', {}, False, None, False)
 	if len(rows) > _SEARCH_RESULT_LIMIT:
 		_item('Showing first %d results — select to refine search' % _SEARCH_RESULT_LIMIT, {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 	elif not channel_matches:
-		message = 'No matches in saved channels' if any(catalog_status) else 'No matches found'
-		_item(message + ' — select to search again', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
+		_item('No matches found — select to search again', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 	for row in rows[:_SEARCH_RESULT_LIMIT]: _item(*row)
 	_finish()
 

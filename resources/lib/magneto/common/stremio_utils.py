@@ -37,6 +37,8 @@ def classify_release(context, name):
 			valid, last_season = source_utils.filter_show_pack(context['title'], context['aliases'], context['imdb'], context['year'], context['season'], name, context['total_seasons'])
 			if not valid: return None
 			package = 'show'
+	elif 'season' in context and not re.search(re.escape(context['hdlr']) + r'(?!\d)', name, re.I):
+		return None
 	if package:
 		name_info = source_utils.info_from_name(name, context['title'], context['year'], season=context['season'], pack=package)
 	else:
@@ -47,6 +49,7 @@ def classify_release(context, name):
 
 
 def magnet_url(info_hash, name):
+	if not isinstance(info_hash, str) or not info_hash.strip(): raise ValueError('Missing torrent info hash')
 	return 'magnet:?xt=urn:btih:%s&dn=%s' % (info_hash, name)
 
 

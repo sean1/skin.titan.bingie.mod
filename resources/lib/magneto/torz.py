@@ -4,6 +4,7 @@
 """
 
 from json import loads as jsloads
+import re
 from fenom import client
 from fenom import source_utils
 from magneto.common import provider_utils
@@ -45,10 +46,10 @@ class source:
 
 		for file in files:
 			try:
-				evidence = self._identity_evidence(file, context['imdb'], data.get('season'), data.get('episode'))
+				evidence = self._identity_evidence(file, context['imdb'], data.get('season'), data.get('episode'), context)
 				if evidence is None: continue
 				hash = file['hash']
-				name = file['name']
+				name = evidence.get('file_name') if evidence.get('provenance') == 'filename_match' else file['name']
 
 				name = source_utils.clean_name(name)
 
@@ -64,7 +65,7 @@ class source:
 
 				quality, info = source_utils.get_release_quality(name_info, url)
 				try:
-					size = float(file['size'])
+					size = float(evidence.get('file_size') or 0) if evidence.get('provenance') == 'filename_match' else float(file['size'])
 					dsize, isize = source_utils.convert_size(size)
 					info.insert(0, isize)
 				except: dsize = 0
@@ -137,7 +138,7 @@ class source:
 		return sources
 
 	@staticmethod
-	def _identity_evidence(item, imdb, season=None, episode=None):
+	def _identity_evidence(item, imdb, season=None, episode=None, context=None):
 		evidence = {'provider': 'torz', 'provenance': 'provider_file_sid'}
 		if season is None or episode is None: return evidence
 		if 'files' not in item: return evidence
@@ -146,6 +147,24 @@ class source:
 		expected = '%s:%s:%s' % (imdb, int(season), int(episode))
 		video_extensions = ('.mkv', '.mp4', '.avi', '.mov', '.wmv', '.m4v', '.ts', '.m2ts', '.mpg', '.mpeg', '.webm', '.vob')
 		matching = [file for file in files if isinstance(file, dict) and file.get('sid') == expected and str(file.get('p') or file.get('n') or '').lower().endswith(video_extensions)]
+		if not matching and context:
+			marker = re.compile(r'(?<![a-z0-9])%s(?!\d)' % re.escape(context['hdlr']), re.I)
+			matching = []
+			for file in files:
+				if not isinstance(file, dict) or file.get('sid') != '*': continue
+				path = str(file.get('p') or file.get('n') or '').replace('\\', '/')
+				filename = path.rsplit('/', 1)[-1]
+				if not filename.lower().endswith(video_extensions) or filename.lower().endswith('.m2ts'): continue
+				name = source_utils.clean_name(filename)
+				if not marker.search(name) or provider_utils.direct_release(context, name) is None: continue
+				matching.append(file)
+			if len(matching) != 1: return None
+			file = matching[0]
+			path = str(file.get('p') or file.get('n')).replace('\\', '/')
+			evidence.update({'provenance': 'filename_match', 'provider_file_sid': '*', 'requested_sid': expected, 'file_match_required': True, 'file_name': path.rsplit('/', 1)[-1]})
+			if file.get('p') is not None: evidence['file_path'] = file['p']
+			if file.get('s') is not None: evidence['file_size'] = file['s']
+			return evidence
 		if not matching: return None
 		file = matching[0]
 		evidence.update({'file_match_required': True, 'file_sid': file['sid'], 'imdb_id': file['sid'].split(':', 1)[0]})

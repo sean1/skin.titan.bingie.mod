@@ -146,12 +146,20 @@ SEAS_EP_REGEX = re.compile('|'.join((
 	r'(\d+) \s* [xX] \s* (\d+) (?: [\s._-]* (?:[xX]|-)? \s* (\d+) )?',
 	r'\b (?: ep(?:isode)? | [._-]e ) [\s._-]* (\d+)'
 )), flags=re.I | re.X)
+ALTERNATE_SEAS_EP_REGEX = re.compile(r'(?<![a-z0-9])s(\d+)[._ ]*-[._ ]*(\d+)(?!\d)', re.I)
+ALTERNATE_EP_RANGE_REGEX = re.compile(r'^(?:[._ -]+|[._ ]+(?:to|through|thru)[._ ]+|[._ ]*&[._ ]*)(?!(?:\d{1,2}[._ -]*bit|[1257][._][01]|480|720|1080|2160)(?![a-z0-9]))(?:e(?:p(?:isode)?)?)?\d{1,3}(?![a-z0-9])', re.I)
 
 def seas_ep_filter(season, episode, release_title, split=False, return_match=False):
 	cleaned_title = clean_title(release_title)
 
 	match = SEAS_EP_REGEX.search(cleaned_title)
 	if not match:
+		alternate = ALTERNATE_SEAS_EP_REGEX.search(release_title)
+		if alternate and not ALTERNATE_EP_RANGE_REGEX.match(release_title[alternate.end():]) and int(alternate.group(1)) == int(season) and int(alternate.group(2)) == int(episode):
+			matched_title = clean_title(alternate.group())
+			if split: return cleaned_title.split(matched_title, 1)[1]
+			if return_match: return matched_title
+			return True
 		return '' if (split or return_match) else False
 
 	season, episode = int(season), int(episode)

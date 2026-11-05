@@ -1052,7 +1052,8 @@ class ExternalSource:
 		if pack in pack_check: s_check, e_check = '' if pack == show_display else self.season, ''
 		else: s_check, e_check = self.season, self.episode
 		epc = ExternalProvidersCache()
-		cache_provider = provider + (':tv_identity_v5' if provider == 'torrentio' else ':tv_identity_v3')
+		cache_version = 'v6' if provider == 'torrentio' else 'v4' if provider in ('bitmagnet', 'comet', 'mediafusion', 'nyaa', 'torrentsdb', 'torz', 'zilean') else 'v3'
+		cache_provider = provider + ':tv_identity_' + cache_version
 		try:
 			outcome = epc.get(cache_provider, self.mediatype, self.tmdb_id, self.title, self.year, s_check, e_check)
 			if outcome is None:
@@ -1090,8 +1091,11 @@ class ExternalSource:
 			if requested_imdb and any(value != requested_imdb for value in (returned_imdb, catalogue_imdb) if value): continue
 			file_sid = evidence.get('file_sid')
 			expected_sid = '%s:%s:%s' % (requested_imdb, getattr(self, 'season', ''), getattr(self, 'episode', ''))
-			if file_sid and str(file_sid) != expected_sid: continue
-			if evidence.get('file_match_required') and not file_sid: continue
+			if evidence.get('provenance') == 'filename_match':
+				if file_sid or evidence.get('provider_file_sid') != '*' or evidence.get('requested_sid') != expected_sid or not evidence.get('file_match_required'): continue
+			else:
+				if file_sid and str(file_sid) != expected_sid: continue
+				if evidence.get('file_match_required') and not file_sid: continue
 			name = '%s %s' % (item.get('name', ''), item.get('name_info', ''))
 			def has_year(year): return re.search(r'(?<![A-Za-z0-9])%s(?![A-Za-z0-9])' % re.escape(year), name)
 			if has_year(expected_year): pass

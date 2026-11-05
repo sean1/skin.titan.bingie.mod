@@ -9,7 +9,15 @@ from urllib.parse import quote
 from fenom import client
 from fenom import source_utils
 
-SERVER_ERROR = ('521 Origin Down', 'No results returned', 'Connection Time-out', 'Database maintenance')
+SERVER_ERROR = ('521 Origin Down', 'Connection Time-out', 'Database maintenance')
+
+
+def parse_results(response):
+	if not response or any(value in response for value in SERVER_ERROR): raise ValueError('Provider request failed')
+	files = jsloads(response)
+	if not isinstance(files, list): raise ValueError('Invalid result payload')
+	if len(files) == 1 and isinstance(files[0], dict) and str(files[0].get('id')) == '0' and files[0].get('name') == 'No results returned': return []
+	return files
 
 
 class source:
@@ -44,9 +52,7 @@ class source:
 
 			if 'timeout' in data: self.timeout = int(data['timeout'])
 			rjson = client.request(url, timeout=self.timeout)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): raise ValueError('Provider request failed')
-			files = jsloads(rjson)
-			if not isinstance(files, list): raise ValueError('Invalid result payload')
+			files = parse_results(rjson)
 			undesirables = source_utils.get_undesirables()
 			check_foreign_audio = source_utils.check_foreign_audio()
 		except:
@@ -134,9 +140,7 @@ class source:
 	def get_sources_packs(self, link):
 		try:
 			rjson = client.request(link, timeout=self.timeout)
-			if not rjson or any(value in rjson for value in SERVER_ERROR): raise ValueError('Provider request failed')
-			files = jsloads(rjson)
-			if not isinstance(files, list): raise ValueError('Invalid result payload')
+			files = parse_results(rjson)
 		except:
 			source_utils.scraper_error('PIRATEBAY')
 			self.scrape_failed = True

@@ -107,7 +107,9 @@ class Source:
 
 	def _identity_matched_files(self, files, evidence, season, episode):
 		expected = '%s:%s:%s' % (self.meta.get('imdb_id'), int(season), int(episode))
-		if evidence.get('file_sid') != expected: raise ValueError('provider file identity does not match requested episode')
+		if evidence.get('provenance') == 'filename_match':
+			if evidence.get('file_sid') or evidence.get('provider_file_sid') != '*' or evidence.get('requested_sid') != expected: raise ValueError('filename identity does not match requested episode')
+		elif evidence.get('file_sid') != expected: raise ValueError('provider file identity does not match requested episode')
 		path = str(evidence.get('file_path') or '').replace('\\', '/').strip('/').casefold()
 		name = str(evidence.get('file_name') or '').replace('\\', '/').rsplit('/', 1)[-1].casefold()
 		if not path and not name: raise ValueError('provider file identity has no usable filename')

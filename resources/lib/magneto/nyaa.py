@@ -5,7 +5,6 @@
 
 import re
 from urllib.parse import quote_plus, unquote_plus
-from fenom import cleantitle
 from fenom import client
 from fenom import source_utils
 
@@ -76,16 +75,18 @@ class source:
 						hash = re.search(r'btih:(.*?)&', url, re.I).group(1)
 						name = source_utils.clean_name(url.split('&dn=')[1])
 
-						if hdlr not in name and hdlr2 not in name: continue
+						matching_name = name
+						if 'tvshowtitle' in data:
+							# Nyaa also uses names such as "S1 - 34", whose spaces clean_name turns into dots.
+							marker = r'(?<![a-z0-9])(?:%s|S0*%d[.\-]+0*%d)(?!\d)' % (re.escape(hdlr), int(data['season']), int(data['episode']))
+							match = re.search(marker, name, re.I)
+							if not match: continue
+							matching_name = name[:match.start()] + hdlr + name[match.end():]
+							if not source_utils.check_title(title, aliases, matching_name, hdlr, year): continue
+						elif hdlr not in name: continue
 						if source_utils.remove_lang(name, check_foreign_audio): continue
-						name_info = source_utils.info_from_name(name, title, year, hdlr, episode_title)
+						name_info = source_utils.info_from_name(matching_name, title, year, hdlr, episode_title)
 						# if undesirables and source_utils.remove_undesirables(name_info, undesirables): continue
-
-						if hdlr in name:
-							t = name.split(hdlr)[0].replace(year, '').replace('(', '').replace(')', '').replace('&', 'and').replace('.US.', '.').replace('.us.', '.')
-						if hdlr2 in name:
-							t = name.split(hdlr2)[0].replace(year, '').replace('(', '').replace(')', '').replace('&', 'and').replace('.US.', '.').replace('.us.', '.')
-						# if cleantitle.get(t) != cleantitle.get(title): continue # Anime title matching is a bitch!
 						try:
 							seeders = int(link[2][0])
 							if self.min_seeders > seeders: continue

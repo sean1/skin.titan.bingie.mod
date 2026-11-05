@@ -38,6 +38,7 @@ _RESULT_LIMIT = 4 * 1024 * 1024
 _MAX_AGE = 15 * 60
 _FALLBACK_SECONDS = 60
 _PLAYBACK_RETENTION_SECONDS = 120
+_FEED_REFRESH_IDLE_SECONDS = 1
 
 
 def _read(name):
@@ -215,6 +216,12 @@ def _fixture_focus():
 			if identity[1]: return {'position': position, 'identity': identity, 'started': time.monotonic()}
 	except (AttributeError, RuntimeError, TypeError, ValueError): pass
 	return None
+
+
+def _feed_refresh_ready():
+	if ku.get_visibility('Container.Scrolling'): return False
+	if ku.get_visibility('System.IdleTime(%d)' % _FEED_REFRESH_IDLE_SECONDS): return True
+	return ku.get_visibility('Control.HasFocus(523)') and not _fixture_focus()
 
 
 def request_background(sport, reload):
@@ -582,7 +589,8 @@ class SportsProgress:
 		focus = self.focus
 		if not focus: return
 		now = time.monotonic()
-		idle_required = max(2, int(now - focus['started']) + 1)
+		minimum_idle = _FEED_REFRESH_IDLE_SECONDS if focus['ack'] == _ACK_REVISION else 2
+		idle_required = max(minimum_idle, int(now - focus['started']) + 1)
 		current = _read(_FIXTURE_REQUEST) if focus['ack'] == _FIXTURE_ACK else request
 		if focus['id'] != current.get('id') or now >= focus['deadline'] or not ku.get_visibility('System.IdleTime(%d)' % idle_required):
 			self.focus = None
@@ -711,8 +719,7 @@ class SportsProgress:
 		waiting = result.get('id') == request_id and blocked
 		ku.set_property(_WAIT_STATUS, 'Waiting for Kodi…' if waiting else 'Still searching…' if long_wait else 'Finding feeds…')
 		if ku.get_property(_FALLBACK_EXPIRED) == request_id and result.get('id') != request_id:
-			if blocked: return
-			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
+			if blocked or not _feed_refresh_ready(): return
 			self._capture_focus(request, _ACK_REVISION, request_id + ':0')
 			ku.set_property(_FALLBACK_EXPIRED, request_id + ':refreshing')
 			ku.execute_builtin('Container.Refresh')
@@ -725,8 +732,7 @@ class SportsProgress:
 			fixture_id = fixture_request.get('id', '')
 			if fixture_id and _current(fixture_request.get('sport')) and (_read(_FIXTURE_RESULT).get('id') != fixture_id or ku.get_property(_FIXTURE_ACK) != fixture_id or fixture_request.get('reload') in ('refresh', 'schedule')): return
 			if not expiry_refresh and self.refreshed_id == revision_key and time.monotonic() - self.refreshed_at < 10: return
-			if blocked: return
-			if not ku.get_visibility('System.IdleTime(2)') and (not ku.get_visibility('Control.HasFocus(523)') or _fixture_focus()): return
+			if blocked or not _feed_refresh_ready(): return
 			if expiry_refresh: ku.clear_property(_FALLBACK_EXPIRED)
 			self.refreshed_id = revision_key
 			self.refreshed_at = time.monotonic()

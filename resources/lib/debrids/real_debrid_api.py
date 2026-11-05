@@ -127,11 +127,14 @@ class RealDebridAPI:
 			extensions = supported_video_extensions()
 			torrent_id = self.create_transfer(magnet_url)
 			if not torrent_id: raise Exception('real debrid null magnet')
-			for key in ['ended'] * 3:
-				kodi_utils.sleep(500)
-				torrent_info = self.torrent_info(torrent_id)
-				if key in torrent_info: break
-			else: raise Exception('real debrid uncached magnet')
+			try: torrent_info = self.torrent_info(torrent_id)
+			except (requests.exceptions.RequestException, ValueError): torrent_info = None
+			if not isinstance(torrent_info, dict) or not torrent_info.get('ended'):
+				for delay in (500, 1000):
+					kodi_utils.sleep(delay)
+					torrent_info = self.torrent_info(torrent_id)
+					if 'ended' in torrent_info: break
+				else: raise Exception('real debrid uncached magnet')
 			selected = (i for i in torrent_info['files'] if i['selected'])
 			return [
 				{'link': link,

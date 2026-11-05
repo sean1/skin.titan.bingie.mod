@@ -297,25 +297,26 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 	prefetch_canceled = threading.Event()
 	def fetch(entry):
 		identity, account = entry
-		account_status = []
+		account_status, sources = [], []
 		started, outcome = time.monotonic(), 'unavailable'
 		try:
 			kwargs = {'force_refresh': reload == 'refresh', '_deadline': deadline}
 			if not notify_stale: kwargs['notify_stale'] = False
 			kwargs['on_status'] = lambda created, stale: account_status.append((created, stale))
+			kwargs['on_source'] = sources.append
 			if catalog_fetch:
 				# The overview coalesces requests and limits the owning download;
 				# waiters must not occupy slots needed by other providers.
 				if prefetch_canceled.is_set() or time.monotonic() >= deadline: return identity, [], False, account_status
 				streams = catalog_fetch(identity, account, **kwargs)
-				if isinstance(streams, list): outcome = 'ok'
+				if isinstance(streams, list): outcome = sources[-1] if sources else 'ok'
 				return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
 			while not prefetch_canceled.is_set() and time.monotonic() < deadline:
 				if not _CATALOG_PREFETCH_SLOTS.acquire(timeout=min(0.1, max(0, deadline - time.monotonic()))): continue
 				try:
 					if prefetch_canceled.is_set() or time.monotonic() >= deadline: break
 					streams = _catalog(account, 'get_live_streams', **kwargs)
-					if isinstance(streams, list): outcome = 'ok'
+					if isinstance(streams, list): outcome = sources[-1] if sources else 'ok'
 					return identity, streams if isinstance(streams, list) else [], isinstance(streams, list), account_status
 				finally: _CATALOG_PREFETCH_SLOTS.release()
 			return identity, [], False, account_status
@@ -451,11 +452,11 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 			done = {future for future in futures if future.done()}
 			if not done:
 				remaining = deadline - time.monotonic()
-				if remaining <= 0:
-					failed = True
-					break
-				done, _ = wait(futures, timeout=remaining, return_when=FIRST_COMPLETED)
+				if remaining > 0: done, _ = wait(futures, timeout=remaining, return_when=FIRST_COMPLETED)
 			if not done:
+				elapsed = time.monotonic() - (deadline - _SPORTS_SEARCH_SECONDS)
+				for category, pending in (('catalog', catalog_futures), ('guide', guide_futures), ('saved', saved_futures)):
+					if any(not future.done() for future in pending): _sports.record_timing('lookup_deadline', elapsed, sport, category)
 				failed = True
 				break
 			ready_catalogs = [future for future in catalog_futures if future.done()]
@@ -726,10 +727,11 @@ def _request(account, action, *, _deadline=None, **params):
 	return result
 
 
-def _catalog(account, action, *, force_refresh=False, on_status=None, notify_stale=True, _deadline=None, **params):
+def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=None, notify_stale=True, _deadline=None, **params):
 	on_stale = (lambda: _error(_vpn_failure_message() or 'Showing saved channels; check the VPN or provider connection.')) if notify_stale else None
 	fetch = _request if _deadline is None else lambda account, action, **options: _request(account, action, _deadline=_deadline, **options)
 	deadline_option = {} if _deadline is None else {'_deadline': _deadline}
+	if on_source: deadline_option['on_source'] = on_source
 	return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
 
 

@@ -174,7 +174,7 @@ def saved_streams(account, profile):
 	return saved_catalog(account, 'get_live_streams', profile)
 
 
-def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=None, force_refresh=False, _deadline=None, **params):
+def get(account, action, fetch, profile, *, on_stale=None, on_status=None, on_source=None, now=None, force_refresh=False, _deadline=None, **params):
 	"""Return the catalog; refresh after two minutes, with a 24-hour offline fallback."""
 	if action not in _FIELDS: return fetch(account, action, **params)
 	now = time.time() if now is None else now
@@ -187,6 +187,7 @@ def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=N
 	if full_live_catalog and cached and not _usable_streams(cached[0]['items']): cached = None
 	if cached and cached[1] < FRESH_SECONDS and not force_refresh:
 		if on_status: on_status(cached[0]['created'], False)
+		if on_source: on_source('cache')
 		return cached[0]['items']
 	try:
 		data = fetch(account, action, **params)
@@ -200,6 +201,7 @@ def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=N
 		if not cached: raise
 		if on_stale: on_stale()
 		if on_status: on_status(cached[0]['created'], True)
+		if on_source: on_source('stale')
 		return cached[0]['items']
 	if clean is not None:
 		payload = {'key': key, 'created': now, 'items': clean}
@@ -207,4 +209,5 @@ def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=N
 		else: _write(profile, path, payload, _deadline)
 	if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
 	if on_status: on_status(now, False)
+	if on_source: on_source('network')
 	return data

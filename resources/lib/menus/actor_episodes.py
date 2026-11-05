@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from indexers.tmdb_api import base_url, get_tmdb, cache_object, EXPIRES_1_WEEK
 from modules import kodi_utils
 
@@ -19,19 +19,29 @@ def filter_actor_episodes(tmdb_id, episodes, actor_id, actor_name):
 	matches, failed = [], 0
 	progress = kodi_utils.progressDialog
 	progress.create('Episodes featuring %s' % actor_name, 'Checking episode credits…')
+	pool = ThreadPoolExecutor(max_workers=4)
+	pending, remaining = {}, iter(items)
 	try:
-		with ThreadPoolExecutor(max_workers=4) as pool:
-			for start in range(0, len(items), 4):
-				if progress.iscanceled() or kodi_utils.monitor.abortRequested(): return []
-				batch = items[start:start + 4]
-				futures = [pool.submit(episode_credits, tmdb_id, item['season'], item['episode']) for item in batch]
-				for item, future in zip(batch, futures):
-					try:
-						if credited_actor(future.result(), actor_id): matches.append(item)
-					except Exception: failed += 1
-				progress.update(int(100 * (start + len(batch)) / len(items)))
-				if progress.iscanceled() or kodi_utils.monitor.abortRequested(): return []
-	finally: progress.close()
+		completed = 0
+		while True:
+			if progress.iscanceled() or kodi_utils.monitor.abortRequested(): return []
+			while len(pending) < 4:
+				item = next(remaining, None)
+				if item is None: break
+				pending[pool.submit(episode_credits, tmdb_id, item['season'], item['episode'])] = item
+			if not pending: break
+			done, _ = wait(pending, timeout=0.1, return_when=FIRST_COMPLETED)
+			for future in done:
+				item = pending.pop(future)
+				try:
+					if credited_actor(future.result(), actor_id): matches.append(item)
+				except Exception: failed += 1
+				completed += 1
+			if done: progress.update(int(100 * completed / len(items)))
+	finally:
+		for future in pending: future.cancel()
+		pool.shutdown(wait=False)
+		progress.close()
 	if failed: kodi_utils.notification('Could not check %s episodes. Results may be incomplete.' % failed)
 	elif not matches: kodi_utils.notification('No credited episodes found for %s.' % actor_name)
-	return matches
+	return sorted(matches, key=lambda item: (int(item['season']), int(item['episode'])))

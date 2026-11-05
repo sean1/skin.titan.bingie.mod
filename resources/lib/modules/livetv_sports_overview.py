@@ -24,7 +24,7 @@ class _SharedCatalog:
 		self.lock = Lock()
 		self.entries = {}
 
-	def get(self, identity, account, *, on_status=None, _deadline=None, **kwargs):
+	def get(self, identity, account, *, on_status=None, on_source=None, _deadline=None, **kwargs):
 		from menus import livetv
 		with self.lock:
 			entry = self.entries.get(identity)
@@ -36,16 +36,17 @@ class _SharedCatalog:
 		if owner:
 			try:
 				if livetv._feed_accounts_fingerprint() != self.accounts: raise ValueError('Account changed')
-				status = []
+				status, sources = [], []
 				while True:
 					timeout = 0.1 if _deadline is None else min(0.1, max(0, _deadline - time.monotonic()))
 					if _deadline is not None and timeout <= 0: raise OSError('Live TV catalog timed out')
 					if livetv._CATALOG_PREFETCH_SLOTS.acquire(timeout=timeout): break
 				try:
-					entry['items'] = livetv._catalog(account, 'get_live_streams', force_refresh=self.force, notify_stale=False, on_status=lambda created, stale: status.append((created, stale)), _deadline=_deadline)
+					entry['items'] = livetv._catalog(account, 'get_live_streams', force_refresh=self.force, notify_stale=False, on_status=lambda created, stale: status.append((created, stale)), on_source=sources.append, _deadline=_deadline)
 				finally: livetv._CATALOG_PREFETCH_SLOTS.release()
 				if livetv._feed_accounts_fingerprint() != self.accounts: raise ValueError('Account changed')
 				entry['status'] = status
+				entry['sources'] = sources
 			except Exception as error:
 				entry['error'] = error
 			finally:
@@ -56,6 +57,8 @@ class _SharedCatalog:
 		if 'error' in entry: raise entry['error']
 		if on_status:
 			for created, stale in entry.get('status', []): on_status(created, stale)
+		if on_source:
+			for source in entry.get('sources', []): on_source(source)
 		return entry['items']
 
 

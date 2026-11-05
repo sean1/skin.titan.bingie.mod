@@ -42,6 +42,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.set_resume, self.set_watched = 5, 90
 		self.playback_event, self.progress_media = None, None
 		self.playback_error, self.retry_resume_percent = False, 0
+		self.restart_from_beginning = False
 		self.playback_health_context, self.playback_health_started_at, self.playback_health_finalized = None, None, False
 		self.playback_health_bitrate_mbps, self.playback_health_qualified = None, False
 		self.playback_paused, self.playback_seek_grace_until = False, 0
@@ -282,7 +283,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.mediatype, self.tvdb_id = self.meta_get('mediatype'), self.meta_get('tvdb_id')
 			self.season, self.episode = self.meta_get('season', ''), self.meta_get('episode', '')
 			retry_resume = self.meta.pop('_retry_resume_percent', 0)
-			if retry_resume: bookmark = retry_resume
+			self.restart_from_beginning = bool(self.meta.pop('_restart_from_beginning', False))
+			if self.restart_from_beginning: bookmark = 0
+			elif retry_resume: bookmark = retry_resume
 			elif any(i in self.meta for i in ('random', 'random_continual')): bookmark = 0
 			else: bookmark = self.bookmarkPOV()
 			if bookmark == 'cancel': return
@@ -332,6 +335,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 				kodi_utils.logger('POVPlayer', 'Playback duration is implausibly short; trying the next source')
 				self._stop_and_wait(force=True)
 				return False
+			if self.restart_from_beginning:
+				if self.playback_event is not True or kodi_utils.monitor.abortRequested(): return False
+				ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode)
+				self.restart_from_beginning = False
 			self._record_playback_health('startup_ok', latency=self._playback_health_elapsed())
 			if callable(progress_media): progress_media()
 			kodi_utils.close_all_dialog()
@@ -539,7 +546,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			percent = str(resume_point)
 			resume_point = sec2time(float(curr_time), n_msec=0)
 			bookmark = self.getResumeStatus(resume_point, percent, bookmark)
-			if bookmark == 0: ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode)
+			if bookmark == 0: self.restart_from_beginning = True
 		return bookmark
 
 	def getResumeStatus(self, resume_point, percent, bookmark):

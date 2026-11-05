@@ -91,6 +91,7 @@ class Sources:
 		self.params = {}
 		self.clear_properties, self.filters_ignored = True, False
 		self.progress_dialog, self.pov_background_url = None, None
+		self.restart_from_beginning = False
 		self.source_sink, self.prescrape_sink = SourceResultSink(), SourceResultSink()
 		self.threads, self.providers, self.sources, self.internal_scraper_names = [], [], self.source_sink.items, []
 		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources = [], [], self.prescrape_sink.items
@@ -357,6 +358,7 @@ class Sources:
 					'_playback_health_has_stall_fallback': count < len(items)
 				})
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
+				if getattr(self, 'restart_from_beginning', False): playback_meta['_restart_from_beginning'] = True
 				playback_player = POVPlayer()
 				try: playback_result = playback_player.run(link, playback_meta, progress_media)
 				except Exception as exc:
@@ -364,6 +366,7 @@ class Sources:
 					except: pass
 					playback_result = False
 				retry_resume_percent = getattr(playback_player, 'retry_resume_percent', 0)
+				self.restart_from_beginning = getattr(playback_player, 'restart_from_beginning', False)
 				if playback_result is not False: return playback_result
 			else:
 				cancelled = monitor.abortRequested() or (self.progress_dialog.full_screen and self.progress_dialog.iscanceled())

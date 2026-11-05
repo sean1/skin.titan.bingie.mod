@@ -106,14 +106,18 @@ class Refine:
 		return self._year('year_end', 'To year')
 
 	def year(self):
-		start = kodi_utils.dialog.numeric(0, 'From year', self.draft['year_start'])
-		if start is None: return
-		start = str(start).strip()
-		if start and (not start.isdigit() or len(start) != 4): return kodi_utils.notification('Enter a four-digit year')
-		end = kodi_utils.dialog.numeric(0, 'To year', self.draft['year_end'])
-		if end is None: return
-		end = str(end).strip()
-		if end and (not end.isdigit() or len(end) != 4): return kodi_utils.notification('Enter a four-digit year')
+		choice = self._select('Year range', (('From and to year', 'range'), ('From year onward', 'from'), ('Through year', 'through'), ('Clear years', 'clear')))
+		if choice is None: return
+		mode = choice[1]
+		start, end = '', ''
+		if mode in ('range', 'from'):
+			start = str(kodi_utils.dialog.numeric(0, 'From year', self.draft['year_start']) or '').strip()
+			if not start: return
+			if not start.isdigit() or len(start) != 4: return kodi_utils.notification('Enter a four-digit year')
+		if mode in ('range', 'through'):
+			end = str(kodi_utils.dialog.numeric(0, 'To year', self.draft['year_end']) or '').strip()
+			if not end: return
+			if not end.isdigit() or len(end) != 4: return kodi_utils.notification('Enter a four-digit year')
 		if start and end and int(start) > int(end): return kodi_utils.notification('From year must not be later than to year')
 		self.draft['year_start'], self.draft['year_end'] = start, end
 		if start or end: self.draft['release_window'] = ''
@@ -241,9 +245,10 @@ class Refine:
 
 	def _year(self, key, heading):
 		value = kodi_utils.dialog.numeric(0, heading, self.draft[key])
-		if value is None: return
+		if not value: return
 		value = str(value).strip()
-		if value and (not value.isdigit() or len(value) != 4): return kodi_utils.notification('Enter a four-digit year')
+		if not value: return
+		if not value.isdigit() or len(value) != 4: return kodi_utils.notification('Enter a four-digit year')
 		self.draft[key] = value
 		if value: self.draft['release_window'] = ''
 		return self._save()

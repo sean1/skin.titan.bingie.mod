@@ -25,7 +25,7 @@ actor_window_id = 1122
 actor_hydration_property = 'PovActorHydrationRequest'
 actor_credit_types = ('movies', 'tvshows', 'directed')
 actor_credit_focus = (('movies', 'PovActorHasMovies', 610), ('tvshows', 'PovActorHasTVShows', 620), ('directed', 'PovActorHasDirected', 630))
-actor_credit_cache = WindowPropertyCache('pov_lite_actor_credits_v1_registry', 18)
+actor_credit_cache = WindowPropertyCache('pov_lite_actor_credits_v2_registry', 18)
 actor_credit_cache_prefix = '%s_%s'
 actor_credit_fill_prefix = 'PovActorCreditsFill.%s'
 credit_snapshot_keys = (
@@ -140,8 +140,10 @@ def _dedupe_and_sort(data):
 	unique = {}
 	for item in data:
 		key = item.get('media_type'), item.get('id')
-		if not key[1] or not item.get('backdrop_path'): continue
-		if key not in unique or _credit_score(item) > _credit_score(unique[key]): unique[key] = item
+		if not key[1]: continue
+		quality = (_credit_score(item), bool(item.get('backdrop_path')), bool(item.get('poster_path')))
+		previous = unique.get(key)
+		if previous is None or quality > (_credit_score(previous), bool(previous.get('backdrop_path')), bool(previous.get('poster_path'))): unique[key] = item
 	return sorted(unique.values(), key=_credit_score, reverse=True)
 
 def _credit_snapshot(item):
@@ -200,7 +202,7 @@ def _lifespan(person_info):
 
 def _actor_backdrop(credits, resolution):
 	all_credits = credits['movies'] + credits['tvshows'] + credits['directed']
-	best = max(all_credits, key=_credit_score, default={})
+	best = max((item for item in all_credits if item.get('backdrop_path')), key=_credit_score, default={})
 	path = best.get('backdrop_path')
 	return tmdb_image_base % (resolution, path) if path else fanart_empty
 
@@ -325,13 +327,14 @@ def _credit_listitem(item, resolution, actor_id, credit_type=None):
 	media_type = 'tvshow' if item.get('media_type') == 'tv' else 'movie'
 	name_key = 'name' if media_type == 'tvshow' else 'title'
 	date = item.get('first_air_date') if media_type == 'tvshow' else item.get('release_date')
-	title = item.get(name_key) or item.get('original_%s' % name_key) or ''
+	title = item.get(name_key) or item.get('original_%s' % name_key) or 'Untitled'
 	year = date.split('-', 1)[0] if date else ''
 	tmdb_id = item['id']
-	backdrop = tmdb_image_base % (resolution['fanart'], item['backdrop_path'])
-	landscape = tmdb_image_base % ('w780', item['backdrop_path'])
+	backdrop_path = item.get('backdrop_path')
 	poster_path = item.get('poster_path')
 	poster = tmdb_image_base % (resolution['poster'], poster_path) if poster_path else poster_empty
+	backdrop = tmdb_image_base % (resolution['fanart'], backdrop_path) if backdrop_path else fanart_empty
+	landscape = tmdb_image_base % ('w780', backdrop_path) if backdrop_path else poster if poster_path else fanart_empty
 	rating = float(item.get('vote_average') or 0)
 	listitem = make_listitem()
 	listitem.setLabel(title)

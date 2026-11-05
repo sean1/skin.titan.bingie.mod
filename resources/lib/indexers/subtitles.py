@@ -406,6 +406,7 @@ class Subtitles(kodi_utils.xbmc_player):
 	def _set_context(self, subtitles=None):
 		try: playing_file = self.getPlayingFile()
 		except: playing_file = ''
+		if self.expected_playing_file is not None and self.expected_playing_file != playing_file: return
 		context = {
 			'version': subtitle_context_version, 'generation': self.context_generation, 'media_identity': self.media_identity, 'playing_fingerprint': playing_file_fingerprint(playing_file),
 			'imdb_id': _clean_identifier(self.imdb_id), 'tmdb_id': _clean_identifier(self.tmdb_id), 'mediatype': self.mediatype, 'title': _safe_context_string(self.title, 180), 'poster': _safe_poster(self.poster),
@@ -424,10 +425,12 @@ class Subtitles(kodi_utils.xbmc_player):
 		kodi_utils.set_property(subtitle_context_property, payload)
 		return context
 
-	def run(self, query, imdb_id, season, episode, poster, release_name='', quality='', extra_info='', year='', tmdb_id='', mediatype='', identity_title=''):
+	def run(self, query, imdb_id, season, episode, poster, release_name='', quality='', extra_info='', year='', tmdb_id='', mediatype='', identity_title='', expected_playing_file=None):
 		try:
-			try: self.expected_playing_file = self.getPlayingFile()
-			except Exception: self.expected_playing_file = ''
+			try: playing_file = self.getPlayingFile()
+			except Exception: playing_file = ''
+			if expected_playing_file is not None and expected_playing_file != playing_file: return False
+			self.expected_playing_file = playing_file
 			if _manual_selection_matches(self.expected_playing_file): return False
 			self.configure(imdb_id, season, episode, poster, self.expected_playing_file, release_name, quality, extra_info, year, tmdb_id, mediatype, identity_title or query)
 			self.automatic = True

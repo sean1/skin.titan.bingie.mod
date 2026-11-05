@@ -27,6 +27,7 @@ pack_enable_check, sources_quality_count = source_utils.pack_enable_check, sourc
 get_cache_expiry, get_file_info = source_utils.get_cache_expiry, source_utils.get_file_info
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
 DEFERRED_LINK_TTL = 30.0
+NEXT_EPISODE_PREP_TTL = 1800.0
 _PLAYBACK_FAILED = object()
 _RETRY_SEARCH = object()
 av1_filter_key, hevc_filter_key, hdr_filter_key, dolby_vision_filter_key = '[B]AV1[/B]', '[B]HEVC[/B]', '[B]HDR[/B]', '[B]D/VISION[/B]'
@@ -69,6 +70,13 @@ class SourceResultSink:
 class Sources:
 	nextep_params = []
 	nextep_lock = Lock()
+	nextep_prepared = None
+	nextep_preparing_key = None
+	nextep_generation = 0
+
+	@staticmethod
+	def _nextep_key(params):
+		return json.dumps({key: value for key, value in params.items() if key != 'background'}, sort_keys=True, default=str)
 
 	@classmethod
 	def factory(cls, params):
@@ -84,7 +92,12 @@ class Sources:
 	@classmethod
 	def nextep_callback(cls, params):
 		if not isinstance(params, dict): return
-		with cls.nextep_lock: cls.nextep_params[:] = [params]
+		key = cls._nextep_key(params)
+		with cls.nextep_lock:
+			if cls.nextep_preparing_key != key and (not cls.nextep_prepared or cls.nextep_prepared['key'] != key):
+				cls.nextep_generation += 1
+				cls.nextep_preparing_key, cls.nextep_prepared = None, None
+			cls.nextep_params[:] = [params]
 
 	@classmethod
 	def _pop_nextep(cls):
@@ -92,13 +105,35 @@ class Sources:
 
 	@classmethod
 	def clear_nextep(cls):
-		with cls.nextep_lock: cls.nextep_params.clear()
+		with cls.nextep_lock:
+			cls.nextep_params.clear()
+			cls.nextep_generation += 1
+			cls.nextep_preparing_key, cls.nextep_prepared = None, None
 
 	@classmethod
 	def background_prep(cls, params):
+		key = cls._nextep_key(params)
+		with cls.nextep_lock:
+			cls.nextep_generation += 1
+			generation = cls.nextep_generation
+			cls.nextep_preparing_key, cls.nextep_prepared = key, None
 		self = cls()
 		self.source_select({**params, 'background': 'true'})
-		return self.pov_background_url
+		with cls.nextep_lock:
+			valid = cls.nextep_generation == generation
+			if valid:
+				cls.nextep_preparing_key = None
+				if self.pov_background_url and getattr(self, 'prepared_candidate', None):
+					cls.nextep_prepared = {'key': key, 'created': time.monotonic(), 'results': self.prepared_candidate, 'prescrape': self.prescrape}
+		return self.pov_background_url if valid else False
+
+	@classmethod
+	def _take_nextep_prepared(cls, params):
+		key = cls._nextep_key(params)
+		with cls.nextep_lock:
+			prepared = cls.nextep_prepared
+			cls.nextep_prepared = None
+			if prepared and prepared['key'] == key and time.monotonic() - prepared['created'] <= NEXT_EPISODE_PREP_TTL: return prepared
 
 	def __init__(self):
 		self.params = {}
@@ -107,6 +142,7 @@ class Sources:
 		self.restart_from_beginning = False
 		self.pending_search = None
 		self.search_cancelled = False
+		self.using_nextep_prepared = False
 		self.source_sink, self.prescrape_sink = SourceResultSink(), SourceResultSink()
 		self.threads, self.providers, self.sources, self.internal_scraper_names = [], [], self.source_sink.items, []
 		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources = [], [], self.prescrape_sink.items
@@ -132,10 +168,16 @@ class Sources:
 				if self.search_cancelled: return
 				outcome = self._process_post_results() if not results and not getattr(self, 'unverified_results', []) else self.play_source(results)
 				if outcome is not _RETRY_SEARCH: return outcome
-				params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false', 'autoplay': 'false'}
-				params.pop('autoplay_next', None)
+				retry_state = None
+				if getattr(self, 'using_nextep_prepared', False) and self.autoplay:
+					params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false'}
+					retry_state = (set(self.autoplay_attempted), self.autoplay_resume_percent, self.restart_from_beginning)
+				else:
+					params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false', 'autoplay': 'false'}
+					params.pop('autoplay_next', None)
 				self._cancel_pending_search()
 				self.__init__()
+				self.prepared_retry_state = retry_state
 		finally: self._cancel_pending_search()
 
 	def _cancel_pending_search(self):
@@ -147,6 +189,15 @@ class Sources:
 		self.meta.pop('full_search_available', None)
 		self.meta.pop('_bingie_pending_search', None)
 		self.progress_dialog = DialogProgress(getattr(self, 'full_screen', False))
+		prepared = None if self.background else self._take_nextep_prepared(self.params)
+		if prepared:
+			self.prescrape = prepared['prescrape']
+			self.orig_results = [dict(item) for item in prepared['results']]
+			results = self.results_processor.process(self.orig_results)
+			if results:
+				self.using_nextep_prepared = True
+				self.meta.update({'scrape_time': time.monotonic() - start_time})
+				return results
 		if self.prescrape and any(x in self.active_internal_scrapers for x in default_internal_scrapers):
 			results = self.collect_prescrape_results()
 			if results: results = self.results_processor.process(results)
@@ -391,12 +442,22 @@ class Sources:
 
 	def play_source(self, results):
 		results = [item for item in results if item.get('_identity_status') != 'unverified']
-		if self.background: self.pov_background_url = bool(results)
+		if self.background:
+			self.pov_background_url = bool(results)
+			if results: self.prepared_candidate = [dict(item) for item in (getattr(self, 'orig_results', None) or self.prescrape_sources)]
 		elif self.autoplay:
-			self.autoplay_attempted = set()
-			self.autoplay_resume_percent = 0
+			retry_state = getattr(self, 'prepared_retry_state', None)
+			self.prepared_retry_state = None
+			if retry_state:
+				self.autoplay_attempted, self.autoplay_resume_percent, self.restart_from_beginning = retry_state
+				results = [item for item in results if self._autoplay_source_key(item) not in self.autoplay_attempted]
+				if not results: return notification('Playback failed. Search again or adjust filters.', time=10000)
+			else:
+				self.autoplay_attempted = set()
+				self.autoplay_resume_percent = 0
 			outcome = self.play_file(results)
 			pending = self.pending_search
+			if outcome is _PLAYBACK_FAILED and not pending and getattr(self, 'using_nextep_prepared', False): return _RETRY_SEARCH
 			if outcome is not _PLAYBACK_FAILED or not pending: return outcome
 			display = kodi_utils.xbmcgui.DialogProgress() if self.progress_dialog.full_screen else progressDialogBG
 			display.create('BINGIE Lite', 'Searching for remaining sources...')
@@ -466,6 +527,7 @@ class Sources:
 				try:
 					if monitor.abortRequested(): break
 					elif self.progress_dialog.full_screen and self.progress_dialog.iscanceled(): break
+					if self.progress_dialog.full_screen and self.progress_dialog.dialog_progress is None: self.progress_dialog.make(self.meta)
 					percent = int(((total_items := len(items))-count)/total_items*100)
 					name = (item.get('display_name') or item['name']).upper()
 					line1 = item.get('scrape_provider'), item.get('cache_provider'), item.get('provider')
@@ -547,7 +609,7 @@ class Sources:
 				if self.progress_dialog.full_screen: self.progress_dialog.kill()
 				else: progressDialogBG.close()
 				if cancelled: return
-				if self.autoplay and not manual_selection and self.pending_search: return _PLAYBACK_FAILED
+				if self.autoplay and not manual_selection and (self.pending_search or getattr(self, 'using_nextep_prepared', False)): return _PLAYBACK_FAILED
 				if not attempted: return self._no_results()
 				if manual_selection: return _PLAYBACK_FAILED
 				return notification('Playback failed. Search again or adjust filters.', time=10000)

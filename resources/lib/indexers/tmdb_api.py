@@ -177,7 +177,7 @@ def tmdb_movies_because_you_watched(tmdb_id, watched_ids):
 	if not tmdb_id: return tmdb_movies_trending_day(1)
 	return _because_you_watched(tmdb_id, watched_ids, tmdb_movies_recommendations(tmdb_id, 1), tmdb_movies_similar)
 
-def _more_like_this(tmdb_id, recommendations, similar_function):
+def _more_like_this(tmdb_id, recommendations, similar_function, similar_cache_key):
 	results, seen = [], {str(tmdb_id)}
 
 	def add_items(data):
@@ -190,7 +190,10 @@ def _more_like_this(tmdb_id, recommendations, similar_function):
 			if len(results) == DETAIL_SHELF_LIMIT: break
 
 	add_items(recommendations)
-	if len(results) < DETAIL_SHELF_LIMIT: add_items(similar_function(tmdb_id, 1))
+	if not results: add_items(similar_function(tmdb_id, 1))
+	elif len(results) < DETAIL_SHELF_LIMIT:
+		from caches.main_cache import MainCache
+		add_items(MainCache().get(similar_cache_key))
 	return {'page': 1, 'total_pages': 1, 'total_results': len(results), 'results': results}
 
 def _because_you_watched(tmdb_id, watched_ids, recommendations, similar_function):
@@ -211,7 +214,7 @@ def _because_you_watched(tmdb_id, watched_ids, recommendations, similar_function
 	return {'page': 1, 'total_pages': 1, 'total_results': len(results), 'results': results}
 
 def tmdb_movies_more_like_this(tmdb_id, _page_no):
-	return _more_like_this(tmdb_id, tmdb_movies_recommendations(tmdb_id, 1), tmdb_movies_similar)
+	return _more_like_this(tmdb_id, tmdb_movies_recommendations(tmdb_id, 1), tmdb_movies_similar, 'tmdb_movies_similar_%s_1' % tmdb_id)
 
 def tmdb_movies_search(query, page_no):
 	string = 'tmdb_movies_search_%s_%s' % (query, page_no)
@@ -325,7 +328,7 @@ def tmdb_tv_because_you_watched(tmdb_id, watched_ids):
 	return _because_you_watched(tmdb_id, watched_ids, tmdb_tv_recommendations(tmdb_id, 1), tmdb_tv_similar)
 
 def tmdb_tv_more_like_this(tmdb_id, _page_no):
-	return _more_like_this(tmdb_id, tmdb_tv_recommendations(tmdb_id, 1), tmdb_tv_similar)
+	return _more_like_this(tmdb_id, tmdb_tv_recommendations(tmdb_id, 1), tmdb_tv_similar, 'tmdb_tv_similar_%s_1' % tmdb_id)
 
 def tmdb_tv_search(query, page_no):
 	string = 'tmdb_tv_search_%s_%s' % (query, page_no)

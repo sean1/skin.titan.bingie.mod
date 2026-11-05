@@ -241,14 +241,9 @@ class POVPlayer(kodi_utils.xbmc_player):
 		try: expected = float(self.meta_get('duration') or 0)
 		except: expected = 0
 		if expected <= 0: return True
-		deadline = monotonic() + PLAYBACK_DURATION_TIMEOUT
-		actual = 0
-		while monotonic() < deadline:
-			try: actual = float(self.getTotalTime() or 0)
-			except: actual = 0
-			if actual > 0: break
-			if kodi_utils.monitor.waitForAbort(0.2): return True
-		if actual <= 0: return True
+		try: actual = float(self.getTotalTime() or 0)
+		except: actual = 0
+		if actual <= 0: return None
 		return not (actual < expected * MINIMUM_DURATION_RATIO and expected - actual > MINIMUM_DURATION_GAP)
 
 	def _set_terminal_playback_event(self):
@@ -351,7 +346,17 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self._record_playback_health('startup_fail', latency=self._playback_health_elapsed())
 				kodi_utils.logger('POVPlayer', 'Playback startup failed or timed out')
 				return False
-			if not self._duration_is_plausible():
+			duration_ok = self._duration_is_plausible()
+			if duration_ok is not False and self.playback_event is True:
+				if callable(progress_media): progress_media()
+				kodi_utils.close_all_dialog()
+				if self.isPlayingVideo(): self.exec_task('subtitles')
+				deadline = monotonic() + PLAYBACK_DURATION_TIMEOUT
+				while duration_ok is None and self.playback_event is True and monotonic() < deadline:
+					if kodi_utils.monitor.waitForAbort(0.2): return
+					if self.playback_event is True: duration_ok = self._duration_is_plausible()
+			if self.playback_event is not True: return False if self.playback_error else None
+			if duration_ok is False:
 				self._record_playback_health('startup_fail', latency=self._playback_health_elapsed())
 				kodi_utils.logger('POVPlayer', 'Playback duration is implausibly short; trying the next source')
 				self._stop_and_wait(force=True)
@@ -362,9 +367,6 @@ class POVPlayer(kodi_utils.xbmc_player):
 				ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode)
 				self.restart_from_beginning = False
 			self._record_playback_health('startup_ok', latency=self._playback_health_elapsed())
-			if callable(progress_media): progress_media()
-			kodi_utils.close_all_dialog()
-			if self.isPlayingVideo(): self.exec_task('subtitles')
 			if self.mediatype == 'episode':
 				self.play_random_continual = 'random_continual' in self.meta
 				if not self.play_random_continual and self.autoplay_nextep:
@@ -620,6 +622,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 				from modules.episode_tools import execute_nextep
 				Thread(target=execute_nextep, args=(self, self.meta, self.nextep_settings)).start()
 			elif task_name == 'subtitles':
+				playback_file = self.getPlayingFile()
+				if not playback_file or self.playback_event is not True: return
 				self.subs_searched = True
 				poster = self.meta.get('poster') or poster_empty
 				season = self.season if self.mediatype == 'episode' else None
@@ -629,7 +633,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 					self.title, self.imdb_id, season, episode, poster, self.meta.get('release_name', ''),
 					self.meta.get('release_quality', ''), self.meta.get('release_info', ''), self.year, self.tmdb_id, self.mediatype,
 					self.meta.get('tvshowtitle') or self.meta.get('title') or self.title
-				)).start()
+				), kwargs={'expected_playing_file': playback_file}).start()
 			elif task_name == 'stingers':
 				self.stingers_checked = True
 				poster = self.meta.get('poster') or poster_empty

@@ -11,8 +11,11 @@ _SPORT_LEAGUES = {'hockey': 'nhl', 'football': 'nfl', 'basketball': 'nba'}
 _MONTHS = ('january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december')
 _MONTH_NUMBERS = {name: index for index, name in enumerate(_MONTHS, 1)}
 _MONTH_NUMBERS.update({name[:3]: index for index, name in enumerate(_MONTHS, 1)})
-_METADATA_DATE = re.compile(r'\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4}|'
-	r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*)\b', re.I)
+_MONTH_NUMBERS['sept'] = 9
+_METADATA_DATE = re.compile(r'(?<![\d/.-])(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/](?:\d{4}|\d{2})|'
+	r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,?\s+\d{4})?|'
+	r'\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:,?\s+\d{4})?|'
+	r'(?!24/07(?:\D|$))\d{2}/\d{2})(?![\d/.-])', re.I)
 _EVENT = re.compile(r"^([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?|at|@)\s+([\w .&'’\-]{2,80}?)$", re.I)
 _NON_LIVE_TITLE = re.compile(r'\b(?:end|ended|highlights?|recaps?|previews?|replays?|delayed|encore|re-?runs?|repeats?|recorded)\b', re.I)
 _WORD = re.compile(r'\w+')
@@ -70,20 +73,25 @@ def _event(name):
 
 
 def _metadata_dates(value, year):
-	"""Parse a channel date without datetime.strptime."""
+	"""Parse a channel date, keeping explicit years and both numeric orders."""
 	parts = re.fullmatch(r'(\d{4})([-/])(\d{1,2})\2(\d{1,2})', value)
 	if parts:
 		candidates = [(int(parts[1]), int(parts[3]), int(parts[4]))]
 	else:
-		parts = re.fullmatch(r'(\d{1,2})([-/])(\d{1,2})\2(\d{4})', value)
+		parts = re.fullmatch(r'(\d{1,2})([-/])(\d{1,2})(?:\2(\d{4}|\d{2}))?', value)
 		if parts:
-			first, second, match_year = int(parts[1]), int(parts[3]), int(parts[4])
-			candidates = [(match_year, first, second), (match_year, second, first)]
+			first, second = int(parts[1]), int(parts[3])
+			if parts[4] and len(parts[4]) == 2:
+				base_year = year // 100 * 100 + int(parts[4])
+				years = (min((base_year - 100, base_year, base_year + 100), key=lambda candidate: abs(candidate - year)),)
+			else: years = (int(parts[4]),) if parts[4] else (year - 1, year, year + 1)
+			candidates = [(candidate_year, month, day) for candidate_year in years for month, day in ((first, second), (second, first))]
 		else:
-			parts = value.casefold().split()
-			if len(parts) != 2: return []
-			if parts[0] in _MONTH_NUMBERS and parts[1].isdigit(): candidates = [(year, _MONTH_NUMBERS[parts[0]], int(parts[1]))]
-			elif parts[1] in _MONTH_NUMBERS and parts[0].isdigit(): candidates = [(year, _MONTH_NUMBERS[parts[1]], int(parts[0]))]
+			parts = value.casefold().replace(',', '').split()
+			if len(parts) not in (2, 3): return []
+			years = (int(parts[2]),) if len(parts) == 3 and parts[2].isdigit() else (year - 1, year, year + 1)
+			if parts[0] in _MONTH_NUMBERS and parts[1].isdigit(): candidates = [(candidate_year, _MONTH_NUMBERS[parts[0]], int(parts[1])) for candidate_year in years]
+			elif parts[1] in _MONTH_NUMBERS and parts[0].isdigit(): candidates = [(candidate_year, _MONTH_NUMBERS[parts[1]], int(parts[0])) for candidate_year in years]
 			else: return []
 	parsed = []
 	for candidate in candidates:
@@ -98,7 +106,7 @@ def _date_may_match(name, fixture):
 	try:
 		date = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')).date()
 		parsed = _metadata_dates(match.group(), date.year)
-		return not parsed or any(abs((value - date).days) <= 1 for value in parsed)
+		return bool(parsed) and any(abs((value - date).days) <= 1 for value in parsed)
 	except (AttributeError, KeyError, TypeError, ValueError): return True
 
 

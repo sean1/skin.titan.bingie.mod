@@ -197,10 +197,16 @@ class SportsOverview:
 				ku.set_property(PREFIX + sport, encoded)
 				self.pending_refresh.add(sport)
 		if self.focus:
-			control, revision = self.focus
-			if not ku.get_visibility('Control.HasFocus(%d)' % control): self.focus = None
+			control, revision, identity, started = self.focus
+			idle_required = max(2, int(time.monotonic() - started) + 1)
+			if time.monotonic() - started >= 90 or ku.get_visibility('Player.HasMedia | System.HasActiveModalDialog') or not ku.get_visibility('Control.HasFocus(%d)' % control) or not ku.get_visibility('System.IdleTime(%d)' % idle_required): self.focus = None
 			elif not ku.get_visibility('Container(%d).IsUpdating' % control) and ku.get_infolabel('Container(%d).ListItemAbsolute(0).Property(LiveTV.OverviewRevision)' % control) == revision:
-				ku.execute_builtin('Control.SetFocus(%d,0,absolute)' % control)
+				try:
+					count = min(10000, max(0, int(ku.get_infolabel('Container(%d).NumItems' % control))))
+					matches = [index for index in range(count) if ku.get_infolabel('Container(%d).ListItemAbsolute(%d).Property(LiveTV.EventIdentity)' % (control, index)) == identity]
+					position = int(ku.get_infolabel('Container(%d).CurrentItem' % control)) - 1
+					if identity and len(matches) == 1 and position != matches[0]: ku.execute_builtin('Control.SetFocus(%d,%d,absolute)' % (control, matches[0]))
+				except (TypeError, ValueError): pass
 				self.focus = None
 		if not ku.get_visibility('Player.HasMedia'):
 			if self.catalog_generation != self.generation:
@@ -227,6 +233,8 @@ class SportsOverview:
 			for sport in tuple(self.pending_refresh):
 				control = ROW_IDS[sport]
 				revision = str(time.time_ns())
-				if ku.get_visibility('Control.HasFocus(%d)' % control): self.focus = (control, revision)
+				if ku.get_visibility('Control.HasFocus(%d)' % control):
+					identity = ku.get_infolabel('Container(%d).ListItem.Property(LiveTV.EventIdentity)' % control)
+					self.focus = (control, revision, identity, time.monotonic()) if identity else None
 				ku.set_property('LiveTV.Sports.OverviewRevision.' + sport, revision)
 				self.pending_refresh.discard(sport)

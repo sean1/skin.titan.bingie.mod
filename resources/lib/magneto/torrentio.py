@@ -60,6 +60,16 @@ class source:
 				name = source_utils.clean_name(file_title[0])
 
 				release = stremio_utils.classify_release(context, name)
+				if release is None and 'season' in context:
+					# Some Torrentio titles separate the season and episode with a hyphen or dot.
+					marker = r'(?<![a-z0-9])S%02d[-.]E%02d(?!\d)' % (int(context['season']), int(context['episode']))
+					normalized, replacements = re.subn(marker, context['hdlr'], name, flags=re.I)
+					if replacements:
+						title, separator, details = normalized.partition(context['hdlr'])
+						normalized = re.sub(r'\(Chinese:[^a-z0-9)]*\)', '', title, flags=re.I) + separator + details
+					if replacements and source_utils.check_title(context['title'], context['aliases'], normalized, context['hdlr'], context['year']):
+						release = stremio_utils.classify_release(context, normalized)
+						if release is not None: name = normalized
 				if release is None and 'season' in context and len(file_title) > 1:
 					# Torrentio may return a pack title followed by the selected episode filename.
 					# Classify that filename independently so both the show and episode must match.

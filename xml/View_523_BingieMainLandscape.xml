@@ -295,6 +295,7 @@
 				<visible>!Window.IsActive(DialogVideoInfo.xml)</visible>
 				<include>Animation_Right_Home</include>
                 <left>131</left>
+                <animation effect="slide" start="0,0" end="-96,0" time="0" condition="Container.Content(movies) | Container.Content(tvshows)">Conditional</animation>
                 <top>560</top>
                 <width>1660</width>
                 <!-- Content Header -->
@@ -550,7 +551,7 @@
             <onfocus condition="String.IsEqual(Window(Home).Property(LiveTV.Sport),all) + String.Contains(Container.FolderPath,mode=livetv.soccer)">SetFocus(9500)</onfocus>
             <focusedposition>0</focusedposition>
             <top>51</top>
-            <width>1668</width>
+            <width>1850</width>
             <height>470</height>
             <orientation>vertical</orientation>
             <itemgap>0</itemgap>
@@ -571,6 +572,21 @@
 			<onclick condition="$EXP[IsNativeInfoListItem]">Action(Info)</onclick>
 			<onclick condition="String.IsEqual(ListItem.DBType,season) | String.IsEqual(ListItem.DBType,episode)">Action(Info)</onclick>
 			<oninfo condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</oninfo>
+            <itemlayout height="213" width="368" condition="Container.Content(movies) | Container.Content(tvshows)">
+                <control type="group"><width>370</width><height>215</height>
+                    <include>ThumbsViewItemBingieLayout</include>
+                    <include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include>
+                </control>
+            </itemlayout>
+            <focusedlayout height="213" width="368" condition="Container.Content(movies) | Container.Content(tvshows)">
+                <control type="group"><width>370</width><height>215</height>
+                    <control type="image"><visible>!$EXP[IsNextPageListItem]</visible><texture background="true">home/home_matte3.png</texture><colordiffuse>ffffffff</colordiffuse><include>thumbsborder_focused</include></control>
+                    <control type="image"><visible>$EXP[IsNextPageListItem]</visible><texture>colors/color_black.png</texture><bordertexture colordiffuse="ffffffff">diffuse/panel2.png</bordertexture><include>thumbsborder_focused</include></control>
+                    <include>ThumbsViewItemBingieLayout</include>
+                    <include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include>
+                </control>
+                <control type="image"><visible>!String.IsEmpty(Control.GetLabel(8231))</visible><posy>8</posy><left>8</left><height>60</height><width>50</width><aspectratio>keep</aspectratio><texture>bingie/top250p.png</texture></control>
+            </focusedlayout>
             <itemlayout height="193" width="333">
                 <control type="group">
                     <width>335</width>

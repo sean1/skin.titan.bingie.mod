@@ -236,30 +236,6 @@
                     <texture background="true" fallback="colors/color_transparent.png">$VAR[BingieInfoClearlogo]</texture>
                 </control>
 
-				<!-- Blank image for gap -->
-				<control type="image">
-					<visible>String.EndsWith(Control.GetLabel(987767),color_transparent.png)</visible>
-					<top>0</top>
-					<left>0</left>
-					<width>650</width>
-					<height>0</height>
-				</control>
-
-                <!-- text title -->
-                <control type="textbox">
-                    <visible>String.EndsWith(Control.GetLabel(987767),color_transparent.png)</visible>
-                    <top>-194</top>
-					<left>15</left>
-                    <width max="650">auto</width>
-                    <height>184</height>
-                    <font>Title</font>
-                    <align>left</align>
-                    <aligny>center</aligny>
-                    <textcolor>ffffffff</textcolor>
-                    <label>[B]$VAR[TVShowTitle][/B]</label>
-					<autoscroll delay="4000" time="2000" repeat="6000">true</autoscroll>
-                </control>
-
                 <!-- row details -->
                 <control type="group">
 					<left>15</left>

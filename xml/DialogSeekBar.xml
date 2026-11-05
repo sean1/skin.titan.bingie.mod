@@ -56,7 +56,7 @@
 						<aspectratio align="left" aligny="center">keep</aspectratio>
 						<visible>!String.IsEmpty(Control.GetLabel(111))</visible>
 					</control>
-					<!-- Title -->
+					<!-- Source name for streams without movie or episode metadata -->
 					<control type="label">
 						<top>187</top>
 						<width>auto</width>
@@ -68,7 +68,7 @@
 						<label>[B]$VAR[OSDLabel4][/B]</label>
 						<scroll>false</scroll>
 						<wrapmultiline>true</wrapmultiline>
-						<visible>!Control.IsVisible(111)</visible>
+						<visible>!Control.IsVisible(111) + Player.IsInternetStream + !String.IsEmpty(Window(Home).Property(SkinHelper.Player.AddonName)) + String.IsEmpty(VideoPlayer.TvShowTitle) + !VideoPlayer.Content(movies) + !VideoPlayer.Content(episodes)</visible>
 					</control>
 					<!-- Sublabel -->
 					<control type="label">

@@ -306,22 +306,9 @@
 						<height>190</height>
 						<width>490</width>
 						<align>left</align>
+						<fadetime>350</fadetime>
 						<aspectratio align="center" aligny="center">keep</aspectratio>
 						<texture background="true" fallback="colors/color_transparent.png">$VAR[BingieInfoClearlogo]</texture>
-					</control>
-					<!-- Movie Title with no Clearlogo -->
-					<control type="textbox" id="90006">
-						<visible>String.EndsWith(Control.GetLabel(90005),color_transparent.png)</visible>
-						<top>-189</top>
-						<height>184</height>
-						<width max="650">auto</width>
-						<font>Title</font>
-						<align>left</align>
-						<aligny>center</aligny>
-						<textcolor>ffffffff</textcolor>
-						<label>$VAR[BingieInfoLabel]</label>
-						<include condition="$PARAM[genre_adjust]">Bingie_TextTitle_Adjust_Genre_Anim</include>
-						<autoscroll delay="4000" time="2000" repeat="6000">true</autoscroll>
 					</control>
 					<control type="group">
 						<top>-2</top>
@@ -753,7 +740,7 @@
 		<include>LandscapeCardYearLabel</include>
 		<include>LandscapeCardComingSoonLabel</include>
 		<control type="group">
-			<visible>!String.IsEmpty(ListItem.Property(rating))</visible>
+			<visible>!String.IsEmpty(ListItem.Property(rating)) + !String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
 			<right>16</right>
 			<top>8</top>
 			<width>58</width>

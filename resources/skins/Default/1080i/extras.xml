@@ -94,21 +94,9 @@
 					<aspectratio>keep</aspectratio>
 					<align>center</align>
 					<aligny>bottom</aligny>
+					<fadetime>350</fadetime>
 					<texture background="true">$INFO[Window.Property(tikiskins.extras.clearlogo)]</texture>
 					<visible>!String.IsEmpty(Window.Property(tikiskins.extras.clearlogo))</visible>
-				</control>
-				<control type="label">
-					<top>125</top>
-					<left>50</left>
-					<width max="880">auto</width>
-					<height>120</height>
-					<font>font60</font>
-					<textcolor>FFCCCCCC</textcolor>
-					<align>center</align>
-					<aligny>bottom</aligny>
-					<wrapmultiline>true</wrapmultiline>
-					<label>[B]$INFO[Window.Property(tikiskins.extras.title)][/B]</label>
-					<visible>String.IsEmpty(Window.Property(tikiskins.extras.clearlogo))</visible>
 				</control>
 			</control>
 		<!-- Ratings -->

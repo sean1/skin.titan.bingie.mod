@@ -27,20 +27,8 @@
 				<width>490</width>
 				<height>190</height>
 				<aspectratio align="left" aligny="center">keep</aspectratio>
+				<fadetime>350</fadetime>
 				<texture background="true">$INFO[Window(Home).Property(PovInfoLogo)]</texture>
-			</control>
-			<control type="textbox">
-				<visible>String.IsEmpty(Window(Home).Property(PovInfoLogo))</visible>
-				<left>138</left>
-				<top>10</top>
-				<width>650</width>
-				<height>190</height>
-				<font>Title</font>
-				<align>left</align>
-				<aligny>center</aligny>
-				<textcolor>ffffffff</textcolor>
-				<label>$INFO[Window(Home).Property(PovInfoTitle)]</label>
-				<autoscroll delay="4000" time="2000" repeat="6000">true</autoscroll>
 			</control>
 
 			<control type="grouplist">

@@ -458,20 +458,9 @@
 					<width max="480">auto</width>
 					<height max="200">auto</height>
 					<aspectratio>keep</aspectratio>
+					<fadetime>350</fadetime>
 					<texture background="true">$INFO[Window.Property(tikiskins.clearlogo)]</texture>
 					<visible>!String.IsEmpty(Window.Property(tikiskins.clearlogo))</visible>
-				</control>
-				<control type="label">
-					<top>100</top>
-					<centerleft>50%</centerleft>
-					<width max="1900">auto</width>
-					<height>110</height>
-					<font>font60</font>
-					<textcolor>FFCCCCCC</textcolor>
-					<align>center</align>
-					<aligny>center</aligny>
-					<label>[B]$INFO[Window.Property(tikiskins.title)][/B]</label>
-					<visible>String.IsEmpty(Window.Property(tikiskins.clearlogo))</visible>
 				</control>
 			</control>
 			<control type="group">
@@ -981,20 +970,9 @@
 					<width max="480">auto</width>
 					<height max="200">auto</height>
 					<aspectratio>keep</aspectratio>
+					<fadetime>350</fadetime>
 					<texture background="true">$INFO[Window.Property(tikiskins.clearlogo)]</texture>
 					<visible>!String.IsEmpty(Window.Property(tikiskins.clearlogo))</visible>
-				</control>
-				<control type="label">
-					<top>100</top>
-					<centerleft>50%</centerleft>
-					<width max="1900">auto</width>
-					<height>110</height>
-					<font>font60</font>
-					<textcolor>FFCCCCCC</textcolor>
-					<align>center</align>
-					<aligny>center</aligny>
-					<label>[B]$INFO[Window.Property(tikiskins.title)][/B]</label>
-					<visible>String.IsEmpty(Window.Property(tikiskins.clearlogo))</visible>
 				</control>
 			</control>
 			<control type="group">

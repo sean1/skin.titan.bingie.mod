@@ -128,11 +128,14 @@
 				</animation>
 				<top>1100</top>
 				<left>150</left>
-				<include content="Bingie_Headline_Item_2">
-                    <param name="id" value="9005" />
-                    <param name="image" value="$VAR[BingieInfoClearlogo]" />
-                    <param name="text" value="$VAR[BingieInfoLabel]" />
-				</include>
+				<control type="image" id="90055">
+					<height>190</height>
+					<width>490</width>
+					<align>left</align>
+					<fadetime>350</fadetime>
+					<aspectratio align="center" aligny="center">keep</aspectratio>
+					<texture background="true" fallback="colors/color_transparent.png">$VAR[BingieInfoClearlogo]</texture>
+				</control>
 				<control type="group">
 					<include>PlaySomethingRowDetails</include>
 					<top>190</top>

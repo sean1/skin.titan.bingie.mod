@@ -52,6 +52,7 @@
 				<height max="160">auto</height>
 				<width max="480">auto</width>
 				<aspectratio>keep</aspectratio>
+				<fadetime>350</fadetime>
 				<texture>$INFO[Window.Property(tikiskins.source_progress.clearlogo)]</texture>
 				<visible>!String.IsEmpty(Window.Property(tikiskins.source_progress.clearlogo))</visible>
 				<centerleft>50%</centerleft>

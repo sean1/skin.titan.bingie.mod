@@ -407,6 +407,7 @@
 					<visible>!String.IsEmpty(Control.GetLabel(1))</visible>
 					<width>400</width>
 					<height>150</height>
+					<fadetime>200</fadetime>
 					<align>left</align>
 					<texture background="true">$VAR[VideoPlayerClearLogo]</texture>
 					<aspectratio align="left" aligny="center">keep</aspectratio>
@@ -422,7 +423,7 @@
                     <aspectratio align="left" aligny="center">keep</aspectratio>
                     <visible>[!String.IsEmpty(Player.Art(clearlogo)) | !String.IsEmpty(Player.Art(clearart)) | !String.IsEmpty(Player.Art(tvshow.clearlogo)) | !String.IsEmpty(Player.Art(tvshow.clearart))]</visible>
 				</control>
-				<!-- TITLE of Movie -->
+				<!-- Source name for streams without movie or episode metadata -->
 				<control type="label">
 					<height>70</height>
 					<width>auto</width>
@@ -432,7 +433,7 @@
 					<label>[B]$VAR[OSDLabel4][/B]</label>
 					<scroll>false</scroll>
 					<wrapmultiline>true</wrapmultiline>
-					<visible>!Control.IsVisible(1)</visible>
+					<visible>!Control.IsVisible(1) + Player.IsInternetStream + !String.IsEmpty(Window(Home).Property(SkinHelper.Player.AddonName)) + String.IsEmpty(VideoPlayer.TvShowTitle) + !VideoPlayer.Content(movies) + !VideoPlayer.Content(episodes)</visible>
 				</control>
 
 				<!-- OSDLabel5 -->

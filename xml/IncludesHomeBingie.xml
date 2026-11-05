@@ -39,14 +39,48 @@
                     <usecontrolcoords>true</usecontrolcoords>
                     <itemgap>10</itemgap>
                     <!-- Movies and Episodes Info Slide-down -->
-                    <animation effect="slide" start="0" end="0,130" time="0" condition="Integer.IsGreater(ListItem.PercentPlayed,1) | [$EXP[IsMainMenuOpened] + Integer.IsGreater(Window(Home).Property(ListItem.PercentPlayed),1)]">Conditional</animation>
+                    <animation effect="slide" start="0" end="0,130" time="0" condition="Integer.IsGreater(ListItem.PercentPlayed,1) |
+                    [$EXP[IsMainMenuOpened] + Integer.IsGreater(Window(Home).Property(ListItem.PercentPlayed),1)]">Conditional</animation>
 					<animation effect="slide" start="0" end="0,180" time="0" condition="$EXP[IsCategoryDBType]">Conditional</animation>
 
                     <include content="Bingie_Headline_Item">
                         <param name="id" value="9000" />
                         <param name="image" value="$VAR[BingieInfoClearlogo]" />
                         <param name="text" value="$VAR[BingieInfoLabel]" />
-                        <param name="text_visibility" value="!ControlGroup(77777).HasFocus() | $EXP[IsCategoryDBType] | String.IsEqual(ListItem.Label,..)" />
+                        <param name="text_visibility" value="![[$EXP[IsMainMenuOpened] + [
+                            [!String.IsEmpty(Window(Home).Property(ListItem.Label)) + $EXP[IsCategoryDBType] +
+                            [String.IsEqual(Window(Home).Property(ListItem.DBTYPE),movie) |
+                            String.IsEqual(Window(Home).Property(ListItem.DBTYPE),tvshow) |
+                            String.IsEqual(Window(Home).Property(ListItem.DBTYPE),season) |
+                            String.IsEqual(Window(Home).Property(ListItem.DBTYPE),episode) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),movie) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),tvshow) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),season) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),episode) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),movie) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),tvshow) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),season) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),episode)]] |
+                            [![!String.IsEmpty(Window(Home).Property(ListItem.Label)) + $EXP[IsCategoryDBType]] + String.IsEmpty(Window(Home).Property(ListItem.ChannelName)) +
+                            [[!String.IsEmpty(Window(Home).Property(ListItem.Episode)) + !String.IsEqual(Window(Home).Property(ListItem.TvShowTitle),Window(Home).Property(ListItem.Title))] |
+                            [String.IsEmpty(Window(Home).Property(ListItem.Artist)) + [String.IsEqual(Window(Home).Property(ListItem.DBTYPE),movie) |
+                            String.IsEqual(Window(Home).Property(ListItem.DBTYPE),tvshow) |
+                            String.IsEqual(Window(Home).Property(ListItem.DBTYPE),season) |
+                            String.IsEqual(Window(Home).Property(ListItem.DBTYPE),episode) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),movie) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),tvshow) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),season) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(DBTYPE)),episode) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),movie) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),tvshow) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),season) |
+                            String.IsEqual(Window(Home).Property(ListItem.Property(mediatype)),episode)]]]]]] |
+                            [!$EXP[IsMainMenuOpened] + !String.IsEqual(ListItem.Property(DBTYPE),systeminfo) + String.IsEmpty(ListItem.ChannelName) +
+                            [[!String.IsEmpty(ListItem.Season) + !String.IsEmpty(ListItem.Episode) + !String.IsEqual(ListItem.TvShowTitle,ListItem.Title)] |
+                            [[String.IsEmpty(ListItem.Artist) | [!String.IsEmpty(ListItem.Label) + [Container.Content(genres) | String.IsEqual(ListItem.DBTYPE,genre) | $EXP[IsCategoryDBType]]]] +
+                            [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) |
+                            String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) |
+                            String.IsEqual(ListItem.Property(mediatype),movie) | String.IsEqual(ListItem.Property(mediatype),tvshow) | String.IsEqual(ListItem.Property(mediatype),season) | String.IsEqual(ListItem.Property(mediatype),episode)]]]]]" />
                     </include>
 
                     <!-- Details Row at Top-->
@@ -174,20 +208,11 @@
 					</control>
 
 					<!-- Bingie Home Plot -->
-                    <control type="textbox" id="90009">
-					<visible>!$EXP[IsMainMenuOpened]</visible>
-					<visible>!$EXP[IsCategoryDBType]</visible>
-                        <visible>!Integer.IsGreater(ListItem.PercentPlayed,1)</visible>
-                        <include>Default_Visible_Fade</include>
-						<top>5</top>
-						<height min="30" max="200">auto</height>
-                        <width max="820">auto</width>
-                        <align>left</align>
-                        <font>Plots</font>
-						<textcolor>b3ffffff</textcolor>
-                        <label>$VAR[BingiePlot]</label>
-                        <autoscroll delay="3000" time="3000" repeat="8000">true</autoscroll>
-                    </control>
+                    <include content="BingieSpotlightSynopsis">
+                        <param name="id" value="90009" />
+                        <param name="visibility" value="!$EXP[IsMainMenuOpened] + !$EXP[IsCategoryDBType]" />
+                        <param name="plot" value="$VAR[BingiePlot]" />
+                    </include>
 
                     <!-- Additional Info -->
 					<control type="group">

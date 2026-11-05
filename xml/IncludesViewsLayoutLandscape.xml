@@ -38,7 +38,7 @@
 		<include>LandscapeCardYearLabel</include>
 		<include>LandscapeCardComingSoonLabel</include>
 		<control type="group">
-			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Rating)</visible>
+			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Rating) + !String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
 			<right>16</right>
 			<top>8</top>
 			<width>58</width>
@@ -89,11 +89,11 @@
 	<include name="LandscapeCardComingSoonLabel">
 		<control type="label">
 			<visible>String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
-			<left>16</left>
-			<top>46</top>
+			<right>16</right>
+			<top>8</top>
 			<width>160</width>
-			<height>26</height>
-			<align>left</align>
+			<height>38</height>
+			<align>right</align>
 			<aligny>center</aligny>
 			<font>Reg20</font>
 			<textcolor>ffffffff</textcolor>
@@ -104,11 +104,11 @@
 
 	<include name="LandscapeCardTopGradient">
 		<control type="image">
-			<visible>$EXP[IsMovieOrTvShowListItem] | String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
+			<visible>$EXP[IsMovieOrTvShowListItem] | String.IsEqual(ListItem.DBType,episode) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(ListItem.DBType,season) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
 			<left>8</left>
 			<right>8</right>
 			<top>8</top>
-			<height>128</height>
+			<height>160</height>
 			<texture flipy="true">overlays/gradient_episodes.png</texture>
 			<aspectratio>stretch</aspectratio>
 			<colordiffuse>ffffffff</colordiffuse>
@@ -117,7 +117,7 @@
 
 	<include name="LandscapeCardYearLabel">
 		<control type="group">
-			<visible>$EXP[IsMovieOrTvShowListItem] + String.IsEmpty(ListItem.Property(card_flag)) + String.IsEmpty(ListItem.Property(card_language)) + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))]</visible>
+			<visible>$EXP[IsMovieOrTvShowListItem] + String.IsEmpty(ListItem.Property(card_flag)) + String.IsEmpty(ListItem.Property(card_language)) + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))] + !String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
 			<left>16</left>
 			<top>8</top>
 			<width>150</width>
@@ -133,7 +133,7 @@
 			</control>
 		</control>
 		<control type="group">
-			<visible>$EXP[IsMovieOrTvShowListItem] + [!String.IsEmpty(ListItem.Property(card_flag)) | !String.IsEmpty(ListItem.Property(card_language))] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))]</visible>
+			<visible>$EXP[IsMovieOrTvShowListItem] + [!String.IsEmpty(ListItem.Property(card_flag)) | !String.IsEmpty(ListItem.Property(card_language))] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))] + !String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
 			<left>58</left>
 			<top>8</top>
 			<width>150</width>
@@ -146,6 +146,40 @@
 				<font>Reg20</font>
 				<textcolor>ffffffff</textcolor>
 				<label>$VAR[CardYearRange]</label>
+			</control>
+		</control>
+		<control type="group">
+			<visible>$EXP[IsMovieOrTvShowListItem] + String.IsEmpty(ListItem.Property(card_flag)) + String.IsEmpty(ListItem.Property(card_language)) + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))] + String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
+			<left>16</left>
+			<top>8</top>
+			<right>184</right>
+			<height>38</height>
+			<control type="label">
+				<width>100%</width>
+				<height>100%</height>
+				<align>left</align>
+				<aligny>center</aligny>
+				<font>Reg20</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$VAR[CardYearRange]</label>
+				<scroll>true</scroll>
+			</control>
+		</control>
+		<control type="group">
+			<visible>$EXP[IsMovieOrTvShowListItem] + [!String.IsEmpty(ListItem.Property(card_flag)) | !String.IsEmpty(ListItem.Property(card_language))] + [!String.IsEmpty(ListItem.Year) | !String.IsEmpty(ListItem.Property(year)) | !String.IsEmpty(ListItem.Property(year_range)) | !String.IsEmpty(ListItem.Property(pov_lite_year_range))] + String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
+			<left>58</left>
+			<top>8</top>
+			<right>184</right>
+			<height>38</height>
+			<control type="label">
+				<width>100%</width>
+				<height>100%</height>
+				<align>left</align>
+				<aligny>center</aligny>
+				<font>Reg20</font>
+				<textcolor>ffffffff</textcolor>
+				<label>$VAR[CardYearRange]</label>
+				<scroll>true</scroll>
 			</control>
 		</control>
 	</include>

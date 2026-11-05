@@ -10,6 +10,11 @@
 		<content target="videos" browse="never">$VAR[PovSeasonBrowserPath]</content>
 	</include>
 
+	<variable name="BingieSeasonRating">
+		<value condition="!String.IsEmpty(Container(5027).ListItem.Property(PovTMDBRating))">$INFO[Container(5027).ListItem.Property(PovTMDBRating),TMDB ]</value>
+		<value>$INFO[Container(5027).ListItem.Rating,Rating ]</value>
+	</variable>
+
 	<!-- View 527 row details -->
     <include name="View_527_Row_Details">
         <control type="grouplist">
@@ -18,7 +23,12 @@
             <height>50</height>
             <itemgap>15</itemgap>
 
-            <include>Percentage_Rating_Details_Row_Seasons</include>
+            <include content="BingieRatingBadge">
+                <param name="id" value="61132" />
+                <param name="label" value="$VAR[BingieSeasonRating]" />
+                <param name="visibility" value="!String.IsEmpty(Control.GetLabel(61132))" />
+                <param name="top" value="7" />
+            </include>
 
             <!-- Year -->
             <control type="label" id="611111">

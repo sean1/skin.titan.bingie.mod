@@ -37,21 +37,17 @@
 		<include>LandscapeCardLanguageBadge</include>
 		<include>LandscapeCardYearLabel</include>
 		<include>LandscapeCardComingSoonLabel</include>
+		<include>LandscapeCardRatingBadge</include>
+	</include>
+
+	<include name="LandscapeCardRatingBadge">
 		<control type="group">
-			<visible>$EXP[IsMovieOrTvShowListItem] + !String.IsEmpty(ListItem.Rating) + !String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
+			<visible>$EXP[IsMovieOrTvShowListItem] + $EXP[HasBingieItemRating] + !String.IsEqual(ListItem.Property(card_coming_soon),true)</visible>
 			<right>16</right>
-			<top>8</top>
+			<top>12</top>
 			<width>58</width>
-			<height>38</height>
-			<control type="label">
-				<width>100%</width>
-				<height>100%</height>
-				<align>right</align>
-				<aligny>center</aligny>
-				<font>Reg20</font>
-				<textcolor>ffffffff</textcolor>
-				<label>$INFO[ListItem.Rating]</label>
-			</control>
+			<height>30</height>
+			<include>BingieListRatingBadge</include>
 		</control>
 	</include>
 

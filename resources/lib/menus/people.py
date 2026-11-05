@@ -8,7 +8,7 @@ from indexers.tmdb_api import tmdb_people_info, tmdb_people_actor_info, tmdb_ima
 from menus.images import Images
 from menus.media import card_badge_properties
 from modules import kodi_utils, settings
-from modules.utils import calculate_age, valid_tmdb_id
+from modules.utils import calculate_age, media_percentage_properties, valid_tmdb_id
 # from modules.kodi_utils import logger
 
 KODI_VERSION = kodi_utils.get_kodi_version()
@@ -344,6 +344,7 @@ def _credit_listitem(item, resolution, actor_id, credit_type=None):
 		'PovFocusIdentity': 'actor|%s|%s' % (media_type, tmdb_id), 'rating': '%.1f' % rating if rating else '', 'year_range': year
 	}
 	properties.update(card_badge_properties(item, media_type))
+	properties.update(media_percentage_properties(rating))
 	listitem.setProperties(properties)
 	if KODI_VERSION < 20:
 		listitem.setUniqueIDs({'tmdb': str(tmdb_id)})

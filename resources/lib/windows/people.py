@@ -143,7 +143,7 @@ class People(BaseDialog):
 					except: pass
 				listitem.setProperty('tikiskins.person.name', item[name_key])
 				listitem.setProperty('tikiskins.person.release_date', year)
-				listitem.setProperty('tikiskins.person.vote_average', '%.1f' % item['vote_average'])
+				listitem.setProperty('tikiskins.person.vote_average', '%.1f' % item['vote_average'] if isinstance(item.get('vote_average'), (int, float)) and not isinstance(item['vote_average'], bool) and item['vote_average'] >= 0.05 else '')
 				listitem.setProperty('tikiskins.person.thumbnail', thumbnail)
 				listitem.setProperty('tikiskins.person.tmdb_id', str(tmdb_id))
 				append(tmdb_id)

@@ -417,17 +417,29 @@
                         <textcolor>ffffffff</textcolor>
                         <label>$VAR[ListTitle]</label>
                     </control>
-                    <control type="label">
-                        <!--Label 2-->
+                    <control type="grouplist">
                         <posx>986</posx>
                         <posy>50</posy>
                         <width>805</width>
                         <height>30</height>
-                        <font>Light28</font>
-						<scroll>true</scroll>
-                        <textcolor>ffffffff</textcolor>
-                        <label>$VAR[ListDetails]</label>
+                        <orientation>horizontal</orientation>
+                        <itemgap>15</itemgap>
                         <visible>!String.IsEqual(ListItem.Label,..)</visible>
+                        <control type="label">
+                            <width max="650">auto</width>
+                            <height>30</height>
+                            <font>Light28</font>
+                            <textcolor>ffffffff</textcolor>
+                            <label>$VAR[ListDetails]</label>
+                        </control>
+                        <control type="group">
+                            <visible>$EXP[HasBingieItemRating] + !ListItem.Property(season_finale) + !ListItem.Property(series_finale)</visible>
+                            <width>124</width>
+                            <height>30</height>
+                            <include content="BingieListRatingBadge">
+                                <param name="label" value="$VAR[BingieItemRating]" />
+                            </include>
+                        </control>
                     </control>
                     <control type="image">
                         <!--Separator-->

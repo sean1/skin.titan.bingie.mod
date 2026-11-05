@@ -36,10 +36,13 @@ def valid_tmdb_id(value):
 def media_percentage_properties(rating=None, progress=None):
 	properties = {}
 	if rating is not None:
-		try: rating_percent = int(round(float(rating) * 10))
-		except (TypeError, ValueError): pass
+		try: numeric_rating = float(rating)
+		except (TypeError, ValueError, OverflowError): pass
 		else:
-			if 0 < rating_percent < 100: properties['pov_lite_rating_percent'] = str(rating_percent)
+			if 0.05 <= numeric_rating <= 10:
+				properties['PovTMDBRating'] = '%.1f' % numeric_rating
+				rating_percent = int(round(numeric_rating * 10))
+				if 0 < rating_percent < 100: properties['pov_lite_rating_percent'] = str(rating_percent)
 	if progress is not None:
 		try: played_percent = int(round(float(progress)))
 		except (TypeError, ValueError): pass

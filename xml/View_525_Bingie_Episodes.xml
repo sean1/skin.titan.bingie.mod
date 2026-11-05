@@ -195,7 +195,7 @@
             <height>50</height>
             <itemgap>15</itemgap>
 
-            <include>Percentage_Rating_Details_Row</include>
+            <include>SpotlightRatingBadge</include>
 
             <!-- Year -->
             <control type="label" id="611111">

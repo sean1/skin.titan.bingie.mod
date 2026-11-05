@@ -96,9 +96,7 @@
                         <top>-7</top>
                         <width>1000</width>
                         <height>55</height>
-                        <include content="SpotlightRowDetails">
-                            <param name="rating_badge" value="true" />
-                        </include>
+                        <include>SpotlightRowDetails</include>
                     </control>
 
                     <!-- TV shows Seasons and Episodes -->

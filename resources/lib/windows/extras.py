@@ -454,7 +454,7 @@ class Extras(BaseDialog):
 				listitem = self.make_listitem()
 				listitem.setProperty('tikiskins.extras.name', item[name_key])
 				listitem.setProperty('tikiskins.extras.release_date', year)
-				listitem.setProperty('tikiskins.extras.vote_average', '%.1f' % item['vote_average'])
+				listitem.setProperty('tikiskins.extras.vote_average', '%.1f' % item['vote_average'] if isinstance(item.get('vote_average'), (int, float)) and not isinstance(item['vote_average'], bool) and item['vote_average'] >= 0.05 else '')
 				listitem.setProperty('tikiskins.extras.thumbnail', thumbnail)
 				listitem.setProperty('tikiskins.extras.tmdb_id', str(item['id']))
 				item_list.append(listitem)
@@ -514,7 +514,7 @@ class Extras(BaseDialog):
 		self.clearlogo = self.meta['clearlogo'] or ''
 		self.plot = self.meta['tvshow_plot'] if 'tvshow_plot' in self.meta else self.meta['plot']
 		if not self.plot: self.plot = ''
-		self.rating = '%.2f' % self.meta['rating']
+		self.rating = '%.1f' % self.meta['rating'] if isinstance(self.meta.get('rating'), (int, float)) and not isinstance(self.meta['rating'], bool) and self.meta['rating'] >= 0.05 else ''
 		self.mpaa = self.meta['mpaa']
 		self.status = self.meta['extra_info'].get('status', '').replace('Series', '')
 		self.genre = self.meta['genre']

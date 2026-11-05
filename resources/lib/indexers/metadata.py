@@ -415,13 +415,13 @@ def season_episodes_meta(season, meta, user_info):
 	except: pass
 	return episodes_data
 
-def all_episodes_meta(meta, user_info, Thread):
+def all_episodes_meta(meta, user_info, Thread, *, include_specials=True):
 	def _get_tmdb_episodes(season):
 		try: data.extend(season_episodes_meta(season, meta, user_info))
 		except: pass
 	try:
 		data = []
-		seasons = [(i['season_number'],) for i in meta['season_data']] # TaskPool requires tuple
+		seasons = [(i['season_number'],) for i in meta['season_data'] if include_specials or i['season_number'] not in (0, '0')] # TaskPool requires tuple
 		for i in TaskPool(LIST_WORKERS).tasks(_get_tmdb_episodes, seasons, Thread): i.join()
 	except: pass
 	return data

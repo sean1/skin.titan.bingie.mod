@@ -2,6 +2,7 @@ import hashlib
 import json
 import re
 import secrets
+from time import monotonic
 from urllib.parse import urlsplit, urlunsplit
 
 from modules import kodi_utils
@@ -153,6 +154,7 @@ class Subtitles(kodi_utils.xbmc_player):
 		}
 		self.provider_manager = None
 		self.automatic, self.automatic_subtitle_index, self.automatic_subtitle_enabled = False, None, None
+		self.early_subtitle_observation = None
 		self.media_identity = stable_media_identity(imdb_id, tmdb_id, self.mediatype, self.title, year, season, episode)
 		cache_token = _cache_token(self.media_identity) or 'session_%s' % self.context_generation
 		if season not in (None, ''): self.sub_filename = '%s%s_%s_%s' % (subtitle_file_prefix, cache_token, season, episode)
@@ -284,7 +286,7 @@ class Subtitles(kodi_utils.xbmc_player):
 		if stream.startswith('vietnamese'): return 'vie'
 		return ''
 
-	def _video_file_subs(self):
+	def _video_file_subs(self, early=False):
 		self._ensure_current_playback()
 		state = self._subtitle_state()
 		details = state.get('subtitles') if isinstance(state.get('subtitles'), list) else []
@@ -305,12 +307,29 @@ class Subtitles(kodi_utils.xbmc_player):
 			eligible = [stream for stream in streams.values() if self._subtitle_stream_language(stream) in self.languages and subtitle_coverage(stream) != 'partial']
 			eligible.sort(key=lambda stream: (self.languages.index(self._subtitle_stream_language(stream)), ('full', 'unknown').index(subtitle_coverage(stream)), stream['index']))
 			selected = eligible[0]['index'] if eligible else None
-			if selected is None: return False
+			if selected is None:
+				self.early_subtitle_observation = None
+				return False
+			if early:
+				if selected != 0 or self._subtitle_stream_language(eligible[0]) != self.languages[0]:
+					self.early_subtitle_observation = None
+					return False
+				if subtitle_coverage(eligible[0]) != 'full':
+					inventory = tuple((index, self._subtitle_stream_language(stream), stream.get('name', ''), subtitle_coverage(stream)) for index, stream in sorted(streams.items()))
+					now = monotonic()
+					previous = self.early_subtitle_observation
+					if not previous or previous[0] != inventory:
+						self.early_subtitle_observation = inventory, now
+						return False
+					if now - previous[1] < 0.5: return False
 			self._ensure_current_playback()
 			self.setSubtitleStream(selected)
 			# This automatic switch is the final selection, not a manual change to monitor.
 			self.automatic_subtitle_index = None
 		else:
+			if early:
+				self.early_subtitle_observation = None
+				return False
 			try: current_subtitle = self.getSubtitles()
 			except: current_subtitle = ''
 			if self._subtitle_stream_language(current_subtitle) not in self.languages or subtitle_coverage(current_subtitle) == 'partial': return False
@@ -399,7 +418,13 @@ class Subtitles(kodi_utils.xbmc_player):
 			self.automatic_subtitle_index = self._subtitle_index(state)
 			self.automatic_subtitle_enabled = state.get('subtitleenabled')
 			self._set_context()
-			_wait(2.5, self._cancelled)
+			deadline = monotonic() + 2.5
+			if self._video_file_subs(early=True): return True
+			for delay in (0.25, 0.25, 0.5, 0.5, 0.5, 0.5):
+				remaining = deadline - monotonic()
+				if remaining <= 0: break
+				_wait(min(delay, remaining), self._cancelled)
+				if self._video_file_subs(early=True): return True
 			return self._video_file_subs() or self._downloaded_subs() or self._searched_subs()
 		except SubtitleCancelled: return False
 		except Exception as error:

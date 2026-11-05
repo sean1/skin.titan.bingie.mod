@@ -1,5 +1,5 @@
 import requests
-from caches.main_cache import cache_object
+from caches.main_cache import cache_object as _cache_object
 from caches.meta_cache import cache_function
 from modules import kodi_utils
 from modules.settings import get_language
@@ -26,6 +26,17 @@ timeout = 3.05
 session = requests.Session()
 retry = requests.adapters.Retry(total=2, connect=2, read=2, status=1, backoff_factor=0.25, status_forcelist=(429, 502, 503, 504))
 session.mount('https://api.themoviedb.org', requests.adapters.HTTPAdapter(pool_maxsize=100, max_retries=retry))
+
+def cache_object(function, string, url, expiration=24, json=False):
+	"""Share in-flight paged catalog requests without changing other cache calls."""
+	from urllib.parse import parse_qs, urlsplit
+	parts = url if isinstance(url, list) else [url]
+	address = parts[0] if parts else ''
+	params = parts[1] if len(parts) > 1 and isinstance(parts[1], dict) else {}
+	page = params.get('page') or (parse_qs(urlsplit(address).query).get('page') or [None])[0] if isinstance(address, str) else None
+	try: paged = function is get_tmdb and int(page) > 1
+	except (TypeError, ValueError): paged = False
+	return _cache_object(function, string, url, expiration=expiration, json=json, coalesce_page=paged)
 
 def get_tmdb(url, params=None, http_session=None):
 	try:

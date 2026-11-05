@@ -134,8 +134,7 @@ class Episodes(BaseSeason):
 		show = MetaParser(params['tmdb_id'], self.meta_user_info, self.current_date,
 			self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup)
 		if params.get('season') == 'all':
-			episodes_data = all_episodes_meta(show.meta, self.meta_user_info, Thread)
-			if not show_specials(): episodes_data = [i for i in episodes_data if i['season'] != 0]
+			episodes_data = all_episodes_meta(show.meta, self.meta_user_info, Thread, include_specials=show_specials())
 		else: episodes_data = season_episodes_meta(params['season'], show.meta, self.meta_user_info)
 		if params.get('actor_id'):
 			from menus.actor_episodes import filter_actor_episodes

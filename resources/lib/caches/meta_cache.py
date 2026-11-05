@@ -80,29 +80,30 @@ class MetaCache(BaseCache):
 		except: return
 		self.set_memory_cache(mediatype, id_type, meta, expires, media_id)
 
-	def get_or_claim(self, mediatype, id_type, media_id, wait_timeout=CLAIM_WAIT_SECONDS, stale_timeout=CLAIM_STALE_SECONDS):
+	def get_or_claim(self, mediatype, id_type, media_id, wait_timeout=CLAIM_WAIT_SECONDS, stale_timeout=CLAIM_STALE_SECONDS, cache_get=None):
 		media_id, owner = str(media_id), uuid4().hex
+		read_cache = cache_get or (lambda: self.get(mediatype, id_type, media_id))
 		deadline = monotonic() + wait_timeout
-		if self._abort_requested(): return self.get(mediatype, id_type, media_id), None, False
+		if self._abort_requested(): return read_cache(), None, False
 		while True:
 			claim_status = self._claim(mediatype, id_type, media_id, owner, stale_timeout)
 			if claim_status == CLAIM_UNAVAILABLE:
-				if self._abort_requested(): return self.get(mediatype, id_type, media_id), None, False
+				if self._abort_requested(): return read_cache(), None, False
 				return None, None, True
 			if claim_status == CLAIM_ACQUIRED:
 				if self._abort_requested():
 					self.release_claim(mediatype, id_type, media_id, owner)
-					return self.get(mediatype, id_type, media_id), None, False
-				meta = self.get(mediatype, id_type, media_id)
+					return read_cache(), None, False
+				meta = read_cache()
 				if meta is None: return None, owner, True
 				self.release_claim(mediatype, id_type, media_id, owner)
 				return meta, None, False
-			meta = self.get(mediatype, id_type, media_id)
+			meta = read_cache()
 			if meta is not None: return meta, None, False
 			remaining = deadline - monotonic()
-			if remaining <= 0: return self.get(mediatype, id_type, media_id), None, False
+			if remaining <= 0: return read_cache(), None, False
 			delay = min(CLAIM_POLL_SECONDS, remaining)
-			if self._wait_for_abort(delay): return self.get(mediatype, id_type, media_id), None, False
+			if self._wait_for_abort(delay): return read_cache(), None, False
 
 	def _claim(self, mediatype, id_type, media_id, owner, stale_timeout):
 		try:

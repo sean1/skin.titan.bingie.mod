@@ -47,18 +47,6 @@
 			</control>
 			<control type="image">
 				<width>1200</width>
-				<height>90</height>
-				<texture>colors/color_black.png</texture>
-			</control>
-			<control type="image">
-				<top>90</top>
-				<width>1200</width>
-				<height>140</height>
-				<texture flipy="true">overlays/gradient_episodes.png</texture>
-				<aspectratio>stretch</aspectratio>
-			</control>
-			<control type="image">
-				<width>1200</width>
 				<height>675</height>
 				<texture background="true" colordiffuse="$VAR[BingiePanelColor]" border="20">overlays/bingie_corner.png</texture>
 			</control>

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from hashlib import sha256
 from caches import BaseCache, maincache_db
 from caches.window_property_cache import WindowPropertyCache
 # from modules.kodi_utils import logger
@@ -93,13 +94,26 @@ class MainCache(BaseCache):
 			self.dbcur.execute("""VACUUM""")
 		except: pass
 
-def cache_object(function, string, url, expiration=24, json=False):
+def cache_object(function, string, url, expiration=24, json=False, coalesce_page=False):
 	maincache = MainCache()
 	cache = maincache.get(string)
 	if cache is not None: return cache
-	if not isinstance(url, list): url = (url,)
-	if json: result = function(*url).json()
-	else: result = function(*url)
-	if isinstance(expiration, (int, float)): expiration = timedelta(hours=expiration)
-	if result is not None: maincache.set(string, result, expiration)
-	return result
+	def fetch():
+		args = url if isinstance(url, list) else (url,)
+		result = function(*args).json() if json else function(*args)
+		cache_expiration = timedelta(hours=expiration) if isinstance(expiration, (int, float)) else expiration
+		if result is not None: maincache.set(string, result, cache_expiration)
+		return result
+	if not coalesce_page: return fetch()
+	from caches.meta_cache import MetaCache
+	class PageClaims(MetaCache):
+		def _set_PRAGMAS(self): self.dbcur.execute('PRAGMA busy_timeout = 100')
+	claims = PageClaims()
+	claim_id = sha256(string.encode('utf-8')).hexdigest()
+	cache, owner, _ = claims.get_or_claim('tmdb_page', 'cache_key', claim_id, wait_timeout=1.2, stale_timeout=30, cache_get=lambda: maincache.get(string))
+	try:
+		if cache is not None: return cache
+		if claims._abort_requested(): return None
+		return fetch()
+	finally:
+		claims.release_claim('tmdb_page', 'cache_key', claim_id, owner)

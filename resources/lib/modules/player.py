@@ -354,6 +354,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self._record_playback_health('startup_ok', latency=self._playback_health_elapsed())
 			if callable(progress_media): progress_media()
 			kodi_utils.close_all_dialog()
+			if self.isPlayingVideo(): self.exec_task('subtitles')
 			if self.mediatype == 'episode':
 				self.play_random_continual = 'random_continual' in self.meta
 				if not self.play_random_continual and self.autoplay_nextep:

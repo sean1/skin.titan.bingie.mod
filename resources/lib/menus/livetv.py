@@ -115,7 +115,11 @@ def _unique_match(groups, stream_id, name):
 def _sports_feed_params(params, fixture, groups):
 	from modules import livetv_feed_selection
 	token = livetv_feed_selection.handoff(params, fixture, groups)
-	return {**params, **({'handoff': token} if token else {})}
+	sport = params.get('sport')
+	if sport == 'f1': title = '%s — %s' % (fixture['event'], fixture['session_label'])
+	elif sport == 'soccer': title = '%s vs %s' % (fixture['home'], fixture['away'])
+	else: title = '%s vs %s' % (fixture['home']['name'], fixture['away']['name'])
+	return {**params, 'display_title': title, **({'handoff': token} if token else {})}
 
 
 def _sports_feed_url(params, fixture, groups):
@@ -2006,7 +2010,7 @@ def _sports_overview(sport_filter=None, revision=''):
 		feed_label = ('%d %s' % (len(feeds), 'feed' if len(feeds) == 1 else 'feeds')) if feeds else ('Finding feeds…' if sport in loading else 'Feeds unavailable' if sport in unavailable else '0 feeds') if state == 'Live' else ''
 		context = []
 		if len(feeds) > 1:
-			params = {'mode': 'livetv.match_feeds', 'sport': sport}
+			params = {'mode': 'livetv.match_feeds', 'sport': sport, 'display_title': title}
 			if sport == 'f1': params['session'] = key
 			else: params.update({'home': key[0][0], 'away': key[0][1], 'scope': key[1]})
 			from modules import livetv_feed_selection
@@ -2027,8 +2031,8 @@ def _sports_overview(sport_filter=None, revision=''):
 	if feed_cache: _save_feed_matches(feed_cache)
 	status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable or schedule_unavailable else '', 'Some feed information may be out of date' if stale else '') if part)
 	if not sport_filter: ku.set_property('LiveTV.Sports.OverviewStatus', status)
-	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision})
-	elif not rows and (unavailable or schedule_unavailable): _item('Sports schedule unavailable', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision})
+	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport_filter or ''})
+	elif not rows and (unavailable or schedule_unavailable): _item('Sports schedule unavailable', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport_filter or ''})
 	elif not rows and not sport_filter: _item('No live sports events', {}, False, playable=False)
 	_finish()
 
@@ -2224,7 +2228,7 @@ def match_feeds(params):
 	try:
 		from modules import livetv_feed_selection
 		sport = params.get('sport', '')
-		title = 'Formula 1 feeds' if sport == 'f1' else '%s vs %s' % (home, away)
+		title = params.get('display_title') or ('Formula 1 feeds' if sport == 'f1' else '%s vs %s' % (home, away))
 		try:
 			from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
 			accounts = _feed_accounts_fingerprint()
@@ -2238,7 +2242,7 @@ def match_feeds(params):
 				fixtures = cached[0] if cached and source_fresh and fixture_cache.get('accounts') == accounts and fixture_cache.get('fixtures') == cached[0] else []
 			key = session if sport == 'f1' else ((home, away), scope)
 			matches = [fixture for fixture in fixtures if livetv_feed_selection._fixture_key(sport, fixture) == key]
-			if len(matches) == 1:
+			if len(matches) == 1 and not params.get('display_title'):
 				fixture = matches[0]
 				if sport == 'f1': title = '%s — %s' % (fixture['event'], fixture['session_label'])
 				elif sport == 'soccer': title = '%s vs %s' % (fixture['home'], fixture['away'])
@@ -2248,7 +2252,7 @@ def match_feeds(params):
 		state, result = livetv_feed_selection.prepare(params)
 		def waiting_row(retry_label=None):
 			if retry_label:
-				retry = {key: params.get(key, '') for key in ('sport', 'home', 'away', 'scope', 'session')}
+				retry = {key: params.get(key, '') for key in ('sport', 'home', 'away', 'scope', 'session', 'display_title')}
 				retry.update({'mode': 'livetv.match_feeds', 'retry': livetv_feed_selection.retry_request()})
 				_item(retry_label, retry)
 			else: _item('Finding more feeds…', {}, False, playable=False)
@@ -2269,9 +2273,8 @@ def match_feeds(params):
 					_item('Feed %d — no longer available' % number, {}, False, playable=False)
 					continue
 				name = str(stream.get('name') or 'Live channel')
-				provider = 'Primary' if stream.get('_primary') is True else 'Backup' if stream.get('_primary') is False else ''
-				label = 'Feed %d · %s%s' % (number, name, ' · ' + provider if provider else '')
-				_item(label + ' (play channel)', _matched_play_params(stream_id, name, sport, playable_choices if unique.get(stream_id) else [], feed_cache), False)
+				label = 'Feed %d · %s' % (number, name)
+				_item(label, _matched_play_params(stream_id, name, sport, playable_choices if unique.get(stream_id) else [], feed_cache), False)
 		elif state in ('ready', 'ready_saved'):
 			_item('No matching live feeds are currently available', {}, False, playable=False)
 		if state == 'partial_saved_unavailable': waiting_row('Cached feeds · some providers unavailable — select to retry')

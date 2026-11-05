@@ -1970,7 +1970,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 def _sports_overview(sport_filter=None, revision=''):
 	from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
 	accounts = _feed_accounts_fingerprint()
-	rows, unavailable, schedule_unavailable, loading, stale = [], [], [], [], []
+	rows, unavailable, schedule_unavailable, loading = [], [], [], []
 	for sport in ((sport_filter,) if sport_filter else overview.SPORTS):
 		try: data = json.loads(ku.get_property(overview.PREFIX + sport) or '{}')
 		except (TypeError, ValueError): data = {}
@@ -1978,7 +1978,6 @@ def _sports_overview(sport_filter=None, revision=''):
 		if data.get('unavailable'): unavailable.append(sport)
 		if data.get('schedule_unavailable'): schedule_unavailable.append(sport)
 		if data.get('matching'): loading.append(sport)
-		if data.get('stale'): stale.append(sport)
 		fixtures = data.get('fixtures', [])
 		try:
 			expires = data.get('fixture_expires')
@@ -2029,7 +2028,7 @@ def _sports_overview(sport_filter=None, revision=''):
 		if play_params: play_params['fixture_expiry'] = str(expires)
 		_item(title + (' — ' + feed_label if feed_label and not feeds else ''), params if len(feeds) > 1 else play_params, len(feeds) > 1, stream.get('stream_icon') if stream else None, playable=bool(stream), extra_context=context, extra_properties=properties)
 	if feed_cache: _save_feed_matches(feed_cache)
-	status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable or schedule_unavailable else '', 'Some feed information may be out of date' if stale else '') if part)
+	status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable or schedule_unavailable else '') if part)
 	if not sport_filter: ku.set_property('LiveTV.Sports.OverviewStatus', status)
 	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport_filter or ''})
 	elif not rows and (unavailable or schedule_unavailable): _item('Sports schedule unavailable', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport_filter or ''})

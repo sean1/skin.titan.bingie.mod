@@ -212,15 +212,14 @@ class SportsOverview:
 					self.due.remove(sport)
 					worker.start()
 		if self.pending_refresh and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') and ku.get_visibility('System.IdleTime(2)'):
-			loading, unavailable, stale, events = False, False, False, False
+			loading, unavailable, events = False, False, False
 			for sport in SPORTS:
 				try: data = json.loads(ku.get_property(PREFIX + sport) or '{}')
 				except (TypeError, ValueError): data = {}
 				if not data or data.get('accounts') != accounts or data.get('matching'): loading = True
 				if data.get('accounts') == accounts and (data.get('unavailable') or data.get('schedule_unavailable')): unavailable = True
-				if data.get('accounts') == accounts and data.get('stale'): stale = True
 				if data.get('accounts') == accounts and any(livetv._schedule_state(fixture, time.time())[0] == 'Live' for fixture in data.get('fixtures', []) if isinstance(fixture, dict)): events = True
-			status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable else '', 'Some feed information may be out of date' if stale else '') if part)
+			status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable else '') if part)
 			ku.set_property('LiveTV.Sports.OverviewEmpty', 'true' if not loading and not unavailable and not events else '')
 			ku.set_property('LiveTV.Sports.OverviewStatus', status)
 			for sport in tuple(self.pending_refresh):

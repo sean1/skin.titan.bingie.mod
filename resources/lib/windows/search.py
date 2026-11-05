@@ -180,7 +180,9 @@ class Search(xbmcgui.WindowXML):
 		self.setProperty('Search.Pending', 'false')
 		self.setProperty('Search.HasMore', 'true' if page < self.total_pages else 'false')
 		self.setProperty('Search.MoreLabel', 'More results')
-		self._status('%s results · Movies & TV shows' % len(self.items) if self.items else 'No matching movies or TV shows. Try another title.')
+		if self.items: self._status('%s results · Movies & TV shows' % len(self.items))
+		elif page < self.total_pages: self._status('No movies or TV shows on this page. Select More results to keep looking.')
+		else: self._status('No matching movies or TV shows. Try another title.')
 		self._render_results()
 		if self.getFocusId() == MORE and self.items:
 			self.setFocusId(RESULTS)

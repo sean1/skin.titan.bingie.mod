@@ -242,6 +242,7 @@ class Sources:
 		for item in default_internal_scrapers: clear_property('pov_lite_%s.internal_results' % item)
 
 	def display_results(self, results, unverified_view=False):
+		verified_results = None if unverified_view else results
 		while True:
 			window_style = results_xml_style()
 			chosen_item = open_window(
@@ -258,6 +259,9 @@ class Sources:
 				unverified_count=0 if unverified_view else len(getattr(self, 'unverified_results', [])),
 				unverified_view=unverified_view
 			)
+			if (not chosen_item or chosen_item[0] is None) and unverified_view and verified_results:
+				results, unverified_view = verified_results, False
+				continue
 			if not chosen_item: return self.progress_dialog.kill()
 			action, chosen_item = chosen_item
 			if action == 'play':

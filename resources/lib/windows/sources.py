@@ -2,7 +2,7 @@ import json
 import time
 from windows import BaseDialog
 from modules.debrid import Source
-from modules.kodi_utils import media_path, hide_busy_dialog, dialog, select_dialog, notification, local_string as ls
+from modules.kodi_utils import media_path, hide_busy_dialog, dialog, select_dialog, notification, logger, local_string as ls
 from modules.settings import get_art_provider, info_icons, provider_sort_ranks
 # from modules.kodi_utils import logger
 
@@ -39,6 +39,7 @@ class SourceResults(BaseDialog):
 		self.unverified_count = kwargs.get('unverified_count', 0)
 		self.unverified_view = kwargs.get('unverified_view', False)
 		self.show_all = False
+		self.timing_logged = False
 		if kwargs.get('filters_ignored'): self.filters_ignored = ignored_str % filters_ignored
 		else: self.filters_ignored = ''
 		self.make_items()
@@ -50,6 +51,10 @@ class SourceResults(BaseDialog):
 		self.win.addItems(self.item_list if self.show_all else self.initial_items)
 		self.setProperty('tikiskins.total_results', self.total_results if self.show_all else self.initial_count)
 		self.setFocusId(self.window_id)
+		if not self.timing_logged:
+			self.timing_logged = True
+			try: logger('BINGIE search timing', 'search=%s stage=choices_ready seconds=%.3f' % (self.meta['_bingie_search_id'], time.monotonic() - self.meta['_bingie_search_started_at']))
+			except Exception: pass
 
 	def run(self):
 		self.doModal()
@@ -205,7 +210,8 @@ class SourceResults(BaseDialog):
 			if self.prescrape or self.full_search_available:
 				prescrape_listitem = self.make_listitem()
 				prescrape_listitem.setProperty('tikiskins.perform_full_search', 'true')
-				prescrape_listitem.setProperty('tikiskins.start_full_scrape', '[B]***%s***[/B]' % upper(start_full_scrape))
+				label = 'SHOW REMAINING SOURCES' if self.meta.get('_bingie_pending_search') else upper(start_full_scrape)
+				prescrape_listitem.setProperty('tikiskins.start_full_scrape', '[B]***%s***[/B]' % label)
 				self.item_list.append(prescrape_listitem)
 			self.initial_items = self.item_list
 			self.initial_count = self.total_results

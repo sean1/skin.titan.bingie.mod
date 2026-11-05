@@ -10,6 +10,7 @@ from modules import livetv_sports_progress as progress
 from modules.livetv_sports_overview import SportsOverview, SPORTS, PREFIX, _SharedCatalog, _load as _load_overview
 from modules.livetv_feed_selection import FeedSelection
 from modules.livetv_search import LiveTVSearch
+from modules.livetv_browse_refresh import BrowseRefresh
 from modules.livetv_sports import record_timing
 
 
@@ -53,6 +54,7 @@ class SportsRefresh:
 		self.overview = SportsOverview()
 		self.feed_selection = FeedSelection()
 		self.search = LiveTVSearch()
+		self.browse_refresh = BrowseRefresh()
 		self.sport = ''
 		self.next_live_check = 0
 		self.next_schedule_check = 0
@@ -158,6 +160,7 @@ class SportsRefresh:
 		self.progress.tick()
 		self.feed_selection.tick()
 		self.search.tick()
+		self.browse_refresh.tick()
 		visible = ku.get_visibility(_SPORTS_WINDOW)
 		now = monotonic()
 		self._warm_tick(now)

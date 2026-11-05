@@ -158,12 +158,20 @@ def _usable_streams(items):
 	return isinstance(items, list) and any(isinstance(item, dict) and str(item.get('stream_id') or '').isdecimal() for item in items)
 
 
+def saved_catalog(account, action, profile, **params):
+	"""Return a usable saved catalog and its creation time, if available."""
+	if action not in _FIELDS: return None
+	key = _key(account, action, params)
+	cached = _read(os.path.join(profile, 'livetv-catalog-' + key + '.json'), key, time.time())
+	if not cached: return None
+	items = cached[0]['items']
+	if action == 'get_live_streams' and not params and not _usable_streams(items): return None
+	return items, cached[0]['created']
+
+
 def saved_streams(account, profile):
 	"""Return a valid saved full catalog and its creation time, if available."""
-	key = _key(account, 'get_live_streams', {})
-	cached = _read(os.path.join(profile, 'livetv-catalog-' + key + '.json'), key, time.time())
-	if not cached or not _usable_streams(cached[0]['items']): return None
-	return cached[0]['items'], cached[0]['created']
+	return saved_catalog(account, 'get_live_streams', profile)
 
 
 def get(account, action, fetch, profile, *, on_stale=None, on_status=None, now=None, force_refresh=False, _deadline=None, **params):

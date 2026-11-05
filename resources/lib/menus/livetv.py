@@ -659,7 +659,7 @@ def home_action(params):
 def home_channels(params):
 	account = _load()
 	if account:
-		for item in _home_read(account): _item(item['name'], _play_params(item['id'], item['name']), False, item['icon'])
+		_browse_items([(item['name'], _play_params(item['id'], item['name']), False, item['icon']) for item in _home_read(account)])
 	_finish()
 
 
@@ -733,6 +733,48 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, notify_sta
 	return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
 
 
+def _browse_catalog(account, action, *, status=None, retry=False, **params):
+	if retry:
+		def on_status(created, stale):
+			if stale and status is not None: status.append('Showing saved channels · refresh unavailable')
+		return _catalog(account, action, force_refresh=True, on_status=on_status, **params)
+	from modules.livetv_catalog import FRESH_SECONDS, catalog_lock_supported, saved_catalog
+	profile = ku.translate_path(ku.profile_path)
+	saved = saved_catalog(account, action, profile, **params)
+	if saved:
+		items, created = saved
+		if time.time() - created >= FRESH_SECONDS:
+			if not catalog_lock_supported(profile): return _catalog(account, action, **params)
+			from modules.livetv_browse_refresh import request, status as refresh_status
+			if status is not None: status.append('Showing saved channels · refresh unavailable' if refresh_status(account, action, params) == 'unavailable' else 'Showing saved channels')
+			request(account, action, params)
+		return items
+	return _catalog(account, action, **params)
+
+
+def _browse_items(rows):
+	from concurrent.futures import ThreadPoolExecutor, wait
+	urls = []
+	for _, _, _, icon in rows:
+		try:
+			if isinstance(icon, str) and urlsplit(icon).scheme.lower() in ('http', 'https') and icon not in urls: urls.append(icon)
+		except ValueError: pass
+	def register(icon):
+		try: return _vpn_register(icon)
+		except (OSError, HTTPException, ValueError, TypeError): return None
+	icons = {url: None for url in urls}
+	if urls:
+		pool = ThreadPoolExecutor(max_workers=8)
+		try:
+			futures = {pool.submit(register, url): url for url in urls}
+			done, _ = wait(futures, timeout=2)
+			for future in done: icons[futures[future]] = future.result()
+		finally: pool.shutdown(wait=False, cancel_futures=True)
+	for label, params, folder, icon in rows:
+		if isinstance(icon, str) and icon in icons: icon = icons[icon]
+		_item(label, params, folder, icon, registered_icon=True)
+
+
 def _error(message):
 	ku.dialog.notification('Live TV', message, time=max(5000, min(60000, 2000 + 200 * len(message))))
 
@@ -750,8 +792,12 @@ def browse(params):
 		return
 	_item('Search providers', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 	try:
-		categories = _catalog(account, 'get_live_categories')
+		status = []
+		categories = _browse_catalog(account, 'get_live_categories', status=status, retry=params.get('retry') == 'true')
 		if not isinstance(categories, list): raise ValueError('Invalid response')
+		if status:
+			if status[0].endswith('unavailable'): _item(status[0] + ' — select to retry', {'mode': 'livetv.browse', 'retry': 'true'}, True, None, False)
+			else: _item(status[0], {}, False, None, False)
 		_item('Try another feed', {'mode': 'livetv.next', 'isFolder': 'false'}, False, None, False)
 		_item('All channels', {'mode': 'livetv.channels'})
 		for category in categories:
@@ -778,15 +824,21 @@ def channels(params):
 		return
 	try:
 		category = params.get('category', '')
-		streams = _catalog(account, 'get_live_streams', **({'category_id': category} if category else {}))
+		status = []
+		streams = _browse_catalog(account, 'get_live_streams', status=status, retry=params.get('retry') == 'true', **({'category_id': category} if category else {}))
 		if not isinstance(streams, list): raise ValueError('Invalid response')
 		streams, page, has_next = _channel_page(streams, params)
 		page_params = {'mode': 'livetv.channels', 'category': category}
+		if status:
+			if status[0].endswith('unavailable'): _item(status[0] + ' — select to retry', {**page_params, 'page': str(page), 'retry': 'true'}, True, None, False)
+			else: _item(status[0], {}, False, None, False)
 		if page: _item('Previous page', {**page_params, 'page': str(page - 1)})
+		rows = []
 		for stream in streams:
 			stream_id = str(stream.get('stream_id') or '')
 			name = str(stream.get('name') or 'Live channel')
-			_item(name, _play_params(stream_id, name), False, stream.get('stream_icon'))
+			rows.append((name, _play_params(stream_id, name), False, stream.get('stream_icon')))
+		_browse_items(rows)
 		if has_next: _item('Next page', {**page_params, 'page': str(page + 1)})
 	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load channels. Check the VPN and account details, then try again.')

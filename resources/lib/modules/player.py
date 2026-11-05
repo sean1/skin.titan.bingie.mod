@@ -273,6 +273,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		preview_handoff = ''
 		try:
 			self.meta = meta or {}
+			search_cancel_event = self.meta.pop('_search_cancel_event', None)
 			self.playback_timing = self.meta.pop('_playback_timing', None)
 			self.playback_health_context = self.meta.pop('_playback_health_context', None)
 			self.playback_health_started_at = self.meta.pop('_playback_health_started_at', None)
@@ -345,6 +346,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 				kodi_utils.logger('POVPlayer', 'Playback duration is implausibly short; trying the next source')
 				self._stop_and_wait(force=True)
 				return False
+			if search_cancel_event: search_cancel_event.set()
 			if self.restart_from_beginning:
 				if self.playback_event is not True or kodi_utils.monitor.abortRequested(): return False
 				ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode)

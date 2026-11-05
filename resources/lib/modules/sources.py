@@ -1,8 +1,9 @@
 import re
 import json
 import time
+from copy import copy
 from concurrent.futures import ThreadPoolExecutor as TPE
-from threading import Lock, Thread
+from threading import Event, Lock, Thread
 from magneto import sources as magneto_sources
 from windows import open_window, create_window
 from caches.providers_cache import ExternalProvidersCache
@@ -11,7 +12,7 @@ from modules.debrid import debrid_enabled, debrid_type_enabled, Source, DebridCh
 from modules import player, kodi_utils, settings, source_utils
 try: from modules import playback_health
 except Exception: playback_health = None
-from modules.source_search import CORE_CACHED_RESULT_TARGET, ProviderOutcome, external_worker_count, split_external_providers
+from modules.source_search import CORE_CACHED_RESULT_TARGET, EXTERNAL_PROVIDERS, ProviderOutcome, external_worker_count, split_external_providers
 from modules.utils import get_datetime, safe_string, string_to_float
 #from modules.kodi_utils import logger
 
@@ -36,6 +37,18 @@ dialog_format = '[COLOR %s][B]%s[/B][/COLOR] 4K: %s | 1080p: %s | 720p: %s | SD:
 remaining_format, season_str, show_str, nores_str = ls(32676), ls(32537), ls(32089), ls(32760)
 season_display, show_display = ls(32537), ls(32089)
 pack_check = (season_display, show_display)
+
+def log_search_timing(meta, stage, started, provider=None):
+	try:
+		fields = ['search=%s' % meta['_bingie_search_id'], 'stage=%s' % stage, 'seconds=%.3f' % (time.monotonic() - started)]
+		if provider is not None: fields.append('provider=%s' % (provider if provider in (*EXTERNAL_PROVIDERS, 'realdebrid', 'alldebrid', 'torbox') else 'other'))
+		kodi_utils.logger('BINGIE search timing', ' '.join(fields))
+	except Exception: pass
+
+def timed_search_stage(meta, stage, function, *args):
+	started = time.monotonic()
+	try: return function(*args)
+	finally: log_search_timing(meta, stage, started)
 
 class SourceResultSink:
 	def __init__(self):
@@ -92,6 +105,8 @@ class Sources:
 		self.clear_properties, self.filters_ignored = True, False
 		self.progress_dialog, self.pov_background_url = None, None
 		self.restart_from_beginning = False
+		self.pending_search = None
+		self.search_cancelled = False
 		self.source_sink, self.prescrape_sink = SourceResultSink(), SourceResultSink()
 		self.threads, self.providers, self.sources, self.internal_scraper_names = [], [], self.source_sink.items, []
 		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources = [], [], self.prescrape_sink.items
@@ -105,20 +120,32 @@ class Sources:
 		self.results_processor = ResultsProcessor(self)
 
 	def source_select(self, params=None):
-		while True:
-			if self.clear_properties: self._clear_properties()
-			self.config_loader.apply(self, params)
-			if not hasattr(self, 'meta'): self.meta = self.meta_builder.get(self)
-			results = self.get_sources()
-			outcome = self._process_post_results() if not results and not getattr(self, 'unverified_results', []) else self.play_source(results)
-			if outcome is not _RETRY_SEARCH: return outcome
-			params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false', 'autoplay': 'false'}
-			params.pop('autoplay_next', None)
-			self.__init__()
+		try:
+			while True:
+				search_started = time.monotonic()
+				if self.clear_properties: self._clear_properties()
+				self.config_loader.apply(self, params)
+				if not hasattr(self, 'meta'): self.meta = self.meta_builder.get(self)
+				self.meta['_bingie_search_id'] = time.monotonic_ns()
+				self.meta['_bingie_search_started_at'] = search_started
+				results = self.get_sources()
+				if self.search_cancelled: return
+				outcome = self._process_post_results() if not results and not getattr(self, 'unverified_results', []) else self.play_source(results)
+				if outcome is not _RETRY_SEARCH: return outcome
+				params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false', 'autoplay': 'false'}
+				params.pop('autoplay_next', None)
+				self._cancel_pending_search()
+				self.__init__()
+		finally: self._cancel_pending_search()
+
+	def _cancel_pending_search(self):
+		pending = getattr(self, 'pending_search', None)
+		if pending: pending['cancelled'].set()
 
 	def get_sources(self):
 		start_time = time.monotonic()
 		self.meta.pop('full_search_available', None)
+		self.meta.pop('_bingie_pending_search', None)
 		self.progress_dialog = DialogProgress(getattr(self, 'full_screen', False))
 		if self.prescrape and any(x in self.active_internal_scrapers for x in default_internal_scrapers):
 			results = self.collect_prescrape_results()
@@ -146,6 +173,8 @@ class Sources:
 					self.threads, self.prescrape_sources, self.progress_dialog, self.disabled_ignored,
 					None if self.ignore_scrape_filters else self.results_processor.filter_staged_results, self.force_full_search
 				)
+				if not self.background and not self.autoplay and not self.force_full_search and not self.ignore_scrape_filters:
+					return self._collect_manual_snapshot(args)
 				self._collect_provider('external', (ExternalManager, args), False, self.meta['search_info'], self.source_sink)
 			elif self.providers and self.background: [i.join() for i in self.threads]
 		else: self.scrapers_dialog('internal')
@@ -154,6 +183,61 @@ class Sources:
 			self.threads.clear()
 			self.providers.clear()
 		return self.sources
+
+	def _collect_manual_snapshot(self, args):
+		meta = dict(self.meta)
+		sink = self.source_sink
+		search_source = copy(self)
+		search_source.meta = meta
+		manager_args = list(args[1:])
+		manager_args[-2] = ResultsProcessor(search_source).filter_staged_results
+		ready, finished, cancelled = Event(), Event(), Event()
+		pending = {'ready': ready, 'finished': finished, 'cancelled': cancelled, 'snapshot': None, 'meta': meta}
+		self.pending_search = pending
+
+		def publish(results):
+			with sink.lock: internal_results = [dict(item) for item in sink.items]
+			pending['snapshot'] = internal_results + [dict(item) for item in results]
+			ready.set()
+
+		def collect():
+			try:
+				sink.extend(manager.results(meta['search_info']))
+			except Exception: pass
+			finally:
+				sink.close()
+				pending['finished_at'] = time.monotonic()
+				finished.set()
+				ready.set()
+
+		manager = ExternalManager(meta, *manager_args, snapshot_callback=publish, cancel_event=cancelled)
+		manager.background = True
+		manager.manual_progress = True
+		cancellable = manager.progress_dialog.full_screen
+		display = kodi_utils.xbmcgui.DialogProgress() if cancellable else progressDialogBG
+		hide_busy_dialog()
+		display.create('BINGIE Lite', 'Searching for sources...')
+		try:
+			Thread(target=collect, daemon=True).start()
+			while not ready.wait(0.1):
+				if monitor.abortRequested() or (cancellable and display.iscanceled()):
+					cancelled.set()
+					self.search_cancelled = True
+					return []
+				progress = getattr(manager, 'manual_progress_state', None)
+				if progress: manager.progress_update(*progress, display=display)
+			if monitor.abortRequested() or (cancellable and display.iscanceled()):
+				cancelled.set()
+				self.search_cancelled = True
+				return []
+		finally: display.close()
+		if pending['snapshot'] is not None and not finished.is_set():
+			self.meta['full_search_available'] = True
+			self.meta['_bingie_pending_search'] = True
+			return pending['snapshot']
+		self.pending_search = None
+		self.meta['full_search_available'] = meta.get('full_search_available', False)
+		return list(self.sources)
 
 	def collect_prescrape_results(self):
 		self.scraper_processor.activate_internal(True)
@@ -268,6 +352,10 @@ class Sources:
 			if action == 'play':
 				outcome = self.play_file(results, chosen_item)
 				if outcome is not _PLAYBACK_FAILED: return outcome
+				if self.pending_search and self.pending_search['cancelled'].is_set():
+					self.pending_search = None
+					self.meta.pop('_bingie_pending_search', None)
+					self.meta['full_search_available'] = True
 				choice = kodi_utils.dialog.select('Playback failed', ['Search again', 'Choose a source or adjust filters'])
 				if choice == 0: return _RETRY_SEARCH
 				if choice == 1: continue
@@ -275,7 +363,30 @@ class Sources:
 			if action == 'show_unverified':
 				results, unverified_view = self.unverified_results, True
 				continue
-			if action == 'perform_full_search': return _RETRY_SEARCH
+			if action == 'perform_full_search':
+				pending = self.pending_search
+				if pending is None: return _RETRY_SEARCH
+				wait_dialog = kodi_utils.xbmcgui.DialogProgress()
+				wait_dialog.create('BINGIE Lite', 'Searching for remaining sources...')
+				cancelled = False
+				try:
+					while not pending['finished'].wait(0.1):
+						if monitor.abortRequested(): return
+						if wait_dialog.iscanceled():
+							cancelled = True
+							break
+					if wait_dialog.iscanceled(): cancelled = True
+				finally: wait_dialog.close()
+				if cancelled: continue
+				self.pending_search = None
+				self.meta.pop('_bingie_pending_search', None)
+				self.meta['full_search_available'] = pending['meta'].get('full_search_available', False)
+				self.meta['scrape_time'] = pending['finished_at'] - self.meta['_bingie_search_started_at']
+				self.orig_results = list(self.sources)
+				results = self.results_processor.process(self.orig_results)
+				verified_results = results
+				if not results and not getattr(self, 'unverified_results', []): return self._process_post_results()
+				continue
 			return
 
 	def play_source(self, results):
@@ -381,6 +492,8 @@ class Sources:
 					'_playback_health_has_stall_fallback': count < len(items)
 				})
 				playback_meta['_playback_timing'] = timing
+				pending = getattr(self, 'pending_search', None)
+				if pending: playback_meta['_search_cancel_event'] = pending['cancelled']
 				if retry_resume_percent: playback_meta['_retry_resume_percent'] = retry_resume_percent
 				if getattr(self, 'restart_from_beginning', False): playback_meta['_restart_from_beginning'] = True
 				playback_player = POVPlayer()
@@ -866,13 +979,16 @@ class ExternalManager:
 
 	def __init__(
 		self, meta, source_dict, debrid_torrents, internal_scrapers,
-		prescrape_sources, progress_dialog, disabled_ignored=False, eligibility_filter=None, force_full_search=False
+		prescrape_sources, progress_dialog, disabled_ignored=False, eligibility_filter=None, force_full_search=False, snapshot_callback=None, cancel_event=None
 	):
 		self.meta, self.background = meta, meta.get('background', False)
 		self.source_dict, self.debrid_torrents = source_dict, debrid_torrents
 		self.internal_scrapers, self.prescrape_sources = internal_scrapers, prescrape_sources
 		self.disabled_ignored, self.progress_dialog = disabled_ignored, progress_dialog
 		self.eligibility_filter, self.force_full_search = eligibility_filter, force_full_search
+		self.snapshot_callback = snapshot_callback
+		self.snapshot_sent = False
+		self.cancel_event = cancel_event
 		self.internal_activated = len(self.internal_scrapers) > 0
 		self.internal_prescraped = len(self.prescrape_sources) > 0
 		self.processed_prescrape = False
@@ -896,29 +1012,35 @@ class ExternalManager:
 		tpe = TPE(external_worker_count(len(core_dict), len(self.debrid_torrents), exhaustive_core))
 		try:
 			unique_urls, unique_hashes = set(), set()
-			core_results = self.fetch_sources(core_dict, info, tpe)
+			core_results = timed_search_stage(self.meta, 'core_providers', self.fetch_sources, core_dict, info, tpe)
+			if self.cancel_event and self.cancel_event.is_set(): return self.final_sources
 			core_sources = list(self.process_duplicates(core_results, unique_urls, unique_hashes))
 			self.sources.extend(core_sources)
-			core_final, core_cached = self.cache_sources(core_sources)
+			core_final, core_cached = timed_search_stage(self.meta, 'core_debrid', self.cache_sources, core_sources, bool(self.snapshot_callback))
 			self.final_sources.extend(core_final)
+			if self.cancel_event and self.cancel_event.is_set(): return self.final_sources
 			if fallback_dict and self.eligible_cached_count(core_final, core_cached) >= CORE_CACHED_RESULT_TARGET:
 				self.meta['full_search_available'] = True
 				return self.final_sources
 			if fallback_dict:
+				self.publish_cached_snapshot(core_final, core_cached)
 				tpe.shutdown(wait=False, cancel_futures=True)
 				tpe = TPE(external_worker_count(len(fallback_dict), len(self.debrid_torrents), True))
-				fallback_results = self.fetch_sources(fallback_dict, info, tpe)
+				fallback_results = timed_search_stage(self.meta, 'fallback_providers', self.fetch_sources, fallback_dict, info, tpe)
+				if self.cancel_event and self.cancel_event.is_set(): return self.final_sources
 				fallback_sources = list(self.process_duplicates(fallback_results, unique_urls, unique_hashes))
 				self.sources.extend(fallback_sources)
-				fallback_final, _cached = self.cache_sources(fallback_sources)
+				fallback_final, _cached = timed_search_stage(self.meta, 'fallback_debrid', self.cache_sources, fallback_sources)
 				self.final_sources.extend(fallback_final)
-		except: notification(32574)
+		except:
+			if not getattr(self, 'manual_progress', False): notification(32574)
 		finally: tpe.shutdown(wait=False, cancel_futures=True)
 		return self.final_sources
 
 	def fetch_sources(self, source_dict, info, tpe):
 		threads, results = [], []
 		for provider, module, *pack in source_dict:
+			if self.cancel_event and self.cancel_event.is_set(): break
 			args = (provider, module, *pack) if pack else (provider, module)
 			fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
 			fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
@@ -932,7 +1054,18 @@ class ExternalManager:
 			except: pass
 		return results
 
-	def cache_sources(self, sources):
+	def publish_cached_snapshot(self, sources, cached_hashes):
+		if not self.snapshot_callback or self.snapshot_sent or (self.cancel_event and self.cancel_event.is_set()): return
+		try:
+			eligible = self.eligibility_filter(list(sources)) if self.eligibility_filter else sources
+			snapshot = [item for item in eligible if item.get('hash') in cached_hashes and item.get('_identity_status') != 'unverified' and 'Uncached' not in item.get('cache_provider', '') and 'Unchecked' not in item.get('cache_provider', '')]
+			if snapshot:
+				self.snapshot_callback(snapshot)
+				self.snapshot_sent = True
+		except Exception: pass
+
+	def cache_sources(self, sources, publish_snapshot=False):
+		if self.cancel_event and self.cancel_event.is_set(): return [], set()
 		torrent_sources = [i for i in sources if 'torrent' in i['source']]
 		if not torrent_sources: return [], set()
 		try: check_sources = self.eligibility_filter(list(torrent_sources)) if self.eligibility_filter else torrent_sources
@@ -947,11 +1080,30 @@ class ExternalManager:
 		tpe = TPE(external_worker_count(0, len(self.debrid_torrents), True))
 		try:
 			threads = []
+			def check_debrid(item):
+				started = time.monotonic()
+				try: return DebridCheck(self.meta, item, hash_list, cached_context).cache_check()
+				finally: log_search_timing(self.meta, 'debrid_provider', started, item)
 			for item in self.debrid_torrents:
-				fut = tpe.submit(DebridCheck(self.meta, item, hash_list, cached_context).cache_check)
+				if self.cancel_event and self.cancel_event.is_set(): break
+				fut = tpe.submit(check_debrid, item)
 				fut.name = item
 				threads.append(fut)
-			self.thread_monitor(threads, ls(32579), True)
+			def publish_finished(threads):
+				if not publish_snapshot or self.snapshot_sent: return
+				if all(fut.done() for fut in threads): return
+				cached_sources, cached_hashes = [], set()
+				for fut in threads:
+					if not fut.done(): continue
+					try:
+						cache_result = fut.result()
+						hashes = set(cache_result.get('cached', ())) if isinstance(cache_result, dict) else set(cache_result)
+						cached_hashes.update(hashes)
+						cached_sources.extend({**item, 'cache_provider': fut.name, 'debrid': fut.name} for item in torrent_sources if item['hash'] in hashes)
+					except Exception: pass
+				if all(fut.done() for fut in threads): return
+				self.publish_cached_snapshot(cached_sources, cached_hashes)
+			self.thread_monitor(threads, ls(32579), True, publish_finished if publish_snapshot else None)
 			results, cached_hashes = [], set()
 			for fut in threads:
 				if not fut.done():
@@ -977,21 +1129,29 @@ class ExternalManager:
 		except: eligible = sources
 		return len({i['hash'] for i in eligible if i.get('hash') in cached_hashes and i.get('_identity_status') != 'unverified'})
 
-	def thread_monitor(self, threads, status_line='', debrid=False):
+	def thread_monitor(self, threads, status_line='', debrid=False, on_update=None):
 		len_threads = len(threads)
 		end_time = time.monotonic() + self.timeout + 1
 		while not monitor.abortRequested() and time.monotonic() <= end_time:
+			if self.cancel_event and self.cancel_event.is_set(): break
+			if on_update: on_update(threads)
 			alive_threads = [x.name for x in threads if not x.done()]
 			if not debrid: alive_threads.extend(x.name for x in self.internal_scrapers if x.is_alive())
 			if not alive_threads: break
+			if getattr(self, 'manual_progress', False): self.manual_progress_state = (alive_threads, len_threads, status_line)
 			if not self.background: self.progress_update(alive_threads, len_threads, status_line)
 			sleep(self.sleep_time)
 
-	def progress_update(self, alive_threads, len_threads, string1):
+	def progress_update(self, alive_threads, len_threads, string1, display=None):
 		try:
-			ext_totals = [self.ext_total % v for v in self.resolutions.values()]
 			len_alive_threads = len(alive_threads)
-			progress = int((len_threads-len_alive_threads)/len_threads*100)
+			progress = max(0, int((len_threads-len_alive_threads)/max(1, len_threads)*100))
+			if len_alive_threads > 5: line3 = string1 % str(len_threads-len_alive_threads)
+			else: line3 = string1 % ', '.join(alive_threads).upper()
+			if display is not None:
+				display.update(progress, line3)
+				return
+			ext_totals = [self.ext_total % v for v in self.resolutions.values()]
 			if self.internal_activated or self.internal_prescraped:
 				self.process_internal_results()
 				int_totals = [self.int_total % v for v in self.internal_resolutions.values()]
@@ -1000,8 +1160,6 @@ class ExternalManager:
 			else:
 				line1 = self.string4
 				line2 = diag_format % tuple(ext_totals)
-			if len_alive_threads > 5: line3 = string1 % str(len_threads-len_alive_threads)
-			else: line3 = string1 % ', '.join(alive_threads).upper()
 			if self.progress_dialog.full_screen:
 				self.progress_dialog.update(format_line % (line1, line2, line3), progress)
 			else: progressDialogBG.update(progress, line3)
@@ -1053,6 +1211,7 @@ class ExternalSource:
 		else: self.resolutions = dict.fromkeys(resolutions.split(), 0)
 
 	def results(self, info, args):
+		started = time.monotonic()
 		try:
 			self.mediatype, self.tmdb_id  = info['mediatype'], str(info['tmdb_id'])
 			self.year, aliases = info['year'], info['aliases']
@@ -1084,6 +1243,7 @@ class ExternalSource:
 				}
 				self.get_movie_source(*args)
 		except: pass
+		finally: log_search_timing(self.meta, 'provider', started, args[0])
 		return self.sources
 
 	def get_movie_source(self, provider, module):

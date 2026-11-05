@@ -2,6 +2,15 @@ from time import monotonic, monotonic_ns
 from caches.mylist_cache import MyList, normalize_identity
 from modules import kodi_utils
 
+MY_LIST_PAGE_SIZE = 20
+
+
+def _add_page(handle, page, label):
+	item = kodi_utils.make_listitem()
+	item.setLabel(label)
+	item.setProperty('BingieMyListPage', str(page))
+	kodi_utils.add_item(handle, kodi_utils.build_url({'mode': 'build_my_list', 'page': page}), item, False)
+
 
 def _add_status(handle, status):
 	item = kodi_utils.make_listitem()
@@ -23,21 +32,32 @@ def build_list(params):
 		tvshows = store.items('tvshow')[0]
 		entries = [(item, 'movie') for item in movies] + [(item, 'tvshow') for item in tvshows]
 		entries.sort(key=lambda entry: (-entry[0]['saved_at'], entry[1], int(entry[0]['media_id'])))
+		requested_page = params.get('page') or ''
+		try: page = max(1, int(requested_page or '1'))
+		except (TypeError, ValueError): page = 1
+		page = min(page, max(1, (len(entries) + MY_LIST_PAGE_SIZE - 1) // MY_LIST_PAGE_SIZE))
+		if requested_page and requested_page != str(page) and kodi_utils.get_property('BingieMyListPage') == requested_page:
+			kodi_utils.set_property('BingieMyListPage', str(page))
+		start = (page - 1) * MY_LIST_PAGE_SIZE
+		page_entries = entries[start:start + MY_LIST_PAGE_SIZE]
 		builders = {}
-		if movies:
+		if any(mediatype == 'movie' for _, mediatype in page_entries):
 			builders['movie'] = Movies({**params, 'action': 'my_list_movies'})
 			builders['movie'].saved_titles = {item['media_id']: item['title'] for item in movies}
-		if tvshows:
+		if any(mediatype == 'tvshow' for _, mediatype in page_entries):
 			builders['tvshow'] = TVShows({**params, 'action': 'my_list_tvshows'})
 			builders['tvshow'].saved_titles = {item['media_id']: item['title'] for item in tvshows}
 		def build(position, item, mediatype):
 			builder = builders[mediatype]
 			if mediatype == 'movie': builder.build_movie_content(position, item['media_id'])
 			else: builder.build_tvshow_content(position, item['media_id'])
-		for thread in TaskPool(LIST_WORKERS).tasks(build, [(position, item, mediatype) for position, (item, mediatype) in enumerate(entries)], Thread): thread.join()
+		for thread in TaskPool(LIST_WORKERS).tasks(build, [(position, item, mediatype) for position, (item, mediatype) in enumerate(page_entries)], Thread): thread.join()
 		items = [item for builder in builders.values() for item in builder.items]
 		items.sort(key=lambda item: int(item[1].getProperty('pov_lite_sort_order')))
-		if items: kodi_utils.add_items(handle, items)
+		if items:
+			if page > 1: _add_page(handle, page - 1, 'Previous page')
+			kodi_utils.add_items(handle, items)
+			if start + MY_LIST_PAGE_SIZE < len(entries): _add_page(handle, page + 1, 'Next page')
 		elif entries: _add_status(handle, 'error')
 		else: _add_status(handle, 'empty')
 	except Exception as error:

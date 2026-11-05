@@ -120,7 +120,7 @@
 		<control type="image">
 			<width>100%</width>
 			<height>100%</height>
-			<texture colordiffuse="ff183b2b" border="10">bingie/square-rounded.png</texture>
+			<texture colordiffuse="b3183b2b" border="10">bingie/square-rounded.png</texture>
 		</control>
 		<control type="label">
 			<width>100%</width>

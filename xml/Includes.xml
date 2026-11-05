@@ -188,7 +188,7 @@
 		[String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,tvshow)] +
 		[!$EXP[IsPovLiteListItem] | String.IsEmpty(ListItem.UniqueID(tmdb))]
 	</expression>
-	<expression name="IsNextPageListItem">ListItem.IsFolder + String.StartsWith(ListItem.Label,Next Page)</expression>
+	<expression name="IsNextPageListItem">ListItem.IsFolder + [String.StartsWith(ListItem.Label,Next Page) | String.IsEqual(ListItem.Label,See all)]</expression>
 
 
 

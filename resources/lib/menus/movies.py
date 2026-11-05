@@ -335,5 +335,5 @@ class Menu(Movies):
 		if prefetch: return
 		complete_media_directory(
 			__handle__, mode, self.action, self.exit_list_params, category, content_type, view_type, self.is_widget, self.new_page, limited_listing,
-			self.params, nextpage_str, item_next
+			self.params, 'See all' if params_get('home_next') == 'true' else nextpage_str, item_next
 		)

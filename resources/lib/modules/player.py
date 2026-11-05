@@ -42,6 +42,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.set_resume, self.set_watched = 5, 90
 		self.playback_event, self.progress_media = None, None
 		self.playback_error, self.retry_resume_percent = False, 0
+		self.playback_generation = 0
 		self.restart_from_beginning = False
 		self.playback_health_context, self.playback_health_started_at, self.playback_health_finalized = None, None, False
 		self.playback_health_bitrate_mbps, self.playback_health_qualified = None, False
@@ -70,6 +71,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			try: self.stop()
 			except: pass
 			return
+		self.playback_generation = getattr(self, 'playback_generation', 0) + 1
 		self.playback_event = True
 		try: playback_file = self.getPlayingFile()
 		except: playback_file = ''
@@ -480,17 +482,20 @@ class POVPlayer(kodi_utils.xbmc_player):
 		except: pass
 		return listitem
 
-	def episode_handler(self):
+	def episode_handler(self, generation):
 		for _ in range(150):
+			if self.playback_event is not True or self.playback_generation != generation: return
 			total_time = False
 			try: total_time = self.getTotalTime() > 0
 			except: pass
 			if total_time: break
 			kodi_utils.sleep(200)
 		else: return
-		self.intro, self.credits = SegmentScraper(self.imdb_id, self.season, self.episode).run()
+		intro, credits = SegmentScraper(self.imdb_id, self.season, self.episode).run()
+		if self.playback_event is not True or self.playback_generation != generation: return
+		self.intro, self.credits = intro, credits
 		if self.intro is not None and self.skip_intro_enabled:
-			self.exec_task('skip_intro')
+			self.exec_task('skip_intro', generation)
 		if self.play_random_continual or self.autoplay_next_episode or self.autoscrape_next_episode:
 			self.info_next_ep()
 
@@ -581,10 +586,10 @@ class POVPlayer(kodi_utils.xbmc_player):
 			elif task_name == 'media_watched':
 				if args: Thread(target=args[0], args=(args[1],)).start()
 			elif task_name == 'episode_handler':
-				Thread(target=self.episode_handler).start()
+				Thread(target=self.episode_handler, args=(self.playback_generation,)).start()
 			elif task_name == 'skip_intro':
 				from modules.episode_tools import execute_skip_intro
-				Thread(target=execute_skip_intro, args=(self, self.meta)).start()
+				Thread(target=execute_skip_intro, args=(self, self.meta, *args)).start()
 			elif task_name == 'scrape_next_ep':
 				self.nextep_started = True
 				from modules.episode_tools import execute_scrape_nextep

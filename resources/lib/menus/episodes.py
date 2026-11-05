@@ -210,7 +210,7 @@ class Menu(Episodes):
 		if self.has_more and params_get('hub_next') == 'true':
 			page_params = {'mode': mode}
 			if category: page_params['name'] = category
-			kodi_utils.add_dir(__handle__, page_params, nextpage_str, item_next)
+			kodi_utils.add_dir(__handle__, page_params, 'See all' if params_get('home_next') == 'true' else nextpage_str, item_next)
 		if self.list_type == 'trakt_calendar' and calendar_focus_today():
 			labels = enumerate((i[1].getLabel() for i in self.items), 1)
 			index = next((i for i, x in labels if today_str in x), None)

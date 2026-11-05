@@ -106,15 +106,28 @@ def nextep_playback_info(meta):
 	except: url_params = 'error'
 	return meta, url_params
 
-def execute_skip_intro(player, meta):
+def execute_skip_intro(player, meta, generation=None):
 	intro_start, intro_end = player.intro
+	try:
+		playing_file = player.getPlayingFile() if hasattr(player, 'getPlayingFile') else None
+		if hasattr(player, 'getPlayingFile') and not playing_file: return
+		if generation is None: generation = getattr(player, 'playback_generation', 0)
+	except Exception: return
 	while player.isPlayingVideo():
-		try: current_time = player.getTime()
+		try:
+			if getattr(player, 'playback_event', True) is not True or getattr(player, 'playback_generation', 0) != generation: return
+			if playing_file is not None and player.getPlayingFile() != playing_file: return
+			current_time = player.getTime()
 		except Exception: break
 		if current_time > intro_end: break
 		if intro_start <= current_time <= intro_end:
 			if _continue_action(True, meta, 'skip_intro'):
-				player.seekTime(intro_end)
+				try:
+					if not player.isPlayingVideo() or getattr(player, 'playback_event', True) is not True: return
+					if getattr(player, 'playback_generation', 0) != generation: return
+					if playing_file is not None and player.getPlayingFile() != playing_file: return
+					if intro_start <= player.getTime() < intro_end: player.seekTime(intro_end)
+				except Exception: return
 			return
 		kodi_utils.sleep(200)
 

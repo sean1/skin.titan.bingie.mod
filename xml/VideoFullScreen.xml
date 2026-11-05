@@ -3,15 +3,15 @@
 <window>
 	<defaultcontrol/>
 	<onload condition="Player.HasVideo + !Window.IsVisible(videoosd) + !Player.Paused">SetProperty(DialogMPAATopBar,1,home)</onload>
-	<onunload condition="Player.Caching + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">SetProperty(BingieLiveTVStopRequest,true,Home)</onunload>
+	<onunload condition="[Player.Caching | !String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchRequest)) | String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true)] + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">SetProperty(BingieLiveTVStopRequest,true,Home)</onunload>
 	<onunload condition="!String.IsEmpty(Window(Home).Property(BaseWindow)) + !Window.Previous(videos) + !Player.HasVideo">AlarmClock(loadinfo,Action(Info),00:00,silent)</onunload>
-	<onunload condition="Player.HasVideo + ![Player.Caching + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))]">AlarmClock(StopPlayback,PlayerControl(Stop),00:00,silent)</onunload>
+	<onunload condition="Player.HasVideo + ![[Player.Caching | !String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchRequest)) | String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true)] + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))]">AlarmClock(StopPlayback,PlayerControl(Stop),00:00,silent)</onunload>
 
 	<controls>
 		<!-- Keep Back available while a Live TV feed is buffering. -->
 		<control type="button" id="9902">
 			<left>0</left><top>0</top><width>1</width><height>1</height>
-			<visible>Player.Caching + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))</visible>
+			<visible>[Player.Caching | !String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchRequest)) | String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true)] + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))</visible>
 			<onback>SetProperty(BingieLiveTVStopRequest,true,Home)</onback>
 		</control>
 		<control type="image">

@@ -685,6 +685,8 @@
 					<label>Switch feed</label>
 					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]playlist_fo.png</texturefocus>
 					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]playlist.png</texturenofocus>
+					<onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchPicker))">SetProperty(BingieLiveTVSwitchPickerBack,$INFO[Window(Home).Property(BingieLiveTVSwitchPicker)],Home)</onback>
+					<onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchRequest)) | String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true)">SetProperty(BingieLiveTVStopRequest,true,Home)</onback>
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=livetv.next)</onclick>
 					<visible>Player.HasVideo + String.IsEqual(Window(Home).Property(BingieLiveTVCanSwitch),true)</visible>
 					<include>Top_OSD_Button_Zoom_Anim</include>

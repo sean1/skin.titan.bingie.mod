@@ -2,6 +2,7 @@
 import json
 import math
 import re
+import uuid
 from http.client import HTTPException
 from time import monotonic, time
 from urllib.parse import parse_qs, quote, urlsplit
@@ -17,6 +18,8 @@ CAN_SWITCH = 'BingieLiveTVCanSwitch'
 LOADING_SWITCH = 'BingieLiveTVLoadingSwitch'
 FEED_CHOICES = 'BingieLiveTVFeedChoices'
 OPENING = 'BingieTV'
+PICKER_ACTIVE = 'BingieLiveTVSwitchPicker'
+PICKER_BACK = 'BingieLiveTVSwitchPickerBack'
 SESSION_OPEN_TIMEOUT = 30.0
 
 
@@ -36,15 +39,31 @@ def request_manual_switch():
 		feeds = [feed for feed in raw_feeds if isinstance(feed, dict) and _current_evidence(feed)]
 		current_feed = next((feed for feed in feeds if feed.get('id') == current), None)
 		if not current_feed or len(feeds) < 2: raise ValueError('No session')
-		choice = ku.dialog.select('Switch feed', [str(feed['name']) + (' (current)' if feed['id'] == current else '') for feed in feeds])
-		if choice < 0: return False
-		if choice >= len(feeds): raise ValueError('Invalid choice')
-		selected = feeds[choice]['id']
-		if selected == current: return False
-		if json.loads(ku.get_property(FEED_CHOICES) or '{}') != data or not ku.get_property(CAN_SWITCH) or ku.get_property(STOP_REQUEST) or not _current_evidence(data) or not _current_evidence(current_feed) or not _current_evidence(feeds[choice]): return False
-		ku.set_property(SWITCH_REQUEST, json.dumps({'token': token, 'current': current, 'id': selected}))
-		return True
+		ku.clear_property(PICKER_BACK)
+		picker = uuid.uuid4().hex
+		ku.set_property(PICKER_ACTIVE, picker)
+		confirmed = False
+		try:
+			choice = ku.dialog.select('Switch feed', [str(feed['name']) + (' (current)' if feed['id'] == current else '') for feed in feeds])
+			if choice < 0: return False
+			if choice >= len(feeds): raise ValueError('Invalid choice')
+			selected = feeds[choice]['id']
+			if selected == current: return False
+			if json.loads(ku.get_property(FEED_CHOICES) or '{}') != data or not ku.get_property(CAN_SWITCH) or ku.get_property(STOP_REQUEST) or not _current_evidence(data) or not _current_evidence(current_feed) or not _current_evidence(feeds[choice]): return False
+			if ku.get_property(PICKER_BACK) == picker:
+				ku.set_property(STOP_REQUEST, 'true')
+				return False
+			confirmed = True
+			ku.set_property(SWITCH_REQUEST, json.dumps({'token': token, 'current': current, 'id': selected, 'picker': picker}))
+			if ku.get_property(PICKER_BACK) == picker: ku.set_property(STOP_REQUEST, 'true')
+			return True
+		finally:
+			ku.clear_property(PICKER_ACTIVE)
+			if not confirmed: ku.clear_property(PICKER_BACK)
+
 	except (TypeError, ValueError, AttributeError, KeyError):
+		ku.clear_property(PICKER_ACTIVE)
+		ku.clear_property(PICKER_BACK)
 		ku.dialog.notification('Live TV', 'No matching live stream is available to switch.')
 		return False
 
@@ -71,6 +90,7 @@ class LiveTVFailover(ku.xbmc_player):
 		self.session = None
 		self.event = None
 		self.caching = False
+		if not ku.get_property(PICKER_ACTIVE): ku.clear_property(PICKER_BACK)
 		ku.clear_property(SWITCH_REQUEST)
 		if not keep_stop: ku.clear_property(STOP_REQUEST)
 		ku.clear_property(CAN_SWITCH)
@@ -219,10 +239,9 @@ class LiveTVFailover(ku.xbmc_player):
 
 	def _publish_choices(self):
 		session = self.session
-		if session and not session['active']:
-			newly_loading = not ku.get_property(LOADING_SWITCH)
+		if session and (not session['active'] or ku.get_property(SWITCH_REQUEST)):
 			ku.set_property(LOADING_SWITCH, 'true')
-			if newly_loading and (ku.get_visibility('Window.IsActive(busydialog)') or ku.get_visibility('Window.IsActive(busydialognocancel)')): ku.xbmc.executebuiltin('SetFocus(9900)')
+			if (ku.get_visibility('Window.IsActive(busydialog)') or ku.get_visibility('Window.IsActive(busydialognocancel)')) and ku.get_visibility('Control.IsVisible(9900)') and not ku.get_visibility('Control.HasFocus(9900)'): ku.xbmc.executebuiltin('SetFocus(9900)')
 		else: ku.clear_property(LOADING_SWITCH)
 		if session and session['active'] and len(session['feeds']) > 1:
 			choices = {'token': session['token'], 'current': session['id'], 'feeds': session['feeds']}
@@ -294,6 +313,15 @@ class LiveTVFailover(ku.xbmc_player):
 		return True
 
 	def tick(self):
+		picker_back = ku.get_property(PICKER_BACK)
+		if picker_back and self.session:
+			try: pending = json.loads(ku.get_property(SWITCH_REQUEST) or '{}')
+			except (TypeError, ValueError): pending = {}
+			queued = isinstance(pending, dict) and pending.get('token') == self.session['token'] and pending.get('current') == self.session['id'] and pending.get('picker') == picker_back
+			opening = self.session.get('picker') == picker_back
+			if queued or opening:
+				ku.clear_property(PICKER_BACK)
+				ku.set_property(STOP_REQUEST, 'true')
 		if self.stop_pending:
 			if not ku.get_property(STOP_REQUEST):
 				self.stop_pending = False
@@ -356,15 +384,24 @@ class LiveTVFailover(ku.xbmc_player):
 				if self.isPlayingVideo(): self.onAVStarted(False)
 			except Exception: pass
 		self._publish_choices()
-		caching = bool(session['active'] and ku.get_visibility('Player.Caching'))
+		caching = bool((session['active'] and ku.get_visibility('Player.Caching')) or ku.get_property(SWITCH_REQUEST) or ku.get_property(LOADING_SWITCH))
 		can_focus = ku.get_visibility('Window.IsActive(fullscreenvideo)') and not ku.get_visibility('Window.IsVisible(videoosd)')
 		if caching and not self.caching and can_focus: ku.xbmc.executebuiltin('SetFocus(9902)')
 		self.caching = bool(caching and (self.caching or can_focus))
 		manual = ku.get_property(SWITCH_REQUEST)
 		if manual:
-			ku.clear_property(SWITCH_REQUEST)
 			try: request = json.loads(manual)
 			except (ValueError, TypeError): request = {}
-			if isinstance(request, dict) and request.get('token') == session['token'] and request.get('current') == session['id'] and session['active'] and playing == expected:
-				return self._switch(request.get('id'))
+			valid = isinstance(request, dict) and request.get('token') == session['token'] and request.get('current') == session['id'] and isinstance(request.get('picker'), str) and bool(re.fullmatch(r'[0-9a-f]{32}', request['picker'])) and session['active'] and playing == expected
+			if valid: ku.set_property(LOADING_SWITCH, 'true')
+			ku.clear_property(SWITCH_REQUEST)
+			if valid:
+				session['picker'] = request.get('picker')
+				switched = self._switch(request.get('id'))
+				if not switched and self.session and not ku.get_property(STOP_REQUEST):
+					if ku.get_property(PICKER_BACK) == session.get('picker'): ku.clear_property(PICKER_BACK)
+					session.pop('picker', None)
+					self._publish_choices()
+				return switched
+			self._publish_choices()
 		return True

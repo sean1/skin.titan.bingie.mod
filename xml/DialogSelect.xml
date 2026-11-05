@@ -13,7 +13,7 @@
 
         <!--Dialog Select-->
         <control type="group" id="1000">
-            <include>animation_window_open_close</include>
+            <include>animation_select_dialog_open_close</include>
             <visible>!Window.IsVisible(yesnodialog) + !Window.IsVisible(virtualkeyboard) + !Window.IsVisible(numericinput) + ![Window.IsVisible(script-LibraryEditor-genre.xml) + String.IsEmpty(Window.Property(ShowDialog))] + !Window.IsVisible(script-LibraryEditor-dialogs.xml)</visible>
 			<!-- background panel -->
 			<control type="image">
@@ -128,6 +128,8 @@
             </control>
             <!--List-->
             <control type="list" id="3">
+                <onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchPicker))">SetProperty(BingieLiveTVSwitchPickerBack,$INFO[Window(Home).Property(BingieLiveTVSwitchPicker)],Home)</onback>
+                <onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchPicker))">PreviousMenu</onback>
                 <!--Container 3 Small-->
                 <posx>412</posx>
 				<posy>315</posy>
@@ -246,6 +248,8 @@
 
 
             <control type="list" id="6">
+                <onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchPicker))">SetProperty(BingieLiveTVSwitchPickerBack,$INFO[Window(Home).Property(BingieLiveTVSwitchPicker)],Home)</onback>
+                <onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchPicker))">PreviousMenu</onback>
                 <!--Container 6 Big-->
                 <posx>423</posx>
                 <posy>315</posy>

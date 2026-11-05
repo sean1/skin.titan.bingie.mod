@@ -137,6 +137,7 @@ class Refine:
 		values = ('', '1', '50', '100', '250', '500', '1000')
 		choice = self._select('Minimum votes', [('Any' if not value else value, value) for value in values])
 		if choice is None: return
+		if not self._valid_vote_range(choice[1], self.draft['max_votes']): return
 		self.draft['votes'] = choice[1]
 		return self._save()
 
@@ -144,6 +145,7 @@ class Refine:
 		values = ('', '50', '100', '250', '500', '1000')
 		choice = self._select('Maximum votes', [('Any' if not value else value, value) for value in values])
 		if choice is None: return
+		if not self._valid_vote_range(self.draft['votes'], choice[1]): return
 		self.draft['max_votes'] = choice[1]
 		return self._save()
 
@@ -201,6 +203,7 @@ class Refine:
 		return self.browse()
 
 	def apply(self):
+		if not self._valid_vote_range(self.draft['votes'], self.draft['max_votes']): return
 		if not self._active_count(): return self.browse()
 		self._save()
 		kodi_utils.set_property(APPLIED_STATE_PROPERTY % self.mediatype, json.dumps(self.draft, sort_keys=True))
@@ -229,6 +232,12 @@ class Refine:
 
 	def show_results(self):
 		return self.apply()
+
+	def _valid_vote_range(self, minimum, maximum):
+		if minimum and maximum and int(minimum) > int(maximum):
+			kodi_utils.notification('Min votes exceed max')
+			return False
+		return True
 
 	def _year(self, key, heading):
 		value = kodi_utils.dialog.numeric(0, heading, self.draft[key])

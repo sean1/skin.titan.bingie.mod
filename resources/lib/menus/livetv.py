@@ -844,6 +844,9 @@ def news(params):
 			count = len(feeds)
 			status = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else 'No feeds'
 			if state in ('loading', 'partial'): status = status + ' · updating' if count else 'Finding feeds…'
+			elif state == 'degraded':
+				saved = sum(bool(feed.get('_news_saved')) for _, feed in feeds)
+				status = status + (' · saved' if saved == count else ' · includes saved' if saved else '') + ' · some providers unavailable' if count else 'Some providers unavailable'
 			elif state == 'stale': status = status + ' · saved' if count else 'Feeds unavailable'
 			elif state == 'unavailable': status = 'Feeds unavailable'
 			icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % key
@@ -875,7 +878,7 @@ def news(params):
 			snapshot_accounts = {feed.get('_news_accounts') for _, feed in choices}
 			if len(snapshot_accounts) == 1 and isinstance(next(iter(snapshot_accounts)), str): _save_feed_matches(feed_cache, expected_accounts=next(iter(snapshot_accounts)))
 		if not feeds:
-			message = 'Finding feeds…' if state in ('loading', 'partial') else 'Feeds unavailable' if state in ('stale', 'unavailable') else 'No matching feeds'
+			message = 'Finding feeds…' if state in ('loading', 'partial') else 'Some providers unavailable' if state == 'degraded' else 'Feeds unavailable' if state in ('stale', 'unavailable') else 'No matching feeds'
 			_item(message, {'mode': 'livetv.news', 'channel': channel}, False, playable=False, extra_context=refresh)
 	_finish()
 	view = 50 if channel else 524

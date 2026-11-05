@@ -37,16 +37,21 @@ def prepare(params):
 	if result.get('accounts') != accounts or not 0 <= now - result.get('created', 0) < _MAX_AGE: result = {}
 	groups = result.get('groups') if isinstance(result.get('groups'), dict) else {}
 	provider_times = result.get('provider_times') if isinstance(result.get('provider_times'), dict) else {}
+	saved_providers = result.get('saved_providers')
+	if not isinstance(saved_providers, list): saved_providers = None
+	try: alive = 0 <= now - float(ku.get_property(_HEARTBEAT)) < 30
+	except (TypeError, ValueError): alive = False
 	def current(entry):
 		if not isinstance(entry, list) or len(entry) != 2 or not isinstance(entry[0], str) or not isinstance(entry[1], dict): return False
 		provider = entry[0].partition(':')[0] if ':' in entry[0] else 'primary'
 		created = provider_times.get(provider, 0)
 		return isinstance(created, (int, float)) and 0 <= now - created < _MAX_AGE
-	groups = {slug: [[entry[0], {**entry[1], '_news_until': provider_times[entry[0].partition(':')[0] if ':' in entry[0] else 'primary'] + _MAX_AGE, '_news_accounts': accounts}]
+	def saved(entry):
+		provider = entry[0].partition(':')[0] if ':' in entry[0] else 'primary'
+		return not alive or (provider in saved_providers if saved_providers is not None else bool(result.get('failed') or result.get('stale')))
+	groups = {slug: [[entry[0], {**entry[1], '_news_until': provider_times[entry[0].partition(':')[0] if ':' in entry[0] else 'primary'] + _MAX_AGE, '_news_accounts': accounts, '_news_saved': saved(entry)}]
 		for entry in entries if current(entry)] for slug, entries in groups.items() if isinstance(entries, list)}
 	groups = {slug: entries for slug, entries in groups.items() if entries}
-	try: alive = 0 <= now - float(ku.get_property(_HEARTBEAT)) < 30
-	except (TypeError, ValueError): alive = False
 	if not alive: return ('stale' if groups else 'unavailable'), groups
 	reload_token = str(params.get('reload') or '')[:128]
 	force = bool(reload_token and ku.get_property(_RELOAD) != reload_token)
@@ -60,7 +65,9 @@ def prepare(params):
 	if active: return ('partial' if groups else 'loading'), groups
 	if not result: return 'loading', {}
 	if not result.get('complete'): return 'partial', groups
-	if result.get('failed') or result.get('stale'): return ('stale' if groups else 'unavailable'), groups
+	if result.get('failed') or result.get('stale'):
+		if result.get('fresh'): return 'degraded', groups
+		return ('stale' if groups else 'unavailable'), groups
 	return 'ready', groups
 
 
@@ -123,7 +130,8 @@ class NewsRefresh:
 						found.setdefault(slug, []).append([ref, {'stream_id': stream_id, 'name': name, 'stream_icon': icon or ''}])
 				return identity, found, status[-1] if status else (time.time(), False), False
 			except (OSError, HTTPException, ValueError, TypeError): return identity, {}, (0, False), True
-		failed = stale = False
+		failed = stale = fresh = False
+		saved_providers = {identity for identity, _ in accounts}
 		order = {slug: [row[0] for row in rows if isinstance(row, list) and len(row) == 2] for slug, rows in previous.items() if isinstance(rows, list)}
 		with ThreadPoolExecutor(max_workers=min(4, len(accounts))) as pool:
 			futures = [pool.submit(fetch, entry) for entry in accounts]
@@ -133,8 +141,10 @@ class NewsRefresh:
 				if not error:
 					buckets[identity] = found
 					provider_times[identity] = created
+					if not was_stale: saved_providers.discard(identity)
 				failed |= error
 				stale |= was_stale
+				fresh |= not error and not was_stale
 				groups = {}
 				for provider, _ in accounts:
 					for slug, rows in buckets[provider].items(): groups.setdefault(slug, []).extend(rows)
@@ -142,7 +152,7 @@ class NewsRefresh:
 					ranks = {ref: index for index, ref in enumerate(order.get(slug, []))}
 					rows.sort(key=lambda row: ranks.get(row[0], len(ranks)))
 					order[slug] = [row[0] for row in rows]
-				result = {'id': request['id'], 'accounts': request['accounts'], 'created': time.time(), 'complete': count == len(accounts), 'failed': failed, 'stale': stale, 'groups': groups, 'provider_times': provider_times}
+				result = {'id': request['id'], 'accounts': request['accounts'], 'created': time.time(), 'complete': count == len(accounts), 'failed': failed, 'stale': stale, 'fresh': fresh, 'saved_providers': sorted(saved_providers), 'groups': groups, 'provider_times': provider_times}
 				self.results.put((request['id'], result))
 
 	def _work(self, request, snapshot):

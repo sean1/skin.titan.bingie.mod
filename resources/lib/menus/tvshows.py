@@ -163,6 +163,16 @@ class TVShows:
 		title = self.saved_titles.get(string(tag))
 		if title: self.build_tvshow_shelf_content(position, {'id': tag, 'name': title})
 
+class CatalogUnavailable(Exception):
+	pass
+
+def require_catalog_result(function):
+	def checked(*args, **kwargs):
+		result = function(*args, **kwargs)
+		if result is None: raise CatalogUnavailable()
+		return result
+	return checked
+
 class Menu(TVShows):
 	personal_dict = {
 		'watched_tvshows': ('caches.watched_cache', 'get_watched_movie_tvshow'), 'in_progress_tvshows': ('caches.watched_cache', 'get_in_progress_tvshows'),
@@ -190,6 +200,7 @@ class Menu(TVShows):
 		for thread in TaskPool(PREFETCH_THREADS).tasks(fetch, [(tag,) for tag in self.list], Thread): thread.join()
 
 	def run(self):
+		if self.params.get('retry_catalog') == 'true': return kodi_utils.container_refresh()
 		__handle__ = int(kodi_utils.argv1())
 		prefetch = self.params.get('prefetch') == 'true'
 		params_get = self.params.get
@@ -206,6 +217,7 @@ class Menu(TVShows):
 			if self.action in Menu.personal_dict: var_module, import_function = Menu.personal_dict[self.action]
 			else: var_module, import_function = 'indexers.%s_api' % self.action.split('_')[0], self.action
 			function = manual_function_import(var_module, import_function)
+			if self.action.startswith('tmdb_tv_'): function = require_catalog_result(function)
 			if self.action in Menu.tmdb_main:
 				data = function(page_no)
 				all_results = data['results']
@@ -279,6 +291,12 @@ class Menu(TVShows):
 				}
 				kodi_utils.add_dir(__handle__, url_params, jumpto_str, item_jump, isFolder=False)
 			kodi_utils.add_items(__handle__, self.worker())
+		except CatalogUnavailable:
+			kodi_utils.logger('build_tvshow_list', 'action=%s: catalog unavailable' % self.action)
+			if not prefetch and not self.is_widget:
+				item = kodi_utils.make_listitem()
+				item.setLabel('Could not load TV shows — select to retry')
+				kodi_utils.add_item(__handle__, build_url({'mode': mode, 'action': self.action, 'retry_catalog': 'true'}), item, False)
 		except Exception as exc:
 			kodi_utils.logger('build_tvshow_list', 'action=%s: %s' % (self.action, exc))
 			if self.action == 'my_list_tvshows': kodi_utils.notification('Could not load My List')

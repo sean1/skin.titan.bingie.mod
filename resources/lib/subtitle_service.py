@@ -166,7 +166,8 @@ def run(sys_obj):
 	params = kodi_utils.parsed_query(sys_obj.argv[2])
 	try:
 		if params.get('action') in ('search', 'manualsearch', 'download'): mark_manual_selection()
-		if params.get('action') in ('search', 'manualsearch'): _search(handle)
+		if params.get('action') == 'search': _search(handle)
+		elif params.get('action') == 'manualsearch': kodi_utils.notification('Manual subtitle title search is unavailable.')
 		elif params.get('action') == 'download': _download(handle, params)
 	except SubtitleCancelled:
 		kodi_utils.logger('BINGIE Lite Subtitles', 'mode=manual operation=%s outcome=cancelled category=playback_changed' % params.get('action', 'unknown'))

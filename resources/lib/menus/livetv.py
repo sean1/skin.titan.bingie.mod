@@ -879,7 +879,9 @@ def news(params):
 			if len(snapshot_accounts) == 1 and isinstance(next(iter(snapshot_accounts)), str): _save_feed_matches(feed_cache, expected_accounts=next(iter(snapshot_accounts)))
 		if not feeds:
 			message = 'Finding feeds…' if state in ('loading', 'partial') else 'Some providers unavailable' if state == 'degraded' else 'Feeds unavailable' if state in ('stale', 'unavailable') else 'No matching feeds'
-			_item(message, {'mode': 'livetv.news', 'channel': channel}, False, playable=False, extra_context=refresh)
+			if state in ('degraded', 'stale', 'unavailable'):
+				_item(message + ' — select to retry', {'mode': 'livetv.news', 'channel': channel, 'action': 'refresh', 'isFolder': 'false'}, False, playable=False, extra_context=refresh)
+			else: _item(message, {'mode': 'livetv.news', 'channel': channel}, False, playable=False, extra_context=refresh)
 	_finish()
 	view = 50 if channel else 524
 	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.news) + !Control.IsVisible(%d)' % view):

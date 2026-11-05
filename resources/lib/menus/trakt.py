@@ -87,6 +87,11 @@ class TraktListBuilder(list_helper.BaseMediaListBuilder):
 	def fetch_results(self):
 		return trakt_api.get_trakt_list_contents(self.list_type, self.list_id, self.user, self.slug)
 
+	def fetch_page(self):
+		if not list_helper.paginate(): return super().fetch_page()
+		try: return trakt_api.get_trakt_list_page(self.list_type, self.list_id, self.user, self.slug, self.page, list_helper.page_limit())
+		except ValueError: raise list_helper.PageFetchError from None
+
 	def process_media_types(self, queue, process_list):
 		movies, tvshows = Movies({'id_type': 'trakt_dict'}), TVShows({'id_type': 'trakt_dict'})
 		episodes, seasons = Episodes({'id_type': 'trakt_dict'}), Seasons({'id_type': 'trakt_dict'})

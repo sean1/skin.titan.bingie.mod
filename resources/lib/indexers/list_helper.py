@@ -9,6 +9,9 @@ ls, media_path = kodi_utils.local_string, kodi_utils.media_path
 item_jump = kodi_utils.media_path('item_jump.png')
 nextpage_str, jump2_str = ls(32799), ls(32964)
 
+class PageFetchError(Exception):
+	pass
+
 class BaseList:
 	def __init__(self, params):
 		self.params = params
@@ -68,6 +71,11 @@ class BaseMediaListBuilder:
 	def fetch_results(self):
 		raise NotImplementedError
 
+	def fetch_page(self):
+		results = self.fetch_results()
+		if paginate() and results: return paginate_list(results, self.page, page_limit())
+		return results, 1
+
 	def process_media_types(self, queue, process_list):
 		raise NotImplementedError
 
@@ -77,9 +85,11 @@ class BaseMediaListBuilder:
 	def build(self):
 		self.handle = int(kodi_utils.argv1())
 		queue = SimpleQueue()
-		results = self.fetch_results()
-		if paginate() and results: process_list, total_pages = paginate_list(results, self.page, page_limit())
-		else: process_list, total_pages = results, 1
+		try: process_list, total_pages = self.fetch_page()
+		except PageFetchError:
+			kodi_utils.notification('Could not load this list. Please try again.')
+			kodi_utils.end_directory(self.handle, False)
+			return
 		media_groups = self.process_media_types(queue, process_list)
 		max_threads = min(queue.qsize(), self.max_threads)
 		threads = (Thread(target=self._thread_target, args=(queue,)) for _ in range(max_threads))

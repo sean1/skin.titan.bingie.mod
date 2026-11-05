@@ -14,6 +14,16 @@ class TraktCache:
 		self.dbcur.execute("""PRAGMA journal_mode = OFF""")
 		self.dbcur.execute("""PRAGMA mmap_size = 268435456""")
 
+def get_cached(string):
+	try:
+		row = TraktCache().dbcur.execute(TC_BASE_GET, (string,)).fetchone()
+		return json.loads(row[0]) if row else None
+	except Exception: return None
+
+def set_cached(string, value):
+	try: TraktCache().dbcur.execute(TC_BASE_SET, (string, json.dumps(value)))
+	except Exception: pass
+
 def cache_trakt_object(function, string, url):
 	dbcur = TraktCache().dbcur
 	dbcur.execute(TC_BASE_GET, (string,))

@@ -8,12 +8,11 @@ from menus import images, people
 from modules import settings, dialogs
 from modules.meta_lists import networks as meta_networks
 from modules.utils import get_datetime
-from modules.kodi_utils import media_path, notification, close_all_dialog, hide_busy_dialog, fetch_kodi_imagecache, local_string as ls
+from modules.kodi_utils import media_path, notification, close_all_dialog, hide_busy_dialog, local_string as ls
 # from modules.kodi_utils import logger
 
 fanart_empty = BaseDialog.fanart
 poster_empty = media_path('box_office.png')
-backup_thumbnail = media_path('box_office.png')
 backup_cast_thumbnail = media_path('people.png')
 tmdb_image_base = tmdb_api.tmdb_image_base
 playbrowse_id, trailer_id, keywords_id, images_id, extrainfo_id, genre_id, director_id = 10, 11, 12, 13, 14, 15, 16
@@ -42,21 +41,12 @@ class Extras(BaseDialog):
 	def onInit(self):
 		tpe = concurrent.futures.ThreadPoolExecutor()
 		try:
-			futures = [
-				tpe.submit(self.make_imdb_extended_info),
-				tpe.submit(self.make_recommended),
-				tpe.submit(self.make_year),
-				tpe.submit(self.make_genres),
-				tpe.submit(self.make_network),
-				tpe.submit(self.make_artwork, 'posters'),
-				tpe.submit(self.make_artwork, 'backdrops')
-			]
-			if self.is_movie: futures.append(tpe.submit(self.make_collection))
+			for method in (self.make_imdb_extended_info, self.make_recommended, self.make_year, self.make_genres, self.make_network): tpe.submit(method)
+			for image_type in ('posters', 'backdrops'): tpe.submit(self.make_artwork, image_type)
+			if self.is_movie: tpe.submit(self.make_collection)
 			else: self.setProperty('tikiskins.extras.make.collection', 'false')
 			self.make_options()
 			self.make_cast()
-			self.set_poster()
-			concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
 		finally: tpe.shutdown(False)
 		self.setFocusId(self.focus_id)
 
@@ -429,12 +419,9 @@ class Extras(BaseDialog):
 		return url_params
 
 	def original_poster(self):
-		poster = self.meta.get(self.poster_main) or self.meta.get(self.poster_backup) or backup_thumbnail
-		self.current_poster = poster
-		if 'image.tmdb' in self.current_poster:
+		poster = self.meta.get(self.poster_main) or self.meta.get(self.poster_backup) or poster_empty
+		if 'image.tmdb' in poster:
 			for res in ('w185', 'w342', 'w780'): poster = poster.replace(res, 'original')
-		elif 'fanart.tv' in poster and not self.check_poster_cached(poster):
-			self.current_poster = self.meta.get(self.poster_backup) or backup_thumbnail
 		return poster
 
 	def remove_current_tmdb_mediaitem(self, data):
@@ -469,23 +456,6 @@ class Extras(BaseDialog):
 
 	def add_items(self, _id, items):
 		self.getControl(_id).addItems(items)
-
-	def set_poster(self):
-		if not self.current_poster: return self.setProperty('tikiskins.extras.active_poster', 'false')
-		self.getControl(200).setImage(self.current_poster)
-		self.getControl(201).setImage(self.poster)
-		total_time = 0
-		while not self.check_poster_cached(self.poster) and total_time < 200:
-			total_time += 1
-			self.sleep(50)
-		self.getControl(200).setImage(self.poster)
-
-	def check_poster_cached(self, poster):
-		try:
-			if poster == backup_thumbnail: return True
-			if fetch_kodi_imagecache(poster): return True
-			return False
-		except: return True
 
 	def set_starting_constants(self, kwargs):
 		self.item_action_dict = {}

@@ -34,7 +34,7 @@ def get_random_episode(tmdb_id, continual=False):
 	tmdb_key = str(tmdb_id)
 	meta = tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
 	try:
-		all_episodes = all_episodes_meta(meta, meta_user_info, Thread)
+		all_episodes = all_episodes_meta(meta, meta_user_info, Thread, include_specials=False)
 		episodes_data = []
 		for ep in all_episodes:
 			if ep.get('season') == 0 or not ep.get('premiered'): continue

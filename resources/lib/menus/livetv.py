@@ -663,13 +663,14 @@ def home_channels(params):
 	_finish()
 
 
-def _item(label, params, folder=True, icon=None, playable=True, extra_context=None, extra_properties=None):
+def _item(label, params, folder=True, icon=None, playable=True, extra_context=None, extra_properties=None, registered_icon=False):
 	item = xbmcgui.ListItem(label=label, offscreen=True)
 	for key, value in (extra_properties or {}).items(): item.setProperty(key, str(value))
 	if icon:
 		try:
 			parts = urlsplit(icon)
-			if parts.scheme.lower() in ('http', 'https'): icon = _vpn_register(icon)
+			if parts.scheme.lower() in ('http', 'https'):
+				if not registered_icon: icon = _vpn_register(icon)
 			elif parts.scheme.lower() not in ('', 'special', 'resource'): icon = None
 			elif not parts.scheme and icon.startswith('//'): icon = None
 		except (OSError, HTTPException, ValueError, TypeError): icon = None
@@ -1166,53 +1167,12 @@ def _context_fixture(event, scope, streams, sources, created, stale, now=None, i
 def search(params):
 	query = (ku.dialog.input('Search providers: team, league or channel') or '').strip()
 	if not query: return
-	url = ku.build_url({'mode': 'livetv.search_results', 'query': query})
+	url = ku.build_url({'mode': 'livetv.search_results', 'query': query, 'search_id': uuid.uuid4().hex})
 	xbmc.executebuiltin('Container.Update(%s)' % url)
 
 
-def search_results(params):
-	account = _load()
-	if not account:
-		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
-		_finish(False)
-		return
-	query = (params.get('query') or '').strip()
-	if not query:
-		_finish()
-		return
+def _search_rows(query, accounts, streams):
 	terms = query.casefold().split()
-	accounts = _sports_accounts(account)
-	streams, catalog_status, unavailable = [], [], []
-	from concurrent.futures import ThreadPoolExecutor
-	deadline = time.monotonic() + _SPORTS_SEARCH_SECONDS
-	def fetch(entry):
-		identity, provider = entry
-		status = []
-		def cached():
-			def expired(*args, **kwargs): raise OSError('Live TV catalog timed out')
-			return _catalog_get(provider, 'get_live_streams', expired, ku.translate_path(ku.profile_path), on_status=lambda created, stale: status.append(stale))
-		try:
-			try:
-				catalog = cached() if time.monotonic() >= deadline else _catalog(provider, 'get_live_streams', notify_stale=False, on_status=lambda created, stale: status.append(stale), _deadline=deadline)
-			except (OSError, HTTPException, ValueError, TypeError):
-				if time.monotonic() < deadline: raise
-				catalog = cached()
-			if not isinstance(catalog, list): raise ValueError('Invalid response')
-		except (OSError, HTTPException, ValueError, TypeError):
-			return identity, None, status
-		return identity, catalog, status
-	with ThreadPoolExecutor(max_workers=min(4, max(1, len(accounts)))) as pool:
-		results = list(pool.map(fetch, accounts))
-	for index, (identity, catalog, status) in enumerate(results):
-		if catalog is None:
-			unavailable.append(index + 1)
-			continue
-		catalog_status.extend(status)
-		streams.extend(dict(s, _search_provider=identity, _search_provider_number=index + 1) for s in catalog if isinstance(s, dict) and str(s.get('stream_id') or '').isdecimal())
-	if not streams and len(unavailable) == len(accounts):
-		_item('Providers unavailable — check VPN and account, then select to retry', {'mode': 'livetv.search_results', 'query': query}, True, None, False)
-		_finish()
-		return
 	event_feeds = {}
 	channel_matches = []
 	for stream in streams:
@@ -1239,15 +1199,33 @@ def search_results(params):
 		else:
 			ref = str(stream['stream_id']) if stream['_search_provider_number'] == 1 else stream['_search_provider'] + ':' + str(stream['stream_id'])
 			rows.append((name + provider_label + ' (play channel)', _play_params(ref, name), False, stream.get('stream_icon')))
-	if unavailable:
-		_item('Some providers are unavailable — select to retry', {'mode': 'livetv.search_results', 'query': query}, True, None, False)
-	if any(catalog_status):
+	return rows
+
+
+def search_results(params):
+	from modules import livetv_search
+	query = (params.get('query') or '').strip()
+	if not query:
+		_finish()
+		return
+	result = livetv_search.prepare(query, params.get('search_id', ''))
+	if not result:
+		_item('Searching providers…', {}, False, None, False)
+		_finish()
+		return
+	for label, options, folder, icon in result.get('rows', []):
+		_item(label, options, folder, icon, registered_icon=True)
+	if not result.get('complete'):
+		_item('Searching providers…', {}, False, None, False)
+	if result.get('unavailable'):
+		label = 'Some providers are unavailable — select to retry' if result.get('has_streams') or not result.get('complete') else 'Providers unavailable — check VPN and account, then select to retry'
+		_item(label, {'mode': 'livetv.search_results', 'query': query, 'search_id': uuid.uuid4().hex}, True, None, False)
+	if result.get('stale'):
 		_item('Some results are from saved channels', {}, False, None, False)
-	if len(rows) > _SEARCH_RESULT_LIMIT:
+	if result.get('truncated'):
 		_item('Showing first %d results — select to refine search' % _SEARCH_RESULT_LIMIT, {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
-	elif not channel_matches:
+	elif result.get('complete') and not result.get('rows') and (result.get('has_streams') or not result.get('unavailable')):
 		_item('No matches found — select to search again', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
-	for row in rows[:_SEARCH_RESULT_LIMIT]: _item(*row)
 	_finish()
 
 

@@ -9,6 +9,7 @@ from modules import kodi_utils as ku
 from modules import livetv_sports_progress as progress
 from modules.livetv_sports_overview import SportsOverview, SPORTS, PREFIX, _SharedCatalog, _load as _load_overview
 from modules.livetv_feed_selection import FeedSelection
+from modules.livetv_search import LiveTVSearch
 from modules.livetv_sports import record_timing
 
 
@@ -51,6 +52,7 @@ class SportsRefresh:
 		self.progress = progress.SportsProgress()
 		self.overview = SportsOverview()
 		self.feed_selection = FeedSelection()
+		self.search = LiveTVSearch()
 		self.sport = ''
 		self.next_live_check = 0
 		self.next_schedule_check = 0
@@ -155,6 +157,7 @@ class SportsRefresh:
 	def tick(self):
 		self.progress.tick()
 		self.feed_selection.tick()
+		self.search.tick()
 		visible = ku.get_visibility(_SPORTS_WINDOW)
 		now = monotonic()
 		self._warm_tick(now)

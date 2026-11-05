@@ -20,6 +20,7 @@ TRAILER_PLAYBACK_HANDOFF_PROPERTY = 'BingieTrailerPlaybackHandoff'
 TRAILER_PLAYBACK_ACK_PROPERTY = 'BingieTrailerPlaybackAck'
 TRAILER_RESOLVED_PROPERTY = 'BingieTrailerResolved'
 TRAILER_PREVIEW_DELAY = 1.0
+TRAILER_PREVIEW_PREPARE_DELAY = 0.25
 TRAILER_PREVIEW_STOP_TIMEOUT = 10.0
 TRAILER_PREVIEW_CLOSE_TIMEOUT = 2.0
 TRAILER_PREVIEW_ACTIVE_POLL = 0.25
@@ -377,7 +378,8 @@ class TrailerPreview:
 			self.manual_identity = ''
 			self._consume_prepare_results()
 			return bool(self.pending_stop_trailer) or self._preparing()
-		self._consume_prepare_results()
+		if manual_required or now - self.focused_at >= TRAILER_PREVIEW_DELAY:
+			self._consume_prepare_results()
 		if self.active: return True
 		if focus_changed:
 			if candidate[5] and candidate[0] in self.resolved_focused_metadata:
@@ -390,7 +392,7 @@ class TrailerPreview:
 		if kodi_utils.get_visibility('Player.HasMedia'):
 			if manual_required and not self.pending_stop_trailer: self.manual_identity = ''
 			return bool(self.pending_stop_trailer) or self._preparing()
-		if not manual_required and now - self.focused_at < TRAILER_PREVIEW_DELAY: return True
+		if not manual_required and now - self.focused_at < TRAILER_PREVIEW_PREPARE_DELAY: return True
 		trailer = candidate[1]
 		if not trailer:
 			found, trailer = self._cached_trailer(candidate[0])
@@ -1007,7 +1009,8 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 					standings_identity = self.focused_standings.identity
 					standings_active_until = monotonic() + STANDINGS_FOCUS_ACTIVE_SECONDS if standings_identity else 0.0
 				preview_active = self.trailer_preview.tick()
-				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending or bool(standings_identity and monotonic() < standings_active_until) or self.sports_refresh.feed_selection.pending())
+				livetv_pending = self.sports_refresh.feed_selection.pending() or self.sports_refresh.search.pending()
+				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending or bool(standings_identity and monotonic() < standings_active_until) or livetv_pending)
 
 	def _deferred_database_maintenance(self):
 		if self.waitForAbort(DATABASE_MAINTENANCE_DELAY): return

@@ -63,7 +63,6 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.stinger_enabled = get_setting('stingers.enable') == 'true'
 		self.stinger_check = int(get_setting('stingers.threshold', '30'))
 		self.skip_intro_enabled = get_setting('skip_intro.enable') == 'true'
-		self.volume_check = get_setting('volumecheck.enabled', 'false') == 'true'
 
 	def onAVStarted(self):
 		if getattr(self, 'awaiting_preview_handoff', False): return
@@ -370,7 +369,6 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self.autoplay_next_episode = self.autoplay_nextep
 				self.autoscrape_next_episode = self.autoscrape_nextep and not self.autoplay_nextep
 				self.exec_task('episode_handler')
-			if self.volume_check: kodi_utils.volume_checker()
 			while self.isPlayingVideo(): self.check_playback_events()
 			if self.playback_error: return False
 			self._finalize_stream(True)

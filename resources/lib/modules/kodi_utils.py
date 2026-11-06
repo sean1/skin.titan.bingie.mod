@@ -307,17 +307,6 @@ def add_dir(__handle__, url_params, list_name, iconImage=None, fanartImage=None,
 	listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
 	add_item(__handle__, url, listitem, isFolder)
 
-def volume_checker(volume_setting=None):
-	try: # 0% == -60db, 100% == 0db
-		if get_visibility('Player.Muted'): return
-		from modules.utils import string_alphanum_to_num
-		if not volume_setting: volume_setting = get_setting('volumecheck.percent', '100')
-		max_volume = int(min(int(volume_setting), 100))
-		current_volume_db = int(string_alphanum_to_num(get_infolabel('Player.Volume').split('.')[0]))
-		current_volume_percent = int(100 - ((float(current_volume_db)/60)*100))
-		if current_volume_percent > max_volume: execute_builtin('SetVolume(%d)' % int(max_volume))
-	except: pass
-
 FIXED_SETTINGS = {
 	'amble.indicators': '',
 	'auto_play_episode': 'false',
@@ -337,7 +326,6 @@ FIXED_SETTINGS = {
 	'autoplay_quality_movie': 'SD, 720p, 1080p, 4K',
 	'autoscrape_next_episode': 'false',
 	'autoscrape_next_window_time': '20',
-	'check.rd_cloud': 'false',
 	'context.exit': '7',
 	'context.extras': '2',
 	'context.mark': '6',
@@ -354,8 +342,6 @@ FIXED_SETTINGS = {
 	'filter_dv': '0',
 	'filter_hdr': '0',
 	'filter_hevc': '0',
-	'get_rpdb_movies': 'false',
-	'get_rpdb_series': 'false',
 	'highlight.type': '2',
 	'hoster.identify': 'dodgerblue',
 	'ignore_articles': 'true',
@@ -381,14 +367,12 @@ FIXED_SETTINGS = {
 	'pov.max_threads': '100',
 	'provider.debrid_cloud_colour': 'darkviolet',
 	'provider.ad_colour': 'darkorange',
-	'provider.rd_cloud': 'false',
 	'provider.rd_colour': 'seagreen',
 	'provider.tb_colour': 'mediumturquoise',
 	'rd.enabled': 'true',
 	'rd.hoster.enabled': 'false',
 	'rd.priority': '10',
 	'rd.torrent.enabled': 'true',
-	'rd_cloud.title_filter': 'false',
 	'results.include.unknown.size': 'true',
 	'results.language': 'English',
 	'results.language_filter': 'false',
@@ -399,17 +383,13 @@ FIXED_SETTINGS = {
 	'results.sort_order_display': 'Quality, Size, Provider',
 	'results.sort_rdcloud_first': 'true',
 	'results.sort_size': '0',
-	'results.xml_style': 'List Default',
 	'results_quality_episode': 'SD, 720p, 1080p, 4K',
 	'results_quality_movie': 'SD, 720p, 1080p, 4K',
 	'reuse_language_invoker': 'false',
-	'rpdb_api_key': '',
-	'rpdb_theme': '0',
 	'scraper_1080p_highlight': 'cyan',
 	'scraper_4k_highlight': 'magenta',
 	'scraper_720p_highlight': 'mediumorchid',
 	'scraper_SD_highlight': 'dodgerblue',
-	'search.enable.yearcheck': 'false',
 	'show_specials': 'false',
 	'show_unaired': 'true',
 	'show_unaired_watchlist': 'true',
@@ -439,8 +419,6 @@ FIXED_SETTINGS = {
 	'torrent.identify': 'magenta',
 	'trakt.client_id': '6bc29124c3d9466e06a3ed19a7b5976fcb28311008401e1ce04cf08196f8b16a',
 	'use_season_title': 'false',
-	'volumecheck.enabled': 'false',
-	'volumecheck.percent': '50',
 	'widget_hide_watched': 'false',
 }
 

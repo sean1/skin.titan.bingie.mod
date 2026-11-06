@@ -71,7 +71,6 @@ POV_ROUTES = {
 
 	'toggle_provider': lambda p: _import('modules.utils', 'toggle_provider')(),
 	'myservices': lambda p: _import('modules.myservices', 'authorize')(),
-	'refer_link': lambda p: _import('modules.myservices', 'refer_link')(p['query']),
 }
 
 def _import(module_path, attr_name):

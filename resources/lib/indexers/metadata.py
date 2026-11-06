@@ -10,8 +10,6 @@ alt_titles_test, trailers_test = ('US', 'GB', 'UK', ''), ('Trailer', 'Teaser')
 trailer_name_reject = ('vertical', 'portrait', '9:16', '9x16', 'short video', 'short trailer', 'short teaser', 'youtube short', 'social cut', 'social spot', '" video')
 writer_credits = ('Author', 'Writer', 'Screenplay', 'Characters')
 tmdb_image_base, resized_tmdb_image = tmdb_api.tmdb_image_base, tmdb_api.resized_tmdb_image
-rpdb_url = 'https://api.ratingposterdb.com/%s/%s/poster-default/%s.jpg?fallback=true'
-rpdb_themes = {'1': '&theme=rounded-blocks', '2': '&theme=blocks'}
 infokeys, episodekeys, seasonkeys, videoinfomethods = (
 	'country', 'director', 'duration', 'genre', 'imdbnumber', 'mediatype', 'mpaa', 'originaltitle',
 	'plot', 'premiered', 'rating', 'studio', 'tag', 'tagline', 'title', 'trailer', 'votes', 'writer', 'year',
@@ -34,16 +32,11 @@ infokeys, episodekeys, seasonkeys, videoinfomethods = (
 
 def art_infodict(meta, art_provider, meta_user_info, extra_art=None):
 	meta_get = meta.get
-	tmdb_id, imdb_id = meta_get('tmdb_id'), meta_get('imdb_id')
 	poster_main, poster_backup, fanart_main, fanart_backup, poster_empty, fanart_empty = art_provider
 	poster = resized_tmdb_image(meta_get(poster_main) or meta_get(poster_backup), 'w342') or poster_empty
 	fanart = meta_get(fanart_main) or meta_get(fanart_backup) or fanart_empty
 	clearlogo = resized_tmdb_image(meta_get('clearlogo'), 'w300') or ''
 	banner, clearart, landscape, discart = '', '', resized_tmdb_image(fanart, 'w780'), ''
-	if meta_user_info['extra_rpdb_movies' if meta_get('mediatype') == 'movie' else 'extra_rpdb_series']:
-		key = 'movie' if meta_get('mediatype') == 'movie' else 'series'
-		args = meta_user_info['rpdb_api_key'], meta_user_info['rpdb_theme']
-		poster = rpdb_get(key, imdb_id or str(tmdb_id), *args) or poster
 	art = {
 		'poster': poster, 'fanart': fanart, 'icon': poster, 'thumb': landscape, 'clearlogo': clearlogo,
 		'banner': banner, 'clearart': clearart, 'landscape': landscape, 'discart': discart
@@ -520,16 +513,6 @@ def get_title(meta):
 	if '(' in title: title = title.split('(')[0]
 	if '/' in title: title = title.replace('/', ' ')
 	return title.strip()
-
-def rpdb_get(mediatype, media_id, api_key, theme):
-	try:
-		if not api_key or not media_id: return
-		if media_id.startswith('tt'): id_type = 'imdb'
-		else: id_type, media_id = 'tmdb', '%s-%s' % (mediatype, media_id)
-		if theme in rpdb_themes: base_url = '%s%s' % (rpdb_url, rpdb_themes[theme])
-		else: base_url = rpdb_url
-		return base_url % (api_key, id_type, media_id)
-	except: pass
 
 class TmdbParser:
 	def __init__(self, data, user_info):

@@ -28,8 +28,7 @@ string, upper, lower = str, str.upper, str.lower
 class SourceResults(BaseDialog):
 	def __init__(self, *args, **kwargs):
 		BaseDialog.__init__(self, args)
-		self.window_style = kwargs.get('window_style', 'list contrast details')
-		self.window_id = kwargs.get('window_id')
+		self.window_id = 2000
 		self.results = kwargs.get('results')
 		self._results = {}
 		self.meta = kwargs.get('meta')
@@ -240,7 +239,6 @@ class SourceResults(BaseDialog):
 		poster_main, poster_backup, fanart_main, fanart_backup = get_art_provider()
 		self.poster = self.meta.get(poster_main) or self.meta.get(poster_backup) or poster_empty
 		self.fanart = self.meta.get(fanart_main) or self.meta.get(fanart_backup) or fanart_empty
-		self.setProperty('tikiskins.window_style', self.window_style)
 		self.setProperty('tikiskins.poster', self.poster)
 		self.setProperty('tikiskins.fanart', self.fanart)
 		self.setProperty('tikiskins.clearlogo', self.meta.get('clearlogo') or '')

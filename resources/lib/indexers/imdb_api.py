@@ -107,17 +107,6 @@ def imdb_tagged_images_handler(imdb_id):
 	except: pass
 	return []
 
-def imdb_movie_year(imdb_id):
-	def _process(dummy):
-		try:
-			result = session.get(url, timeout=timeout).json()
-			result = next((int(i['y']) for i in result['d'] if 'y' in i))
-			return str(result)
-		except: pass
-	string = 'imdb_movie_year_%s' % imdb_id
-	url = 'https://v2.sg.media-imdb.com/suggestion/t/%s.json' % imdb_id
-	return cache_object(_process, string, url, 720)
-
 def clear_imdb_cache(silent=False):
 	from modules.kodi_utils import path_exists, database_connect, maincache_db
 	try:

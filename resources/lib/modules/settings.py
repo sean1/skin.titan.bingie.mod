@@ -114,9 +114,6 @@ def get_resolution():
 		('original', 'original', 'original', 'original', 'original')
 	))[int(get_setting('image_resolutions', '2'))]
 
-def get_rpdb_data():
-	return get_setting('get_rpdb_movies') == 'true', get_setting('get_rpdb_series') == 'true'
-
 def ignore_articles():
 	return get_setting('ignore_articles') == 'true'
 
@@ -141,14 +138,9 @@ def metadata_user_info():
 	if get_setting('mpaa.select', '0') != '0':
 		mpaa_region = get_setting('mpaa_region').upper()
 	else: mpaa_region = 'US'
-	rpdb_api, rpdb_theme = rpdb_api_key()
-	if rpdb_api: extra_rpdb_movies, extra_rpdb_series = get_rpdb_data()
-	else: extra_rpdb_movies, extra_rpdb_series = False, False
 	return {
 		'widget_hide_watched': hide_watched, 'image_resolution': image_resolution,
-		'language': meta_language, 'mpaa_region': mpaa_region,
-		'extra_rpdb_movies': extra_rpdb_movies, 'extra_rpdb_series': extra_rpdb_series,
-		'rpdb_theme': rpdb_theme, 'rpdb_api_key': rpdb_api
+		'language': meta_language, 'mpaa_region': mpaa_region
 	}
 
 def nav_jump_use_alphabet():
@@ -193,16 +185,6 @@ def results_sort_order():
 		lambda k: (direction*k['size'], k['provider_rank'], k['quality_rank'])  #Size, Provider, Quality
 	)[int(get_setting('results.sort_order', '1'))]
 
-def results_xml_style():
-	return str(get_setting('results.xml_style', 'List Default').lower())
-
-def results_xml_window_number(window_style=None):
-	if not window_style: window_style = results_xml_style()
-	return {'list': 2000, 'infolist': 2001, 'widelist': 2002}[window_style.split(' ')[0]]
-
-def rpdb_api_key():
-	return get_setting('rpdb_api_key'), get_setting('rpdb_theme')
-
 def store_resolved_torrent_to_cloud(debrid_service):
 	return get_setting('store_torrent.%s' % debrid_service.lower()) == 'true'
 
@@ -243,9 +225,7 @@ cloud_scrapers = ('rd_cloud',)
 default_internal_scrapers = cloud_scrapers
 
 def active_internal_scrapers():
-	active = ['external']
-	if enabled_debrids_check('rd') and get_setting('provider.rd_cloud') == 'true': active.append('rd_cloud')
-	return active
+	return ['external']
 
 def check_prescrape_sources(scraper, mediatype):
 	if scraper in cloud_scrapers: return get_setting('check.%s' % scraper) == 'true'

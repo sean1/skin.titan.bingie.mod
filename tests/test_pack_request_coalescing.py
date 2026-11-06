@@ -39,22 +39,6 @@ def load_provider(name, client):
 
 
 class PackRequestCoalescingTests(unittest.TestCase):
-	def run_shared_request(self, name, response_builder, expected):
-		client = FakeClient(response_builder)
-		module = load_provider(name, client)
-		module.source._requests = RequestCoalescer()
-		if name == 'dmm': module.get_secret = lambda: ('key', 'solution')
-		results = []
-		url = 'https://provider.invalid/title'
-		threads = [threading.Thread(target=lambda: results.append(module.source()._get_files(url))) for _ in range(3)]
-		for thread in threads: thread.start()
-		self.assertTrue(client.started.wait(1))
-		client.release.set()
-		for thread in threads: thread.join(1)
-		self.assertEqual(len(client.calls), 1)
-		self.assertEqual(results, [expected] * 3)
-
-
 	def test_torz_does_not_mix_episode_urls(self):
 		client = FakeClient(lambda url: json.dumps({'data': {'items': [{'hash': url.rsplit('/', 1)[-1]}]}}))
 		client.release.set()

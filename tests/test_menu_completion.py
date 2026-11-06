@@ -89,60 +89,6 @@ def load_menu_module(mediatype):
 	return module, media.complete_media_directory, kodi_utils
 
 
-def load_episode_module():
-	kodi_utils = types.ModuleType('modules.kodi_utils')
-	kodi_utils.argv1 = lambda: '7'
-	kodi_utils.get_kodi_version = lambda: 21
-	kodi_utils.make_cast_list = lambda value: value
-	kodi_utils.local_string = str
-	kodi_utils.build_url = lambda params: params
-	kodi_utils.get_addoninfo = lambda key: ''
-	kodi_utils.media_path = lambda name: name
-	kodi_utils.add_items = Mock()
-	kodi_utils.add_dir = Mock()
-	kodi_utils.set_category = Mock()
-	kodi_utils.set_sort_method = Mock()
-	kodi_utils.set_content = Mock()
-	kodi_utils.end_directory = Mock()
-	kodi_utils.set_view_mode = Mock()
-	kodi_utils.focus_index = Mock()
-	settings = types.ModuleType('modules.settings')
-	for name in (
-		'calendar_sort_order', 'calendar_focus_today', 'nextep_content_settings', 'nextep_display_settings', 'thumb_fanart', 'default_all_episodes',
-		'single_ep_display_title', 'single_ep_format'
-	): setattr(settings, name, Mock())
-	modules = types.ModuleType('modules')
-	modules.__path__ = []
-	modules.kodi_utils = kodi_utils
-	modules.settings = settings
-	metadata = types.ModuleType('indexers.metadata')
-	for name in ('tvshow_meta', 'season_episodes_meta', 'art_infodict', 'episode_infodict', 'info_tagger', 'main_actors', 'resized_cast'):
-		setattr(metadata, name, Mock())
-	trakt = types.ModuleType('indexers.trakt_api')
-	trakt.trakt_anime_calendar = Mock()
-	indexers = types.ModuleType('indexers')
-	indexers.__path__ = []
-	cache = types.ModuleType('caches.watched_cache')
-	for name in ('get_resumetime', 'set_resumetime', 'get_watched_status_episode', 'get_watched_info_tv', 'get_bookmarks', 'get_next_episodes', 'get_in_progress_items'):
-		setattr(cache, name, Mock())
-	caches = types.ModuleType('caches')
-	caches.__path__ = []
-	utils = types.ModuleType('modules.utils')
-	utils.LIST_WORKERS = 5
-	for name in ('get_next_episode_pointer', 'adjust_premiered_date', 'make_day', 'get_datetime', 'title_key', 'date_difference', 'media_percentage_properties', 'TaskPool'):
-		setattr(utils, name, Mock())
-	menus = types.ModuleType('menus')
-	menus.__path__ = []
-	media = types.ModuleType('menus.media')
-	media.card_coming_soon = lambda *args: False
-	stubs = {
-		'caches': caches, 'caches.watched_cache': cache, 'indexers': indexers, 'indexers.metadata': metadata, 'indexers.trakt_api': trakt,
-		'modules': modules, 'modules.kodi_utils': kodi_utils, 'modules.settings': settings, 'modules.utils': utils, 'menus': menus, 'menus.media': media
-	}
-	module = load_module('test_menu_completion_episodes', ROOT / 'resources' / 'lib' / 'menus' / 'episodes.py', stubs)
-	return module, kodi_utils
-
-
 class MenuCompletionTests(unittest.TestCase):
 	def setUp(self):
 		self.media = load_media_module()

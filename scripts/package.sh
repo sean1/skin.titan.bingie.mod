@@ -77,6 +77,21 @@ tracked_manifest="$temporary_dir/tracked-files"
 untracked_manifest="$temporary_dir/untracked-files"
 
 git -C "$project_dir" ls-files -z -- . ':(exclude).gitignore' ':(exclude)scripts/**' ':(exclude)tests/**' > "$tracked_manifest"
+if [ "$diagnostic" = true ]; then
+	python3 - "$project_dir" "$tracked_manifest" "$temporary_dir/present-files" <<'PY'
+import os
+import sys
+
+project_dir = os.fsencode(sys.argv[1])
+with open(sys.argv[2], 'rb') as source:
+	paths = source.read().split(b'\0')
+with open(sys.argv[3], 'wb') as destination:
+	for path in paths:
+		if path and os.path.lexists(os.path.join(project_dir, path)):
+			destination.write(path + b'\0')
+PY
+	mv "$temporary_dir/present-files" "$tracked_manifest"
+fi
 git -C "$project_dir" ls-files --others --exclude-standard -z -- . ':(exclude)scripts/**' ':(exclude)tests/**' > "$untracked_manifest"
 if [ -s "$untracked_manifest" ]; then
 	printf '%s\n' 'Untracked package files must be added to Git before building:' >&2
@@ -89,7 +104,8 @@ tar -C "$project_dir" \
 	--null \
 	--verbatim-files-from \
 	--files-from="$tracked_manifest" \
-	-cf - | tar -C "$temporary_dir/$addon_id" -xf -
+	-cf "$temporary_dir/tracked.tar"
+tar -C "$temporary_dir/$addon_id" -xf "$temporary_dir/tracked.tar"
 
 if [ ! -e "$subtitle_credentials" ] && [ ! -L "$subtitle_credentials" ]; then
 	printf '%s\n' "Subtitle credential file is required to build a complete package: $subtitle_credentials_rel" >&2

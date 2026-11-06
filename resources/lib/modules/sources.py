@@ -21,7 +21,6 @@ show_busy_dialog, hide_busy_dialog, close_all_dialog = kodi_utils.show_busy_dial
 get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils.set_property, kodi_utils.clear_property
 ls, monitor, sleep, get_setting = kodi_utils.local_string, kodi_utils.monitor, kodi_utils.sleep, kodi_utils.get_setting
 check_prescrape_sources, quality_filter, sort_to_top = settings.check_prescrape_sources, settings.quality_filter, settings.sort_to_top
-results_xml_style, results_xml_window_number = settings.results_xml_style, settings.results_xml_window_number
 default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers, settings.cloud_scrapers
 pack_enable_check, sources_quality_count = source_utils.pack_enable_check, source_utils.sources_quality_count
 get_cache_expiry, get_file_info = source_utils.get_cache_expiry, source_utils.get_file_info
@@ -380,12 +379,9 @@ class Sources:
 	def display_results(self, results, unverified_view=False):
 		verified_results = None if unverified_view else results
 		while True:
-			window_style = results_xml_style()
 			chosen_item = open_window(
 				('windows.sources', 'SourceResults'),
 				'sources_results.xml',
-				window_style=window_style,
-				window_id=results_xml_window_number(window_style),
 				results=results,
 				meta=self.meta,
 				scraper_settings=self.scraper_settings,
@@ -737,7 +733,7 @@ class MetaBuilder:
 		expiry_times = get_cache_expiry(source.mediatype, meta, source.season)
 		title = get_title(meta)
 		aliases = self.make_alias_dict(meta, title)
-		year = self.get_search_year(source, meta)
+		year = meta.get('custom_year', meta.get('year') or '0')
 		ep_name = self.get_ep_name(meta)
 		require_year, conflicting_years = self.tv_identity_policy(source, title, year)
 		search_info = {
@@ -818,15 +814,6 @@ class MetaBuilder:
 		valid_titles = (i for i in aliases if i['title'] != title and safe_string(i['title']).strip())
 		aliases = [i for i in valid_titles if i['title'] not in seen and not seen.add(i['title'])]
 		return aliases
-
-	def get_search_year(self, source, meta):
-		if 'custom_year' in meta: return meta['custom_year']
-		year = meta.get('year') or '0'
-		if source.active_external and get_setting('search.enable.yearcheck', 'false') == 'true':
-			from indexers.imdb_api import imdb_movie_year
-			try: year = imdb_movie_year(meta.get('imdb_id')) or year
-			except: pass
-		return year
 
 	def get_ep_name(self, meta):
 		if meta.get('mediatype') == 'episode':

@@ -108,14 +108,6 @@ def string_to_float(string, default_return):
 	try: return float(''.join(c for c in string if (c.isdigit() or c =='.')))
 	except ValueError: return float(default_return)
 
-def string_alphanum_to_num(string):
-	"""
-	Remove all alpha from string and return remaining string.
-	Returns original string upon ValueError.
-	"""
-	try: return ''.join(c for c in string if c.isdigit())
-	except ValueError: return string
-
 def get_next_episode_pointer(meta, current_season, current_episode):
 	season_data = meta.get('season_data', [])
 	season_info = next((i for i in season_data if i['season_number'] == current_season), None)

@@ -7,7 +7,7 @@ from indexers.tmdb_api import tmdb_media_search, tmdb_image_base
 from modules import kodi_utils
 
 
-KEYBOARD, RESULTS, MORE = 200, 500, 501
+KEYBOARD, QUERY_INPUT, RESULTS, MORE = 200, 205, 500, 501
 SEARCH_DELAY = 0.35
 QUEUED_SEARCH_GRACE = 0.15
 MAX_QUERY_LENGTH = 150
@@ -107,6 +107,11 @@ class Search(xbmcgui.WindowXML):
 		elif control_id == 201: self.set_query(self.query + ' ')
 		elif control_id == 202: self.set_query(self.query[:-1])
 		elif control_id == 203: self.set_query('')
+		elif control_id == QUERY_INPUT:
+			import xbmc
+			keyboard = xbmc.Keyboard(self.query, 'Type a title')
+			keyboard.doModal()
+			if keyboard.isConfirmed(): self.set_query(keyboard.getText())
 		elif control_id == 204:
 			self.closed = True
 			self.close()

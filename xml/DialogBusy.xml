@@ -26,6 +26,12 @@
         </control>
 		<control type="label">
 			<left>0</left><top>640</top><width>1920</width><height>48</height>
+			<align>center</align><font>Reg28</font>
+			<label>Loading…</label>
+			<visible>Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=build_movie_list) + String.IsEmpty(Window(Home).Property(BingieLiveTVStatus))</visible>
+		</control>
+		<control type="label">
+			<left>0</left><top>640</top><width>1920</width><height>48</height>
 			<align>center</align>
 			<font>Reg28</font>
 			<label>$INFO[Window(Home).Property(BingieLiveTVStatus)]</label>

@@ -1255,6 +1255,7 @@
         <param name="logo_fadetime" default="350" />
         <param name="titleheight" default="184" />
         <param name="titleoffset" default="-194" />
+        <param name="titlefont" default="Title" />
         <param name="genre_adjust" default="false" />
         <param name="text_visibility" default="![String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) |
             String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) |
@@ -1277,7 +1278,7 @@
                 <top>$PARAM[titleoffset]</top>
                 <height>$PARAM[titleheight]</height>
                 <width max="650">auto</width>
-                <font>Title</font>
+                <font>$PARAM[titlefont]</font>
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>ffffffff</textcolor>
@@ -1356,10 +1357,13 @@
                     <param name="id" value="$PARAM[id]1" /><param name="image" value="$VAR[BingieInfoClearlogo]" /><param name="text" value="$VAR[BingieMainFallbackTitle]" />
                     <param name="visibility" value="[Container.Content(movies) | Container.Content(tvshows)] + !Integer.IsGreater(ListItem.PercentPlayed,1)" />
                     <param name="logoheight" value="130" /><param name="titleheight" value="124" /><param name="titleoffset" value="-134" />
+                    <param name="logo_fadetime" value="0" /><param name="titlefont" value="Bold45" /><param name="text_visibility" value="true" />
                 </include>
                 <include content="Bingie_Headline_Item">
                     <param name="id" value="$PARAM[id]2" /><param name="image" value="$VAR[BingieInfoClearlogo]" /><param name="text" value="$VAR[BingieMainFallbackTitle]" />
                     <param name="visibility" value="[!Container.Content(movies) + !Container.Content(tvshows)] | Integer.IsGreater(ListItem.PercentPlayed,1)" />
+                    <param name="logo_fadetime" value="0" />
+                    <param name="text_visibility" value="[Container.Content(movies) | Container.Content(tvshows)] | ![String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(ListItem.Property(mediatype),season) | String.IsEqual(ListItem.Property(mediatype),episode)]" />
                 </include>
 
                 <!-- spotlight row details -->

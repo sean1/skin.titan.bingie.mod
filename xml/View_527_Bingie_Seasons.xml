@@ -284,7 +284,6 @@
 				<onup>527</onup>
 				<ondown>527</ondown>
 				<onclick condition="Window.IsActive(1124)">SetFocus(5027)</onclick>
-				<onback condition="Window.IsActive(1124)">PreviousMenu</onback>
 				<include>ScrollTime</include>
 				<focusedlayout height="65" width="565" condition="Control.HasFocus(527)">
 						<!-- Season x label -->
@@ -387,7 +386,6 @@
 				<onup>5027</onup>
 				<ondown>5027</ondown>
 				<onright>60</onright>
-				<onback condition="Window.IsActive(1124)">PreviousMenu</onback>
 				<onback condition="!Window.IsActive(1124)">527</onback>
                 <preloaditems>2</preloaditems>
                 <include>ScrollTime</include>
@@ -420,7 +418,6 @@
                 </control>
                 <!-- vertical Scrollbar -->
                 <control type="scrollbar" id="60">
-					<onback condition="Window.IsActive(1124)">PreviousMenu</onback>
 					<texturesliderbackground border="5" colordiffuse="ff141414">scrollbar/texturesliderbar_small.png</texturesliderbackground>
 					<texturesliderbar colordiffuse="ff646464" border="5">scrollbar/texturesliderbar_small.png</texturesliderbar>
 					<texturesliderbarfocus colordiffuse="ffcc0000" border="5">scrollbar/texturesliderbar_small.png</texturesliderbarfocus>

@@ -11,9 +11,10 @@
 			<left>80</left><top>55</top><width>1400</width><height>60</height>
 			<font>Bold40</font><textcolor>FFFFFFFF</textcolor><label>Search</label>
 		</control>
-		<control type="image">
+		<control type="button" id="205">
 			<left>80</left><top>140</top><width>1750</width><height>64</height>
-			<texture colordiffuse="FF292929">white.png</texture>
+			<texturefocus colordiffuse="FF555555">white.png</texturefocus><texturenofocus colordiffuse="FF292929">white.png</texturenofocus>
+			<label></label><onleft>200</onleft><onright>204</onright><onup>204</onup><ondown>200</ondown>
 		</control>
 		<control type="label">
 			<left>104</left><top>140</top><width>1700</width><height>64</height>
@@ -23,7 +24,7 @@
 		<control type="label">
 			<left>104</left><top>140</top><width>1700</width><height>64</height>
 			<font>Reg28</font><textcolor>FF999999</textcolor><aligny>center</aligny>
-			<label>Find a movie or TV show</label><visible>String.IsEmpty(Window.Property(Search.Query))</visible>
+			<label>Select this field to type with a keyboard</label><visible>String.IsEmpty(Window.Property(Search.Query))</visible>
 		</control>
 		<control type="label">
 			<left>80</left><top>235</top><width>430</width><height>36</height>
@@ -35,7 +36,7 @@
 			<onleft>200</onleft>
 			<onright condition="Integer.IsGreater(Container(500).NumItems,0)">500</onright>
 			<onright condition="!Integer.IsGreater(Container(500).NumItems,0) + String.IsEqual(Window.Property(Search.HasMore),true)">501</onright>
-			<onup>204</onup><ondown>201</ondown>
+			<onup>205</onup><ondown>201</ondown>
 			<itemlayout width="72" height="72">
 				<control type="label">
 					<left>2</left><top>2</top><width>66</width><height>66</height>
@@ -85,7 +86,7 @@
 			<left>1630</left><top>55</top><width>200</width><height>60</height>
 			<font>Reg28</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF141414</focusedcolor><align>center</align><aligny>center</aligny>
 			<texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus><texturenofocus colordiffuse="FF292929">white.png</texturenofocus>
-			<label>Back</label><onleft>200</onleft><onright>200</onright><onup>200</onup><ondown>200</ondown>
+			<label>Back</label><onleft>205</onleft><onright>200</onright><onup>200</onup><ondown>200</ondown>
 		</control>
 		<control type="button" id="501">
 			<left>600</left><top>965</top><width>1220</width><height>60</height>

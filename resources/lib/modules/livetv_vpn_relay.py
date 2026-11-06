@@ -25,6 +25,37 @@ _REDIRECTS = frozenset((301, 302, 303, 307, 308))
 _HEADERS = frozenset(('accept', 'accept-encoding', 'user-agent'))
 _RESPONSE_HEADERS = frozenset(('content-type', 'content-encoding', 'content-length', 'content-range', 'accept-ranges', 'etag', 'last-modified', 'cache-control', 'expires'))
 _HLS_URI = re.compile(r'(?i)(?<![a-z0-9_-])([a-z0-9_-]*uri)=("[^"]*"|[^,\s]*)')
+_INITIAL_RESULTS = collections.OrderedDict()
+_INITIAL_RESULTS_LOCK = threading.Lock()
+_INITIAL_RESULT_TTL = 60
+_INITIAL_RESULT_LIMIT = 256
+
+
+def _initial_begin(root, started):
+	with _INITIAL_RESULTS_LOCK:
+		_INITIAL_RESULTS[root] = (started, None)
+		_INITIAL_RESULTS.move_to_end(root)
+		while len(_INITIAL_RESULTS) > _INITIAL_RESULT_LIMIT: _INITIAL_RESULTS.popitem(last=False)
+
+
+def _initial_finish(root, started, outcome):
+	with _INITIAL_RESULTS_LOCK:
+		entry = _INITIAL_RESULTS.get(root)
+		if entry and entry[0] == started:
+			_INITIAL_RESULTS[root] = (started, time.monotonic() if outcome in ('failed', 'timeout') else None)
+
+
+def initial_response_failed(url, since):
+	"""Return whether this local playback capability recently failed to open."""
+	try:
+		parsed = urlsplit(url)
+		match = re.fullmatch(r'/r/([A-Za-z0-9_-]{32,})/resource(?:\.[A-Za-z0-9]{1,8})?', parsed.path)
+		if parsed.scheme != 'http' or parsed.hostname != '127.0.0.1' or not parsed.port or parsed.query or parsed.fragment or not match or not isinstance(since, (int, float)): return False
+		with _INITIAL_RESULTS_LOCK: entry = _INITIAL_RESULTS.get(match.group(1))
+		if not entry or entry[1] is None: return False
+		now = time.monotonic()
+		return since <= entry[1] <= now and now - entry[1] < _INITIAL_RESULT_TTL
+	except (TypeError, ValueError, OverflowError): return False
 
 
 class _Server(ThreadingHTTPServer):
@@ -185,6 +216,7 @@ class Relay:
 		self.trace_roots = {}
 		self.trace_sequence = 0
 		self.started_roots = set()
+		self.transport_roots = set()
 		self.lock = threading.RLock()
 		self.stopping = threading.Event()
 		self.connections = set()
@@ -208,12 +240,14 @@ class Relay:
 				return '/r/%s/resource%s' % (old, ext)
 			if old:
 				self.started_roots.discard(old)
+				self.transport_roots.discard(old)
 				self.tokens.pop(key, None)
 				self.roots.pop(old, None)
 				self.namespaces.pop(old, None)
 			while self.items and (len(self.items) >= _MAX_ITEMS or now - next(iter(self.items.values()))[1] > _TOKEN_TTL):
 				removed_token, (removed_url, _) = self.items.popitem(last=False)
 				self.started_roots.discard(removed_token)
+				self.transport_roots.discard(removed_token)
 				removed_root = self.roots.pop(removed_token, removed_token)
 				removed_namespace = self.namespaces.pop(removed_token, 'playback')
 				removed_key = (removed_url, '' if removed_root == removed_token else removed_root, removed_namespace)
@@ -231,6 +265,7 @@ class Relay:
 			if not item: return None
 			if now - item[1] > _TOKEN_TTL:
 				self.started_roots.discard(token)
+				self.transport_roots.discard(token)
 				root = self.roots.pop(token, token)
 				namespace = self.namespaces.pop(token, 'playback')
 				key = (item[0], '' if root == token else root, namespace)
@@ -249,7 +284,9 @@ class Relay:
 		with self.lock:
 			root = self.roots.get(match.group(1))
 			if not root or self.namespaces.get(root) != 'playback': return
+			with _INITIAL_RESULTS_LOCK: _INITIAL_RESULTS.pop(root, None)
 			self.started_roots.discard(root)
+			self.transport_roots.discard(root)
 			for token, item_root in list(self.roots.items()):
 				if item_root != root: continue
 				item = self.items.pop(token, None)
@@ -413,8 +450,18 @@ class Relay:
 							trace_active = sum(len(handlers) for handlers in owner.active.values())
 					if trace_request: _trace_relay('start request=%d root=%d method=%s range=%s active=%d' % (trace_request, trace_root, method, bool(self.headers.get('Range')), trace_active))
 					if not url: return self._error(404)
+					with owner.lock:
+						known_transport = method == 'HEAD' and not data_request and not self.headers.get('Range') and root == match.group(1) and root in owner.items and owner.namespaces.get(root) == 'playback' and root in owner.transport_roots
+					if known_transport:
+						self.send_response(200)
+						self.send_header('Content-Type', 'video/mp2t')
+						self.send_header('Connection', 'close')
+						self.end_headers()
+						if trace_request: _trace_relay('response request=%d root=%d status=200 length=-1 transfer=False type=transport source=local' % (trace_request, trace_root))
+						return
 					if self.initial_pending:
 						initial_started = time.monotonic()
+						_initial_begin(root, initial_started)
 						self.initial_deadline = initial_started + _INITIAL_PLAYBACK_SECONDS
 						def expire():
 							with owner.lock:
@@ -458,7 +505,9 @@ class Relay:
 							self.initial_pending = False
 							if prefix:
 								owner.started_roots.add(root)
+								if not playlist and content_type.split(';', 1)[0].strip() == 'video/mp2t' and prefix[0] == 0x47: owner.transport_roots.add(root)
 								initial_outcome = 'ok'
+							_initial_finish(root, initial_started, initial_outcome)
 						timer.cancel()
 						_playback_timing(initial_started, initial_outcome)
 						initial_logged = True
@@ -530,6 +579,7 @@ class Relay:
 						with owner.lock:
 							self.initial_pending = False
 							if self.initial_expired: initial_outcome = 'timeout'
+							if not initial_logged and not self.cancelled and root in owner.items: _initial_finish(root, initial_started, initial_outcome)
 						timer.cancel()
 						if not initial_logged: _playback_timing(initial_started, initial_outcome)
 					if connection: owner._release(connection)
@@ -587,3 +637,5 @@ class Relay:
 			self.roots.clear()
 			self.namespaces.clear()
 			self.active.clear()
+			self.started_roots.clear()
+			self.transport_roots.clear()

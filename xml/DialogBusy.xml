@@ -24,5 +24,12 @@
             <visible>!Window.IsVisible(startup)</visible>
             <include>Busy_Spinner</include>
         </control>
+		<control type="label">
+			<left>0</left><top>640</top><width>1920</width><height>48</height>
+			<align>center</align>
+			<font>Reg28</font>
+			<label>$INFO[Window(Home).Property(BingieLiveTVStatus)]</label>
+			<visible>!String.IsEmpty(Window(Home).Property(BingieLiveTVStatus))</visible>
+		</control>
     </controls>
 </window>

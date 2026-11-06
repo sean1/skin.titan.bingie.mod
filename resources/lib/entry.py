@@ -156,7 +156,7 @@ def _service_poll_interval(fanart_pending, fanart_stable, preview_active):
 
 def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=None, livetv=None):
 	if wake_event is not None:
-		from modules.livetv_failover import PICKER_BACK, STOP_REQUEST, SWITCH_REQUEST
+		from modules.livetv_failover import PICKER_BACK, STOP_ACK, STOP_REQUEST, SWITCH_REQUEST
 		remaining = poll_interval
 		menu_focused = poll_interval == TRAILER_PREVIEW_IDLE_POLL and kodi_utils.get_visibility(MAIN_MENU_FOCUS)
 		while remaining > 0.0:
@@ -169,12 +169,14 @@ def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=No
 			wait_remaining = delay
 			while wait_remaining > 0.0:
 				session = livetv.session if livetv else None
-				step = min(0.05, wait_remaining) if session else wait_remaining
+				step = min(0.05, wait_remaining) if session or (livetv and livetv.stop_pending) else wait_remaining
 				if monitor.waitForAbort(step): return True
 				wait_remaining -= step
 				if wake_event.is_set():
 					wake_event.clear()
 					return monitor.abortRequested()
+				if livetv and livetv.stop_pending and livetv.clock() >= livetv.stop_cancel_retry_at:
+					if not livetv.stop_interrupt and get_property(STOP_ACK) == livetv.stop_ack_token: return False
 				if session:
 					stop = get_property(STOP_REQUEST) and not (livetv.stop_pending and livetv.stop_ack_queued)
 					picker = session.get('picker')

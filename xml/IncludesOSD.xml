@@ -653,7 +653,8 @@
 					<label>36036</label>
 					<texturefocus colordiffuse="ffffffff">$PARAM[iconspath]back_fo.png</texturefocus>
 					<texturenofocus colordiffuse="a6ffffff">$PARAM[iconspath]back.png</texturenofocus>
-					<onclick>PlayerControl(Stop)</onclick>
+					<onclick condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">SetProperty(BingieLiveTVStopRequest,true,Home)</onclick>
+					<onclick condition="String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">PlayerControl(Stop)</onclick>
 					<include>Top_OSD_Button_Zoom_Anim</include>
 				</control>
 				<control type="button" id="104">

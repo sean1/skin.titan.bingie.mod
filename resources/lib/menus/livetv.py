@@ -104,7 +104,7 @@ def _matched_play_params(stream_id, name, sport, feeds, cache):
 	token = uuid.uuid4().hex
 	cache[token] = {'sport': sport, 'feeds': [[ref, hashlib.sha256(str(feed.get('name') or '').encode('utf-8')).hexdigest()] for ref, feed in feeds[:100]]}
 	if deadlines: cache[token]['guide_expiries'] = {ref: deadlines[ref] for ref, _ in feeds[:100] if ref in deadlines}
-	if sport == 'news': cache[token]['labels'] = {ref: feed['_news_label'] for ref, feed in feeds[:100]}
+	cache[token]['labels'] = {ref: _switch_feed_label(feed.get('_news_label') or feed.get('_feed_label') or 'Feed %d' % (index + 1), ref, feed.get('name', '')) for index, (ref, feed) in enumerate(feeds[:100])}
 	params['feeds_token'] = token
 	return params
 
@@ -195,8 +195,8 @@ def _cached_failover(params):
 		if selected in deadlines and deadlines[selected] <= time.time(): return
 		ordered = [selected] + [ref for ref, _ in feeds if ref != selected and (ref not in deadlines or deadlines[ref] > time.time())]
 		if len(ordered) < 2: return
-		labels = match.get('labels', {}) if match['sport'] == 'news' else {}
-		if not isinstance(labels, dict) or any(ref not in [item[0] for item in feeds] or not isinstance(label, str) or not re.fullmatch(r'Feed [1-9][0-9]{0,5}', label) for ref, label in labels.items()): return
+		labels = match.get('labels', {})
+		if not isinstance(labels, dict) or any(ref not in [item[0] for item in feeds] or not isinstance(label, str) or len(label) > 180 or not re.fullmatch(r'Feed [1-9][0-9]{0,5}(?: · [^\x00-\x1f\x7f]+)?', label) for ref, label in labels.items()): return
 		if match['sport'] == 'news' and any(ref not in labels or ref not in deadlines for ref in ordered): return
 		result = {'id': selected, 'alternatives': ordered[1:_FAILOVER_LIMIT + 1], 'feeds': [{'id': ref, 'name': labels.get(ref, 'Feed %d' % (index + 1))} for index, ref in enumerate(ordered)], 'token': uuid.uuid4().hex}
 		for feed in result['feeds']:
@@ -227,6 +227,24 @@ def _feed_display_name(name):
 
 def _feed_display_label(number, name):
 	return ' · '.join(part for part in ('Feed %d' % number, _feed_display_name(name)) if part)
+
+
+def _switch_feed_label(label, ref, name):
+	identity = ref.partition(':')[0] if ':' in ref else 'primary'
+	backup = re.fullmatch(r'backup_([1-9][0-9]{0,2})', identity, re.I)
+	provider = 'Primary' if identity == 'primary' else 'Backup %s' % backup.group(1) if backup else 'Other provider'
+	description = re.sub(r'[\x00-\x1f\x7f]+', ' ', _feed_display_name(str(name))).strip()[:100]
+	return ' · '.join(part for part in (label, description, provider) if part)
+
+
+def _recent_feed_outcomes():
+	from modules import livetv_feed_health
+	return livetv_feed_health.recent(_feed_accounts_fingerprint())
+
+
+def _feed_label_with_outcome(label, ref, outcomes):
+	outcome = outcomes.get(ref)
+	return label + ' · ' + outcome if outcome in ('Played recently', 'Failed recently') else label
 
 
 def _sports_primary():
@@ -945,7 +963,7 @@ def news(params):
 		for key, label in _NEWS_LABELS.items():
 			feeds = groups.get(key, [])
 			count = len(feeds)
-			status = ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else 'No feeds'
+			status = ('%d listed %s' % (count, 'feed' if count == 1 else 'feeds')) if count else 'No feeds'
 			if state in ('loading', 'partial'): status = status + ' · updating' if count else 'Finding feeds…'
 			elif state == 'degraded':
 				saved = sum(bool(feed.get('_news_saved')) for _, feed in feeds)
@@ -956,6 +974,7 @@ def news(params):
 			_item(label, {'mode': 'livetv.news', 'channel': key}, icon=icon, extra_context=refresh, extra_properties={'BingieNewsStatus': status})
 	else:
 		feeds = groups.get(channel, [])
+		outcomes = _recent_feed_outcomes()
 		icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % channel
 		counts = {}
 		for ref, _ in feeds: counts[ref] = counts.get(ref, 0) + 1
@@ -976,7 +995,7 @@ def news(params):
 			name = str(feed.get('name') or _NEWS_LABELS[channel])
 			play_params = _play_params(ref, name, 'news') if ref in tokens else _play_params(ref, name)
 			if ref in tokens: play_params['feeds_token'] = tokens[ref]
-			_item(_feed_display_label(index, name), play_params, False, icon, extra_context=refresh)
+			_item(_feed_label_with_outcome(_feed_display_label(index, name), ref, outcomes), play_params, False, icon, extra_context=refresh)
 		if feed_cache:
 			snapshot_accounts = {feed.get('_news_accounts') for _, feed in choices}
 			if len(snapshot_accounts) == 1 and isinstance(next(iter(snapshot_accounts)), str): _save_feed_matches(feed_cache, expected_accounts=next(iter(snapshot_accounts)))
@@ -1297,7 +1316,7 @@ def _search_rows(query, accounts, streams):
 		if event and len(feeds) > 1:
 			if key in seen_events: continue
 			seen_events.add(key)
-			rows.append((name.split('|')[1].strip() + (' — ' + scope if scope else '') + ' — %d feeds' % len(feeds) + provider_label, {'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope}, True, stream.get('stream_icon')))
+			rows.append((name.split('|')[1].strip() + (' — ' + scope if scope else '') + ' — %d listed feeds' % len(feeds) + provider_label, {'mode': 'livetv.match_feeds', 'home': event[0], 'away': event[1], 'scope': scope}, True, stream.get('stream_icon')))
 		else:
 			ref = str(stream['stream_id']) if stream['_search_provider_number'] == 1 else stream['_search_provider'] + ':' + str(stream['stream_id'])
 			rows.append((name + provider_label + ' (play channel)', _play_params(ref, name), False, stream.get('stream_icon')))
@@ -1851,9 +1870,9 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 			feeds = groups.get(fixture['id'], {}) if state == 'Live' else {}
 			ordered = sorted(feeds.values(), key=lambda stream: (0 if re.search(r'\bCA\s*:', stream['name'], re.I) else 1, stream['name'].casefold(), int(stream['stream_id'])))
 			stream, count = (ordered[0] if ordered else None), len(feeds)
-			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Session finished' if state == 'Finished' else 'Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d listed %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Session finished' if state == 'Finished' else 'Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			saved_count = livetv_sports_progress.cached_count(saved_counts, fixture['id']) if pending and state == 'Live' and not count else 0
-			if saved_count: feed_label = '%d %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
+			if saved_count: feed_label = '%d listed %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
 			elif count and saved_feeds: feed_label += ' · saved' + (' · updating' if pending else '')
 			elif count and pending: feed_label += ' · updating'
 			title = fixture['event'] + ' — ' + fixture['session_label']
@@ -1992,9 +2011,9 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 			stream = ordered[0] if ordered else None
 			title = '%s vs %s' % (fixture['home']['name'], fixture['away']['name'])
 			count = len(feeds)
-			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d listed %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			saved_count = livetv_sports_progress.cached_count(saved_counts, (event, scope)) if pending and state == 'Live' and not count and (event, scope) not in duplicate_keys else 0
-			if saved_count: feed_label = '%d %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
+			if saved_count: feed_label = '%d listed %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
 			elif count and saved_feeds: feed_label += ' · saved' + (' · updating' if pending else '')
 			elif count and pending: feed_label += ' · updating'
 			standings_sport = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
@@ -2105,7 +2124,7 @@ def _sports_overview(sport_filter=None, revision=''):
 		if sport == 'f1': title, league = fixture['event'] + ' — ' + fixture['session_label'], 'Formula 1'
 		elif sport == 'soccer': title, league = '%s vs %s' % (fixture['home'], fixture['away']), fixture['league']
 		else: title, league = '%s vs %s' % (fixture['home']['name'], fixture['away']['name']), fixture.get('league_label', str(fixture.get('league') or '').upper())
-		if feeds: feed_label = '%d %s' % (len(feeds), 'feed' if len(feeds) == 1 else 'feeds')
+		if feeds: feed_label = '%d listed %s' % (len(feeds), 'feed' if len(feeds) == 1 else 'feeds')
 		elif state == 'Held': feed_label = 'Event unavailable'
 		elif sport in loading: feed_label = 'Finding feeds…'
 		elif sport in unavailable: feed_label = 'Feeds unavailable'
@@ -2279,9 +2298,9 @@ def soccer(params):
 			if not state: continue
 			rows.append((title, match_league, preferred, len(feeds), event, scope, matched, state, kickoff))
 		for title, match_league, stream, count, event, scope, matched, state, kickoff in sorted(rows, key=lambda row: (row[7] != 'Live', _live_start(row[6]) if row[7] == 'Live' else row[8], row[1].casefold(), row[0].casefold())):
-			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
+			feed_label = cache_status if cached else '' if state == 'Upcoming' else ('%d listed %s' % (count, 'feed' if count == 1 else 'feeds')) if count else ('Finding feeds…' if pending else 'Feeds unavailable' if ku.get_property('LiveTV.Sports.CatalogUnavailable') else '0 feeds')
 			saved_count = livetv_sports_progress.cached_count(saved_counts, (event, scope)) if pending and state == 'Live' and not count else 0
-			if saved_count: feed_label = '%d %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
+			if saved_count: feed_label = '%d listed %s · %s' % (saved_count, 'feed' if saved_count == 1 else 'feeds', 'saved' if cache_status == 'Refresh failed' else 'updating')
 			elif count and pending: feed_label += ' · updating'
 			label = '%s — %s%s' % (match_league, title, ' — ' + feed_label if feed_label else '')
 			context = []
@@ -2378,7 +2397,8 @@ def match_feeds(params):
 		unique = {ref: is_unique for ref, _, is_unique in result}
 		choices.sort(key=lambda entry: (0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1, str(entry[1].get('name') or '').casefold(), int(str(entry[1].get('stream_id') or entry[0]).rsplit(':', 1)[-1])))
 		choices = livetv_feed_selection.order_choices(choices)
-		playable_choices = [(ref, feed) for ref, feed in choices if not feed.get('_unavailable')]
+		outcomes = _recent_feed_outcomes()
+		playable_choices = [(ref, {**feed, '_feed_label': 'Feed %d' % number}) for number, (ref, feed) in enumerate(choices, 1) if not feed.get('_unavailable')]
 		feed_cache = {}
 		if choices:
 			for number, (stream_id, stream) in enumerate(choices, 1):
@@ -2386,7 +2406,7 @@ def match_feeds(params):
 					_item('Feed %d — no longer available' % number, {}, False, playable=False)
 					continue
 				name = str(stream.get('name') or 'Live channel')
-				label = _feed_display_label(number, name)
+				label = _feed_label_with_outcome(_feed_display_label(number, name), stream_id, outcomes)
 				_item(label, _matched_play_params(stream_id, name, sport, playable_choices if unique.get(stream_id) else [], feed_cache), False)
 		elif state in ('ready', 'ready_saved'):
 			_item('No matching live feeds are currently available', {}, False, playable=False)
@@ -2441,5 +2461,6 @@ def play(params):
 	item.setContentLookup(False)
 	if failover:
 		failover['playback_url'] = url
+		failover['requested_at'] = time.monotonic()
 		xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(failover))
 	xbmcplugin.setResolvedUrl(_handle(), True, item)

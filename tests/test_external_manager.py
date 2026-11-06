@@ -12,21 +12,10 @@ from tests.module_isolation import load_module
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'resources' / 'lib'))
 
-from modules.source_search import CORE_EXTERNAL_PROVIDERS
-
-
 def module_stub(**values):
 	module = types.ModuleType('stub')
 	for key, value in values.items(): setattr(module, key, value)
 	return module
-
-
-class Progress:
-	full_screen = False
-
-	def make(self, meta): pass
-	def kill(self): pass
-	def update(self, *args): pass
 
 
 def load_sources_module():
@@ -42,19 +31,18 @@ def load_sources_module():
 			progressDialogBG=progress, notification=lambda *args: None, show_busy_dialog=lambda: None, hide_busy_dialog=lambda: None, close_all_dialog=lambda: None,
 			get_property=lambda *args: '', set_property=lambda *args: None, clear_property=lambda *args: None, local_string=lambda value: str(value),
 			monitor=types.SimpleNamespace(abortRequested=lambda: False), sleep=time.sleep, get_setting=lambda key, fallback=None: fallback,
-			translate_path=lambda path: path, scrapers_path=''
+			translate_path=lambda path: path
 		),
 		'modules.settings': module_stub(
-			check_prescrape_sources=lambda *args: False, quality_filter=lambda *args: [], sort_to_top=lambda *args: False,
-			results_xml_style=lambda: 'list default', results_xml_window_number=lambda *args: 2000, default_internal_scrapers=(), cloud_scrapers=(),
+			quality_filter=lambda *args: [], results_xml_style=lambda: 'list default', results_xml_window_number=lambda *args: 2000,
 			display_sleep_time=lambda: 0.001
 		),
 		'modules.source_utils': module_stub(
-			pack_enable_check=lambda *args: (False, False), sources_quality_count=lambda sources: {}, get_cache_expiry=lambda *args: (1, 1, 1),
+			pack_enable_check=lambda *args: (False, False), get_cache_expiry=lambda *args: (1, 1, 1),
 			get_file_info=lambda *args, **kwargs: ('SD', ''), clean_title=lambda value: ''.join(character for character in value.lower() if character.isalnum()),
 			check_title=lambda title, release, *args, **kwargs: ''.join(character for character in title.lower() if character.isalnum()) in ''.join(character for character in release.lower() if character.isalnum())
 		),
-		'modules.utils': module_stub(manual_function_import=lambda *args: None, get_datetime=lambda: None, safe_string=str, string_to_float=lambda value, fallback='0': float(value or fallback)),
+		'modules.utils': module_stub(get_datetime=lambda: None, safe_string=str, string_to_float=lambda value, fallback='0': float(value or fallback)),
 	}
 	path = ROOT / 'resources' / 'lib' / 'modules' / 'sources.py'
 	return load_module('test_sources_runtime', path, stubs)
@@ -157,14 +145,6 @@ class ExternalManagerTests(unittest.TestCase):
 		SOURCES.ExternalSource = FakeExternalSource
 		SOURCES.DebridCheck = FakeDebridCheck
 		SOURCES.TPE = RecordingExecutor
-
-	def manager(self, force_full_search=False, eligibility_filter=lambda results: results, provider_names=None, debrid_names=None):
-		provider_names = provider_names or (*sorted(CORE_EXTERNAL_PROVIDERS), 'bitsearch', 'dmm')
-		debrid_names = debrid_names or ['realdebrid']
-		providers = [(name, object()) for name in provider_names]
-		meta = {'background': True, 'search_info': {'scrape_timeout': 1}}
-		return SOURCES.ExternalManager(meta, providers, debrid_names, [], [], Progress(), eligibility_filter=eligibility_filter, force_full_search=force_full_search)
-
 
 	def test_provider_associations_do_not_bypass_ambiguous_year_and_wrong_ids_reject(self):
 		external = REAL_EXTERNAL_SOURCE({}, '4K 1080p 720p SD total')

@@ -90,38 +90,6 @@ def error(message=None, exception=True):
 		import xbmc
 		xbmc.log('[ script.module.fenomonscrapers ] log_utils.error() Logging Failure: %s' % (e), LOGERROR)
 
-def clear_logFile():
-	cleared = False
-	try:
-		from fenom.control import yesnoDialog
-		if not yesnoDialog(lang(32060), '', ''): return 'canceled'
-		log_file = joinPath(LOGPATH, 'fenomscrapers.log')
-		if not existsPath(log_file):
-			f = open(log_file, 'w')
-			return f.close()
-		f = open(log_file, 'r+')
-		f.truncate(0) # need '0' when using r
-		f.close()
-		cleared = True
-	except Exception as e:
-		import xbmc
-		xbmc.log('[ script.module.fenomonscrapers ] log_utils.clear_logFile() Failure: %s' % (e), LOGERROR)
-		cleared = False
-	return cleared
-
-def view_LogFile(name):
-	try:
-		from modules import kodi_utils
-		log_file = joinPath(LOGPATH, '%s.log' % name.lower())
-		if not existsPath(log_file):
-			from fenom.control import notification
-			return notification(message='Log File not found, likely logging is not enabled.')
-		with open(log_file, 'r', encoding='utf-8', errors='ignore') as f: text = f.read()
-		heading = '[B]%s -  LogFile[/B]' % name
-		return kodi_utils.show_text(heading, text=text)
-	except:
-		error()
-
 def normalize(msg):
 	try:
 		import unicodedata

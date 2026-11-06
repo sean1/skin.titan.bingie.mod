@@ -20,20 +20,6 @@ def get(title):
 		log_utils_error()
 		return title
 
-def get_simple(title):
-	try:
-		if not title: return
-		title = re.sub(r'(&#[0-9]+)([^;^0-9]+)', '\\1;\\2', title).lower()# fix html codes with missing semicolon between groups
-		title = re.sub(r'&#(\d+);', '', title)
-		title = re.sub(r'(\d{4})', '', title)
-		title = title.replace('&quot;', '\"').replace('&amp;', '&').replace('&nbsp;', '')
-		title = re.sub(r'\n|[()[\]{}]|[:;–\-",\'!_.?~$@]|\s', '', title) # stop trying to remove alpha characters "vs" or "v", they're part of a title
-		title = re.sub(r'<.*?>', '', title) # removes tags
-		return title
-	except:
-		log_utils_error()
-		return title
-
 def geturl(title):
 	if not title: return
 	try:

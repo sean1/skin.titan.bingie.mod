@@ -33,7 +33,6 @@ class SourceResults(BaseDialog):
 		self._results = {}
 		self.meta = kwargs.get('meta')
 		self.info_highlights_dict = kwargs.get('scraper_settings')
-		self.prescrape = kwargs.get('prescrape')
 		self.full_search_available = kwargs.get('full_search_available', False)
 		self.unverified_count = kwargs.get('unverified_count', 0)
 		self.unverified_view = kwargs.get('unverified_view', False)
@@ -206,12 +205,12 @@ class SourceResults(BaseDialog):
 				unverified_listitem.setProperty('tikiskins.perform_full_search', 'unverified')
 				unverified_listitem.setProperty('tikiskins.start_full_scrape', '[B]SHOW UNVERIFIED MATCHES (%s)[/B]' % self.unverified_count)
 				self.item_list.append(unverified_listitem)
-			if self.prescrape or self.full_search_available:
-				prescrape_listitem = self.make_listitem()
-				prescrape_listitem.setProperty('tikiskins.perform_full_search', 'true')
+			if self.full_search_available:
+				full_search_item = self.make_listitem()
+				full_search_item.setProperty('tikiskins.perform_full_search', 'true')
 				label = 'SHOW REMAINING SOURCES' if self.meta.get('_bingie_pending_search') else upper(start_full_scrape)
-				prescrape_listitem.setProperty('tikiskins.start_full_scrape', '[B]***%s***[/B]' % label)
-				self.item_list.append(prescrape_listitem)
+				full_search_item.setProperty('tikiskins.start_full_scrape', '[B]***%s***[/B]' % label)
+				self.item_list.append(full_search_item)
 			self.initial_items = self.item_list
 			self.initial_count = self.total_results
 			if not self.unverified_view and not self.filters_ignored:

@@ -221,16 +221,7 @@ def watched_title(watched_indicators):
 def widget_hide_watched():
 	return get_setting('widget_hide_watched') == 'true'
 
-cloud_scrapers = ('rd_cloud',)
-default_internal_scrapers = cloud_scrapers
-
-def active_internal_scrapers():
-	return ['external']
-
-def check_prescrape_sources(scraper, mediatype):
-	if scraper in cloud_scrapers: return get_setting('check.%s' % scraper) == 'true'
-	if get_setting('check.%s' % scraper) == 'true' and get_setting('auto_play_%s' % mediatype) != 'true': return True
-	else: return False
+default_internal_scrapers = ('rd_cloud',)
 
 def provider_sort_ranks():
 	rd_priority = int(get_setting('rd.priority', '10'))
@@ -239,9 +230,6 @@ def provider_sort_ranks():
 	return {
 		'realdebrid': rd_priority, 'rd_cloud': rd_priority, 'alldebrid': ad_priority, 'torbox': tb_priority
 	}
-
-def sort_to_top(provider):
-	return get_setting({'rd_cloud': 'results.sort_rdcloud_first'}[provider]) == 'true'
 
 def scraping_settings():
 	def provider_color(provider, fallback):

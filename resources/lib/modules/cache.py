@@ -158,7 +158,7 @@ def clear_all_cache():
 	if not kodi_utils.confirm_dialog(): return
 	line = '[CR]%s: [B]%s %s[/B]'
 	caches = (
-		('external_scrapers', ls(32118)), ('internal_scrapers', ls(32096)),
+		('external_scrapers', ls(32118)), ('internal_scrapers', ls(32054)),
 		('trakt', ls(32037)), ('imdb', ls(32064)), ('list', ls(32815)), ('meta', ls(32527))
 	)
 	len_caches = len(caches)

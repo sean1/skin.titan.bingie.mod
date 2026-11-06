@@ -11,18 +11,6 @@ from tests.test_audio_selection import load_player
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def load_settings(values):
-	kodi_utils = types.ModuleType('modules.kodi_utils')
-	kodi_utils.local_string = str
-	kodi_utils.translate_path = lambda value: value
-	kodi_utils.get_setting = lambda key, fallback=None: values.get(key, fallback)
-	modules = types.ModuleType('modules')
-	modules.__path__ = []
-	modules.kodi_utils = kodi_utils
-	path = ROOT / 'resources' / 'lib' / 'modules' / 'settings.py'
-	return load_module('test_next_episode_settings', path, {'modules': modules, 'modules.kodi_utils': kodi_utils})
-
-
 def load_episode_tools():
 	windows = types.ModuleType('windows')
 	windows.open_window = lambda *args, **kwargs: None

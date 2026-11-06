@@ -24,20 +24,6 @@ def load_smartplay_cache(database_path):
 	return load_module('test_smartplay_cursor_cache_module', ROOT / 'resources' / 'lib' / 'caches' / 'smartplay_cache.py', {'modules': modules, 'modules.kodi_utils': kodi_utils})
 
 
-def load_database_cache(temp_dir):
-	kodi_utils = types.ModuleType('modules.kodi_utils')
-	for name in ('navigator_db', 'watched_db', 'views_db', 'trakt_db', 'maincache_db', 'metacache_db', 'debridcache_db', 'external_db'):
-		setattr(kodi_utils, name, str(Path(temp_dir) / ('%s.db' % name)))
-	kodi_utils.databases_path = temp_dir
-	kodi_utils.database_connect = sqlite3.connect
-	kodi_utils.local_string = lambda value: str(value)
-	kodi_utils.path_exists = lambda path: True
-	kodi_utils.make_directory = lambda path: None
-	modules = types.ModuleType('modules')
-	modules.kodi_utils = kodi_utils
-	return load_module('test_smartplay_database_cache_module', ROOT / 'resources' / 'lib' / 'modules' / 'cache.py', {'modules': modules, 'modules.kodi_utils': kodi_utils})
-
-
 class SmartPlayCursorCacheTests(unittest.TestCase):
 	def setUp(self):
 		self.temp_dir = tempfile.TemporaryDirectory()

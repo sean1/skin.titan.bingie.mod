@@ -18,11 +18,10 @@ from modules.utils import get_datetime, safe_string, string_to_float
 
 POVPlayer, progressDialogBG, notification = player.POVPlayer, kodi_utils.progressDialogBG, kodi_utils.notification
 show_busy_dialog, hide_busy_dialog, close_all_dialog = kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog, kodi_utils.close_all_dialog
-get_property, set_property, clear_property = kodi_utils.get_property, kodi_utils.set_property, kodi_utils.clear_property
+get_property, clear_property = kodi_utils.get_property, kodi_utils.clear_property
 ls, monitor, sleep, get_setting = kodi_utils.local_string, kodi_utils.monitor, kodi_utils.sleep, kodi_utils.get_setting
-check_prescrape_sources, quality_filter, sort_to_top = settings.check_prescrape_sources, settings.quality_filter, settings.sort_to_top
-default_internal_scrapers, cloud_scrapers = settings.default_internal_scrapers, settings.cloud_scrapers
-pack_enable_check, sources_quality_count = source_utils.pack_enable_check, source_utils.sources_quality_count
+quality_filter = settings.quality_filter
+pack_enable_check = source_utils.pack_enable_check
 get_cache_expiry, get_file_info = source_utils.get_cache_expiry, source_utils.get_file_info
 quality_ranks = {'4K': 1, '1080p': 2, '720p': 3, 'SD': 4, 'SCR': 5, 'CAM': 5, 'TELE': 5}
 DEFERRED_LINK_TTL = 30.0
@@ -30,11 +29,9 @@ NEXT_EPISODE_PREP_TTL = 1800.0
 _PLAYBACK_FAILED = object()
 _RETRY_SEARCH = object()
 av1_filter_key, hevc_filter_key, hdr_filter_key, dolby_vision_filter_key = '[B]AV1[/B]', '[B]HEVC[/B]', '[B]HDR[/B]', '[B]D/VISION[/B]'
-total_format, int_format, ext_format = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR %s][B]Int: [/B][/COLOR]%s', '[COLOR %s][B]Ext: [/B][/COLOR]%s'
-ext_scr_format, unfinshed_import_format, format_line = '[COLOR %s][B]%s[/B][/COLOR]', '[COLOR red]+%s[/COLOR]', '%s[CR]%s[CR]%s'
+ext_scr_format, format_line = '[COLOR %s][B]%s[/B][/COLOR]', '%s[CR]%s[CR]%s'
 diag_format, resolutions, pack_display = '4K: %s | 1080p: %s | 720p: %s | SD: %s | Total: %s', '4K 1080p 720p SD total', '%s (%s)'
-dialog_format = '[COLOR %s][B]%s[/B][/COLOR] 4K: %s | 1080p: %s | 720p: %s | SD: %s | Total: %s'
-remaining_format, season_str, show_str, nores_str = ls(32676), ls(32537), ls(32089), ls(32760)
+season_str, show_str, nores_str = ls(32537), ls(32089), ls(32760)
 season_display, show_display = ls(32537), ls(32089)
 pack_check = (season_display, show_display)
 
@@ -123,7 +120,7 @@ class Sources:
 			if valid:
 				cls.nextep_preparing_key = None
 				if self.pov_background_url and getattr(self, 'prepared_candidate', None):
-					cls.nextep_prepared = {'key': key, 'created': time.monotonic(), 'results': self.prepared_candidate, 'prescrape': self.prescrape}
+					cls.nextep_prepared = {'key': key, 'created': time.monotonic(), 'results': self.prepared_candidate}
 		return self.pov_background_url if valid else False
 
 	@classmethod
@@ -136,19 +133,15 @@ class Sources:
 
 	def __init__(self):
 		self.params = {}
-		self.clear_properties, self.filters_ignored = True, False
+		self.filters_ignored = False
 		self.progress_dialog, self.pov_background_url = None, None
 		self.restart_from_beginning = False
 		self.pending_search = None
 		self.search_cancelled = False
 		self.using_nextep_prepared = False
-		self.source_sink, self.prescrape_sink = SourceResultSink(), SourceResultSink()
-		self.threads, self.providers, self.sources, self.internal_scraper_names = [], [], self.source_sink.items, []
-		self.prescrape_scrapers, self.prescrape_threads, self.prescrape_sources = [], [], self.prescrape_sink.items
-		self.remove_scrapers = ['external']# needs to be mutable so leave as list.
+		self.source_sink = SourceResultSink()
+		self.sources = self.source_sink.items
 		self.exclude_list = ['library']# needs to be mutable so leave as list.
-		self.internal_resolutions = dict.fromkeys('4K 1080p 720p SD total'.split(), 0)
-		self.prescrape, self.disabled_ignored = 'true', 'false'
 		self.config_loader = ConfigLoader()
 		self.meta_builder = MetaBuilder()
 		self.scraper_processor = ScraperProcessor(self)
@@ -158,7 +151,6 @@ class Sources:
 		try:
 			while True:
 				search_started = time.monotonic()
-				if self.clear_properties: self._clear_properties()
 				self.config_loader.apply(self, params)
 				if not hasattr(self, 'meta'): self.meta = self.meta_builder.get(self)
 				self.meta['_bingie_search_id'] = time.monotonic_ns()
@@ -169,10 +161,10 @@ class Sources:
 				if outcome is not _RETRY_SEARCH: return outcome
 				retry_state = None
 				if getattr(self, 'using_nextep_prepared', False) and self.autoplay:
-					params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false'}
+					params = {**self.params, 'force_full_search': 'true'}
 					retry_state = (set(self.autoplay_attempted), self.autoplay_resume_percent, self.restart_from_beginning)
 				else:
-					params = {**self.params, 'force_full_search': 'true', 'prescrape': 'false', 'autoplay': 'false'}
+					params = {**self.params, 'force_full_search': 'true', 'autoplay': 'false'}
 					params.pop('autoplay_next', None)
 				self._cancel_pending_search()
 				self.__init__()
@@ -190,48 +182,27 @@ class Sources:
 		self.progress_dialog = DialogProgress(getattr(self, 'full_screen', False))
 		prepared = None if self.background else self._take_nextep_prepared(self.params)
 		if prepared:
-			self.prescrape = prepared['prescrape']
 			self.orig_results = [dict(item) for item in prepared['results']]
 			results = self.results_processor.process(self.orig_results)
 			if results:
 				self.using_nextep_prepared = True
 				self.meta.update({'scrape_time': time.monotonic() - start_time})
 				return results
-		if self.prescrape and any(x in self.active_internal_scrapers for x in default_internal_scrapers):
-			results = self.collect_prescrape_results()
-			if results: results = self.results_processor.process(results)
-		else: results = []
-		if not results:
-			self.prescrape = False
-			self.orig_results = self.collect_results()
-			results = self.results_processor.process(self.orig_results)
+		self.orig_results = self.collect_results()
+		results = self.results_processor.process(self.orig_results)
 		self.meta.update({'scrape_time': time.monotonic() - start_time})
 		return results
 
 	def collect_results(self):
-		self.source_sink.extend(self.prescrape_sources)
-		self.scraper_processor.activate_internal(False)
-		if self.providers:
-			threads = ((i[0], i[1], False, i[2]) for i in self.providers)
-			self.threads.extend([Thread(target=self._collect_provider, args=(*i[:3], self.meta['search_info'], self.source_sink), name=i[3]) for i in threads])
-			for i in self.threads: i.start()
 		self.scraper_processor.activate_external()
-		if self.external_providers or self.background:
-			if self.active_external:
-				args = (
-					self.meta, self.external_providers, self.debrid_torrent_enabled, # self.internal_scraper_names,
-					self.threads, self.prescrape_sources, self.progress_dialog, self.disabled_ignored,
-					None if self.ignore_scrape_filters else self.results_processor.filter_staged_results, self.force_full_search
-				)
-				if not self.background and not self.force_full_search and not self.ignore_scrape_filters:
-					return self._collect_source_snapshot(args)
-				self._collect_provider('external', (ExternalManager, args), False, self.meta['search_info'], self.source_sink)
-			elif self.providers and self.background: [i.join() for i in self.threads]
-		else: self.scrapers_dialog('internal')
-		if self.external_providers or self.background:
-			self.source_sink.close()
-			self.threads.clear()
-			self.providers.clear()
+		if self.debrid_torrent_enabled and (self.external_providers or self.background):
+			args = (self.external_providers, self.debrid_torrent_enabled, self.progress_dialog)
+			if not self.background and not self.force_full_search and not self.ignore_scrape_filters:
+				return self._collect_source_snapshot(args)
+			eligibility_filter = None if self.ignore_scrape_filters else self.results_processor.filter_staged_results
+			manager = ExternalManager(self.meta, *args, eligibility_filter=eligibility_filter, force_full_search=self.force_full_search)
+			self.source_sink.extend(manager.results(self.meta['search_info']))
+		self.source_sink.close()
 		return self.sources
 
 	def _collect_source_snapshot(self, args):
@@ -239,15 +210,12 @@ class Sources:
 		sink = self.source_sink
 		search_source = copy(self)
 		search_source.meta = meta
-		manager_args = list(args[1:])
-		manager_args[-2] = ResultsProcessor(search_source).filter_staged_results
 		ready, finished, cancelled = Event(), Event(), Event()
 		pending = {'ready': ready, 'finished': finished, 'cancelled': cancelled, 'snapshot': None, 'meta': meta}
 		self.pending_search = pending
 
 		def publish(results):
-			with sink.lock: internal_results = [dict(item) for item in sink.items]
-			pending['snapshot'] = internal_results + [dict(item) for item in results]
+			pending['snapshot'] = [dict(item) for item in results]
 			ready.set()
 
 		def collect():
@@ -260,7 +228,7 @@ class Sources:
 				finished.set()
 				ready.set()
 
-		manager = ExternalManager(meta, *manager_args, snapshot_callback=publish, cancel_event=cancelled)
+		manager = ExternalManager(meta, *args, eligibility_filter=ResultsProcessor(search_source).filter_staged_results, snapshot_callback=publish, cancel_event=cancelled)
 		manager.background = True
 		manager.manual_progress = True
 		cancellable = manager.progress_dialog.full_screen
@@ -289,69 +257,6 @@ class Sources:
 		self.meta['full_search_available'] = meta.get('full_search_available', False)
 		return list(self.sources)
 
-	def collect_prescrape_results(self):
-		self.scraper_processor.activate_internal(True)
-		if not self.prescrape_scrapers: return []
-		threads = ((i[0], i[1], True, i[2]) for i in self.prescrape_scrapers)
-		self.prescrape_threads.extend([Thread(target=self._collect_provider, args=(*i[:3], self.meta['search_info'], self.prescrape_sink), name=i[3]) for i in threads])
-		for i in self.prescrape_threads: i.start()
-		self.remove_scrapers.extend(i[2] for i in self.prescrape_scrapers)
-		if self.background:
-			[i.join() for i in self.prescrape_threads]
-			self.prescrape_sink.close()
-			self.prescrape_threads.clear()
-			self.prescrape_scrapers.clear()
-		else: self.scrapers_dialog('pre_scrape')
-		return self.prescrape_sources
-
-	@staticmethod
-	def _collect_provider(module_type, function, prescrape, search_info, sink):
-		if module_type == 'external': module = function[0](*function[1])
-		else: module = function()
-		sink.extend(module.results(search_info))
-
-	def scrapers_dialog(self, scrape_type):
-		if scrape_type == 'internal':
-			scraper_list, _threads, line1_inst, line2_inst = self.providers, self.threads, ls(32096), 'Int:'
-		else:
-			scraper_list, _threads = self.prescrape_scrapers, self.prescrape_threads,
-			line1_inst, line2_inst = '%s %s' % (ls(32829), ls(32830)), 'Pre:'
-		self.internal_scrapers = [i[2] for i in scraper_list]
-		if not self.internal_scrapers: return
-		int_dialog_hl = get_setting('int_dialog_highlight') or 'dodgerblue'
-		line1 = total_format % (int_dialog_hl, line1_inst)
-		_total_format = total_format % (int_dialog_hl, '%s')
-		timeout = self.timeout
-		start_time = time.monotonic()
-		end_time = start_time + timeout + 1
-		if self.progress_dialog.full_screen: self.progress_dialog.make(self.meta)
-		else: progressDialogBG.create('BINGIE Lite', 'BINGIE Lite loading...')
-		while not monitor.abortRequested() and time.monotonic() <= end_time:
-			try:
-				alive_threads = [x.name for x in _threads if x.is_alive()]
-				if not alive_threads: break
-				self.scraper_processor.process_internal_results()
-				int_totals = [_total_format % v for v in self.internal_resolutions.values()]
-				current_progress = time.monotonic() - start_time
-				line2 = dialog_format % (int_dialog_hl, line2_inst, *int_totals)
-				line3 = remaining_format % ', '.join(alive_threads).upper()
-				percent = int((current_progress/float(timeout))*100)
-				if self.progress_dialog.full_screen:
-					self.progress_dialog.update(format_line % (line1, line2, line3), percent)
-				else: progressDialogBG.update(percent, line3)
-			except: pass
-			sleep(self.sleep_time)
-		if self.progress_dialog.full_screen: self.progress_dialog.kill()
-		else: progressDialogBG.close()
-		if scrape_type == 'internal':
-			self.source_sink.close()
-			self.threads.clear()
-			self.providers.clear()
-		else:
-			self.prescrape_sink.close()
-			self.prescrape_threads.clear()
-			self.prescrape_scrapers.clear()
-
 	def _process_post_results(self):
 		if self.ignore_results_filter and self.orig_results:
 			return self._process_ignore_filters()
@@ -362,7 +267,6 @@ class Sources:
 		self.autoplay = False
 		self.filters_ignored = True
 		results = self.results_processor.sort_results(self.orig_results)
-		results = self.results_processor.sort_first(results)
 		self.unverified_results = [item for item in results if item.get('_identity_status') == 'unverified']
 		results = [item for item in results if item.get('_identity_status') != 'unverified']
 		if not results and not self.unverified_results: return self._no_results()
@@ -373,9 +277,6 @@ class Sources:
 		if self.background: return
 		notification(nores_str)
 
-	def _clear_properties(self):
-		for item in default_internal_scrapers: clear_property('pov_lite_%s.internal_results' % item)
-
 	def display_results(self, results, unverified_view=False):
 		verified_results = None if unverified_view else results
 		while True:
@@ -385,7 +286,6 @@ class Sources:
 				results=results,
 				meta=self.meta,
 				scraper_settings=self.scraper_settings,
-				prescrape=self.prescrape,
 				filters_ignored=self.filters_ignored,
 				full_search_available=self.meta.get('full_search_available', False) and not unverified_view,
 				unverified_count=0 if unverified_view else len(getattr(self, 'unverified_results', [])),
@@ -440,7 +340,7 @@ class Sources:
 		results = [item for item in results if item.get('_identity_status') != 'unverified']
 		if self.background:
 			self.pov_background_url = bool(results)
-			if results: self.prepared_candidate = [dict(item) for item in (getattr(self, 'orig_results', None) or self.prescrape_sources)]
+			if results: self.prepared_candidate = [dict(item) for item in self.orig_results]
 		elif self.autoplay:
 			retry_state = getattr(self, 'prepared_retry_state', None)
 			self.prepared_retry_state = None
@@ -666,7 +566,6 @@ class ConfigLoader:
 	def apply(self, source, params=None):
 		if params: source.params = params
 		params_get = source.params.get
-		if params: source.prescrape = self._as_bool(params_get('prescrape'), True)
 		source.background = self._as_bool(params_get('background'), False)
 		if source.background: hide_busy_dialog()
 		else: show_busy_dialog()
@@ -683,8 +582,6 @@ class ConfigLoader:
 		source.mediatype = 'episode' if source.episode else 'movie'
 		if 'autoplay' in source.params: source.autoplay = self._as_bool(params_get('autoplay'), False)
 		else: source.autoplay = settings.auto_play(source.mediatype)
-		source.active_internal_scrapers = settings.active_internal_scrapers()
-		source.active_external = 'external' in source.active_internal_scrapers
 		source.display_uncached_torrents = settings.display_uncached_torrents()
 		source.ignore_results_filter = settings.ignore_results_filter()
 		source.provider_sort_ranks = settings.provider_sort_ranks()
@@ -700,7 +597,6 @@ class ConfigLoader:
 		source.full_screen = self._use_full_screen_progress(source)
 		source.size_filter = int(get_setting('results.size_filter', '0'))
 		source.include_unknown_size = self._as_bool(get_setting('results.include.unknown.size'), False)
-		source.sleep_time = settings.display_sleep_time()
 		source.timeout = 20
 		if self._as_bool(get_setting('results.language_filter'), False):
 			source.priority_language = get_setting('results.language')
@@ -827,31 +723,13 @@ class ScraperProcessor:
 	def __init__(self, source_instance):
 		self.source = source_instance
 
-	def prepare_internal(self):
-		if self.source.active_external and ''.join(self.source.active_internal_scrapers) == 'external': return
-		active_internal_scrapers = [i for i in self.source.active_internal_scrapers if i not in self.source.remove_scrapers]
-		self.source.internal_scraper_names = active_internal_scrapers[:]
-		self.source.active_internal_scrapers = active_internal_scrapers
-
-	def activate_internal(self, prescrape=False):
-		self.prepare_internal()
-		append = self.source.prescrape_scrapers.append if prescrape else self.source.providers.append
-		source_path = kodi_utils.translate_path(kodi_utils.scrapers_path)
-		for loader, module_name, is_pkg in __import__('pkgutil').iter_modules([source_path]):
-			if is_pkg: continue
-			if module_name not in self.source.active_internal_scrapers: continue
-			if prescrape and not check_prescrape_sources(module_name, self.source.mediatype): continue
-			try: append(('internal', loader.find_spec(module_name).loader.load_module(module_name).source, module_name))
-			except Exception as e: kodi_utils.logger('BINGIE Lite', 'Error: Loading module: "%s": %s' % (module_name, e))
-
 	def activate_external(self):
 		self.source.external_providers = []
 		self.source.debrid_enabled = debrid_enabled()
 		self.source.debrid_torrent_enabled = debrid_type_enabled('torrent', self.source.debrid_enabled)
 		if not self.source.debrid_torrent_enabled:
 			self.source.progress_dialog.kill()
-			self.source.active_external = False
-			return notification(32854) if ''.join(self.source.active_internal_scrapers) == 'external' else None
+			return notification(32854)
 		external_providers = magneto_sources(ret_all=self.source.disabled_ignored)
 		self.source.external_providers.extend([
 			i for i in external_providers if i[0] not in self.source.exclude_list
@@ -867,31 +745,15 @@ class ScraperProcessor:
 		if pack_capable and show_packs:
 			self.source.external_providers.extend([(i[0], i[1], show_str) for i in pack_capable])
 
-	def process_internal_results(self):
-		for i in self.source.internal_scrapers:
-			win_property = get_property('pov_lite_%s.internal_results' % i)
-			if win_property in ('checked', '', None): continue
-			try: sources = json.loads(win_property)
-			except: continue
-			set_property('pov_lite_%s.internal_results' % i, 'checked')
-			for k in self.source.internal_resolutions:
-				self.source.internal_resolutions[k] += sources.get(k, 0)
-
 class ResultsProcessor:
 	def __init__(self, source_instance):
 		self.source = source_instance
 		self._bandwidth_profile = None
 
 	def process(self, results):
-		if self.source.prescrape:
-			self.source.all_scrapers = self.source.active_internal_scrapers
-		else:
-			all_scrapers = {*self.source.active_internal_scrapers, *self.source.remove_scrapers}
-			self.source.all_scrapers = list(all_scrapers)
 		if self.source.ignore_scrape_filters:
 			self.source.filters_ignored = True
 			results = self.sort_results(results)
-			results = self.sort_first(results)
 		else:
 			results = self.filter_results(results)
 			results = self.sort_results(results)
@@ -899,7 +761,6 @@ class ResultsProcessor:
 			results = self.special_filter(results, hdr_filter_key, self.source.filter_hdr)
 			results = self.special_filter(results, dolby_vision_filter_key, self.source.filter_dv)
 			results = self.special_filter(results, av1_filter_key, self.source.filter_av1)
-			results = self.sort_first(results)
 		matched_hashes = {item.get('hash') for item in results if item.get('_identity_status') != 'unverified' and item.get('hash')}
 		self.source.unverified_results = [item for item in results if item.get('_identity_status') == 'unverified' and item.get('hash') not in matched_hashes]
 		return [item for item in results if item.get('_identity_status') != 'unverified']
@@ -1027,28 +888,11 @@ class ResultsProcessor:
 			)
 		return results
 
-	def sort_first(self, results):
-		try:
-			sort_first_scrapers = {i for i in self.source.all_scrapers if i in cloud_scrapers and sort_to_top(i)}
-			if not sort_first_scrapers: return results
-			sort_first, sort_last = [], []
-			for item in results:
-				(sort_first if item['scrape_provider'] in sort_first_scrapers else sort_last).append(item)
-			sort_first.sort(key=lambda k: k['quality_rank'])
-			results = sort_first + sort_last
-		except: pass
-		return results
-
 class ExternalManager:
 	def dialog_hook(function):
 		def wrapper(instance, *args, **kwargs):
 			if not instance.background:
-				if instance.internal_activated or instance.internal_prescraped:
-					instance.string3 = int_format % (instance.int_dialog_highlight, '%s')
-					instance.string4 = ext_format % (instance.ext_dialog_highlight, '%s')
-				else:
-					instance.string3 = ''
-					instance.string4 = ext_scr_format % (instance.ext_dialog_highlight, ls(32118))
+				instance.progress_heading = ext_scr_format % (instance.ext_dialog_highlight, ls(32118))
 				hide_busy_dialog()
 				if not instance.progress_dialog.full_screen:
 					progressDialogBG.create('BINGIE Lite', 'BINGIE Lite loading...')
@@ -1062,30 +906,20 @@ class ExternalManager:
 		return wrapper
 
 	def __init__(
-		self, meta, source_dict, debrid_torrents, internal_scrapers,
-		prescrape_sources, progress_dialog, disabled_ignored=False, eligibility_filter=None, force_full_search=False, snapshot_callback=None, cancel_event=None
+		self, meta, source_dict, debrid_torrents, progress_dialog, eligibility_filter=None, force_full_search=False, snapshot_callback=None, cancel_event=None
 	):
 		self.meta, self.background = meta, meta.get('background', False)
 		self.source_dict, self.debrid_torrents = source_dict, debrid_torrents
-		self.internal_scrapers, self.prescrape_sources = internal_scrapers, prescrape_sources
-		self.disabled_ignored, self.progress_dialog = disabled_ignored, progress_dialog
+		self.progress_dialog = progress_dialog
 		self.eligibility_filter, self.force_full_search = eligibility_filter, force_full_search
 		self.snapshot_callback = snapshot_callback
 		self.snapshot_sent = False
 		self.cancel_event = cancel_event
-		self.internal_activated = len(self.internal_scrapers) > 0
-		self.internal_prescraped = len(self.prescrape_sources) > 0
-		self.processed_prescrape = False
-		self.processed_internal_scrapers = []
-		self.processed_internal_scrapers_append = self.processed_internal_scrapers.append
 		self.hostDict, self.sources, self.final_sources = [], [], []
 		self.sleep_time = settings.display_sleep_time()
 		self.timeout = int(self.meta.get('search_info', {}).get('scrape_timeout', '10'))
-		self.int_dialog_highlight = get_setting('int_dialog_highlight', 'dodgerblue')
 		self.ext_dialog_highlight = get_setting('ext_dialog_highlight', 'magenta')
-		self.int_total = total_format % (self.int_dialog_highlight, '%s')
-		self.ext_total = total_format % (self.ext_dialog_highlight, '%s')
-		self.internal_resolutions = dict.fromkeys(resolutions.split(), 0)
+		self.ext_total = ext_scr_format % (self.ext_dialog_highlight, '%s')
 		self.resolutions = dict.fromkeys(resolutions.split(), 0)
 
 	@dialog_hook
@@ -1129,7 +963,7 @@ class ExternalManager:
 			fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
 			fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
 			threads.append(fut)
-		self.thread_monitor(threads, ls(32676), False)
+		self.thread_monitor(threads, ls(32676))
 		for fut in threads:
 			if not fut.done():
 				fut.cancel()
@@ -1187,7 +1021,7 @@ class ExternalManager:
 					except Exception: pass
 				if all(fut.done() for fut in threads): return
 				self.publish_cached_snapshot(cached_sources, cached_hashes)
-			self.thread_monitor(threads, ls(32579), True, publish_finished if publish_snapshot else None)
+			self.thread_monitor(threads, ls(32579), publish_finished if publish_snapshot else None)
 			results, cached_hashes = [], set()
 			for fut in threads:
 				if not fut.done():
@@ -1213,14 +1047,13 @@ class ExternalManager:
 		except: eligible = sources
 		return len({i['hash'] for i in eligible if i.get('hash') in cached_hashes and i.get('_identity_status') != 'unverified'})
 
-	def thread_monitor(self, threads, status_line='', debrid=False, on_update=None):
+	def thread_monitor(self, threads, status_line='', on_update=None):
 		len_threads = len(threads)
 		end_time = time.monotonic() + self.timeout + 1
 		while not monitor.abortRequested() and time.monotonic() <= end_time:
 			if self.cancel_event and self.cancel_event.is_set(): break
 			if on_update: on_update(threads)
 			alive_threads = [x.name for x in threads if not x.done()]
-			if not debrid: alive_threads.extend(x.name for x in self.internal_scrapers if x.is_alive())
 			if not alive_threads: break
 			if getattr(self, 'manual_progress', False): self.manual_progress_state = (alive_threads, len_threads, status_line)
 			if not self.background: self.progress_update(alive_threads, len_threads, status_line)
@@ -1235,17 +1068,10 @@ class ExternalManager:
 			if display is not None:
 				display.update(progress, line3)
 				return
-			ext_totals = [self.ext_total % v for v in self.resolutions.values()]
-			if self.internal_activated or self.internal_prescraped:
-				self.process_internal_results()
-				int_totals = [self.int_total % v for v in self.internal_resolutions.values()]
-				line1 = self.string3 % diag_format % tuple(int_totals)
-				line2 = self.string4 % diag_format % tuple(ext_totals)
-			else:
-				line1 = self.string4
-				line2 = diag_format % tuple(ext_totals)
 			if self.progress_dialog.full_screen:
-				self.progress_dialog.update(format_line % (line1, line2, line3), progress)
+				ext_totals = [self.ext_total % v for v in self.resolutions.values()]
+				line2 = diag_format % tuple(ext_totals)
+				self.progress_dialog.update(format_line % (self.progress_heading, line2, line3), progress)
 			else: progressDialogBG.update(progress, line3)
 		except: pass
 
@@ -1266,22 +1092,6 @@ class ExternalManager:
 					yield provider
 				else: yield provider
 			except: yield provider
-
-	def process_internal_results(self):
-		def _process_quality_count(sources):
-			for k in self.internal_resolutions: self.internal_resolutions[k] += sources.get(k, 0)
-		if self.internal_prescraped and not self.processed_prescrape:
-			_process_quality_count(sources_quality_count(self.prescrape_sources))
-			self.processed_prescrape = True
-		for i in self.internal_scrapers:
-			win_property = get_property('pov_lite_%s.internal_results' % i.name)
-			if win_property in ('checked', '', None): continue
-			try: internal_sources = json.loads(win_property)
-			except: continue
-			set_property('pov_lite_%s.internal_results' % i.name, 'checked')
-			self.processed_internal_scrapers_append(i.name)
-			_process_quality_count(internal_sources)
-		return [i.name for i in self.internal_scrapers if i.name not in self.processed_internal_scrapers]
 
 class ExternalSource:
 	scrape_provider = 'external'

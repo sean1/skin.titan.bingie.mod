@@ -3,11 +3,9 @@ import time
 from caches import trakt_cache
 from caches.main_cache import cache_object
 from modules import kodi_utils
-from modules.utils import get_datetime
 
 logger = kodi_utils.logger
 get_setting = kodi_utils.get_setting
-EXPIRES_2_DAYS = 48
 READ_TOKEN = get_setting('trakt.client_id')
 base_url = 'https://api.trakt.tv/%s'
 timeout = 10.05
@@ -29,68 +27,6 @@ def call_trakt(path, params=None, pagination=False, page=1, pagination_details=F
 		return result
 	except requests.RequestException as e:
 		logger('trakt error', str(e))
-
-def trakt_movies_trending(page_no):
-	params = {'limit': 20, 'page': page_no}
-	string = 'trakt_movies_trending_%s' % page_no
-	url = {'path': 'movies/trending', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_movies_trending_recent(page_no):
-	year = get_datetime().year
-	params = {'languages': 'en', 'limit': 20, 'page': page_no, 'years': '%s-%s' % (year - 1, year)}
-	string = 'trakt_movies_trending_recent_limit20_%s' % page_no
-	url = {'path': 'movies/trending', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_movies_most_watched(page_no):
-	params = {'limit': 20, 'page': page_no}
-	string = 'trakt_movies_most_watched_%s' % page_no
-	url = {'path': 'movies/watched/weekly', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_tv_trending(page_no):
-	params = {'limit': 20, 'page': page_no}
-	string = 'trakt_tv_trending_%s' % page_no
-	url = {'path': 'shows/trending', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_tv_trending_recent(page_no):
-	year = get_datetime().year
-	params = {'languages': 'en', 'limit': 20, 'page': page_no, 'years': '%s-%s' % (year - 1, year)}
-	string = 'trakt_tv_trending_recent_limit20_%s' % page_no
-	url = {'path': 'shows/trending', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_tv_most_watched(page_no):
-	params = {'limit': 20, 'page': page_no}
-	string = 'trakt_tv_most_watched_%s' % page_no
-	url = {'path': 'shows/watched/weekly', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_moviesanime_trending(page_no):
-	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
-	string = 'trakt_moviesanime_trending_%s' % page_no
-	url = {'path': 'movies/trending', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_moviesanime_most_watched(page_no):
-	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
-	string = 'trakt_moviesanime_most_watched_%s' % page_no
-	url = {'path': 'movies/watched/all', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_tvanime_trending(page_no):
-	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
-	string = 'trakt_tvanime_trending_%s' % page_no
-	url = {'path': 'shows/trending', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
-
-def trakt_tvanime_most_watched(page_no):
-	params = {'limit': 20, 'page': page_no, 'genres': 'anime'}
-	string = 'trakt_tvanime_most_watched_%s' % page_no
-	url = {'path': 'shows/watched/all', 'params': params, 'pagination': True}
-	return cache_object(call_trakt, string, url, expiration=EXPIRES_2_DAYS)
 
 def trakt_trending_popular_lists(list_type):
 	string = 'trakt_%s_user_lists' % list_type

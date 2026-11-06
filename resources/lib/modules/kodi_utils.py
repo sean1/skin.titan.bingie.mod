@@ -27,7 +27,6 @@ metacache_db   = profile_path + 'metacache.db'
 debridcache_db = profile_path + 'debridcache.db'
 external_db    = profile_path + 'providerscache.db'
 persisted_settings_db = profile_path + 'persisted_settings.db'
-scrapers_path  = addon_path + 'resources/lib/scrapers/'
 databases_path = profile_path
 indicators_dict = {0: watched_db}
 
@@ -350,7 +349,6 @@ FIXED_SETTINGS = {
 	'include_3d_results': 'false',
 	'include_prerelease_results': 'false',
 	'include_year_in_title': '0',
-	'int_dialog_highlight': 'magenta',
 	'load_action': '1',
 	'meta_language': 'en',
 	'meta_language_display': 'English',
@@ -381,7 +379,6 @@ FIXED_SETTINGS = {
 	'results.size_filter': '0',
 	'results.sort_order': '1',
 	'results.sort_order_display': 'Quality, Size, Provider',
-	'results.sort_rdcloud_first': 'true',
 	'results.sort_size': '0',
 	'results_quality_episode': 'SD, 720p, 1080p, 4K',
 	'results_quality_movie': 'SD, 720p, 1080p, 4K',

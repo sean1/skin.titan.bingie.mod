@@ -9,11 +9,15 @@
 		<!-- Back cancels an opening Live TV stream and returns to the feed list. -->
 		<control type="button" id="9900">
 			<left>0</left><top>0</top><width>1</width><height>1</height>
+			<texturefocus/>
+			<texturenofocus/>
 			<visible>!String.IsEmpty(Window(Home).Property(BingieLiveTVFailover)) + [String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true) | !String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchRequest)) | Player.Caching | [Player.HasMedia + !Player.HasVideo + [String.Contains(Player.Filenameandpath,plugin://skin.titan.bingie.lite/?mode=livetv.play) | [!String.IsEmpty(Window(Home).Property(BingieTV)) + String.IsEqual(Player.Filenameandpath,Window(Home).Property(BingieTV))]]]]</visible>
 			<onback condition="!String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">SetProperty(BingieLiveTVStopRequest,true,Home)</onback>
 		</control>
 		<control type="button" id="9901">
 			<left>0</left><top>0</top><width>1</width><height>1</height>
+			<texturefocus/>
+			<texturenofocus/>
 			<visible>String.IsEmpty(Window(Home).Property(BingieLiveTVFailover)) + Player.HasMedia + !Player.HasVideo + [String.Contains(Player.Filenameandpath,plugin://skin.titan.bingie.lite/?mode=livetv.play) | [!String.IsEmpty(Window(Home).Property(BingieTV)) + String.IsEqual(Player.Filenameandpath,Window(Home).Property(BingieTV))]]</visible>
 			<onback condition="String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">PlayerControl(Stop)</onback>
 		</control>

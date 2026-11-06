@@ -54,10 +54,10 @@
         <control type="group">
             <visible>String.Contains(Container.FolderPath,mode=navigator.my_list)</visible>
             <control type="image"><width>1920</width><height>1080</height><texture>colors/color_black.png</texture><colordiffuse>ff101010</colordiffuse></control>
-            <control type="label"><left>138</left><top>35</top><width>1600</width><height>58</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>MY LIST</label></control>
+            <control type="label"><left>68</left><top>35</top><width>1600</width><height>58</height><font>Bold45</font><textcolor>ffffffff</textcolor><label>MY LIST</label></control>
             <control type="panel" id="9601">
                 <visible allowhiddenfocus="true">String.IsEmpty(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus))</visible>
-                <left>138</left><top>120</top><width>1668</width><height>848</height><orientation>vertical</orientation><preloaditems>2</preloaditems>
+                <left>60</left><top>120</top><width>1800</width><height>848</height><orientation>vertical</orientation><preloaditems>2</preloaditems>
                 <onup>9601</onup><ondown>9601</ondown>
 				<onclick condition="!String.IsEmpty(Container(9601).ListItem.Property(BingieMyListPage))">SetProperty(BingieMyListPage,$INFO[Container(9601).ListItem.Property(BingieMyListPage)],Home)</onclick>
 				<onclick condition="String.IsEmpty(Container(9601).ListItem.Property(BingieMyListPage)) + $EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
@@ -69,10 +69,10 @@
                 <include content="BingieMyListGridLayout"><param name="widgetid" value="9601" /></include>
                 <content target="videos" browse="never">plugin://skin.titan.bingie.lite/?mode=build_my_list&amp;page=$INFO[Window(Home).Property(BingieMyListPage)]&amp;refresh=$INFO[Window(Home).Property(BingieMyListRefresh)]</content>
             </control>
-            <control type="label"><left>138</left><top>130</top><width>1600</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><label>Loading My List…</label><visible>Integer.IsEqual(Container(9601).NumItems,0) | [Container(9601).IsUpdating + !String.IsEmpty(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus))]</visible></control>
-            <control type="label"><left>138</left><top>130</top><width>1600</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><label>My List is empty</label><visible>!Container(9601).IsUpdating + String.IsEqual(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus),empty)</visible></control>
-            <control type="label"><left>138</left><top>130</top><width>1600</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><label>Could not load My List</label><visible>!Container(9601).IsUpdating + String.IsEqual(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus),error)</visible></control>
-            <control type="button" id="9603"><left>138</left><top>220</top><width>1668</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><focusedcolor>ffffffff</focusedcolor><label>Back</label><onclick>Action(Back)</onclick><visible>Integer.IsEqual(Container(9601).NumItems,0) | !String.IsEmpty(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus))</visible></control>
+            <control type="label"><left>68</left><top>130</top><width>1600</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><label>Loading My List…</label><visible>Integer.IsEqual(Container(9601).NumItems,0) | [Container(9601).IsUpdating + !String.IsEmpty(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus))]</visible></control>
+            <control type="label"><left>68</left><top>130</top><width>1600</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><label>My List is empty</label><visible>!Container(9601).IsUpdating + String.IsEqual(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus),empty)</visible></control>
+            <control type="label"><left>68</left><top>130</top><width>1600</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><label>Could not load My List</label><visible>!Container(9601).IsUpdating + String.IsEqual(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus),error)</visible></control>
+            <control type="button" id="9603"><left>60</left><top>220</top><width>1800</width><height>60</height><font>Reg24</font><textcolor>ffbcbcbc</textcolor><focusedcolor>ffffffff</focusedcolor><label>Back</label><onclick>Action(Back)</onclick><visible>Integer.IsEqual(Container(9601).NumItems,0) | !String.IsEmpty(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus))</visible></control>
         </control>
 
         <!-- Live sports dashboard menu -->

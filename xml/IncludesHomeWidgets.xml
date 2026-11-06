@@ -201,16 +201,16 @@
     </include>
 
     <include name="BingieMyListGridLayout">
-        <itemlayout width="352" height="212">
+        <itemlayout width="360" height="212">
             <control type="group">
-                <include content="left"><param name="left" value="bingie_no_circular_posx" /></include><width>landscape_width</width><height>210</height>
+                <left>3</left><width>landscape_width</width><height>210</height>
                 <include>ThumbsViewBingieLayout</include><include>ThumbsTagOverlayBingie</include><include>New_Episodes_Tag_Overlay</include>
                 <include content="Bingie_Main_Landscape_Title"><param name="focused" value="false" /></include>
             </control>
         </itemlayout>
-        <focusedlayout width="352" height="212">
+        <focusedlayout width="360" height="212">
             <control type="group">
-                <include content="left"><param name="left" value="bingie_no_circular_posx" /></include><width>landscape_width</width><height>210</height>
+                <left>3</left><width>landscape_width</width><height>210</height>
                 <control type="image"><visible>Control.HasFocus($PARAM[widgetid])</visible><texture background="true">home/home_matte3.png</texture><colordiffuse>ffffffff</colordiffuse><include>thumbsborder_focused</include></control>
                 <include>ThumbsViewItemBingieLayout</include><include>ThumbsTagOverlayBingie</include><include content="Top250Indicator"><param name="visibility" value="Control.HasFocus($PARAM[widgetid])" /></include><include>New_Episodes_Tag_Overlay</include>
                 <include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include>

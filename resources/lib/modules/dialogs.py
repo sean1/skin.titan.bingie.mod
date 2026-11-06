@@ -113,7 +113,7 @@ def _page_focus_state(page_type):
 		control = window.getFocusId()
 		if control not in controls: return {}
 		state = {'control': control}
-		if control in (550, 610, 620, 630): state['position'] = max(0, int(kodi_utils.get_infolabel('Container(%s).CurrentItem' % control) or '1') - 1)
+		if control in (550, 560, 610, 620, 630): state['position'] = max(0, int(kodi_utils.get_infolabel('Container(%s).CurrentItem' % control) or '1') - 1)
 		elif control in POV_CONTAINER_CONTROLS: state['position'] = max(0, int(window.getControl(control).getSelectedPosition()))
 		return state
 	except: return {}
@@ -132,12 +132,17 @@ def _restore_page_focus(focus, controls, window_id, fallback=None):
 			active += ' + Control.HasFocus(600) + String.IsEqual(Window(Home).Property(PovActorId),%s)' % actor_id
 		condition = active + ' + Integer.IsGreater(Container(%s).NumItems,%s)' % (control, position)
 		if control == 550: condition += ' + String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoCastRequest),Window(Home).Property(PovInfoCastRequest))'
+		if control == 560:
+			parent_id = get_property('PovInfoTmdb')
+			if not valid_tmdb_id(parent_id): return
+			condition += ' + Control.HasFocus(%s) + String.IsEqual(Window(Home).Property(PovInfoTmdb),%s)' % (fallback, parent_id)
+			condition += ' + String.IsEqual(Container(560).ListItemAbsolute(%s).Property(PovInfoSourceTmdb),%s)' % (position, parent_id)
 		if window_id == 1122: condition += ' + Control.IsEnabled(%s)' % control
 		deadline = monotonic() + 2.0
 		while not kodi_utils.get_visibility(condition) and monotonic() < deadline: sleep(25)
 		if kodi_utils.get_visibility(condition):
 			command = 'Control.SetFocus(%s,%s,absolute)' % (control, position)
-			if window_id == 1122: kodi_utils.xbmc.executebuiltin(command, True)
+			if window_id == 1122 or control == 560: kodi_utils.xbmc.executebuiltin(command, True)
 			else: execute_builtin(command)
 		elif window_id == 1122 and kodi_utils.get_visibility(active):
 			for target in POV_ACTOR_FOCUS_CONTROLS:

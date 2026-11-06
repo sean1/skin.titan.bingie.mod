@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <includes>
-	<expression name="PovActorCanFocusFirstShelf">
-		String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEqual(Window(Home).Property(PovActorRestoreFocus),Window(Home).Property(PovActorId))
-	</expression>
 	<include name="PovActorPage">
 		<control type="group">
 			<animation effect="fade" start="0" end="100" time="250">WindowOpen</animation>
@@ -110,21 +107,11 @@
 				<top>-100</top>
 				<width>1</width>
 				<height>1</height>
-				<onfocus condition="$EXP[PovActorCanFocusFirstShelf] + String.IsEqual(Window(Home).Property(PovActorHasMovies),true)">SetFocus(610)</onfocus>
-				<onfocus
-					condition="$EXP[PovActorCanFocusFirstShelf]
-						+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
-						+ String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)">SetFocus(620)</onfocus>
-				<onfocus
-					condition="$EXP[PovActorCanFocusFirstShelf]
-						+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
-						+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
-						+ String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(630)</onfocus>
-				<onfocus
-					condition="$EXP[PovActorCanFocusFirstShelf]
-						+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
-						+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
-						+ !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
+				<onfocus condition="String.IsEqual(Window(Home).Property(PovActorReady),true)
+					+ !String.IsEqual(Window(Home).Property(PovActorRestoreFocus),Window(Home).Property(PovActorId))
+					+ !String.IsEqual(Window(Home).Property(PovActorHasMovies),true)
+					+ !String.IsEqual(Window(Home).Property(PovActorHasTVShows),true)
+					+ !String.IsEqual(Window(Home).Property(PovActorHasDirected),true)">SetFocus(699)</onfocus>
 				<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 			</control>
 

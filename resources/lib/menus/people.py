@@ -5,7 +5,6 @@ from time import monotonic, monotonic_ns
 from urllib.parse import unquote
 from caches.window_property_cache import WindowPropertyCache
 from indexers.tmdb_api import tmdb_people_info, tmdb_people_actor_info, tmdb_image_base, resized_tmdb_image
-from menus.images import Images
 from menus.media import card_badge_properties
 from modules import kodi_utils, settings
 from modules.utils import calculate_age, media_percentage_properties, valid_tmdb_id
@@ -33,6 +32,7 @@ credit_snapshot_keys = (
 )
 
 def popular_people():
+	from menus.images import Images
 	Images().run({'mode': 'popular_people_image_results', 'page_no': 1})
 
 def person_data_dialog(params):
@@ -293,7 +293,7 @@ def _signal_info_shelves(media_type, tmdb_id):
 def build_media_cast(params):
 	handle = int(kodi_utils.argv1())
 	items = []
-	media_type, tmdb_id = params.get('mediatype'), params.get('tmdb_id')
+	media_type, tmdb_id, request = params.get('mediatype'), params.get('tmdb_id'), params.get('request') or ''
 	try:
 		if media_type not in ('movie', 'tvshow') or not valid_tmdb_id(tmdb_id): raise ValueError('Invalid media cast request')
 		cast = _info_cast_snapshot(media_type, tmdb_id)
@@ -315,11 +315,14 @@ def build_media_cast(params):
 			listitem.setLabel(name)
 			listitem.setLabel2(role)
 			listitem.setArt({'icon': thumbnail, 'thumb': thumbnail, 'poster': thumbnail})
-			listitem.setProperties({'PovActorPath': url, 'PovInfoSourceTmdb': str(tmdb_id)})
+			listitem.setProperties({'PovActorPath': url, 'PovInfoSourceTmdb': str(tmdb_id), 'PovInfoCastRequest': request})
 			items.append((url, listitem, False))
 	except Exception as exc: kodi_utils.logger('build_media_cast', str(exc))
 	kodi_utils.add_items(handle, items)
 	kodi_utils.set_content(handle, 'actors')
+	if request and kodi_utils.get_property('PovInfoCastRequest') == request:
+		if not items: kodi_utils.set_property('PovInfoCastEmpty', request)
+		elif kodi_utils.get_property('PovInfoCastEmpty') == request: kodi_utils.clear_property('PovInfoCastEmpty')
 	kodi_utils.end_directory(handle, cacheToDisc=False)
 	_signal_info_shelves(media_type, tmdb_id)
 

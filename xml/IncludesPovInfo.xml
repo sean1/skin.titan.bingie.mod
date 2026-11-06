@@ -5,6 +5,10 @@
 		<value condition="String.IsEqual(Window(Home).Property(PovInfoMyListSaved),false)">Add to My List</value>
 		<value>My List unavailable</value>
 	</variable>
+	<variable name="PovInfoCastLabel">
+		<value condition="$EXP[PovInfoCastLoading]">$LOCALIZE[206] · Loading…</value>
+		<value>$LOCALIZE[206]</value>
+	</variable>
 	<include name="PovInfoPage">
 		<control type="group">
 			<visible>String.IsEmpty(Window(Home).Property(PovInfoTransition))</visible>
@@ -204,10 +208,21 @@
 				<width>1</width>
 				<height>1</height>
 				<onfocus condition="$EXP[PovInfoHasCurrentCast]">SetFocus(550)</onfocus>
-				<onfocus condition="!$EXP[PovInfoHasCurrentCast] + $EXP[PovInfoHasCurrentCollection]">SetFocus(563)</onfocus>
-				<onfocus condition="!$EXP[PovInfoHasCurrentCast] + !$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentMoreLikeThis]">SetFocus(560)</onfocus>
-				<onfocus condition="!$EXP[PovInfoHasCurrentCast] + !$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentMoreLikeThis] + String.IsEqual(Window(Home).Property(PovInfoType),movie)">SetFocus(80)</onfocus>
-				<onfocus condition="!$EXP[PovInfoHasCurrentCast] + !$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentMoreLikeThis] + String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">SetFocus(53)</onfocus>
+				<onfocus condition="$EXP[PovInfoCastLoading]">SetFocus(551)</onfocus>
+				<onfocus condition="!$EXP[PovInfoCastAvailable] + $EXP[PovInfoHasCurrentCollection]">SetFocus(563)</onfocus>
+				<onfocus condition="!$EXP[PovInfoCastAvailable] + !$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentMoreLikeThis]">SetFocus(560)</onfocus>
+				<onfocus condition="!$EXP[PovInfoCastAvailable] + !$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentMoreLikeThis] + String.IsEqual(Window(Home).Property(PovInfoType),movie)">SetFocus(80)</onfocus>
+				<onfocus condition="!$EXP[PovInfoCastAvailable] + !$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentMoreLikeThis] + String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">SetFocus(53)</onfocus>
+			</control>
+			<control type="button" id="551">
+				<visible allowhiddenfocus="true">false</visible>
+				<onfocus>RunPlugin(plugin://skin.titan.bingie.lite/?mode=focus_info_cast&amp;request=$INFO[Window(Home).Property(PovInfoCastRequest)])</onfocus>
+				<onup>8000</onup>
+				<ondown condition="$EXP[PovInfoCastLoading]">noop</ondown>
+				<ondown condition="!$EXP[PovInfoCastLoading]">8010</ondown>
+				<onleft>noop</onleft>
+				<onright>noop</onright>
+				<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 			</control>
 
 			<control type="list" id="566">
@@ -243,7 +258,7 @@
 				<animation effect="slide" end="0,-272" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(560) + $EXP[PovInfoHasCurrentCollection]">Conditional</animation>
 
 				<control type="group">
-					<visible>$EXP[PovInfoHasValidMedia] + String.IsEqual(Window(Home).Property(PovInfoHasCast),true)</visible>
+					<visible>$EXP[PovInfoCastAvailable]</visible>
 					<width>1668</width>
 					<height>380</height>
 					<animation effect="fade" start="100" end="0" time="250" condition="Control.HasFocus(563) | Control.HasFocus(560)">Conditional</animation>
@@ -252,7 +267,7 @@
 						<height>45</height>
 						<font>Bold31</font>
 						<textcolor>ffffffff</textcolor>
-						<label>$LOCALIZE[206]</label>
+						<label>$VAR[PovInfoCastLabel]</label>
 					</control>
 					<control type="group">
 						<visible>!$EXP[PovInfoHasCurrentCast]</visible>
@@ -264,6 +279,12 @@
 						<include content="PovCastPlaceholder"><param name="left" value="952" /></include>
 						<include content="PovCastPlaceholder"><param name="left" value="1190" /></include>
 						<include content="PovCastPlaceholder"><param name="left" value="1428" /></include>
+						<control type="image">
+							<visible>Control.HasFocus(551)</visible>
+							<width>230</width>
+							<height>310</height>
+							<texture border="12">bingie/border/poster_fo_4.png</texture>
+						</control>
 					</control>
 					<control type="panel" id="550">
 						<visible allowhiddenfocus="true">true</visible>
@@ -283,13 +304,13 @@
 						<oninfo>RunPlugin($INFO[ListItem.Property(PovActorPath)])</oninfo>
 						<itemlayout width="238" height="320">
 							<control type="group">
-								<visible>String.IsEqual(ListItem.Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))</visible>
+								<visible>$EXP[PovInfoHasCurrentCast]</visible>
 								<include content="PovCastCard"><param name="focused" value="false" /></include>
 							</control>
 						</itemlayout>
 						<focusedlayout width="238" height="320">
 							<control type="group">
-								<visible>String.IsEqual(ListItem.Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))</visible>
+								<visible>$EXP[PovInfoHasCurrentCast]</visible>
 								<include content="PovCastCard"><param name="focused" value="true" /></include>
 							</control>
 						</focusedlayout>
@@ -411,7 +432,8 @@
 	</variable>
 
 	<variable name="PovInfoPageCastPath">
-		<value condition="$EXP[PovInfoHasValidMedia]">plugin://skin.titan.bingie.lite/?mode=build_media_cast&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
+		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">plugin://skin.titan.bingie.lite/?mode=build_media_cast&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoPendingTmdb)]&amp;request=$INFO[Window(Home).Property(PovInfoCastRequest)]</value>
+		<value condition="$EXP[PovInfoHasValidMedia]">plugin://skin.titan.bingie.lite/?mode=build_media_cast&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]&amp;request=$INFO[Window(Home).Property(PovInfoCastRequest)]</value>
 	</variable>
 
 	<variable name="PovInfoPageCollectionPath">

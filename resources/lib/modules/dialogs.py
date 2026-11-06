@@ -15,7 +15,7 @@ POV_INFO_WINDOW_ID = 1123
 POV_INFO_PROPERTIES = (
 	'PovInfoType', 'PovInfoTmdb', 'PovInfoTitle', 'PovInfoLogo', 'PovInfoFanart', 'PovInfoPoster', 'PovInfoPlot', 'PovInfoYear',
 	'PovInfoYearRange', 'PovInfoMpaa', 'PovInfoRuntime', 'PovInfoSeasons', 'PovInfoMatch', 'PovInfoTrailer', 'PovInfoStatus', 'PovInfoHasCast',
-	'PovInfoCollectionId', 'PovInfoCastSnapshot', 'PovInfoMyListSaved', 'PovInfoMyListCommand'
+	'PovInfoCollectionId', 'PovInfoCastSnapshot', 'PovInfoCastRequest', 'PovInfoMyListSaved', 'PovInfoMyListCommand'
 )
 POV_ACTOR_PROPERTIES = (
 	'PovActorId', 'PovActorName', 'PovActorProfile', 'PovActorBiography', 'PovActorLifespan', 'PovActorBirthplace', 'PovActorBackdrop',
@@ -81,6 +81,17 @@ def subtitle_settings_menu():
 def _reset_info_page_focus(media_type):
 	execute_builtin('SetFocus(%s)' % (80 if media_type == 'movie' else 51))
 
+def focus_info_cast(params):
+	request = params.get('request')
+	waiting = 'Window.IsActive(1123) + Control.HasFocus(551)'
+	while request and get_property('PovInfoCastRequest') == request and kodi_utils.get_visibility(waiting):
+		ready = kodi_utils.get_visibility('Control.IsEnabled(550)')
+		empty = get_property('PovInfoHasCast') == 'false' or get_property('PovInfoCastEmpty') == request
+		if (ready or empty) and get_property('PovInfoCastRequest') == request and kodi_utils.get_visibility(waiting + ' + !System.HasActiveModalDialog'):
+			execute_builtin('SetFocus(550)' if ready else 'SetFocus(8010)')
+			return
+		if kodi_utils.monitor.waitForAbort(0.025): return
+
 def _page_history():
 	try:
 		history = json.loads(get_property(POV_PAGE_HISTORY_PROPERTY) or '[]')
@@ -102,7 +113,8 @@ def _page_focus_state(page_type):
 		control = window.getFocusId()
 		if control not in controls: return {}
 		state = {'control': control}
-		if control in POV_CONTAINER_CONTROLS: state['position'] = max(0, int(window.getControl(control).getSelectedPosition()))
+		if control == 550: state['position'] = max(0, int(kodi_utils.get_infolabel('Container(550).CurrentItem') or '1') - 1)
+		elif control in POV_CONTAINER_CONTROLS: state['position'] = max(0, int(window.getControl(control).getSelectedPosition()))
 		return state
 	except: return {}
 
@@ -115,6 +127,7 @@ def _restore_page_focus(focus, controls, window_id, fallback=None):
 		try: position = max(0, int(focus.get('position', 0)))
 		except: position = 0
 		condition = 'Window.IsActive(%s) + Integer.IsGreater(Container(%s).NumItems,%s)' % (window_id, control, position)
+		if control == 550: condition += ' + String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoCastRequest),Window(Home).Property(PovInfoCastRequest))'
 		deadline = monotonic() + 2.0
 		while not kodi_utils.get_visibility(condition) and monotonic() < deadline: sleep(25)
 		if kodi_utils.get_visibility(condition): execute_builtin('Control.SetFocus(%s,%s,absolute)' % (control, position))
@@ -263,7 +276,7 @@ def _set_media_info_properties(media_type, tmdb_id, meta):
 	}
 	clear_property('PovInfoTmdb')
 	for prop in POV_INFO_PROPERTIES:
-		if prop != 'PovInfoTmdb': set_property(prop, str(values.get(prop) or ''))
+		if prop not in ('PovInfoTmdb', 'PovInfoCastRequest'): set_property(prop, str(values.get(prop) or ''))
 	refresh_info_state(media_type, tmdb_id, title)
 	set_property('PovInfoTmdb', str(tmdb_id))
 
@@ -327,6 +340,7 @@ def show_media_info(params):
 		hydration_token = '|'.join((transition_token, media_type, str(tmdb_id)))
 		set_property(POV_INFO_HYDRATION_PROPERTY, hydration_token)
 		set_property(POV_INFO_PENDING_TMDB_PROPERTY, str(tmdb_id))
+		set_property('PovInfoCastRequest', transition_token)
 		if get_property('PovInfoTransition') == transition_token: clear_property('PovInfoTransition')
 		if active_info:
 			execute_builtin('ReplaceWindow(%s)' % POV_INFO_WINDOW_ID)

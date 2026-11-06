@@ -166,9 +166,14 @@
 		String.IsEqual(Window.Property(PovInfoType),movie) + !String.IsEmpty(Window.Property(PovInfoTmdb)) + !String.IsEmpty(Window.Property(PovInfoCollectionReady))
 	</expression>
 	<expression name="PovInfoHasCurrentCast">
-		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + $EXP[PovInfoHasValidMedia] + String.IsEqual(Window(Home).Property(PovInfoHasCast),true) +
-		String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))
+		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + $EXP[PovInfoHasValidMedia] + $EXP[PovInfoCastAvailable] +
+		String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoCastRequest),Window(Home).Property(PovInfoCastRequest))
 	</expression>
+	<expression name="PovInfoCastAvailable">
+		String.IsEqual(Window(Home).Property(PovInfoHasCast),true) + !String.IsEmpty(Window(Home).Property(PovInfoCastRequest)) +
+		!String.IsEqual(Window(Home).Property(PovInfoCastEmpty),Window(Home).Property(PovInfoCastRequest))
+	</expression>
+	<expression name="PovInfoCastLoading">$EXP[PovInfoCastAvailable] + !$EXP[PovInfoHasCurrentCast]</expression>
 	<expression name="PovInfoHasCurrentCollection">
 		String.IsEmpty(Window(Home).Property(PovInfoTransition)) + $EXP[PovInfoCollectionReady] +
 		String.IsEqual(Container(566).ListItemAbsolute(0).Property(PovInfoSourceTmdb),Window(Home).Property(PovInfoTmdb))

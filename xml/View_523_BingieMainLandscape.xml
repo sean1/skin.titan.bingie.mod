@@ -757,8 +757,7 @@
     </include>
 
     <include name="BingieNewsTitle">
-        <control type="label"><left>16</left><right>16</right><bottom>28</bottom><height>28</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><scroll>$PARAM[focused]</scroll></control>
-        <control type="label"><left>16</left><right>16</right><bottom>10</bottom><height>20</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(BingieNewsStatus)]</label><scroll>$PARAM[focused]</scroll></control>
+        <control type="label"><left>16</left><right>16</right><bottom>16</bottom><height>28</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Label]</label><scroll>$PARAM[focused]</scroll></control>
     </include>
 
     <include name="BingieNewsCardArt">

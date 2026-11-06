@@ -938,28 +938,18 @@ def news(params):
 		_finish(False)
 		return
 	if params.get('action') == 'refresh':
-		query = {'mode': 'livetv.news', 'reload': str(time.time_ns())}
-		if channel: query['channel'] = channel
-		xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url(query))
+		if channel:
+			query = {'mode': 'livetv.news', 'channel': channel, 'reload': str(time.time_ns())}
+			xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url(query))
 		return
-	from modules import livetv_news_refresh
-	state, groups = livetv_news_refresh.prepare(params)
-	refresh = [('Refresh news feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.news', 'action': 'refresh', **({'channel': channel} if channel else {})}))]
 	if not channel:
 		for key, label in _NEWS_LABELS.items():
-			feeds = groups.get(key, [])
-			count = len(feeds)
-			status = ('%d listed %s' % (count, 'feed' if count == 1 else 'feeds')) if count else 'No feeds'
-			if state in ('loading', 'partial'): status = status + ' · updating' if count else 'Finding feeds…'
-			elif state == 'degraded':
-				saved = sum(bool(feed.get('_news_saved')) for _, feed in feeds)
-				status = status + (' · saved' if saved == count else ' · includes saved' if saved else '') + ' · some providers unavailable' if count else 'Some providers unavailable'
-			elif state == 'stale': status = status + ' · saved' if count else 'Feeds unavailable'
-			elif state == 'unavailable': status = 'Feeds unavailable'
 			icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % key
-			_item(label, {'mode': 'livetv.news', 'channel': key}, icon=icon, extra_context=refresh, extra_properties={'BingieNewsStatus': status})
+			_item(label, {'mode': 'livetv.news', 'channel': key}, icon=icon)
 	else:
-		feeds = groups.get(channel, [])
+		from modules import livetv_news_refresh
+		state, feeds = livetv_news_refresh.prepare(channel, params)
+		refresh = [('Refresh news feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.news', 'action': 'refresh', 'channel': channel}))]
 		outcomes = _recent_feed_outcomes()
 		icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % channel
 		counts = {}

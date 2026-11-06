@@ -191,13 +191,6 @@ def seas_ep_filter(season, episode, release_title, split=False, return_match=Fal
 	if return_match: return match.group()
 	return True
 
-def find_season_in_release_title(release_title):
-	release_title = re.sub(r'[^a-z0-9-]+', '.', unquote(release_title).lower().replace("'", ""))
-	match = re.search(r'(?:\b(?:s|season)\.?(\d+)|(\d+)\.?x\b)', release_title)
-	if not match: return None
-	season_str = match.group(1) or match.group(2)
-	return int(season_str)
-
 def url_strip(url):
 	try:
 		url = unquote_plus(url)

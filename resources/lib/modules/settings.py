@@ -88,9 +88,6 @@ def enabled_debrids_check(debrid_service):
 def extras_enable_scrollbars():
 	return get_setting('extras.enable_scrollbars', 'true')
 
-def extras_exclude_non_acting():
-	return get_setting('extras.exclude_non_acting_roles', 'true') == 'true'
-
 def extras_enabled_menus():
 	setting = get_setting('extras.enabled_menus')
 	if setting in ('', None, 'noop', []): return []

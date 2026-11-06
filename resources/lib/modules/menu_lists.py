@@ -1,10 +1,13 @@
+def is_retired_mode(mode):
+	return isinstance(mode, str) and (mode in ('navigator.premium', 'navigator.real_debrid', 'upload_logfile', 'random_choice') or mode.startswith('real_debrid.'))
+
+
 root_list = [
 	{'name': 32028, 'iconImage': 'movies.png', 'mode': 'navigator.main', 'action': 'MovieList'},
 	{'name': 32029, 'iconImage': 'tv.png', 'mode': 'navigator.main', 'action': 'TVShowList'},
 	{'name': 32452, 'iconImage': 'people.png', 'mode': 'build_popular_people', 'isFolder': 'false'},
 	{'name': 32450, 'iconImage': 'search.png', 'mode': 'navigator.search'},
 	{'name': 'Dropped', 'iconImage': 'tv.png', 'mode': 'build_tvshow_list', 'action': 'dropped_tvshows'},
-	{'name': 32455, 'iconImage': 'premium.png', 'mode': 'navigator.premium'},
 #	{'name': 32456, 'iconImage': 'tools.png', 'mode': 'navigator.tools'},
 	{'name': 32247, 'iconImage': 'settings.png', 'mode': 'navigator.settings'}
 ]

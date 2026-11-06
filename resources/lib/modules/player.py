@@ -54,7 +54,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.ignore_startup_stop, self.startup_playback_started, self.startup_cancel_requested = False, False, False
 		self.media_marked, self.nextep_info_gathered = False, False
 		self.subs_searched, self.stingers_checked = False, False
-		self.nextep_started, self.next_episode_requested, self.play_random_continual = False, False, False
+		self.nextep_started, self.next_episode_requested = False, False
 		self.autoplay_next_episode = False
 		self.autoplay_nextep = settings.autoplay_next_episode()
 		self.autoscrape_next_episode = False
@@ -298,7 +298,6 @@ class POVPlayer(kodi_utils.xbmc_player):
 			self.restart_from_beginning = bool(self.meta.pop('_restart_from_beginning', False))
 			if self.restart_from_beginning: bookmark = 0
 			elif retry_resume: bookmark = retry_resume
-			elif any(i in self.meta for i in ('random', 'random_continual')): bookmark = 0
 			else: bookmark = self.bookmarkPOV()
 			if bookmark == 'cancel': return
 			self.meta.update({'url': url, 'bookmark': bookmark})
@@ -368,13 +367,8 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self.restart_from_beginning = False
 			self._record_playback_health('startup_ok', latency=self._playback_health_elapsed())
 			if self.mediatype == 'episode':
-				self.play_random_continual = 'random_continual' in self.meta
-				if not self.play_random_continual and self.autoplay_nextep:
-					self.autoplay_next_episode = 'random' not in self.meta
-				if not self.play_random_continual and self.autoscrape_nextep:
-					self.autoscrape_next_episode = 'random' not in self.meta
-				if not self.play_random_continual and self.autoplay_nextep and self.autoscrape_nextep:
-					self.autoscrape_next_episode = False
+				self.autoplay_next_episode = self.autoplay_nextep
+				self.autoscrape_next_episode = self.autoscrape_nextep and not self.autoplay_nextep
 				self.exec_task('episode_handler')
 			if self.volume_check: kodi_utils.volume_checker()
 			while self.isPlayingVideo(): self.check_playback_events()
@@ -416,9 +410,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 				if self.current_point >= self.set_watched:
 					self.media_watched_marker()
 			if self.nextep_info_gathered and not self.nextep_started:
-				if self.play_random_continual and self.remaining_time <= self.start_prep:
-					self.exec_task('random_continual')
-				elif self.autoplay_next_episode and self.remaining_time <= self.start_prep:
+				if self.autoplay_next_episode and self.remaining_time <= self.start_prep:
 					if self.autoplay_nextep: self.exec_task('next_ep')
 				elif self.autoscrape_next_episode and self.remaining_time <= self.autoscrape_next_window_time:
 					if self.autoscrape_nextep: self.exec_task('scrape_next_ep')
@@ -519,7 +511,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 		self.intro, self.credits = intro, credits
 		if self.intro is not None and self.skip_intro_enabled:
 			self.exec_task('skip_intro', generation)
-		if self.play_random_continual or self.autoplay_next_episode or self.autoscrape_next_episode:
+		if self.autoplay_next_episode or self.autoscrape_next_episode:
 			self.info_next_ep()
 
 	def info_next_ep(self):
@@ -551,7 +543,6 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if self.current_point >= self.set_watched:
 				kodi_utils.clear_property('pov_lite_total_autoplays')
 				if self.mediatype == 'episode':
-					if any(key in self.meta for key in ('random', 'random_continual')): return ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode, 'progress')
 					from caches.smartplay_cache import complete_episode
 					return complete_episode(self.tmdb_id, self.season, self.episode)[1]
 				return ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode, 'progress')
@@ -617,7 +608,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 				self.nextep_started = True
 				from modules.episode_tools import execute_scrape_nextep
 				Thread(target=execute_scrape_nextep, args=(self, self.meta)).start()
-			elif task_name in ('next_ep', 'random_continual'):
+			elif task_name == 'next_ep':
 				self.nextep_started = True
 				from modules.episode_tools import execute_nextep
 				Thread(target=execute_nextep, args=(self, self.meta, self.nextep_settings)).start()

@@ -32,7 +32,6 @@ POV_ROUTES = {
 	'my_list_action': lambda p: _import('modules.mylist', 'action')(p),
 	'my_list_from_info': lambda p: _import('modules.mylist', 'from_info')(p),
 	'pov_page_back': lambda p: _import('modules.dialogs', 'pov_page_back')(p),
-	'random_choice': lambda p: _import('modules.dialogs', 'random_choice')(p['mode'], p),
 
 	'build_movie_list': lambda p: _import('menus.movies', 'Menu')(p).run(),
 	'build_tvshow_list': lambda p: _import('menus.tvshows', 'Menu')(p).run(),
@@ -71,7 +70,6 @@ POV_ROUTES = {
 	),
 
 	'toggle_provider': lambda p: _import('modules.utils', 'toggle_provider')(),
-	'upload_logfile': lambda p: _import('modules.kodi_utils', 'upload_logfile')(),
 	'myservices': lambda p: _import('modules.myservices', 'authorize')(),
 	'refer_link': lambda p: _import('modules.myservices', 'refer_link')(p['query']),
 }
@@ -86,12 +84,6 @@ def _run_class_method(cls_module, cls_name, params, mode):
 	method = getattr(cls(params), method_name, None)
 	if callable(method): return method()
 
-def _run_debrid_method(cls_module, cls_name, params, mode):
-	cls = _import(cls_module, cls_name)
-	method_name = mode.split('.')[-1]
-	method = getattr(cls(), method_name, None)
-	if callable(method): return method(params)
-
 def _run_dynamic_func(module_path, mode, params):
 	from modules.utils import manual_function_import
 	func_name = mode.split('.')[-1]
@@ -99,9 +91,15 @@ def _run_dynamic_func(module_path, mode, params):
 	return function(params)
 
 def routing(sys_obj):
+	from modules.menu_lists import is_retired_mode
 	params = kodi_utils.parsed_query(sys_obj.argv[2])
 	if params.get('action') in ('search', 'manualsearch', 'download'): return _import('subtitle_service', 'run')(sys_obj)
 	mode = params.get('mode', 'navigator.main')
+	if is_retired_mode(mode):
+		kodi_utils.notification('This feature is no longer available.')
+		handle = int(sys_obj.argv[1])
+		if handle >= 0: kodi_utils.end_directory(handle, False)
+		return
 
 	if mode in POV_ROUTES: return POV_ROUTES[mode](params)
 
@@ -115,8 +113,6 @@ def routing(sys_obj):
 
 	if mode.startswith('build_'):
 		if mode.startswith('build_trakt_'): return _run_dynamic_func('menus.trakt', mode, params)
-
-	if mode.startswith('real_debrid.'): return _run_debrid_method('menus.real_debrid', 'Menu', params, 'run')
 
 class Router:
 	def run(self, sys):

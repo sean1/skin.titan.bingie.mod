@@ -1610,28 +1610,9 @@
 		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2560)">$INFO[Container(2560).ListItem.Property(PovTMDBRating),TMDB ]</value>
 	</variable>
 
-    <!-- POV supplies these arithmetic values once when each item is built. -->
-    <variable name="RatingDecimalToPercentage">
-		<value condition="!String.IsEmpty(ListItem.Property(pov_lite_rating_percent))">$INFO[ListItem.Property(pov_lite_rating_percent)]</value>
-		<value condition="$EXP[IsMainMenuOpened]">$VAR[HomeFocusedPovRatingPercent]</value>
-    </variable>
-
-    <variable name="RatingDecimalToPercentageSeasons">
-        <value>$INFO[Container(5027).ListItem.Property(pov_lite_rating_percent)]</value>
-    </variable>
-
     <variable name="PercentRemained">
 		<value condition="!String.IsEmpty(ListItem.Property(pov_lite_percent_remaining))">$INFO[ListItem.Property(pov_lite_percent_remaining)]</value>
 		<value condition="$EXP[IsMainMenuOpened]">$VAR[HomeFocusedPovPercentRemaining]</value>
-	</variable>
-
-	<variable name="HomeFocusedPovRatingPercent">
-		<value condition="String.IsEqual(Window(Home).Property(CurrentWidgetID),2510)">$INFO[Container(2510).ListItem.Property(pov_lite_rating_percent)]</value>
-		<value condition="String.IsEqual(Window(Home).Property(CurrentWidgetID),2520)">$INFO[Container(2520).ListItem.Property(pov_lite_rating_percent)]</value>
-		<value condition="String.IsEqual(Window(Home).Property(CurrentWidgetID),2530)">$INFO[Container(2530).ListItem.Property(pov_lite_rating_percent)]</value>
-		<value condition="String.IsEqual(Window(Home).Property(CurrentWidgetID),2540)">$INFO[Container(2540).ListItem.Property(pov_lite_rating_percent)]</value>
-		<value condition="String.IsEqual(Window(Home).Property(CurrentWidgetID),2550)">$INFO[Container(2550).ListItem.Property(pov_lite_rating_percent)]</value>
-		<value condition="String.IsEqual(Window(Home).Property(CurrentWidgetID),2560)">$INFO[Container(2560).ListItem.Property(pov_lite_rating_percent)]</value>
 	</variable>
 
 	<variable name="HomeFocusedPovPercentRemaining">

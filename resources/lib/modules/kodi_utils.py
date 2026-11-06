@@ -380,7 +380,6 @@ FIXED_SETTINGS = {
 	'ext_dialog_highlight': 'cyan',
 	'extras.enable_scrollbars': 'false',
 	'extras.enabled_menus': '2050,2051,2052,2053,2054,2055,2057,2058,2059,2060,2061,2062',
-	'extras.exclude_non_acting_roles': 'true',
 	'extras.manage': '[B]Browse...[/B]',
 	'extras.open_action': '0',
 	'fanart_image': 'pov_fanart.png',
@@ -534,25 +533,6 @@ def set_settings(settings_dict):
 
 def set_setting(setting_id, value):
 	return set_settings({setting_id: value})
-
-def upload_logfile():
-	# Thanks 123Venom
-	log_file, url = 'special://logpath/kodi.log', 'https://paste.kodi.tv/'
-	if not path_exists(log_file): return notification('Error. Log File Not Found.', time=5000)
-	from platform import python_version
-	text = f"Kodi: {get_infolabel('System.BuildVersion')}[CR]Python: {python_version()}[CR]{local_string(32580)}"
-	if not confirm_dialog(text=text, top_space=False): return
-	show_busy_dialog()
-	import requests
-	try:
-		with open_file(log_file) as f: text = f.readBytes().decode('utf-8-sig')
-		response = requests.post('%s%s' % (url, 'documents'), data=text, timeout=10.0).json()
-		if 'key' in response:
-			message = url + response['key']
-			notification(message, time=max(5000, min(60000, 2000 + 200 * len(message))))
-		else: notification('Error. Log Upload Failed', time=5000)
-	except: notification(32574, 1500)
-	hide_busy_dialog()
 
 def timeIt(func):
 	# Thanks to 123Venom

@@ -48,8 +48,6 @@
 
     <expression name="IsBingieHubsActive">Window.IsActive(1110) | Window.IsActive(1111) | Window.IsActive(1112) | Window.IsActive(1118)</expression>
 
-	<expression name="IsBingieListsActive">false</expression>
-
     <expression name="IsBingieCategoriesActive">Window.IsActive(1119)</expression>
 
     <expression name="IsRecognizedVideoContent">VideoPlayer.Content(movies) | VideoPlayer.Content(episodes)</expression>

@@ -97,13 +97,8 @@ class Extras(BaseDialog):
 				self.selected = self.folder_runner % self.build_url(genre_params)
 				self.close()
 			elif chosen_var == director_id:
-				if self.is_movie:
-					director = self.meta.get('director')
-					if director: return people.person_data_dialog({'query': director})
-				else:
-					close_all_dialog()
-					self.selected = self.plugin_runner % self.build_url({'mode': 'random_choice', 'tmdb_id': self.tmdb_id, 'poster': self.poster})
-					self.close()
+				director = self.meta.get('director')
+				if director: return people.person_data_dialog({'query': director})
 		else:
 			try: chosen_var = self.get_listitem(self.control_id).getProperty(self.item_action_dict[self.control_id])
 			except: return
@@ -129,17 +124,15 @@ class Extras(BaseDialog):
 	def make_options(self):
 		icon_path = media_path()
 		item_list = []
-		if self.is_movie:
-			args = (playbrowse_id, 'playback', 'player.png'), (director_id, 'director', 'movies.png')
-		else:
-			args = (playbrowse_id, 'browse', 'in_progress_tvshow.png'), (director_id, 'play random', 'library.png')
-		for i, name, icon in [
+		play_action = (playbrowse_id, 'playback', 'player.png') if self.is_movie else (playbrowse_id, 'browse', 'in_progress_tvshow.png')
+		actions = [
 			(extrainfo_id, 'extra info', 'information.png'),
-			args[0],
+			play_action,
 			(trailer_id, 'trailer', 'watched.png'),
-			(genre_id, 'genres', 'genres.png'),
-			args[1]
-		]:
+			(genre_id, 'genres', 'genres.png')
+		]
+		if self.is_movie: actions.append((director_id, 'director', 'movies.png'))
+		for i, name, icon in actions:
 			try:
 				name, icon = '[B]%s[/B]' % name.upper(), '%s%s' % (icon_path, icon)
 				listitem = self.make_listitem()

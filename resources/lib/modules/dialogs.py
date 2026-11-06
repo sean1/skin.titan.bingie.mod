@@ -446,17 +446,6 @@ def browse_choice(meta, is_widget=False):
 	url_params = {'mode': 'build_season_list', 'tmdb_id': tmdb_id}
 	execute_builtin(container_update % build_url(url_params))
 
-def random_choice(choice, meta):
-	tmdb_id = meta.get('tmdb_id')
-	if not tmdb_id: return
-	from modules.episode_tools import get_random_episode
-	from modules.sources import Sources
-	continual = True if choice == 'play_random_continual' else False
-	result = get_random_episode(tmdb_id, continual)
-	if not result: return notification(32760)
-	meta, play_params = result
-	Sources.factory(play_params)
-
 def playback_choice(content, poster, meta):
 	items = [
 		('clear_and_rescrape', ls(32014)), ('scrape_with_filters_ignored', ls(32807)), ('scrape_with_custom_values', ls(32135))
@@ -508,8 +497,6 @@ def options_menu(params, meta=None):
 	if content == 'tvshow' and meta:
 		if smart_play == 2 or (smart_play == 1 and is_widget):
 			append(('browse_choice', browse_str, title, poster))
-		append(('play_random', ls(32541), title, poster))
-		append(('play_random_continual', ls(32542), title, poster))
 	append(('clear_scrapers_cache', ls(32637), ''))
 	if content == 'tvshow':
 		append(('dropped_choice', 'Toggle Dropped', title, poster))
@@ -529,7 +516,6 @@ def options_menu(params, meta=None):
 	if choice == 'scrape_with_custom_values': return scrape_with_custom_values(content, meta, season, episode)
 	if choice == 'scrape_from_episode_group': return scrape_from_episode_group(meta, season, episode)
 	if choice == 'browse_choice': return browse_choice(meta, is_widget)
-	if choice in ('play_random', 'play_random_continual'): return random_choice(choice, meta)
 	if choice == 'clear_scrapers_cache': return clear_scrapers_cache()
 	if choice == 'dropped_choice': return dropped_choice(meta)
 	if choice == 'clear_media_cache': return refresh_cached_meta(meta)

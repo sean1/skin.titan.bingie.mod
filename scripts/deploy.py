@@ -20,7 +20,7 @@ from pathlib import Path, PurePosixPath
 ADDON_ID = 'skin.titan.bingie.lite'
 ADDON_DIR = '/sdcard/Android/data/org.xbmc.kodi/files/.kodi/addons/' + ADDON_ID
 LOG = '/sdcard/Android/data/org.xbmc.kodi/files/.kodi/temp/kodi.log'
-DEVICES = {'googletv': ('192.168.1.114:5555', 'Google TV Streamer'), 'shield': ('192.168.1.128:5555', 'SHIELD Android TV'), 'tcl': ('192.168.1.42:5555', 'Smart TV Pro')}
+DEVICES = {'shield': ('192.168.1.128:5555', 'SHIELD Android TV'), 'tcl': ('192.168.1.42:5555', 'Smart TV Pro')}
 
 
 class DeployError(Exception):
@@ -589,7 +589,7 @@ def handle_termination(signum, frame):
 def main():
     signal.signal(signal.SIGTERM, handle_termination)
     parser = argparse.ArgumentParser(description='Transfer and verify a BINGIE Lite ZIP on a known Android Kodi device.')
-    parser.add_argument('target', choices=DEVICES, help='target device: googletv, shield or tcl')
+    parser.add_argument('target', choices=DEVICES, help='target device')
     parser.add_argument('archive', type=Path, help='path to the already-built add-on ZIP')
     args = parser.parse_args()
     started = time.monotonic()

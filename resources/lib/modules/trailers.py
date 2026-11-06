@@ -95,13 +95,6 @@ def _prepare_video_data(video_id, session=None):
 	return '', _limited_hls_manifest(response.text, master_url)
 
 
-def limit_hls_resolution(master_url):
-	response = _http_session().get(master_url, timeout=15)
-	response.raise_for_status()
-	manifest = _limited_hls_manifest(response.text, master_url)
-	return _commit_hls_manifest(manifest)
-
-
 def _commit_hls_manifest(manifest):
 	if MANIFEST_SERVER is not None: return MANIFEST_SERVER.publish(manifest)
 	manifest_url = kodi_utils.get_property(TRAILER_MANIFEST_URL_PROPERTY)

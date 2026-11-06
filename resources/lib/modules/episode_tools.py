@@ -1,14 +1,11 @@
-import json
-from random import choice
-from threading import Thread
 from windows import open_window
-from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta
+from indexers.metadata import tvshow_meta, season_episodes_meta
 from modules import kodi_utils, settings
 from modules.utils import get_next_episode_pointer, adjust_premiered_date, get_datetime
 from modules.sources import Sources
 # from modules.kodi_utils import logger
 
-ls, build_url = kodi_utils.local_string, kodi_utils.build_url
+ls = kodi_utils.local_string
 nextep_str, nores_str = ls(32801), ls(32760)
 
 def SmartPlay(params):
@@ -28,56 +25,6 @@ def SmartPlay(params):
 		nextep_params['autoplay'] = 'false'
 		nextep_params.pop('autoplay_next', None)
 	Sources.factory(nextep_params)
-
-def get_random_episode(tmdb_id, continual=False):
-	meta_user_info, adjust_hours, current_date = settings.metadata_user_info(), settings.date_offset(), get_datetime()
-	tmdb_key = str(tmdb_id)
-	meta = tvshow_meta('tmdb_id', tmdb_id, meta_user_info, current_date)
-	try:
-		all_episodes = all_episodes_meta(meta, meta_user_info, Thread, include_specials=False)
-		episodes_data = []
-		for ep in all_episodes:
-			if ep.get('season') == 0 or not ep.get('premiered'): continue
-			episode_date, premiered = adjust_premiered_date(ep['premiered'], adjust_hours)
-			if episode_date <= current_date: episodes_data.append(ep)
-	except: episodes_data = []
-	if not episodes_data: return None
-	episode_history = {}
-	episode_list = []
-	if continual:
-		episode_identities = {(i.get('season'), i.get('episode')) for i in episodes_data}
-		try:
-			episode_history = json.loads(kodi_utils.get_property('pov_lite_random_episode_history'))
-			if tmdb_key in episode_history:
-				for item in episode_history[tmdb_key]:
-					identity = (item.get('season'), item.get('episode')) if isinstance(item, dict) else tuple(item) if isinstance(item, list) and len(item) == 2 else None
-					if identity in episode_identities and identity not in episode_list: episode_list.append(identity)
-		except: pass
-		available_episodes = [i for i in episodes_data if (i.get('season'), i.get('episode')) not in episode_list]
-		if available_episodes: episodes_data = available_episodes
-		else: episode_list = []
-	chosen_episode = choice(episodes_data)
-	if continual:
-		episode_list.append((chosen_episode.get('season'), chosen_episode.get('episode')))
-		episode_history = {tmdb_key: episode_list}
-		kodi_utils.set_property('pov_lite_random_episode_history', json.dumps(episode_history))
-	title, season, episode = meta['title'], int(chosen_episode['season']), int(chosen_episode['episode'])
-	query = '%s S%.2dE%.2d' % (title, season, episode)
-	display_name = '%s - %dx%.2d' % (title, season, episode)
-	ep_name, plot = chosen_episode['title'], chosen_episode['plot']
-	try: premiered = adjust_premiered_date(chosen_episode['premiered'], adjust_hours)[1]
-	except: premiered = chosen_episode['premiered']
-	meta.update({
-		'mediatype': 'episode', 'rootname': display_name, 'season': season, 'episode': episode,
-		'premiered': premiered, 'ep_name': ep_name, 'plot': plot
-	})
-	if continual: meta['random_continual'] = 'true'
-	else: meta['random'] = 'true'
-	url_params = {
-		'mode': 'play_media', 'mediatype': 'episode', 'autoplay': 'true', 'season': season, 'episode': episode,
-		'tmdb_id': meta['tmdb_id'], 'tvshowtitle': meta['rootname'], 'query': query, 'meta': json.dumps(meta)
-	}
-	return meta, url_params
 
 def nextep_playback_info(meta):
 	adjust_hours, current_date = settings.date_offset(), get_datetime()
@@ -144,11 +91,7 @@ def execute_scrape_nextep(player, meta):
 	if action == 'play': player.request_next_episode()
 
 def execute_nextep(player, meta, nextep_settings):
-	if 'random_continual' in meta:
-		result = get_random_episode(meta['tmdb_id'], True)
-		if not result: return
-		nextep_meta, nextep_params = result
-	else: nextep_meta, nextep_params = nextep_playback_info(meta)
+	nextep_meta, nextep_params = nextep_playback_info(meta)
 	if nextep_params == 'error': return kodi_utils.notification(32574)
 	if nextep_params == 'no_next_episode': return
 	if not Sources.background_prep(nextep_params): return kodi_utils.notification('%s %s' % (nextep_str, nores_str))

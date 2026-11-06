@@ -100,6 +100,7 @@ class MenuEditor:
 		self._db_execute('set', active_list, list_items)
 
 	def add_original_external(self):
+		if default_menus.is_retired_mode(self.menu_item_get('mode')): return kodi_utils.notification('This feature is no longer available.')
 		active_list = self.params_get('active_list')
 		choice_items = self._get_main_menu_items(active_list)
 		choice = self._menu_select([i[1] for i in choice_items], '')
@@ -125,7 +126,7 @@ class MenuEditor:
 		list_type = 'edited' if edited else 'default'
 		current_list = edited or default
 		menu_name = self.params_get('menu_name')
-		try: new_item = [i for i in default if str(i['name']) == str(menu_name)][0]
+		try: new_item = [i for i in default if str(i['name']) == str(menu_name) and not default_menus.is_retired_mode(i.get('mode'))][0]
 		except: return kodi_utils.notification(32760, 1500)
 		list_items = [i for i in current_list if str(i['name']) != str(menu_name)]
 		list_items.insert(self.params_get('position', 0), new_item)
@@ -138,7 +139,9 @@ class MenuEditor:
 		list_type = 'edited' if edited else'default'
 		current_list = edited or default
 		if default == new_contents: return kodi_utils.notification(32983, 1500)
-		new_entry = [i for i in new_contents if i not in default][0]
+		new_entries = [i for i in new_contents if i not in default]
+		if not new_entries: return self._db_execute('set', active_list, new_contents, 'default')
+		new_entry = new_entries[0]
 		new_entry_translated_name = ls(new_entry.get('name'))
 		if not kodi_utils.confirm_dialog(text='%s[CR]%s' % (ls(32727) % new_entry_translated_name, ls(32728))): return kodi_utils.notification(32736, 1500)
 		item_position = self._menu_select(current_list, new_entry_translated_name, position_list=True)
@@ -148,6 +151,7 @@ class MenuEditor:
 		if list_type == 'edited': self._db_execute('set', active_list, new_contents, 'default')
 
 	def add_external(self):
+		if default_menus.is_retired_mode(self.menu_item_get('mode')): return kodi_utils.notification('This feature is no longer available.')
 		choice_items = self._get_main_menu_items([])
 		choice = self._menu_select([i[1] for i in choice_items], '')
 		if choice is None: return kodi_utils.notification(32736, 1500)
@@ -163,9 +167,11 @@ class MenuEditor:
 	def _menu_select(self, choice_items, menu_name, heading='BINGIE Lite', multi_line='false', position_list=False):
 		menu_name, icon_path = menu_name.replace('[B]', '').replace('[/B]', ''), media_path()
 		list_items = []
+		index_list = [0] if position_list else []
 		list_items_append = list_items.append
 		if position_list: list_items_append({'line1': top_str, 'line2': top_pos_str % menu_name, 'icon': media_path('top.png')})
-		for item in choice_items:
+		for index, item in enumerate(choice_items):
+			if default_menus.is_retired_mode(item.get('mode')): continue
 			item_get = item.get
 			line1 = ls(item_get('name', '')).replace('[B]', '').replace('[/B]', '')
 			line2 = pos_str % (menu_name, line1 or ls(item_get('list_name')) if position_list else '')
@@ -174,13 +180,14 @@ class MenuEditor:
 			elif item_get('network_id'): icon = item_get('iconImage', 'discover.png')
 			else: icon = '%s%s' % (icon_path, item_get('iconImage', 'discover.png'))
 			list_items_append({'line1': line1, 'line2': line2, 'icon': icon})
-		index_list = list(range(len(list_items)))
+			index_list.append(index + 1 if position_list else index)
 		kwargs = {'items': json.dumps(list_items), 'heading': heading, 'multi_line': multi_line}
 		return kodi_utils.select_dialog(index_list, **kwargs)
 
 	def _get_removed_items(self, active_list):
-		default_list_items, list_items = navigator_cache.get_main_lists(active_list)
-		return [i for i in default_list_items if i not in list_items]
+		default_list_items, edited_list_items = navigator_cache.get_main_lists(active_list)
+		current_list_items = edited_list_items or default_list_items
+		return [i for i in default_list_items if i not in current_list_items and not default_menus.is_retired_mode(i.get('mode'))]
 
 	def _get_external_name_input(self, current_name):
 		new_name = kodi_utils.dialog.input('BINGIE Lite', defaultt=current_name)
@@ -243,6 +250,7 @@ class MenuEditor:
 		self._db_execute('make_new_folder', list_name, list_type='shortcut_folder')
 
 	def shortcut_folder_add_item(self):
+		if default_menus.is_retired_mode(self.menu_item_get('mode')): return kodi_utils.notification('This feature is no longer available.')
 		shortcut_folders = navigator_cache.get_shortcut_folders()
 		if len(shortcut_folders) == 1: choice_name, choice_list = shortcut_folders[0]
 		elif shortcut_folders:

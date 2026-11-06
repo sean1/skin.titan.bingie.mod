@@ -5,10 +5,8 @@
 import gzip
 from random import choice, randrange
 import re
-from sys import version_info
 from time import sleep
 from http import cookiejar
-from html import unescape
 from io import BytesIO
 import urllib.request as urllib2
 from urllib.parse import quote_plus, urlencode, parse_qs, urlparse, urljoin
@@ -41,28 +39,10 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
 			opener = urllib2.build_opener(*handlers)
 			urllib2.install_opener(opener)
 
-		if not verifySsl and version_info >= (2, 7, 12):
+		if not verifySsl:
 			try:
 				import ssl
 				ssl_context = ssl._create_unverified_context()
-				handlers += [urllib2.HTTPSHandler(context=ssl_context)]
-				opener = urllib2.build_opener(*handlers)
-				urllib2.install_opener(opener)
-			except:
-				from fenom import log_utils
-				log_utils.error()
-
-		if verifySsl and ((2, 7, 8) < version_info < (2, 7, 12)):
-			try:
-				import ssl
-				try:
-					import _ssl
-					CERT_NONE = _ssl.CERT_NONE
-				except Exception:
-					CERT_NONE = ssl.CERT_NONE
-				ssl_context = ssl.create_default_context()
-				ssl_context.check_hostname = False
-				ssl_context.verify_mode = CERT_NONE
 				handlers += [urllib2.HTTPSHandler(context=ssl_context)]
 				opener = urllib2.build_opener(*handlers)
 				urllib2.install_opener(opener)
@@ -289,36 +269,6 @@ def _get_result(response, limit=None, ret_code=None):
 		from fenom import log_utils
 		log_utils.error()
 
-def replaceHTMLCodes(txt):
-	# Some HTML entities are encoded twice. Decode double.
-	return _replaceHTMLCodes(_replaceHTMLCodes(txt))
-
-def _replaceHTMLCodes(txt):
-	try:
-		if not txt: return ''
-		txt = re.sub(r"(&#[0-9]+)([^;^0-9]+)", "\\1;\\2", txt) # fix html codes with missing semicolon
-		txt = unescape(txt)
-		txt = txt.replace("&quot;", "\"")
-		txt = txt.replace("&amp;", "&")
-		txt = txt.replace("&lt;", "<")
-		txt = txt.replace("&gt;", ">")
-		txt = txt.replace("&apos;", "'")
-		txt = txt.replace("&nbsp;", "")
-		txt = txt.replace("&#38;", "&")
-		txt = txt.replace("&#8230;", "...")
-		txt = txt.replace("&#8217;", "'")
-		txt = txt.replace("&#8211;", "-")
-		txt = txt.strip()
-		return txt
-	except:
-		from fenom import log_utils
-		log_utils.error()
-		return txt
-
-def cleanHTML(txt):
-	txt = re.sub(r'<.+?>|</.+?>|\n', '', txt)
-	return _replaceHTMLCodes(_replaceHTMLCodes(txt))
-
 def randomagent():
 	RAND_UAS = [
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
@@ -329,9 +279,6 @@ def randomagent():
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.188',
 	]
 	return choice(RAND_UAS)
-
-def agent():
-	return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.123 Safari/537.36' # works on glodls
 
 class cfcookie:
 	def __init__(self):

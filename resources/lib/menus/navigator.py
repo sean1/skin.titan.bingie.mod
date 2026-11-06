@@ -46,21 +46,6 @@ class Navigator:
 		ku.set_content(handle, 'files')
 		ku.end_directory(handle, cacheToDisc=False)
 
-	def premium(self):
-		from modules.debrid import debrid_enabled
-		debrids = debrid_enabled()
-		if 'realdebrid' in debrids: self.real_debrid()
-		self._end_directory()
-
-	def real_debrid(self):
-		rd_str, acc_str, his_str, cloud_str = ls(32054), ls(32494), ls(32486), ls(32496)
-		clca_str, n_ins = ls(32497) % rd_str, _in_str % (rd_str.upper(), '')
-		self._add_item({'mode': 'real_debrid.rd_torrent_cloud',     'name': cloud_str}, 'realdebrid.png', n_ins)
-		self._add_item({'mode': 'real_debrid.rd_downloads',         'name': his_str  }, 'realdebrid.png', n_ins)
-		self._add_item({'mode': 'real_debrid.show_account_info',    'name': acc_str  }, 'realdebrid.png', n_ins, False)
-		self._add_item({'mode': 'clear_cache', 'cache': 'rd_cloud', 'name': clca_str }, 'realdebrid.png', n_ins, False)
-
-
 	def search(self):
 		search_str, people_str = ls(32450), ls(32507)
 		coll_str, s_n_ins = '%s %s (%s)' % (mov_str, ls(32499), ls(32068)), _in_str % (search_str.upper(), '')
@@ -107,7 +92,7 @@ class Navigator:
 	def set_view_modes(self):
 		set_views_str, lists_str, root_str, movies_str = ls(32510), ls(32501), ls(32457), ls(32028)
 		tvshows_str, season_str, episode_str = ls(32029), ls(32537), ls(32506)
-		premium_files_str, ep_lists_str = ls(32485), '%s %s' % (episode_str, lists_str)
+		ep_lists_str = '%s %s' % (episode_str, lists_str)
 		n_ins, reset_str = _in_str % (set_views_str.upper(), ''), 'Reset All Views'
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.main', 'content': '', 'exclude_external': 'true',                   'name': root_str         }, 'settings.png', n_ins)
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.movies', 'content': 'movies', 'exclude_external': 'true',           'name': movies_str       }, 'settings.png', n_ins)
@@ -115,7 +100,6 @@ class Navigator:
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.seasons', 'content': 'seasons', 'exclude_external': 'true',         'name': season_str       }, 'settings.png', n_ins)
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes', 'content': 'episodes', 'exclude_external': 'true',       'name': episode_str      }, 'settings.png', n_ins)
 		self._add_item({'mode': 'choose_view', 'view_type': 'view.episodes_lists', 'content': 'episodes', 'exclude_external': 'true', 'name': ep_lists_str     }, 'settings.png', n_ins)
-		self._add_item({'mode': 'choose_view', 'view_type': 'view.premium', 'content': 'files', 'exclude_external': 'true',           'name': premium_files_str}, 'settings.png', n_ins)
 		self._add_item({'mode': 'clear_view', 'view_type': 'all',                                                                     'name': reset_str        }, 'settings.png', n_ins, False)
 		self._end_directory()
 
@@ -123,11 +107,10 @@ class Navigator:
 		pov_vstr = ku.get_addoninfo('version')
 		kl_loc, mt_str = 'special://logpath/kodi.log', ku.addon_path + 'changelog.txt'
 		pov_str, cl_str, lut_str, k_str, lv_str = ls(32000), ls(32508), ls(32777), ls(32538), ls(32509)
-		mh_str, klv_h, klu_h = '%s  [I](v.%s)[/I]' % (pov_str, pov_vstr), '%s %s' % (k_str, lv_str), ls(32853)
+		mh_str, klv_h = '%s  [I](v.%s)[/I]' % (pov_str, pov_vstr), '%s %s' % (k_str, lv_str)
 		cl_n_ins, lu_n_ins, k_n_ins = _in_str % (cl_str.upper(), ''), _in_str % (lut_str.upper(), ''), _in_str % ('Kodi'.upper(), '')
 		self._add_item({'mode': 'show_text', 'heading': mh_str, 'file': mt_str, 'exclude_external': 'true',                    'name': mh_str}, 'lists.png', cl_n_ins, False)
 		self._add_item({'mode': 'show_text', 'heading': klv_h, 'file': kl_loc, 'kodi_log': 'true', 'exclude_external': 'true', 'name': klv_h }, 'lists.png', lu_n_ins, False)
-		self._add_item({'mode': 'upload_logfile', 'exclude_external': 'true',                                                  'name': klu_h }, 'lists.png', lu_n_ins, False)
 		self._add_item({'mode': 'clear_streams',                                                    'name': 'Clear Stale Kodi Stream Details'}, 'tools.png', k_n_ins, False)
 		self._add_item({'mode': 'clear_thumbnails',                                                     'name': 'Clear Stale Kodi Thumbnails'}, 'tools.png', k_n_ins, False)
 		self._end_directory()
@@ -310,9 +293,11 @@ class Navigator:
 		self._end_directory()
 
 	def build_shortcut_folder_list(self):
+		from modules.menu_lists import is_retired_mode
 		def _process():
 			for item_position, item in enumerate(contents):
 				try:
+					if is_retired_mode(item.get('mode')): continue
 					cm = []
 					cm_append = cm.append
 					item_get = item.get
@@ -335,9 +320,11 @@ class Navigator:
 		self._end_directory()
 
 	def main(self):
+		from modules.menu_lists import is_retired_mode
 		def build_main_lists():
 			for item_position, item in enumerate(contents):
 				try:
+					if is_retired_mode(item.get('mode')): continue
 					cm = []
 					cm_append = cm.append
 					item_get = item.get

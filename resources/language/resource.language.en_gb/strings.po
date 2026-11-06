@@ -330,24 +330,8 @@ msgctxt "#32484"
 msgid "[B]%s: [/B]%s"
 msgstr ""
 
-msgctxt "#32485"
-msgid "Premium Files"
-msgstr ""
-
-msgctxt "#32486"
-msgid "History"
-msgstr ""
-
 msgctxt "#32487"
 msgid "Help"
-msgstr ""
-
-msgctxt "#32494"
-msgid "Account Info"
-msgstr ""
-
-msgctxt "#32496"
-msgid "Cloud Storage"
 msgstr ""
 
 msgctxt "#32497"
@@ -452,14 +436,6 @@ msgstr ""
 
 msgctxt "#32538"
 msgid "Kodi"
-msgstr ""
-
-msgctxt "#32541"
-msgid "Single Random Play"
-msgstr ""
-
-msgctxt "#32542"
-msgid "Continual Random Play"
 msgstr ""
 
 msgctxt "#32543"
@@ -890,14 +866,6 @@ msgctxt "#32740"
 msgid "Subtitles Rate Limited. Retrying in 10 secs..."
 msgstr ""
 
-msgctxt "#32742"
-msgid "folder"
-msgstr ""
-
-msgctxt "#32743"
-msgid "file"
-msgstr ""
-
 msgctxt "#32746"
 msgid "[B]Browse Pack[/B]"
 msgstr ""
@@ -912,14 +880,6 @@ msgstr ""
 
 msgctxt "#32749"
 msgid "[B]Customer ID:[/B] %s"
-msgstr ""
-
-msgctxt "#32750"
-msgid "[B]Expires:[/B] %s"
-msgstr ""
-
-msgctxt "#32751"
-msgid "[B]Days Remaining:[/B] %s"
 msgstr ""
 
 msgctxt "#32752"
@@ -942,16 +902,8 @@ msgctxt "#32756"
 msgid "[B]Email:[/B] %s"
 msgstr ""
 
-msgctxt "#32757"
-msgid "[B]Status:[/B] %s"
-msgstr ""
-
 msgctxt "#32758"
 msgid "[B]Account:[/B] %s"
-msgstr ""
-
-msgctxt "#32759"
-msgid "[B]Fidelity Points:[/B] %s"
 msgstr ""
 
 msgctxt "#32760"
@@ -992,10 +944,6 @@ msgstr ""
 
 msgctxt "#32784"
 msgid "[B]Switch Jump To Action[/B]"
-msgstr ""
-
-msgctxt "#32785"
-msgid "Delete"
 msgstr ""
 
 msgctxt "#32788"
@@ -1128,10 +1076,6 @@ msgstr ""
 
 msgctxt "#32852"
 msgid "Local Subtitles Found"
-msgstr ""
-
-msgctxt "#32853"
-msgid "Upload Kodi Log to Pastebin"
 msgstr ""
 
 msgctxt "#32854"

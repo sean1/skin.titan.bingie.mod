@@ -1,10 +1,7 @@
 import re
 import time
-import random
-import hashlib
 import unicodedata
 import _strptime  # fix bug in python import
-from html import unescape
 from queue import Empty, SimpleQueue
 from importlib import import_module
 from datetime import datetime, timedelta, date
@@ -41,8 +38,6 @@ def media_percentage_properties(rating=None, progress=None):
 		else:
 			if 0.05 <= numeric_rating <= 10:
 				properties['PovTMDBRating'] = '%.1f' % numeric_rating
-				rating_percent = int(round(numeric_rating * 10))
-				if 0 < rating_percent < 100: properties['pov_lite_rating_percent'] = str(rating_percent)
 	if progress is not None:
 		try: played_percent = int(round(float(progress)))
 		except (TypeError, ValueError): pass
@@ -187,44 +182,6 @@ def safe_string(value):
 	)
 	return ascii_chars
 
-def make_title_slug(name):
-	slug = re.sub(r'[^a-z0-9_]+', '-', name.strip().lower())
-	slug = slug.strip('-')
-	return slug
-
-def replace_html_codes(text):
-	text = unescape(re.sub(r"(&#[0-9]+)(?=[^0-9;])", r"\1;", text))
-	return text
-
-def regex_from_to(text, from_string, to_string, excluding=True):
-	if excluding: r = re.search(r"(?i)" + from_string + r"([\S\s]+?)" + to_string, text).group(1)
-	else: r = re.search(r"(?i)(" + from_string + r"[\S\s]+?" + to_string + ")", text).group(1)
-	return r
-
-def regex_get_all(text, start_with, end_with):
-	r = re.findall(r"(?i)(" + start_with + r"[\S\s]+?" + end_with + ")", text)
-	return r
-
-def byteify(data, ignore_dicts=False):
-	try:
-		if isinstance(data, str): return data.encode('utf-8')
-		if isinstance(data, list): return [byteify(item, ignore_dicts=True) for item in data]
-		if isinstance(data, dict) and not ignore_dicts:
-			return dict([(byteify(key, ignore_dicts=True), byteify(value, ignore_dicts=True)) for key, value in data.iteritems()])
-	except: pass
-	return data
-
-def gen_file_hash(file):
-	try:
-		md5_hash = hashlib.md5()
-		with open(file, 'rb') as f:
-			while True:
-				chunk = f.read(65536)
-				if not chunk: break
-				md5_hash.update(chunk)
-		return md5_hash.hexdigest()
-	except: pass
-
 def sec2time(sec, n_msec=3):
 	""" Convert seconds to 'D days, HH:MM:SS.FFF' """
 	if hasattr(sec,'__len__'): return [sec2time(s) for s in sec]
@@ -236,11 +193,6 @@ def sec2time(sec, n_msec=3):
 	if d == 0: return pattern % (h, m, s)
 	return ('%d days, ' + pattern) % (d, h, m, s)
 
-def released_key(item):
-	if 'released' in item: return item['released'] or '2050-01-01'
-	if 'first_aired' in item: return item['first_aired'] or '2050-01-01'
-	return '2050-01-01'
-
 ARTICLE_RE = re.compile(r'^(?:the|a|an)\s+', re.I)
 
 def title_key(title, ignore_articles):
@@ -250,22 +202,6 @@ def title_key(title, ignore_articles):
 
 def sort_for_article(item_list, sort_key, ignore_articles):
 	return sorted(item_list, key=lambda k: title_key(k[sort_key], ignore_articles))
-
-def sort_list(sort_key, sort_direction, list_data, ignore_articles):
-	try:
-		reverse = sort_direction != 'asc'
-		if sort_key == 'rank': return sorted(list_data, key=lambda x: x['rank'], reverse=reverse)
-		elif sort_key == 'added': return sorted(list_data, key=lambda x: x['listed_at'], reverse=reverse)
-#		elif sort_key == 'title': return sorted(list_data, key=lambda x: title_key(x[x['type']].get('title'), ignore_articles), reverse=reverse)
-		elif sort_key == 'title': return sorted(list_data, key=lambda x: title_key(x['movie' if x['type'] == 'movie' else 'show'].get('title'), ignore_articles), reverse=reverse)
-		elif sort_key == 'released': return sorted(list_data, key=lambda x: released_key(x[x['type']]), reverse=reverse)
-		elif sort_key == 'runtime': return sorted(list_data, key=lambda x: x[x['type']].get('runtime', 0), reverse=reverse)
-		elif sort_key == 'popularity': return sorted(list_data, key=lambda x: x[x['type']].get('votes', 0), reverse=reverse)
-		elif sort_key == 'percentage': return sorted(list_data, key=lambda x: x[x['type']].get('rating', 0), reverse=reverse)
-		elif sort_key == 'votes': return sorted(list_data, key=lambda x: x[x['type']].get('votes', 0), reverse=reverse)
-		elif sort_key == 'random': return sorted(list_data, key=lambda k: random.random())
-		else: return list_data
-	except: return list_data
 
 def paginate_list(item_list, page, limit=20):
 	if not item_list: return [], 1

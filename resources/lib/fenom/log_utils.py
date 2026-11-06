@@ -122,43 +122,6 @@ def view_LogFile(name):
 	except:
 		error()
 
-def upload_LogFile():
-	from fenom.control import notification
-	url = 'https://paste.kodi.tv/'
-	log_file = joinPath(LOGPATH, 'fenomscrapers.log')
-	if not existsPath(log_file):
-		return notification(message='Log File not found, likely logging is not enabled.')
-	try:
-		import requests
-		from fenom.control import addonVersion, selectDialog
-		f = open(log_file, 'r', encoding='utf-8', errors='ignore')
-		text = f.read()
-		f.close()
-		UserAgent = 'FenomScrpaers %s' % addonVersion()
-		response = requests.post(url + 'documents', data=text.encode('utf-8', errors='ignore'), headers={'User-Agent': UserAgent})
-		# log('log_response: ' + str(response))
-		if 'key' in response.json():
-			result = url + response.json()['key']
-			log('FenomScrapers log file uploaded to: %s' % result)
-			from sys import platform as sys_platform
-			supported_platform = any(value in sys_platform for value in ('win32', 'linux2'))
-			highlight_color = 'gold'
-			list = [('[COLOR %s]url:[/COLOR]  %s' % (highlight_color, str(result)), str(result))]
-			if supported_platform: list += [('[COLOR %s]  -- Copy url To Clipboard[/COLOR]' % highlight_color, ' ')]
-			select = selectDialog([i[0] for i in list], lang(32059))
-			if 'Copy url To Clipboard' in list[select][0]:
-				from fenom.source_utils import copy2clip
-				copy2clip(list[select - 1][1])
-		elif 'message' in response.json():
-			notification(message='FenomScrapers Log upload failed: %s' % str(response.json()['message']))
-			log('FenomScrapers Log upload failed: %s' % str(response.json()['message']), level=LOGERROR)
-		else:
-			notification(message='FenomScrapers Log upload failed')
-			log('FenomScrapers Log upload failed: %s' % response.text, level=LOGERROR)
-	except:
-		error('FenomScrapers log upload failed')
-		notification(message='pastebin post failed: See log for more info')
-
 def normalize(msg):
 	try:
 		import unicodedata

@@ -1,9 +1,11 @@
+from datetime import date
 from threading import Thread
+from xbmc import getRegion
 from indexers.metadata import tvshow_meta, season_episodes_meta, all_episodes_meta, episode_infodict, season_infodict, info_tagger, tmdb_image_base, main_actors, resized_cast
 from caches.watched_cache import get_watched_info_tv, get_watched_status_season, get_bookmarks, get_resumetime, set_resumetime, get_watched_status_episode
 from modules import kodi_utils, settings
 from menus.media import card_coming_soon
-from modules.utils import adjust_premiered_date, get_datetime, media_percentage_properties
+from modules.utils import adjust_premiered_date, get_datetime, make_day, media_percentage_properties
 # from modules.kodi_utils import logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
@@ -131,6 +133,7 @@ class Episodes(BaseSeason):
 	def build_season_list(self, params):
 		thumb_fanart = settings.thumb_fanart()
 		adjust_hours = settings.date_offset()
+		date_format = getRegion('dateshort') or '%Y-%m-%d'
 		bookmarks = get_bookmarks(self.watched_indicators, 'episode')
 		show = MetaParser(params['tmdb_id'], self.meta_user_info, self.current_date,
 			self.poster_main, self.poster_backup, self.fanart_main, self.fanart_backup)
@@ -166,11 +169,11 @@ class Episodes(BaseSeason):
 				cm_append = cm.append
 				item_get = item.get
 				season, episode, ep_name = item_get('season'), item_get('episode'), item_get('title')
-				premiered, cast = item_get('premiered'), show.cast + item_get('guest_stars', [])
+				original_air_date, cast = item_get('premiered'), show.cast + item_get('guest_stars', [])
 				season_poster = item_get('season_poster') or show.poster
 				thumb = item_get('thumb') or show.fanart
 				background = thumb if thumb_fanart else show.fanart
-				episode_date, premiered = adjust_premiered_date(premiered, adjust_hours)
+				episode_date, premiered = adjust_premiered_date(original_air_date, adjust_hours)
 				if not episode_date or self.current_date < episode_date:
 					if not self.show_unaired: continue
 					if season != 0: display = '[COLOR %s][I]%s[/I][/COLOR]' % (unaired_label, ep_name)
@@ -202,6 +205,8 @@ class Episodes(BaseSeason):
 						'tmdb_id': show.tmdb_id, 'season': season, 'episode': episode, 'refresh': 'progress'
 					})))
 				props = {'episode_type': item_get('episode_type'), 'watchedprogress': progress, 'pov_lite_first_aired': premiered or '', 'main_actors': main_actors(cast)}
+				if original_air_date:
+					props['pov_lite_air_date_display'] = make_day(self.current_date, date.fromisoformat(original_air_date), date_format, use_words=False)
 				if card_coming_soon({'premiered': premiered}, 'episode', self.current_date): props['card_coming_soon'] = 'true'
 				props.update(media_percentage_properties(item_get('rating'), progress))
 				listitem = kodi_utils.make_listitem()

@@ -21,9 +21,9 @@
 		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoTitle))">$INFO[Window(Home).Property(PovInfoTitle)]</value>
 		<value>$INFO[Container(527).ListItem.TVShowTitle]</value>
 	</variable>
-	<variable name="PovSpotlightEpisodeArt">
-		<value condition="!Container(5027).IsUpdating + !String.IsEmpty(Container(5027).ListItem.Art(thumb))">$INFO[Container(5027).ListItem.Art(thumb)]</value>
-		<value>$INFO[Window(Home).Property(PovInfoFanart)]</value>
+	<variable name="PovSpotlightShowFanart">
+		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoFanart))">$INFO[Window(Home).Property(PovInfoFanart)]</value>
+		<value>$INFO[Container(527).ListItemAbsolute(0).Art(fanart)]</value>
 	</variable>
 	<variable name="PovSpotlightSeasonLabel">
 		<value condition="!String.IsEmpty(Window(1124).Property(PovSpotlightSelectedSeasonLabel))">$INFO[Window(1124).Property(PovSpotlightSelectedSeasonLabel)]</value>
@@ -118,7 +118,7 @@
 		</control>
 		<include content="BingieSpotlightCornerImage">
 			<param name="visibility" value="true" />
-			<param name="image" value="$VAR[PovSpotlightEpisodeArt]" />
+			<param name="image" value="$VAR[PovSpotlightShowFanart]" />
 			<param name="height" value="620" />
 		</include>
 		<include>BingieSpotlightBottomFade</include>
@@ -159,11 +159,17 @@
 				<scroll>Control.HasFocus(5027)</scroll>
 			</control>
 			<control type="textbox">
-				<top>70</top><height>213</height>
+				<top>70</top><height>182</height>
 				<align>left</align>
 				<font>Reg28</font><textcolor>d9ffffff</textcolor>
 				<label>$INFO[Container(5027).ListItem.Plot]</label>
 				<autoscroll delay="5000" time="3000" repeat="7000">Control.HasFocus(5027)</autoscroll>
+			</control>
+			<control type="label">
+				<top>253</top><height>30</height>
+				<aligny>center</aligny>
+				<font>Reg22</font><textcolor>b3ffffff</textcolor>
+				<label>$INFO[Container(5027).ListItem.Property(pov_lite_air_date_display),$LOCALIZE[320150] · ]</label>
 			</control>
 		</control>
 		<control type="radiobutton" id="528">

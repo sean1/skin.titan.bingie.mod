@@ -217,10 +217,10 @@ class Search(xbmcgui.WindowXML):
 			year = (item.get('release_date' if movie else 'first_air_date') or '')[:4]
 			card = kodi_utils.make_listitem()
 			card.setLabel(title)
-			card.setLabel2(' · '.join(value for value in ('Movie' if movie else 'TV show', year) if value))
+			card.setLabel2('Movie' if movie else 'TV show')
 			poster = tmdb_image_base % ('w342', item['poster_path']) if item.get('poster_path') else kodi_utils.media_path('box_office.png')
 			backdrop = tmdb_image_base % ('w780', item['backdrop_path']) if item.get('backdrop_path') else ''
-			card.setArt({'poster': poster, 'thumb': poster, 'fanart': backdrop})
+			card.setArt({'poster': poster, 'thumb': poster, 'fanart': backdrop, 'landscape': backdrop})
 			card.setProperty('tmdb_id', str(item['id']))
 			tag = card.getVideoInfoTag()
 			tag.setTitle(title)
@@ -228,6 +228,10 @@ class Search(xbmcgui.WindowXML):
 			tag.setUniqueIDs({'tmdb': str(item['id'])}, 'tmdb')
 			tag.setPlot(item.get('overview') or '')
 			if year.isdigit(): tag.setYear(int(year))
+			try: rating = float(item.get('vote_average'))
+			except (TypeError, ValueError, OverflowError): pass
+			else:
+				if 0.05 <= rating <= 10: tag.setRating(rating)
 			cards.append(card)
 		control.reset()
 		control.addItems(cards)

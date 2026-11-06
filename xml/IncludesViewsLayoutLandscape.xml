@@ -12,9 +12,11 @@
         <include>ThumbsViewItemBingieLayout</include>
      </include>
     <include name="ThumbsViewItemBingieLayout">
+        <param name="poster_fallback" default="false" />
+        <definition>
         <control type="image">
             <!--thumb image-->
-			<visible>!$EXP[IsNextPageListItem]</visible>
+			<visible>!$EXP[IsNextPageListItem] + [!$PARAM[poster_fallback] | !String.IsEmpty(ListItem.Art(landscape))]</visible>
             <bordersize>8</bordersize>
             <texture background="true" diffuse="home/home_matte3.png" fallback="DefaultVideo.png">$VAR[LandscapeImage]</texture>
             <aspectratio scalediffuse="false" align="center" aligny="center">scale</aspectratio>
@@ -30,6 +32,7 @@
 			<texture background="true" fallback="DefaultFolder.png">$VAR[LandscapeImage]</texture>
 			<aspectratio align="center" aligny="center">keep</aspectratio>
 		</control>
+        <include condition="$PARAM[poster_fallback]">LandscapeCardPosterFallback</include>
         <include condition="!$EXP[IsBingieViewsActive] + !Control.IsVisible(523)">ThumbsTagOverlayBingie</include>
         <include condition="!$EXP[IsBingieViewsActive]">New_Episodes_Tag_Overlay</include>
 		<include>LandscapeCardTopGradient</include>
@@ -38,7 +41,47 @@
 		<include>LandscapeCardYearLabel</include>
 		<include>LandscapeCardComingSoonLabel</include>
 		<include>LandscapeCardRatingBadge</include>
+        </definition>
 	</include>
+
+    <include name="LandscapeCardPosterFallback">
+        <control type="group">
+            <visible>String.IsEmpty(ListItem.Art(landscape))</visible>
+            <control type="image">
+                <bordersize>8</bordersize>
+                <texture colordiffuse="ff252525">home/home_matte3.png</texture>
+            </control>
+            <control type="image">
+                <left>8</left><top>8</top><right>8</right><bottom>8</bottom>
+                <texture background="true">$INFO[ListItem.Art(poster)]</texture>
+                <aspectratio align="center" aligny="center">keep</aspectratio>
+            </control>
+        </control>
+    </include>
+
+    <include name="BingieSearchResultCard">
+        <param name="focused" default="false" />
+        <definition>
+            <control type="group">
+                <left>26</left><top>8</top><width>landscape_width</width><height>210</height>
+                <control type="image">
+                    <visible>$PARAM[focused] + Control.HasFocus(500)</visible>
+                    <texture background="true">home/home_matte3.png</texture>
+                    <include>thumbsborder_focused</include>
+                </control>
+                <include content="ThumbsViewItemBingieLayout">
+                    <param name="poster_fallback" value="true" />
+                </include>
+                <include content="Bingie_Main_Landscape_Title">
+                    <param name="focused" value="$PARAM[focused]" />
+                </include>
+                <control type="label">
+                    <left>16</left><right>16</right><bottom>38</bottom><height>22</height>
+                    <font>Reg18</font><textcolor>ffdddddd</textcolor><aligny>center</aligny><label>$INFO[ListItem.Label2]</label>
+                </control>
+            </control>
+        </definition>
+    </include>
 
 	<include name="LandscapeCardRatingBadge">
 		<control type="group">

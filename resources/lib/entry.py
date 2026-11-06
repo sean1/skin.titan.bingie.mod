@@ -27,6 +27,7 @@ TRAILER_PREVIEW_ACTIVE_POLL = 0.25
 TRAILER_PREVIEW_IDLE_POLL = 1.0
 FOCUSED_FANART_STABLE_POLL = 0.5
 STANDINGS_FOCUS_ACTIVE_SECONDS = 3.0
+SOCCER_STANDINGS_FOCUS_POLL = 0.05
 MAIN_MENU_WINDOWS = ('Home', '1110', '1111', '1112', '1119')
 MAIN_MENU_FOCUS = '[%s] + [ControlGroup(9001).HasFocus() | Control.HasFocus(4444)]' % ' | '.join('Window.IsActive(%s)' % window for window in MAIN_MENU_WINDOWS)
 TRAILER_PREVIEW_CACHE_LIMIT = 128
@@ -159,11 +160,13 @@ def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=No
 		from modules.livetv_failover import PICKER_BACK, STOP_ACK, STOP_REQUEST, SWITCH_REQUEST
 		remaining = poll_interval
 		menu_focused = poll_interval == TRAILER_PREVIEW_IDLE_POLL and kodi_utils.get_visibility(MAIN_MENU_FOCUS)
+		soccer_standings = standings and (standings.identity == 'mls' or standings.identity.isdecimal())
+		focus_poll = SOCCER_STANDINGS_FOCUS_POLL if soccer_standings else TRAILER_PREVIEW_ACTIVE_POLL
 		while remaining > 0.0:
 			if wake_event.is_set():
 				wake_event.clear()
 				return monitor.abortRequested()
-			delay = min(TRAILER_PREVIEW_ACTIVE_POLL, remaining)
+			delay = min(focus_poll, remaining)
 			# Kodi dispatches Python playback callbacks inside waitForAbort, not Event.wait.
 			# Check Live TV input more often without running the entire service loop more often.
 			wait_remaining = delay
@@ -182,6 +185,7 @@ def _wait_for_service_tick(monitor, poll_interval, wake_event=None, standings=No
 					picker = session.get('picker')
 					if stop or get_property(SWITCH_REQUEST) or (picker and get_property(PICKER_BACK) == picker): return False
 			remaining -= delay
+			if soccer_standings and standings.cache_worker is not None and not standings.cache_worker.is_alive(): return False
 			if standings and standings.identity and standings._focused()[0] != standings.identity: return False
 			if menu_focused and not kodi_utils.get_visibility(MAIN_MENU_FOCUS): return False
 		return False

@@ -93,6 +93,18 @@ def _save_cache(path, created, payload):
 			except OSError: pass
 
 
+def _saved_cache(sport, path, now, refreshed):
+	"""Read a current, validated snapshot written by the atomic cache writer."""
+	if not path: return None
+	try:
+		if os.path.getsize(path) > _LIMIT + 1024: return None
+		with open(path, encoding='utf-8') as source: saved = json.load(source)
+		created, payload = saved['created'], saved['payload']
+		if _same_day(created, now) and created >= refreshed and _cacheable(sport, payload): return created, payload
+	except (OSError, ValueError, TypeError, KeyError, AttributeError, RecursionError): pass
+	return None
+
+
 def _backoff_path(path, provider):
 	return os.path.join(os.path.dirname(path), 'livetv-standings-%s-backoff.json' % provider) if path else None
 
@@ -136,15 +148,10 @@ def _fetch(sport, force=False):
 		refreshed = get_refresh_time(os.path.dirname(path), {'nhl': 'hockey', 'nba': 'basketball', 'nfl': 'football', 'nfl_afc': 'football', 'nfl_nfc': 'football', 'ncaa': 'football', 'mls': 'soccer'}[sport]) if path else 0
 		cached = _cache.get(sport)
 		if not force and cached and cached[0] >= refreshed and _same_day(cached[0], now): return cached[1]
-		if not force and path:
-			try:
-				if os.path.getsize(path) > _LIMIT + 1024: raise ValueError('Cache too large')
-				with open(path, encoding='utf-8') as source: saved = json.load(source)
-				created, payload = saved['created'], saved['payload']
-				if _same_day(created, now) and created >= refreshed and _cacheable(sport, payload):
-					_cache[sport] = (created, payload)
-					return payload
-			except (OSError, ValueError, TypeError, KeyError, AttributeError, RecursionError): pass
+		saved = _saved_cache(sport, path, now, refreshed) if not force else None
+		if saved:
+			_cache[sport] = saved
+			return saved[1]
 		if now < _retry_at(path, provider, now): raise ValueError('Standings refresh delayed')
 		try:
 			request = Request(_URLS[sport], headers={'User-Agent': 'Kodi/21.0', 'Accept': 'application/json'})
@@ -301,6 +308,22 @@ def get_mls_groups(team_a='', team_b='', force=False):
 		return [(name, [dict(row, highlight=row is first or row is second) for row in rows]) for name, rows in groups], 'PTS'
 	except (OSError, HTTPException, ValueError, TypeError, AttributeError, KeyError):
 		return [], 'PTS'
+
+
+def get_cached_mls_groups():
+	"""Read current MLS standings without waiting for the provider request lock."""
+	try:
+		path = _cache_path('mls')
+		now = time.time()
+		from .livetv_standings_generation import get_refresh_time
+		refreshed = get_refresh_time(os.path.dirname(path), 'soccer') if path else 0
+		cached = _cache.get('mls')
+		if not cached or not _same_day(cached[0], now) or cached[0] < refreshed:
+			cached = _saved_cache('mls', path, now, refreshed)
+		groups = _mls_groups(cached[1]) if cached else []
+		if not groups: return None, 'PTS'
+		return [(name, [dict(row, highlight=False) for row in rows]) for name, rows in groups], 'PTS'
+	except (OSError, ValueError, TypeError, AttributeError, KeyError, RecursionError): return None, 'PTS'
 
 
 def get(sport, team_a, team_b):

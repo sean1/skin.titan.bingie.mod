@@ -57,6 +57,8 @@ class FocusedStandings:
 		self.tennis_rows = []
 		self.match_key = ''
 		self.worker = None
+		self.cache_worker = None
+		self.cache_probe = None
 		self.tennis_workers = {}
 		self.results = SimpleQueue()
 		self.refresh_token = getattr(ku, 'get_property', lambda key: '')(_PREFIX + 'Refresh')
@@ -83,11 +85,17 @@ class FocusedStandings:
 		ku.clear_property(_PREFIX + 'AllText')
 		ku.clear_property(_PREFIX + 'F1.Overflow')
 		ku.clear_property(_PREFIX + 'F1.ExceedsLayout')
-		for index in range(1, max(_MAX_ROWS, _F1_DRIVER_ROWS) + 1):
+		if self.published.isdecimal():
+			row_count, group_sizes = len(self.rows), []
+		elif self.published == 'mls':
+			row_count, group_sizes = 0, [len(rows) for _, rows in self.mls_groups]
+		else:
+			row_count, group_sizes = max(_MAX_ROWS, _F1_DRIVER_ROWS), [max(18, _F1_CONSTRUCTOR_ROWS)] * 8
+		for index in range(1, row_count + 1):
 			for field in ('Position', 'Team', 'Played', 'Points', 'Highlight'): ku.clear_property('%sRow%d.%s' % (_PREFIX, index, field))
-		for group in range(1, 9):
+		for group, size in enumerate(group_sizes, 1):
 			ku.clear_property('%sGroup%d.Name' % (_PREFIX, group))
-			for row in range(1, max(18, _F1_CONSTRUCTOR_ROWS) + 1):
+			for row in range(1, size + 1):
 				for field in ('Position', 'Team', 'Points', 'Highlight', 'Aliases'): ku.clear_property('%sGroup%d.Row%d.%s' % (_PREFIX, group, row, field))
 		self.published = ''
 		self.published_at = 0.0
@@ -97,12 +105,18 @@ class FocusedStandings:
 		self.mls_groups = []
 		self.tennis_rows = []
 		self.match_key = ''
+		self.highlighted_rows = ()
 
 	def _remember(self, identity, now, partial=False):
 		self.published = identity
 		self.published_at = now - _REFRESH_SECONDS + _RETRY_SECONDS if partial else now
 		self.published_day = date.today()
 		self.published_partial = partial
+
+	def _clear_flat_highlights(self):
+		ku.clear_property(_PREFIX + 'MatchKey')
+		for index in self.highlighted_rows: ku.clear_property('%sRow%d.Highlight' % (_PREFIX, index))
+		self.highlighted_rows = ()
 
 	def _highlight(self):
 		if self.identity == 'f1' or self.identity in _PRO_SPORTS: return
@@ -115,16 +129,15 @@ class FocusedStandings:
 			return
 		match_key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsMatchKey)').strip()
 		if match_key == self.match_key: return
-		ku.clear_property(_PREFIX + 'MatchKey')
-		for index in range(1, _MAX_ROWS + 1): ku.clear_property('%sRow%d.Highlight' % (_PREFIX, index))
+		self._clear_flat_highlights()
 		self.match_key = match_key
 		parts = match_key.split(':')
 		maximum = 999999999999 if _tennis_identity(self.identity) else 100000000
 		if len(parts) != 2 or any(not part.isascii() or not part.isdecimal() or not 0 < int(part) <= maximum for part in parts) or parts[0] == parts[1]: return
 		wanted = {int(part) for part in parts}
 		ids = [row.get('team_id') for row in self.rows]
-		for index, team_id in enumerate(ids, 1):
-			if team_id in wanted and ids.count(team_id) == 1: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
+		self.highlighted_rows = tuple(index for index, team_id in enumerate(ids, 1) if team_id in wanted and ids.count(team_id) == 1)
+		for index in self.highlighted_rows: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
 		ku.set_property(_PREFIX + 'MatchKey', match_key)
 
 	def _highlight_mls(self):
@@ -182,7 +195,7 @@ class FocusedStandings:
 			self.identity = ''
 			self._clear()
 
-	def _load(self, identity, force=False, generation=None, started_day=None):
+	def _load(self, identity, force=False, generation=None, started_day=None, cache_only=False):
 		try:
 			sport = _sports_identity(identity)
 			if _tennis_identity(identity):
@@ -195,7 +208,8 @@ class FocusedStandings:
 				heading, metric = 'F1 DRIVERS', 'PTS'
 			elif identity == 'mls':
 				from modules import livetv_american_standings
-				rows, metric = livetv_american_standings.get_mls_groups(**({'force': True} if force else {}))
+				if cache_only: rows, metric = livetv_american_standings.get_cached_mls_groups()
+				else: rows, metric = livetv_american_standings.get_mls_groups(force=force)
 				heading = 'MLS'
 			elif identity in _PRO_SPORTS:
 				from modules import livetv_american_standings
@@ -209,13 +223,15 @@ class FocusedStandings:
 			else:
 				profile = ku.translate_path(ku.profile_path)
 				bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', livetv_sportapi.KEY_FILE)
-				rows, _ = livetv_sportapi.get_standings(profile, int(identity), bundled=bundled, **({'force': True} if force else {}))
+				if cache_only: rows = livetv_sportapi.get_cached_standings(profile, int(identity), bundled=bundled)
+				else: rows, _ = livetv_sportapi.get_standings(profile, int(identity), bundled=bundled, force=force)
 				heading, metric = '', 'PTS'
 			result = (identity, rows, heading, metric)
-			self.results.put(result if generation is None else result + (generation, started_day, bool(getattr(rows, 'stale', False))))
 		except Exception:
 			result = (identity, [], '', '')
-			self.results.put(result if generation is None else result + (generation, started_day, False))
+		if generation is not None: result += (generation, started_day, bool(getattr(result[1], 'stale', False)))
+		if cache_only: result += (True,)
+		self.results.put(result)
 
 	def tick(self):
 		now = monotonic()
@@ -228,13 +244,23 @@ class FocusedStandings:
 		if identity != self.identity:
 			self.identity, self.league = identity, league
 			self.changed_at, self.last_attempt = now, 0.0
-			self._clear()
+			self.cache_probe = None
+			if self.published.isdecimal() and identity.isdecimal():
+				# Hide the previous table, but keep its rows for the next redraw.
+				ku.clear_property(_PREFIX + 'Key')
+				self.published_day = None
+			elif self.published:
+				self._clear()
 		elif identity:
 			self.league = league
 		while True:
 			try: result = self.results.get_nowait()
 			except Empty: break
 			completed, rows, sports_heading, metric = result[:4]
+			cache_only = len(result) >= 8 and result[7]
+			if cache_only:
+				self.cache_worker = None
+				if not rows or (self.published == completed and self.published_day == date.today()): continue
 			if len(result) >= 6 and (result[4] != self.refresh_token or result[5] != date.today()): continue
 			stale = len(result) >= 7 and result[6]
 			if completed != self.identity or self._focused()[0] != completed: continue
@@ -242,7 +268,7 @@ class FocusedStandings:
 				if not rows:
 					self._clear()
 					continue
-				self._clear()
+				if self.published: self._clear()
 				self.mls_groups = rows
 				ku.set_property(_PREFIX + 'League', self.league)
 				ku.set_property(_PREFIX + 'Metric', metric)
@@ -381,7 +407,16 @@ class FocusedStandings:
 				self._clear()
 				continue
 			rows = sorted(rows, key=lambda row: row['position'])
-			self._clear()
+			previous_rows = []
+			if self.published.isdecimal() and completed.isdecimal():
+				ku.clear_property(_PREFIX + 'Key')
+				self._clear_flat_highlights()
+				self.match_key = ''
+				previous_rows = self.rows
+				for index in range(min(len(rows), _MAX_ROWS) + 1, len(previous_rows) + 1):
+					for field in ('Position', 'Team', 'Played', 'Points'): ku.clear_property('%sRow%d.%s' % (_PREFIX, index, field))
+			elif self.published:
+				self._clear()
 			self.rows = rows[:_MAX_ROWS]
 			if _tennis_identity(completed): self.tennis_rows = rows
 			group = next(iter(groups), '')
@@ -392,18 +427,28 @@ class FocusedStandings:
 				ku.set_property(_PREFIX + 'Layout', 'tennis')
 				ku.set_property(_PREFIX + 'Discipline', 'DOUBLES' if completed.endswith('|doubles') else 'SINGLES')
 				if rows[0].get('asof'): ku.set_property(_PREFIX + 'AsOf', rows[0]['asof'])
-			for index, row in enumerate(rows[:_MAX_ROWS], 1):
+			for index, row in enumerate(self.rows, 1):
+				previous = previous_rows[index - 1] if index <= len(previous_rows) else {}
 				for field in ('position', 'team', 'played', 'points'):
-					ku.set_property('%sRow%d.%s' % (_PREFIX, index, field.title()), str(row.get('rank_label', row.get(field, '')) if field == 'position' else row.get(field, '')))
+					value = row.get('rank_label', row.get(field, '')) if field == 'position' else row.get(field, '')
+					if previous and str(previous.get(field, '')) == str(value): continue
+					ku.set_property('%sRow%d.%s' % (_PREFIX, index, field.title()), str(value))
 				if _sports_identity(completed) and row.get('highlight') is True: ku.set_property('%sRow%d.Highlight' % (_PREFIX, index), 'true')
 			if _sports_identity(completed): ku.set_property(_PREFIX + 'MatchKey', completed)
 			self._remember(completed, now, partial=stale)
 			ku.set_property(_PREFIX + 'Key', completed)
-		if self.published == identity and identity: self._highlight()
+		if self.published == identity and self.published_day is not None: self._highlight()
 		if self.worker is not None and not self.worker.is_alive(): self.worker = None
 		self.tennis_workers = {key: worker for key, worker in self.tennis_workers.items() if worker.is_alive()}
 		force = bool(identity and self.pending_refresh == _identity_sport(identity))
 		if not identity or (not force and self.published == identity and self.published_day == date.today() and (not self.published_partial or now - self.published_at < _REFRESH_SECONDS)): return False
+		if _identity_sport(identity) == 'soccer' and not force:
+			probe = (identity, self.refresh_token, date.today())
+			if self.cache_worker is None and self.cache_probe != probe:
+				self.cache_probe = probe
+				self.cache_worker = Thread(target=self._load, args=(identity, False, probe[1], probe[2], True), daemon=True)
+				self.cache_worker.start()
+			if self.cache_worker is not None: return True
 		if _tennis_identity(identity):
 			worker = self.tennis_workers.get(identity)
 			if worker is None and now - self.changed_at >= _SETTLE_SECONDS and (not self.last_attempt or now - self.last_attempt >= _RETRY_SECONDS):

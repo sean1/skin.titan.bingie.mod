@@ -241,6 +241,33 @@ def _clean_standings(payload, key):
 	return sorted(rows, key=lambda row: (row.get('group', '').casefold(), row['position']))
 
 
+def _cached_standings(cache, profile, league_id, key, now):
+	"""Validate the saved table using the same rules as a normal lookup."""
+	if cache.get('key') != hashlib.sha256(key.encode()).hexdigest() or cache.get('version') != CACHE_VERSION: return None
+	tables = cache.get('standings')
+	entry = tables.get(str(league_id)) if isinstance(tables, dict) else None
+	if not isinstance(entry, dict): return None
+	created, cached = entry.get('created', 0), entry.get('rows')
+	from .livetv_standings_generation import get_refresh_time
+	refreshed = get_refresh_time(profile, 'soccer')
+	if not isinstance(created, (int, float)) or isinstance(created, bool) or not refreshed <= created <= now or datetime.fromtimestamp(created).date() != datetime.fromtimestamp(now).date(): return None
+	if not isinstance(cached, list) or len(cached) > 1000 or any(not isinstance(row, dict) or not isinstance(row.get('team'), str) for row in cached): return None
+	checked = _clean_standings({'success': True, 'data': [dict(row, team={'name': row['team'], 'id': row.get('team_id')}) for row in cached]}, key)
+	return checked if len(checked) == len(cached) else None
+
+
+def get_cached_standings(profile, league_id, *, bundled=None, now=None):
+	"""Read a current saved table without waiting for the provider request lock."""
+	if not isinstance(league_id, int) or isinstance(league_id, bool) or not 0 < league_id <= 100000000: return None
+	try:
+		key = read_key(profile, bundled)
+		if not key: return None
+		now = time.time() if now is None else now
+		# _write atomically replaces the JSON file, so readers see a complete snapshot.
+		return _cached_standings(_read(os.path.join(profile, CACHE_FILE)), profile, league_id, key, now)
+	except (OSError, ValueError, TypeError, OverflowError, RecursionError): return None
+
+
 def get_standings(profile, league_id, *, bundled=None, now=None, fetch=None, force=False):
 	"""Return a cached current league table, sharing fixture request limits."""
 	if not isinstance(league_id, int) or isinstance(league_id, bool) or not 0 < league_id <= 100000000: return [], 'invalid league'
@@ -267,14 +294,9 @@ def get_standings(profile, league_id, *, bundled=None, now=None, fetch=None, for
 			tables = cache.get('standings') if isinstance(cache.get('standings'), dict) else {}
 			entry = tables.get(str(league_id))
 			if not isinstance(entry, dict): entry = {}
-			created = entry.get('created', 0)
-			from .livetv_standings_generation import get_refresh_time
-			refreshed = get_refresh_time(profile, 'soccer')
-			if not force and isinstance(created, (int, float)) and not isinstance(created, bool) and refreshed <= created <= now and datetime.fromtimestamp(created).date() == datetime.fromtimestamp(now).date() and isinstance(entry.get('rows'), list):
-				cached = entry['rows']
-				if len(cached) <= 1000 and all(isinstance(row, dict) and isinstance(row.get('team'), str) for row in cached):
-					checked = _clean_standings({'success': True, 'data': [dict(row, team={'name': row['team'], 'id': row.get('team_id')}) for row in cached]}, key)
-					if len(checked) == len(cached): return checked, 'updated'
+			if not force:
+				cached = _cached_standings(cache, profile, league_id, key, now)
+				if cached is not None: return cached, 'updated'
 			attempt = entry.get('attempt', 0)
 			if isinstance(attempt, (int, float)) and not isinstance(attempt, bool) and 0 <= now - attempt < FRESH_SECONDS: return [], 'temporarily unavailable'
 			count = _counter(cache.get('count')) if cache.get('day') == day else 0

@@ -630,7 +630,7 @@
 			<left>8</left>
 			<bottom>10</bottom>
 			<width>214</width>
-			<height>128</height>
+			<height>192</height>
 			<texture>overlays/gradient_episodes.png</texture>
 			<aspectratio>stretch</aspectratio>
 			<colordiffuse>ffffffff</colordiffuse>
@@ -651,7 +651,7 @@
 			<bottom>18</bottom>
 			<height>28</height>
 			<font>Reg20</font>
-			<textcolor>a6ffffff</textcolor>
+			<textcolor>d9ffffff</textcolor>
 			<label>$INFO[ListItem.Label2]</label>
 			<scroll>$PARAM[focused]</scroll>
 		</control>

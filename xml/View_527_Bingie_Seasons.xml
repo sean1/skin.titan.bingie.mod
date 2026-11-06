@@ -1,15 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- BINGIE -->
 <includes>
-	<variable name="PovSeasonBrowserPath">
-		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb))">plugin://skin.titan.bingie.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
-		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">plugin://skin.titan.bingie.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoPendingTmdb)]</value>
-	</variable>
-
-	<include name="PovSeasonBrowserContent">
-		<content target="videos" browse="never">$VAR[PovSeasonBrowserPath]</content>
-	</include>
-
 	<variable name="BingieSeasonRating">
 		<value condition="!String.IsEmpty(Container(5027).ListItem.Property(PovTMDBRating))">$INFO[Container(5027).ListItem.Property(PovTMDBRating),TMDB ]</value>
 		<value>$INFO[Container(5027).ListItem.Rating,Rating ]</value>
@@ -213,7 +204,7 @@
 
 	<include name="View_527_Seasons">
 		<control type="group">
-			<visible>Control.IsVisible(527) + [Container.Content(seasons) | Window.IsActive(1124)]</visible>
+			<visible>Control.IsVisible(527) + Container.Content(seasons)</visible>
 
 			<!-- Fanart Image Added to View-->
 
@@ -268,8 +259,7 @@
 
 			<!-- left list -->
 			<control type="list" id="527">
-				<visible>Container.Content(seasons) | Window.IsActive(1124)</visible>
-				<include condition="Window.IsActive(1124)">PovSeasonBrowserContent</include>
+				<visible>Container.Content(seasons)</visible>
 				<include>Animation_Right_Bingie_2</include>
                 <animation effect="fade" start="100" end="60" time="150" condition="!Control.HasFocus(527)">Conditional</animation>
 				<viewtype label="31095">wide</viewtype>
@@ -283,7 +273,6 @@
 				<onright>5027</onright>
 				<onup>527</onup>
 				<ondown>527</ondown>
-				<onclick condition="Window.IsActive(1124)">SetFocus(5027)</onclick>
 				<include>ScrollTime</include>
 				<focusedlayout height="65" width="565" condition="Control.HasFocus(527)">
 						<!-- Season x label -->
@@ -352,7 +341,7 @@
                                 <texture border="10" background="true" colordiffuse="a6ffffff">bingie/border/default_button_fo_4.png</texture>
                             </control>
 				</focusedlayout>
-				<itemlayout height="65" width="565" condition="Container.Content(seasons) | Window.IsActive(1124)">
+				<itemlayout height="65" width="565" condition="Container.Content(seasons)">
 						<!-- Season x label -->
                             <control type="label">
                                 <left>18</left>
@@ -386,7 +375,7 @@
 				<onup>5027</onup>
 				<ondown>5027</ondown>
 				<onright>60</onright>
-				<onback condition="!Window.IsActive(1124)">527</onback>
+				<onback>527</onback>
                 <preloaditems>2</preloaditems>
                 <include>ScrollTime</include>
 				<focusedlayout width="1050" height="280">

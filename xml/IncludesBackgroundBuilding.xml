@@ -100,7 +100,8 @@
         <value condition="$EXP[IsCategoryDBType]">$VAR[CategoriesRandomArt]</value>
 		<value
 			condition="[$EXP[IsBingieViewsActive] | Window.IsActive(Videos)] + !Container.Content(Genres) + !$EXP[IsCategoryDBType]
-				+ !String.IsEmpty(Window(Home).Property(PovFocusedFanartIdentity))">$INFO[Window(Home).Property(PovFocusedFanart)]</value>
+				+ !String.IsEmpty(Window(Home).Property(PovFocusedFanartIdentity))
+				+ [!Window.IsActive(Videos) | String.IsEqual(Window(Home).Property(PovFocusedFanartIdentity),ListItem.Property(PovFocusIdentity))]">$INFO[Window(Home).Property(PovFocusedFanart)]</value>
         <!-- normal fanart backgrounds -->
         <value condition="!String.IsEmpty(ListItem.Art(fanart))">$INFO[ListItem.Art(fanart)]</value>
 		<value condition="!String.IsEmpty(Container.ListItem.Art(fanart))">$INFO[Container.ListItem.Art(fanart)]</value>

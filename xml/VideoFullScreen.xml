@@ -2,12 +2,20 @@
 <!-- BINGIE -->
 <window>
 	<defaultcontrol/>
+	<onload condition="$EXP[BingieHomePreviewFullscreen]">SetProperty(BingieTrailerPreviewCancel,true,Home)</onload>
+	<onload condition="$EXP[BingieHomePreviewFullscreen]">SetProperty(BingiePreviewReturnToMenu,true,Home)</onload>
+	<onload condition="$EXP[BingieHomePreviewFullscreen]">ActivateWindow(Home)</onload>
 	<onload condition="Player.HasVideo + !Window.IsVisible(videoosd) + !Player.Paused">SetProperty(DialogMPAATopBar,1,home)</onload>
 	<onunload condition="[Player.Caching | !String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchRequest)) | String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true)] + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))">SetProperty(BingieLiveTVStopRequest,true,Home)</onunload>
 	<onunload condition="!String.IsEmpty(Window(Home).Property(BaseWindow)) + !Window.Previous(videos) + !Player.HasVideo">AlarmClock(loadinfo,Action(Info),00:00,silent)</onunload>
 	<onunload condition="Player.HasVideo + ![[Player.Caching | !String.IsEmpty(Window(Home).Property(BingieLiveTVSwitchRequest)) | String.IsEqual(Window(Home).Property(BingieLiveTVLoadingSwitch),true)] + !String.IsEmpty(Window(Home).Property(BingieLiveTVFailover))]">AlarmClock(StopPlayback,PlayerControl(Stop),00:00,silent)</onunload>
 
 	<controls>
+		<control type="image">
+			<include>FullscreenDimensions</include>
+			<texture>colors/color_black.png</texture>
+			<visible>$EXP[BingieHomePreviewFullscreen]</visible>
+		</control>
 		<!-- Keep Back available while a Live TV feed is buffering. -->
 		<control type="button" id="9902">
 			<left>0</left><top>0</top><width>1</width><height>1</height>

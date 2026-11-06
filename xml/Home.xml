@@ -23,7 +23,9 @@
         <include>GlobalBackground</include>
         <control type="button" id="1000">
             <include>HiddenObject</include>
-            <onfocus>SetFocus(77777)</onfocus>
+            <onfocus condition="String.IsEqual(Window(Home).Property(BingiePreviewReturnToMenu),true)">SetFocus(900)</onfocus>
+            <onfocus condition="String.IsEqual(Window(Home).Property(BingiePreviewReturnToMenu),true)">ClearProperty(BingiePreviewReturnToMenu,Home)</onfocus>
+            <onfocus condition="!String.IsEqual(Window(Home).Property(BingiePreviewReturnToMenu),true)">SetFocus(77777)</onfocus>
             <onleft>900</onleft>
             <onright>900</onright>
             <onback>900</onback>

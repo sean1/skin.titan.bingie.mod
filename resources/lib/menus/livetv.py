@@ -2049,18 +2049,33 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 		xbmc.executebuiltin('Container.SetViewMode(523)')
 
 
+def _sports_overview_entries(sport, fixtures, held_identity=''):
+	entries = []
+	for fixture in fixtures:
+		state, kickoff = _schedule_state(fixture, time.time())
+		if held_identity and _fixture_focus_identity(sport, fixture) == held_identity: state = 'Held'
+		if not state: continue
+		if sport == 'f1': key = fixture['id']
+		elif sport == 'soccer': key = _soccer_fixture_key(fixture)
+		else:
+			event = tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away'))
+			key = (event, str(fixture.get('league') or ''))
+		entries.append((state, kickoff, fixture, key))
+	return entries
+
+
 def _sports_overview(sport_filter=None, revision=''):
 	from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
 	accounts = _feed_accounts_fingerprint()
 	rows, unavailable, schedule_unavailable, loading = [], [], [], []
 	for sport in ((sport_filter,) if sport_filter else overview.SPORTS):
-		try: data = json.loads(ku.get_property(overview.PREFIX + sport) or '{}')
+		try: data = json.loads(ku.get_property(overview.PREFIX + 'Snapshot.' + sport + '.' + revision if sport_filter and revision else overview.PREFIX + sport) or '{}')
 		except (TypeError, ValueError): data = {}
 		if data.get('accounts') != accounts or not data: loading.append(sport); continue
 		if data.get('fixture_partial'):
 			try: valid_partial = time.time() < data['fixture_expires']
 			except (KeyError, TypeError, ValueError): valid_partial = False
-			if not valid_partial:
+			if not valid_partial and not data.get('held_identity'):
 				if data.get('matching'): loading.append(sport)
 				else: unavailable.append(sport)
 				continue
@@ -2068,40 +2083,45 @@ def _sports_overview(sport_filter=None, revision=''):
 		if data.get('schedule_unavailable'): schedule_unavailable.append(sport)
 		if data.get('matching'): loading.append(sport)
 		fixtures = data.get('fixtures', [])
+		if data.get('fixture_partial') and not valid_partial:
+			fixtures = [fixture for fixture in fixtures if _fixture_focus_identity(sport, fixture) == data.get('held_identity')]
 		try:
 			groups = progress._groups_from_json(data.get('groups', []))
 		except (TypeError, ValueError, KeyError): groups = {}
-		entries = []
-		for fixture in fixtures:
-			state, kickoff = _schedule_state(fixture, time.time())
-			if not state: continue
-			if sport == 'f1': key = fixture['id']
-			elif sport == 'soccer': key = _soccer_fixture_key(fixture)
-			else:
-				event = tuple(' '.join(fixture[side]['name'].casefold().split()) for side in ('home', 'away'))
-				key = (event, str(fixture.get('league') or ''))
-			entries.append((state, kickoff, fixture, key))
+		entries = _sports_overview_entries(sport, fixtures, data.get('held_identity', ''))
 		for state, kickoff, fixture, key in entries:
-			if state != 'Live': continue
+			if state not in ('Live', 'Held'): continue
 			feeds = groups.get(key, {}) if state == 'Live' and sum(other[3] == key for other in entries) == 1 else {}
 			rows.append((state != 'Live', _live_start(fixture) if state == 'Live' else kickoff, sport, fixture, key, feeds, state))
-	for _, _, sport, fixture, key, feeds, state in sorted(rows, key=lambda row: (row[0], row[1], row[2], str(row[4]))):
+	rows.sort(key=lambda row: (row[0], row[1], row[2], str(row[4])))
+	if sport_filter and data.get('pin_identity'):
+		pinned = [row for row in rows if _fixture_focus_identity(sport_filter, row[3]) == data['pin_identity']]
+		if len(pinned) == 1:
+			rows.remove(pinned[0])
+			rows.insert(min(max(0, data.get('pin_position', 0)), len(rows)), pinned[0])
+	for _, _, sport, fixture, key, feeds, state in rows:
 		ordered = list(feeds.values())
 		stream = ordered[0] if ordered else None
 		if sport == 'f1': title, league = fixture['event'] + ' — ' + fixture['session_label'], 'Formula 1'
 		elif sport == 'soccer': title, league = '%s vs %s' % (fixture['home'], fixture['away']), fixture['league']
 		else: title, league = '%s vs %s' % (fixture['home']['name'], fixture['away']['name']), fixture.get('league_label', str(fixture.get('league') or '').upper())
-		feed_label = ('%d %s' % (len(feeds), 'feed' if len(feeds) == 1 else 'feeds')) if feeds else ('Finding feeds…' if sport in loading else 'Feeds unavailable' if sport in unavailable else '0 feeds') if state == 'Live' else ''
+		if feeds: feed_label = '%d %s' % (len(feeds), 'feed' if len(feeds) == 1 else 'feeds')
+		elif state == 'Held': feed_label = 'Event unavailable'
+		elif sport in loading: feed_label = 'Finding feeds…'
+		elif sport in unavailable: feed_label = 'Feeds unavailable'
+		else: feed_label = '0 feeds'
 		context = []
 		identity = _fixture_focus_identity(sport, fixture)
+		fixture_params = {'mode': 'livetv.match_feeds', 'sport': sport, 'fixture_identity': identity}
+		if sport == 'f1': fixture_params['session'] = key
+		else: fixture_params.update({'home': key[0][0], 'away': key[0][1], 'scope': key[1]})
+		item_params = {}
 		if feeds and identity:
-			params = {'mode': 'livetv.match_feeds', 'sport': sport, 'display_title': title, 'fixture_identity': identity}
-			if sport == 'f1': params['session'] = key
-			else: params.update({'home': key[0][0], 'away': key[0][1], 'scope': key[1]})
 			from modules import livetv_feed_selection
-			token = livetv_feed_selection.overview_handoff(params, fixture, groups)
-			if token: params['handoff'] = token
-			if len(feeds) > 1: context.append(('Choose another feed', 'Container.Update(%s)' % ku.build_url(params)))
+			item_params = dict(fixture_params, display_title=title)
+			token = livetv_feed_selection.overview_handoff(item_params, fixture, groups)
+			if token: item_params['handoff'] = token
+			if len(feeds) > 1: context.append(('Choose another feed', 'Container.Update(%s)' % ku.build_url(item_params)))
 		properties = {'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport, 'LiveTV.EventIdentity': _fixture_focus_identity(sport, fixture), 'LiveTV.Match': title, 'LiveTV.League': league,
 			'LiveTV.Feeds': feed_label, 'LiveTV.MatchState': state, 'LiveTV.StartTime': _soccer_kickoff(fixture).partition(' ')[2], 'LiveTV.Kickoff': _soccer_kickoff(fixture) if state == 'Upcoming' else ''}
 		if sport != 'f1':
@@ -2109,7 +2129,11 @@ def _sports_overview(sport_filter=None, revision=''):
 				properties['LiveTV.%sTeam' % side.title()] = fixture[side] if sport == 'soccer' else fixture[side]['name']
 				if sport == 'soccer': properties['LiveTV.%sLogo' % side.title()] = _soccer_logos.team_logo(fixture, side)
 				elif sport != 'tennis': properties['LiveTV.%sLogo' % side.title()] = _american_fixtures.team_logo(sport, fixture[side].get('abbreviation'))
-		_item(title + (' — ' + feed_label if feed_label and not feeds else ''), params if feeds and identity else {}, bool(feeds and identity), stream.get('stream_icon') if stream else None, playable=False, extra_context=context, extra_properties=properties)
+		if sport_filter and identity:
+			# Kodi restores list focus by item path. The click target can change as feeds arrive.
+			properties['node.target_url'] = ku.build_url(item_params)
+			item_params = fixture_params
+		_item(title + (' — ' + feed_label if feed_label and not feeds else ''), item_params, bool(feeds and identity), stream.get('stream_icon') if stream else None, playable=False, extra_context=context, extra_properties=properties)
 	status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable or schedule_unavailable else '') if part)
 	if not sport_filter: ku.set_property('LiveTV.Sports.OverviewStatus', status)
 	if not rows and loading: _item('Loading sports schedules…', {}, False, playable=False, extra_properties={'LiveTV.OverviewRevision': revision, 'LiveTV.ItemSport': sport_filter or ''})
@@ -2126,7 +2150,9 @@ def sports_overview_row(params):
 		return
 	revision = str(params.get('revision', ''))
 	if not re.fullmatch(r'[0-9]{1,30}', revision): revision = ''
-	_sports_overview(sport, revision)
+	try: _sports_overview(sport, revision)
+	finally:
+		if revision: ku.set_property(overview.PREFIX + 'Completed.' + sport + '.' + revision, 'true')
 
 
 def soccer(params):

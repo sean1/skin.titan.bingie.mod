@@ -1009,7 +1009,7 @@ class POVMonitor(kodi_utils.xbmc_monitor):
 					standings_identity = self.focused_standings.identity
 					standings_active_until = monotonic() + STANDINGS_FOCUS_ACTIVE_SECONDS if standings_identity else 0.0
 				preview_active = self.trailer_preview.tick()
-				livetv_pending = self.sports_refresh.feed_selection.pending() or self.sports_refresh.search.pending()
+				livetv_pending = self.sports_refresh.feed_selection.pending() or self.sports_refresh.search.pending() or self.sports_refresh.overview.pending()
 				poll_interval = _service_poll_interval(fanart_pending, self.focused_fanart.stable, preview_active or live_tv_active or standings_pending or bool(standings_identity and monotonic() < standings_active_until) or livetv_pending)
 
 	def _deferred_database_maintenance(self):

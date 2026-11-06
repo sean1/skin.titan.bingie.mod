@@ -140,7 +140,6 @@ class SportsOverview:
 		self.accounts = ''
 		self.next_refresh = 0
 		self.pending_refresh = set()
-		self.focus = None
 		self.generation = 0
 		self.due = set()
 		self.guide_worker = None
@@ -151,6 +150,9 @@ class SportsOverview:
 		self.forced = set()
 		self.catalog_generation = None
 		self.catalog = None
+		self.snapshots = {}
+		self.snapshot_started = {}
+		self.deferred = set()
 
 	def tick(self, active, now):
 		from menus import livetv
@@ -158,9 +160,9 @@ class SportsOverview:
 			if self.active:
 				self.generation += 1
 				if self.guide_cancel: self.guide_cancel.set()
+				self.deferred.clear()
 			self.active = False
 			self.next_guide = 0
-			self.focus = None
 			self.pending_refresh = set()
 			return
 		if not self.active:
@@ -214,18 +216,18 @@ class SportsOverview:
 			if result_accounts == accounts and generation == self.generation:
 				ku.set_property(PREFIX + sport, encoded)
 				self.pending_refresh.add(sport)
-		if self.focus:
-			control, revision, identity, started = self.focus
-			idle_required = max(2, int(time.monotonic() - started) + 1)
-			if time.monotonic() - started >= 90 or ku.get_visibility('Player.HasMedia | System.HasActiveModalDialog') or not ku.get_visibility('Control.HasFocus(%d)' % control) or not ku.get_visibility('System.IdleTime(%d)' % idle_required): self.focus = None
-			elif not ku.get_visibility('Container(%d).IsUpdating' % control) and ku.get_infolabel('Container(%d).ListItemAbsolute(0).Property(LiveTV.OverviewRevision)' % control) == revision:
-				try:
-					count = min(10000, max(0, int(ku.get_infolabel('Container(%d).NumItems' % control))))
-					matches = [index for index in range(count) if ku.get_infolabel('Container(%d).ListItemAbsolute(%d).Property(LiveTV.EventIdentity)' % (control, index)) == identity]
-					position = int(ku.get_infolabel('Container(%d).CurrentItem' % control)) - 1
-					if identity and len(matches) == 1 and position != matches[0]: ku.execute_builtin('Control.SetFocus(%d,%d,absolute)' % (control, matches[0]))
-				except (TypeError, ValueError): pass
-				self.focus = None
+		for sport in tuple(self.deferred):
+			if not ku.get_visibility('Control.HasFocus(%d)' % ROW_IDS[sport]):
+				self.deferred.discard(sport)
+				self.pending_refresh.add(sport)
+		for sport, keys in self.snapshots.items():
+			if keys and not ku.get_property(keys[-1].replace('Snapshot.', 'Completed.', 1)) and time.monotonic() - self.snapshot_started.get(sport, 0) >= 5 and not ku.get_visibility('Container(%d).IsUpdating' % ROW_IDS[sport]):
+				self.pending_refresh.add(sport)
+			if len(keys) > 1 and ku.get_property(keys[-1].replace('Snapshot.', 'Completed.', 1)):
+				for key in keys[:-1]:
+					ku.clear_property(key)
+					ku.clear_property(key.replace('Snapshot.', 'Completed.', 1))
+				del keys[:-1]
 		if not ku.get_visibility('Player.HasMedia'):
 			if self.catalog_generation != self.generation:
 				self.catalog = _SharedCatalog(accounts, bool(self.forced))
@@ -237,7 +239,7 @@ class SportsOverview:
 					self.workers[sport] = worker
 					self.due.remove(sport)
 					worker.start()
-		if self.pending_refresh and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') and ku.get_visibility('System.IdleTime(2)'):
+		if self.pending_refresh and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)'):
 			loading, unavailable, events = False, False, False
 			for sport in SPORTS:
 				try: data = json.loads(ku.get_property(PREFIX + sport) or '{}')
@@ -250,9 +252,50 @@ class SportsOverview:
 			ku.set_property('LiveTV.Sports.OverviewStatus', status)
 			for sport in tuple(self.pending_refresh):
 				control = ROW_IDS[sport]
+				keys = self.snapshots.get(sport, [])
+				if keys:
+					if ku.get_visibility('Container(%d).IsUpdating' % control): continue
+					if not ku.get_property(keys[-1].replace('Snapshot.', 'Completed.', 1)) and time.monotonic() - self.snapshot_started.get(sport, 0) < 5: continue
+					while len(keys) >= 2:
+						key = keys.pop(0)
+						ku.clear_property(key)
+						ku.clear_property(key.replace('Snapshot.', 'Completed.', 1))
 				revision = str(time.time_ns())
+				encoded = ku.get_property(PREFIX + sport)
 				if ku.get_visibility('Control.HasFocus(%d)' % control):
 					identity = ku.get_infolabel('Container(%d).ListItem.Property(LiveTV.EventIdentity)' % control)
-					self.focus = (control, revision, identity, time.monotonic()) if identity else None
-				ku.set_property('LiveTV.Sports.OverviewRevision.' + sport, revision)
+					if identity and not ku.get_visibility('System.IdleTime(2)'): continue
+					if identity:
+						try:
+							data = json.loads(encoded or '{}')
+							entries = [entry for entry in livetv._sports_overview_entries(sport, data.get('fixtures', [])) if entry[0] == 'Live']
+							position = int(ku.get_infolabel('Container(%d).CurrentItem' % control)) - 1
+							if position < 0: continue
+							if not any(livetv._fixture_focus_identity(sport, entry[2]) == identity for entry in entries):
+								previous = json.loads(ku.get_property(self.snapshots[sport][-1]) or '{}')
+								held = [fixture for fixture in previous.get('fixtures', []) if livetv._fixture_focus_identity(sport, fixture) == identity]
+								if len(held) != 1: continue
+								data['fixtures'] = [fixture for fixture in data.get('fixtures', []) if livetv._fixture_focus_identity(sport, fixture) != identity] + held
+								data['held_identity'] = identity
+								self.deferred.add(sport)
+							data.update(pin_identity=identity, pin_position=position)
+							encoded = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+						except (TypeError, ValueError, KeyError): continue
+				snapshot = PREFIX + 'Snapshot.' + sport + '.' + revision
+				ku.set_property(snapshot, encoded)
+				self.snapshots.setdefault(sport, []).append(snapshot)
+				self.snapshot_started[sport] = time.monotonic()
+				ku.set_property('LiveTV.Sports.OverviewURL.' + sport, ku.build_url({'mode': 'livetv.sports_overview_row', 'sport': sport, 'revision': revision}))
 				self.pending_refresh.discard(sport)
+		if ku.get_visibility('Control.HasFocus(523) + !System.HasActiveModalDialog'):
+			for control in ROW_IDS.values():
+				if ku.get_infolabel('Container(%d).ListItemAbsolute(0).Property(LiveTV.EventIdentity)' % control):
+					ku.execute_builtin('SetFocus(%d)' % control)
+					break
+			else:
+				if ku.get_visibility('Control.IsVisible(9507)'): ku.execute_builtin('SetFocus(9507)')
+
+	def pending(self):
+		if not self.active: return False
+		if self.due or not self.results.empty() or any(worker.is_alive() for worker in self.workers.values()): return True
+		return any(not ku.get_visibility('Control.HasFocus(%d)' % ROW_IDS[sport]) for sport in self.pending_refresh)

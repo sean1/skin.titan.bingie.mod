@@ -36,7 +36,7 @@ def popular_people():
 	Images().run({'mode': 'popular_people_image_results', 'page_no': 1})
 
 def person_data_dialog(params):
-	show_person_info(params)
+	show_person_info(params, defer_hydration=True)
 
 def _clear_actor_properties():
 	for prop in actor_properties: kodi_utils.clear_property(prop)
@@ -206,7 +206,7 @@ def _actor_backdrop(credits, resolution):
 	path = best.get('backdrop_path')
 	return tmdb_image_base % (resolution, path) if path else fanart_empty
 
-def show_person_info(params):
+def show_person_info(params, defer_hydration=False):
 	if kodi_utils.get_property('PovActorTransition'): return
 	transition_token = str(monotonic_ns())
 	kodi_utils.set_property('PovActorTransition', transition_token)
@@ -234,8 +234,11 @@ def show_person_info(params):
 		kodi_utils.set_property(actor_hydration_property, hydration_token)
 		if kodi_utils.get_property('PovActorTransition') == transition_token: kodi_utils.clear_property('PovActorTransition')
 		kodi_utils.execute_builtin(('%sWindow(%s)' % ('Replace' if active_actor else 'Activate', actor_window_id)))
-		hydrate_url = build_url({'mode': 'hydrate_person_info', 'actor_id': person_id, 'request': hydration_token})
-		kodi_utils.execute_builtin('RunPlugin(%s)' % hydrate_url)
+		hydration = {'actor_id': person_id, 'request': hydration_token}
+		if defer_hydration:
+			hydrate_url = build_url({'mode': 'hydrate_person_info', **hydration})
+			kodi_utils.execute_builtin('RunPlugin(%s)' % hydrate_url)
+		else: hydrate_person_info(hydration)
 	except Exception as exc:
 		_clear_actor_properties()
 		kodi_utils.logger('show_person_info', str(exc))

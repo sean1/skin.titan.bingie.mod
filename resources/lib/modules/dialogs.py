@@ -113,7 +113,7 @@ def _page_focus_state(page_type):
 		control = window.getFocusId()
 		if control not in controls: return {}
 		state = {'control': control}
-		if control == 550: state['position'] = max(0, int(kodi_utils.get_infolabel('Container(550).CurrentItem') or '1') - 1)
+		if control in (550, 610, 620, 630): state['position'] = max(0, int(kodi_utils.get_infolabel('Container(%s).CurrentItem' % control) or '1') - 1)
 		elif control in POV_CONTAINER_CONTROLS: state['position'] = max(0, int(window.getControl(control).getSelectedPosition()))
 		return state
 	except: return {}

@@ -126,11 +126,24 @@ def _restore_page_focus(focus, controls, window_id, fallback=None):
 	if control in POV_CONTAINER_CONTROLS:
 		try: position = max(0, int(focus.get('position', 0)))
 		except: position = 0
-		condition = 'Window.IsActive(%s) + Integer.IsGreater(Container(%s).NumItems,%s)' % (window_id, control, position)
+		active = 'Window.IsActive(%s)' % window_id
+		if window_id == 1122:
+			actor_id = get_property('PovActorRestoreFocus')
+			active += ' + Control.HasFocus(600) + String.IsEqual(Window(Home).Property(PovActorId),%s)' % actor_id
+		condition = active + ' + Integer.IsGreater(Container(%s).NumItems,%s)' % (control, position)
 		if control == 550: condition += ' + String.IsEqual(Container(550).ListItemAbsolute(0).Property(PovInfoCastRequest),Window(Home).Property(PovInfoCastRequest))'
+		if window_id == 1122: condition += ' + Control.IsEnabled(%s)' % control
 		deadline = monotonic() + 2.0
 		while not kodi_utils.get_visibility(condition) and monotonic() < deadline: sleep(25)
-		if kodi_utils.get_visibility(condition): execute_builtin('Control.SetFocus(%s,%s,absolute)' % (control, position))
+		if kodi_utils.get_visibility(condition):
+			command = 'Control.SetFocus(%s,%s,absolute)' % (control, position)
+			if window_id == 1122: kodi_utils.xbmc.executebuiltin(command, True)
+			else: execute_builtin(command)
+		elif window_id == 1122 and kodi_utils.get_visibility(active):
+			for target in POV_ACTOR_FOCUS_CONTROLS:
+				if kodi_utils.get_visibility(active + ' + Control.IsEnabled(%s) + Control.IsVisible(%s)' % (target, target)):
+					kodi_utils.xbmc.executebuiltin('SetFocus(%s)' % target, True)
+					break
 		return
 	execute_builtin('SetFocus(%s)' % control)
 
@@ -172,8 +185,16 @@ def pov_page_back(params=None):
 			_restore_page_focus(focus, POV_INFO_FOCUS_CONTROLS, POV_INFO_WINDOW_ID, 80 if get_property('PovInfoType') == 'movie' else 51)
 			return
 		if page_type == 'actor':
-			execute_builtin('ReplaceWindow(1122)')
-			_restore_page_focus(focus, POV_ACTOR_FOCUS_CONTROLS, 1122)
+			actor_id = get_property('PovActorId')
+			if focus.get('control') not in POV_ACTOR_FOCUS_CONTROLS:
+				execute_builtin('ReplaceWindow(1122)')
+				return
+			set_property('PovActorRestoreFocus', actor_id)
+			try:
+				execute_builtin('ReplaceWindow(1122)')
+				_restore_page_focus(focus, POV_ACTOR_FOCUS_CONTROLS, 1122)
+			finally:
+				if get_property('PovActorRestoreFocus') == actor_id: clear_property('PovActorRestoreFocus')
 			return
 		if page_type == 'native_info':
 			execute_builtin('PreviousMenu')

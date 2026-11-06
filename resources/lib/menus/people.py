@@ -61,35 +61,25 @@ def _set_pending_actor_properties(actor_id, params):
 	kodi_utils.set_property('PovActorProfile', profile)
 	kodi_utils.set_property('PovActorReady', 'false')
 
-def _actor_focus_condition(target):
-	condition = 'Window.IsActive(%s) + Control.HasFocus(600)' % actor_window_id
-	if target != 699: condition += ' + String.IsEqual(Container(%s).ListItemAbsolute(0).Property(PovActorSourceId),Window(Home).Property(PovActorId))' % target
-	return condition
+def _focus_actor_control(actor_id, target, timeout):
+	active = 'Window.IsActive(%s)' % actor_window_id
+	ready = active + ' + Control.HasFocus(600) + Control.IsEnabled(%s) + Control.IsVisible(%s)' % (target, target)
+	deadline = monotonic() + timeout
+	while kodi_utils.get_property('PovActorId') == actor_id and kodi_utils.get_property('PovActorRestoreFocus') != actor_id and kodi_utils.get_visibility(active):
+		if kodi_utils.get_visibility(ready):
+			kodi_utils.execute_builtin('SetFocus(%s)' % target)
+			return
+		if monotonic() >= deadline or kodi_utils.monitor.waitForAbort(0.025): return
 
 def _focus_actor_page(credits):
-	if not kodi_utils.get_visibility('Window.IsActive(%s)' % actor_window_id): return
-	if credits.get('movies'): target = 610
-	elif credits.get('tvshows'): target = 620
-	elif credits.get('directed'): target = 630
-	else: target = 699
-	kodi_utils.execute_builtin('AlarmClock(PovActorFocus,SetFocus(%s),00:00:01,silent,loop)' % target)
-	actor_id = kodi_utils.get_property('PovActorId')
-	if not actor_id: return
-	condition = _actor_focus_condition(target)
-	deadline = monotonic() + 0.25
-	eligible = kodi_utils.get_visibility(condition)
-	while kodi_utils.get_property('PovActorId') == actor_id and not eligible and monotonic() < deadline:
-		if kodi_utils.monitor.abortRequested(): return
-		kodi_utils.sleep(25)
-		eligible = kodi_utils.get_visibility(condition)
-	if kodi_utils.get_property('PovActorId') == actor_id and eligible: kodi_utils.execute_builtin('SetFocus(%s)' % target)
+	target = next((control for credit_type, _, control in actor_credit_focus if credits.get(credit_type)), 699)
+	_focus_actor_control(kodi_utils.get_property('PovActorId'), target, 0.6)
 
 def _focus_loaded_actor_shelf(actor_id, credit_type, has_items):
 	if not has_items or kodi_utils.get_property('PovActorId') != str(actor_id) or kodi_utils.get_property('PovActorReady') != 'true': return
 	focus = next(((candidate, target) for candidate, prop, target in actor_credit_focus if kodi_utils.get_property(prop) == 'true'), None)
 	if not focus or focus[0] != credit_type: return
-	if not kodi_utils.get_visibility(_actor_focus_condition(focus[1])): return
-	kodi_utils.execute_builtin('SetFocus(%s)' % focus[1])
+	_focus_actor_control(str(actor_id), focus[1], 1.0)
 
 def _image_key(value):
 	if not value: return ''

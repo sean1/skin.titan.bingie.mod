@@ -1964,8 +1964,8 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 			feed_label = cache_status if cached else 'Event unavailable' if state == 'Live' and not available else ''
 			standings_sport = {'hockey': 'nhl', 'basketball': 'nba', 'football': 'nfl'}.get(sport)
 			standings_event = _sports._event(title) or event
-			standings_key = '|'.join((standings_sport, *standings_event)) if standings_sport else ''
-			standings_match_key = standings_key
+			standings_key = standings_sport or ''
+			standings_match_key = '|'.join((standings_sport, *standings_event)) if standings_sport else ''
 			tennis_names = ''
 			if sport == 'tennis':
 				tour = str(fixture.get('tour') or scope.partition(':')[0]).casefold()
@@ -1984,6 +1984,10 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 						normalized = [' '.join(unicodedata.normalize('NFKC', name).casefold().split()) for name in names]
 						if len(set(normalized)) == 2 * expected: tennis_names = json.dumps(names, ensure_ascii=False)
 			team_properties = {}
+			if standings_sport:
+				from modules.livetv_american_standings import standings_team_token
+				team_properties['LiveTV.StandingsHomeToken'] = standings_team_token(standings_event[0])
+				team_properties['LiveTV.StandingsAwayToken'] = standings_team_token(standings_event[1])
 			if sport == 'tennis': team_properties['LiveTV.Tennis.PlayerNames'] = tennis_names
 			if sport in ('hockey', 'basketball', 'football', 'tennis'):
 				for side in ('home', 'away'):

@@ -34,7 +34,14 @@ def _text(value):
 
 
 def _key(value):
-	return ' '.join(re.findall(r'[^\W_]+', _text(value).casefold()))
+	value = unicodedata.normalize('NFKD', _text(value).casefold())
+	return ' '.join(re.findall(r'[^\W_]+', ''.join(char for char in value if not unicodedata.combining(char))))
+
+
+def standings_team_token(value):
+	"""Return a delimiter-safe token for a fixture team name."""
+	name = _key(value)
+	return '|' + name + '|' if name else ''
 
 
 def _cacheable(sport, payload):
@@ -158,6 +165,19 @@ def _match(entries, name):
 	if not name: return None
 	matches = [item for item in entries if name in item['aliases']]
 	return matches[0] if len(matches) == 1 else None
+
+
+def _unique_match_aliases(entries):
+	"""Return each team's aliases that identify only that team across the league."""
+	owners = {}
+	for item in entries:
+		for alias in item['aliases']:
+			owners.setdefault(alias, []).append(id(item))
+	result = {}
+	for item in entries:
+		aliases = [alias for alias in sorted(item['aliases']) if len(owners[alias]) == 1]
+		result[id(item)] = '|' + '|'.join(aliases) + '|' if aliases else ''
+	return result
 
 
 def _nhl(data):
@@ -364,6 +384,7 @@ def get_nhl_groups(team_a, team_b, force=False):
 		data = _fetch('nhl', force=True) if force else _fetch('nhl')
 		entries = _nhl(data)
 		first, second = _match(entries, team_a), _match(entries, team_b)
+		aliases = _unique_match_aliases(entries)
 		sections = list(dict.fromkeys(_text(item.get('divisionName')) for item in data['standings'] if isinstance(item, dict) and _text(item.get('divisionName'))))
 		if len(sections) != 4: return [], 'PTS'
 		groups = []
@@ -373,7 +394,7 @@ def get_nhl_groups(team_a, team_b, force=False):
 			if raw_count != 8 or len(items) != 8 or [item['rank'] for item in items] != list(range(1, 9)):
 				groups.append((section + ' Division (unavailable)', []))
 				continue
-			rows = [{'position': item['rank'], 'team': item['team'], 'points': item['points'], 'highlight': item is first or item is second} for item in items]
+			rows = [{'position': item['rank'], 'team': item['team'], 'points': item['points'], 'highlight': item is first or item is second, 'match_aliases': aliases[id(item)]} for item in items]
 			groups.append((section + (' Division' if not section.casefold().endswith('division') else ''), rows))
 		return groups, 'PTS'
 	except (OSError, ValueError, TypeError, AttributeError, KeyError):
@@ -389,6 +410,7 @@ def get_nfl_groups(team_a, team_b, force=False):
 		except (OSError, ValueError, TypeError, AttributeError, KeyError): by_conference.append([])
 	entries = [entry for conference in by_conference for entry in conference]
 	first, second = _match(entries, team_a), _match(entries, team_b)
+	aliases = _unique_match_aliases(entries)
 	for prefix, conference in zip(('AFC', 'NFC'), by_conference):
 		for division in ('East', 'North', 'South', 'West'):
 			section = prefix + ' ' + division
@@ -396,7 +418,7 @@ def get_nfl_groups(team_a, team_b, force=False):
 			if len(items) != 4 or len({_key(item['team']) for item in items}) != 4:
 				groups.append((section + ' (unavailable)', []))
 				continue
-			rows = [{'position': index, 'team': item['team'], 'points': item['points'], 'highlight': item is first or item is second} for index, item in enumerate(items, 1)]
+			rows = [{'position': index, 'team': item['team'], 'points': item['points'], 'highlight': item is first or item is second, 'match_aliases': aliases[id(item)]} for index, item in enumerate(items, 1)]
 			groups.append((section, rows))
 	return groups, 'W-L-T'
 
@@ -430,6 +452,7 @@ def get_nba_groups(team_a, team_b, force=False):
 		data = _fetch('nba', force=True) if force else _fetch('nba')
 		entries = _espn(data, 'nba')
 		first, second = _match(entries, team_a), _match(entries, team_b)
+		aliases = _unique_match_aliases(entries)
 		counts = _raw_sections(data)
 		for path in (('Eastern Conference',), ('Western Conference',)): counts.setdefault(path, 0)
 		groups = []
@@ -440,7 +463,7 @@ def get_nba_groups(team_a, team_b, force=False):
 			if not count or count != len(items):
 				groups.append((name + ' (unavailable)', []))
 				continue
-			rows = [{'position': index, 'team': item['team'], 'points': item['points'], 'highlight': item is first or item is second} for index, item in enumerate(items, 1)]
+			rows = [{'position': index, 'team': item['team'], 'points': item['points'], 'highlight': item is first or item is second, 'match_aliases': aliases[id(item)]} for index, item in enumerate(items, 1)]
 			groups.append((name, rows))
 		return groups, 'W-L'
 	except (OSError, ValueError, TypeError, AttributeError, KeyError):

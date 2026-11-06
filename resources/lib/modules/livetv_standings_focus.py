@@ -1,4 +1,4 @@
-"""Load the selected soccer league's standings without blocking navigation."""
+"""Load standings for the focused sports card without blocking navigation."""
 import os
 import re
 import json
@@ -19,11 +19,12 @@ _SETTLE_SECONDS = 0.4
 _RETRY_SECONDS = 60
 _REFRESH_SECONDS = 30 * 60
 _SOCCER_WINDOW = 'Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'
+_PRO_SPORTS = {'nhl': 'hockey', 'nfl': 'football', 'nba': 'basketball'}
 
 
 def _sports_identity(key):
 	parts = key.split('|')
-	if len(parts) != 3 or parts[0] not in ('nhl', 'nfl', 'ncaa', 'nba'): return None
+	if len(parts) != 3 or parts[0] != 'ncaa': return None
 	if any(not 2 <= len(team) <= 80 or not re.fullmatch(r"[\w .&'’\-]+", team, re.UNICODE) or not any(char.isalpha() for char in team) for team in parts[1:]): return None
 	if parts[1].casefold() == parts[2].casefold(): return None
 	return parts
@@ -34,11 +35,12 @@ def _tennis_identity(key):
 
 
 def _identity_sport(key):
+	if key in _PRO_SPORTS: return _PRO_SPORTS[key]
 	if key == 'f1': return 'f1'
 	if key == 'mls': return 'soccer'
 	if _tennis_identity(key): return 'tennis'
 	parts = _sports_identity(key)
-	if parts: return {'nhl': 'hockey', 'nfl': 'football', 'ncaa': 'football', 'nba': 'basketball'}[parts[0]]
+	if parts: return 'football'
 	return 'soccer' if key.isascii() and key.isdecimal() else ''
 
 
@@ -64,7 +66,7 @@ class FocusedStandings:
 	def _focused(self):
 		if not ku.get_visibility(_SOCCER_WINDOW): return '', ''
 		key = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.StandingsKey)').strip()
-		if not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key) and not _tennis_identity(key) and key not in ('f1', 'mls'): return '', ''
+		if key not in _PRO_SPORTS and not (key.isascii() and key.isdecimal() and len(key) <= 12 and int(key) > 0) and not _sports_identity(key) and not _tennis_identity(key) and key not in ('f1', 'mls'): return '', ''
 		league = ku.get_infolabel('Container(523).ListItem.Property(LiveTV.League)').strip()
 		return key, league
 
@@ -86,7 +88,7 @@ class FocusedStandings:
 		for group in range(1, 9):
 			ku.clear_property('%sGroup%d.Name' % (_PREFIX, group))
 			for row in range(1, max(18, _F1_CONSTRUCTOR_ROWS) + 1):
-				for field in ('Position', 'Team', 'Points', 'Highlight'): ku.clear_property('%sGroup%d.Row%d.%s' % (_PREFIX, group, row, field))
+				for field in ('Position', 'Team', 'Points', 'Highlight', 'Aliases'): ku.clear_property('%sGroup%d.Row%d.%s' % (_PREFIX, group, row, field))
 		self.published = ''
 		self.published_at = 0.0
 		self.published_day = None
@@ -103,7 +105,7 @@ class FocusedStandings:
 		self.published_partial = partial
 
 	def _highlight(self):
-		if self.identity == 'f1': return
+		if self.identity == 'f1' or self.identity in _PRO_SPORTS: return
 		if _sports_identity(self.identity): return
 		if self.mls_groups:
 			self._highlight_mls()
@@ -195,18 +197,15 @@ class FocusedStandings:
 				from modules import livetv_american_standings
 				rows, metric = livetv_american_standings.get_mls_groups(**({'force': True} if force else {}))
 				heading = 'MLS'
+			elif identity in _PRO_SPORTS:
+				from modules import livetv_american_standings
+				loader = {'nhl': livetv_american_standings.get_nhl_groups, 'nfl': livetv_american_standings.get_nfl_groups, 'nba': livetv_american_standings.get_nba_groups}[identity]
+				rows, metric = loader('', '', force=force)
+				heading = identity.upper()
 			elif sport:
 				from modules import livetv_american_standings
-				if sport[0] in ('nhl', 'nfl'):
-					loader = livetv_american_standings.get_nhl_groups if sport[0] == 'nhl' else livetv_american_standings.get_nfl_groups
-					rows, metric = loader(*sport[1:], **({'force': True} if force else {}))
-					heading = sport[0].upper()
-				elif sport[0] == 'nba':
-					rows, metric = livetv_american_standings.get_nba_groups(*sport[1:], **({'force': True} if force else {}))
-					heading = 'NBA'
-				else:
-					rows, metric = livetv_american_standings.get_ncaa_groups(*sport[1:], **({'force': True} if force else {}))
-					heading = 'College football'
+				rows, metric = livetv_american_standings.get_ncaa_groups(*sport[1:], **({'force': True} if force else {}))
+				heading = 'College football'
 			else:
 				profile = ku.translate_path(ku.profile_path)
 				bundled = os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', livetv_sportapi.KEY_FILE)
@@ -255,7 +254,7 @@ class FocusedStandings:
 				self._remember(completed, now)
 				ku.set_property(_PREFIX + 'Key', completed)
 				continue
-			if completed.startswith('nba|'):
+			if completed == 'nba':
 				if not isinstance(rows, list) or len(rows) != 2:
 					self._clear()
 					continue
@@ -279,8 +278,7 @@ class FocusedStandings:
 					ku.set_property('%sGroup%d.Name' % (_PREFIX, group_index), name)
 					for index, row in enumerate(items, 1):
 						for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
-						if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
-				ku.set_property(_PREFIX + 'MatchKey', completed)
+						ku.set_property('%sGroup%d.Row%d.Aliases' % (_PREFIX, group_index, index), row.get('match_aliases', ''))
 				self._remember(completed, now, partial=any(not group[1] for group in rows))
 				ku.set_property(_PREFIX + 'Key', completed)
 				continue
@@ -330,8 +328,8 @@ class FocusedStandings:
 				self._remember(completed, now, partial=any(not group[1] for group in rows))
 				ku.set_property(_PREFIX + 'Key', completed)
 				continue
-			if completed.startswith(('nhl|', 'nfl|')):
-				expected_groups, expected_rows = (4, 8) if completed.startswith('nhl|') else (8, 4)
+			if completed in ('nhl', 'nfl'):
+				expected_groups, expected_rows = (4, 8) if completed == 'nhl' else (8, 4)
 				valid = isinstance(rows, list) and len(rows) == expected_groups and all(isinstance(group, tuple) and len(group) == 2 and isinstance(group[0], str) and group[0] and
 					isinstance(group[1], list) and (len(group[1]) == expected_rows or (not group[1] and group[0].endswith(' (unavailable)'))) and all(isinstance(row, dict) and isinstance(row.get('position'), int) and not isinstance(row.get('position'), bool) and
 					isinstance(row.get('team'), str) and row.get('team') and isinstance(row.get('points'), str) for row in group[1]) and
@@ -348,8 +346,7 @@ class FocusedStandings:
 					ku.set_property('%sGroup%d.Name' % (_PREFIX, group_index), name)
 					for index, row in enumerate(items, 1):
 						for field in ('position', 'team', 'points'): ku.set_property('%sGroup%d.Row%d.%s' % (_PREFIX, group_index, index, field.title()), str(row[field]))
-						if row.get('highlight') is True: ku.set_property('%sGroup%d.Row%d.Highlight' % (_PREFIX, group_index, index), 'true')
-				ku.set_property(_PREFIX + 'MatchKey', completed)
+						ku.set_property('%sGroup%d.Row%d.Aliases' % (_PREFIX, group_index, index), row.get('match_aliases', ''))
 				self._remember(completed, now, partial=any(not group[1] for group in rows))
 				ku.set_property(_PREFIX + 'Key', completed)
 				continue

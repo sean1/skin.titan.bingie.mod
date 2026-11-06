@@ -17,7 +17,7 @@ subtitle_context_version = 2
 subtitle_context_max_bytes = 64 * 1024
 subtitle_context_max_candidates = 100
 subtitle_extensions = ('srt', 'ass', 'ssa', 'vtt', 'sub')
-subtitle_providers = ('opensubtitles', 'subdl', 'subsource', 'addic7ed')
+subtitle_providers = ('opensubtitles', 'subdl', 'addic7ed', 'subf2m', 'subtitledb', 'gestdown')
 
 
 class SubtitleCancelled(Exception):

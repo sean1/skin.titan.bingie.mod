@@ -133,7 +133,7 @@ try:
 	with open(sys.argv[1], encoding='utf-8-sig') as source:
 		config = json.load(source)
 	valid = isinstance(config, dict)
-	for provider in ('opensubtitles', 'subdl', 'subsource'):
+	for provider in ('opensubtitles', 'subdl'):
 		entry = config.get(provider) if valid else None
 		fields = ('api_key', 'user_agent') if provider == 'opensubtitles' else ('api_key',)
 		valid = valid and isinstance(entry, dict) and all(isinstance(entry.get(field), str) and entry[field].strip() and not entry[field].startswith('YOUR_') for field in fields)

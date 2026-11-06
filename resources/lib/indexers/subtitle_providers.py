@@ -10,6 +10,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
 from threading import Lock
+from types import SimpleNamespace
 from time import monotonic
 from urllib.parse import quote, unquote, urljoin, urlsplit
 
@@ -108,7 +109,7 @@ def _load_provider_config(path=None):
 		_log('config', 'disabled', category='invalid_schema')
 		return {}, 'invalid_schema'
 	config = {}
-	for provider in ('opensubtitles', 'subdl', 'subsource'):
+	for provider in ('opensubtitles', 'subdl'):
 		entry = payload.get(provider)
 		if not isinstance(entry, dict): continue
 		api_key = entry.get('api_key')
@@ -122,6 +123,9 @@ def _load_provider_config(path=None):
 			if all(isinstance(value, str) and value.strip() and not value.startswith('YOUR_') for value in (username, password)):
 				clean.update({'username': username.strip(), 'password': password})
 		config[provider] = clean
+	for provider in ('subf2m', 'subtitledb', 'gestdown'):
+		entry = payload.get(provider, {})
+		if isinstance(entry, dict) and entry.get('enabled', True) is not False: config[provider] = {}
 	entry = payload.get('addic7ed')
 	if isinstance(entry, dict) and entry.get('enabled', True) is not False:
 		config['addic7ed'] = {}
@@ -365,7 +369,7 @@ class SubDLProvider(Provider):
 			if not isinstance(item, dict): continue
 			path = item.get('url')
 			if not isinstance(path, str) or not path.startswith('/subtitle/') or '://' in path: continue
-			archive_id = PurePosixPath(path).name
+			archive_id = PurePosixPath(urlsplit(path).path).name
 			if not archive_id or '/' in archive_id or '\\' in archive_id: continue
 			candidate = _candidate(
 				self.name, 'archive:%s' % archive_id, item.get('lang') or item.get('language'), (item.get('release_name'), item.get('name')),
@@ -391,7 +395,7 @@ class SubDLProvider(Provider):
 				if self.media.get('season') is not None and (_as_int(season), _as_int(episode)) != (_as_int(self.media['season']), _as_int(self.media['episode'])): continue
 				path = subtitle_file.get('url')
 				if not isinstance(path, str) or not path.startswith('/') or '://' in path: continue
-				parts = PurePosixPath(path).parts
+				parts = PurePosixPath(urlsplit(path).path).parts
 				if len(parts) < 4 or parts[-1] != str(subtitle_file.get('file_n_id')): continue
 				n_id, file_n_id = parts[-2], parts[-1]
 				candidate = _candidate(
@@ -451,7 +455,7 @@ def _safe_archive_name(name):
 	return bool(name) and not path.is_absolute() and '..' not in path.parts and not re.match(r'^[a-zA-Z]:', name)
 
 
-def extract_subtitle_archive(content, season=None, episode=None, release_name='', full_dialogue_only=False):
+def extract_subtitle_archive(content, season=None, episode=None, release_name='', full_dialogue_only=False, allow_episode_names=False):
 	if not isinstance(content, bytes) or not content or len(content) > MAX_ARCHIVE_BYTES: return None
 	try:
 		with zipfile.ZipFile(io.BytesIO(content)) as archive:
@@ -464,8 +468,11 @@ def extract_subtitle_archive(content, season=None, episode=None, release_name=''
 			eligible = [info for info in infos if PurePosixPath(info.filename.replace('\\', '/')).suffix.lower() in SUPPORTED_EXTENSIONS]
 			if season is not None:
 				matching = [info for info in eligible if _episode_matches(info.filename, season, episode)]
+				if not matching and allow_episode_names:
+					matching = [info for info in eligible if not re.search(r'(?i)(?:s\d+[ ._-]*e\d+|\d+x\d+|(?:^|[/\\])s\d+(?:[/\\]|$)|season[ ._-]*\d+)', info.filename) and re.search(r'(?i)(?<![a-z0-9])episode[ ._-]*0*%s\.(?:srt|ass|ssa|vtt|sub)$' % int(episode), info.filename)]
 				if matching: eligible = matching
 				elif len(eligible) != 1: return None
+				elif allow_episode_names and re.search(r'(?i)(?:s\d+[ ._-]*e\d+|\d+x\d+|(?:^|[/\\])s\d+(?:[/\\]|$)|season[ ._-]*\d+|episode[ ._-]*\d+)', eligible[0].filename): return None
 			if full_dialogue_only: eligible = [info for info in eligible if subtitle_coverage(PurePosixPath(info.filename.replace('\\', '/')).name) != 'partial']
 			if not eligible: return None
 			eligible.sort(key=lambda info: (
@@ -479,85 +486,6 @@ def extract_subtitle_archive(content, season=None, episode=None, release_name=''
 			if not selected_content or len(selected_content) > MAX_SUBTITLE_BYTES: return None
 			return {'content': selected_content, 'extension': PurePosixPath(selected.filename.replace('\\', '/')).suffix.lower().lstrip('.')}
 	except (OSError, RuntimeError, ValueError, zipfile.BadZipFile, zipfile.LargeZipFile): return None
-
-
-class SubSourceProvider(Provider):
-	name = 'subsource'
-	api_url = 'https://api.subsource.net/api/v1'
-
-	def headers(self):
-		return {'X-API-Key': self.config['api_key'], 'Accept': 'application/json'}
-
-	@staticmethod
-	def _items(payload):
-		for key in ('data', 'results', 'subtitles'):
-			items = payload.get(key)
-			if isinstance(items, list): return [item for item in items if isinstance(item, dict)]
-		for value in payload.values():
-			if isinstance(value, dict):
-				items = SubSourceProvider._items(value)
-				if items: return items
-		return []
-
-	def _movie_id(self):
-		self._lookup_season = None
-		params = {'searchType': 'imdb', 'imdb': self.media.get('imdb_id'), 'type': 'tv' if self.media.get('season') is not None else 'movie'}
-		if self.media.get('season') is not None: params['season'] = self.media['season']
-		payload = self.request_json('GET', '%s/movies/search' % self.api_url, 'lookup', headers=self.headers(), params=params)
-		for item in self._items(payload):
-			if item.get('movieId') is not None:
-				self._lookup_season = _as_int(item.get('season'))
-				return item['movieId']
-		raise ProviderError('not_found')
-
-	def _release_matches(self, release):
-		season, episode = int(self.media['season']), int(self.media['episode'])
-		if _episode_matches(release, season, episode): return True
-		if self._lookup_season != season: return False
-		release = str(release or '')
-		if re.search(r'(?i)s\d+[ ._-]*e\d+|\d+x\d+|\bs(?:eason)?[ ._-]*\d+\b', release): return False
-		for match in re.finditer(r'(?i)\bepisode[ ._-]*(\d+)\b(?:[ ._]*-[ ._]*(\d+)\b)?', release):
-			start, end = int(match.group(1)), int(match.group(2) or match.group(1))
-			if start <= episode <= end: return True
-		return False
-
-	def search(self):
-		try: movie_id = self._movie_id()
-		except ProviderError: return []
-		results = []
-		for provider_language in ('english', 'vietnamese'):
-			try: payload = self.request_json('GET', '%s/subtitles' % self.api_url, 'search', headers=self.headers(), params={'movieId': movie_id, 'language': provider_language, 'limit': 100})
-			except ProviderError: continue
-			for item in self._items(payload):
-				releases = item.get('releaseInfo')
-				if not isinstance(releases, list): releases = [releases] if releases else []
-				if self.media.get('season') is not None and not any(self._release_matches(release) for release in releases): continue
-				production_type = str(item.get('productionType') or '').lower()
-				candidate = _candidate(
-					self.name, item.get('subtitleId'), item.get('language') or provider_language, releases,
-					fps=item.get('framerate'), season=self.media.get('season'), episode=self.media.get('episode'), hearing_impaired=item.get('hearingImpaired'),
-					foreign_parts_only=item.get('foreignParts'), forced=item.get('forced', True if production_type == 'forced' else None),
-					machine_translated=True if 'machine' in production_type or 'ai' in production_type else None,
-					rating=self._rating(item.get('rating')), downloads=item.get('downloads'), production_type=item.get('productionType'), release_type=item.get('releaseType')
-				)
-				if candidate: results.append(candidate)
-		return results
-
-	@staticmethod
-	def _rating(rating):
-		if not isinstance(rating, dict): return _as_float(rating)
-		good, bad = _as_int(rating.get('good')) or 0, _as_int(rating.get('bad')) or 0
-		return round(10 * good / float(good + bad), 3) if good + bad else None
-
-	def download(self, candidate):
-		try:
-			content = _download_binary('%s/subtitles/%s/download' % (self.api_url, candidate['id']), self.name, MAX_ARCHIVE_BYTES, self.cancelled, headers=self.headers())
-			payload = extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''), full_dialogue_only=candidate.get('full_dialogue_only') is True)
-			if not payload: raise ProviderError('invalid_archive')
-			return payload
-		except ProviderError as error:
-			_log('download', 'failed', self.name, str(error))
-			return None
 
 
 class _Addic7edParser(HTMLParser):
@@ -795,7 +723,251 @@ class Addic7edProvider(Provider):
 			return None
 
 
-PROVIDER_CLASSES = {'opensubtitles': OpenSubtitlesProvider, 'subdl': SubDLProvider, 'subsource': SubSourceProvider, 'addic7ed': Addic7edProvider}
+import re
+from html.parser import HTMLParser
+from urllib.parse import quote, urljoin, urlsplit
+
+
+class _Parser(HTMLParser):
+	def __init__(self):
+		super().__init__()
+		self.links, self.items, self.stack, self.item, self.link = [], [], [], None, None
+
+	def handle_starttag(self, tag, attrs):
+		attrs = dict(attrs)
+		if tag == 'li':
+			self.stack.append(tag)
+			if self.item is None and 'item' in attrs.get('class', '').split(): self.item = {'depth': len(self.stack), 'text': [], 'href': ''}
+		if tag == 'a':
+			self.link = {'href': attrs.get('href', ''), 'text': []}
+			if self.item is not None and 'download' in attrs.get('class', '').split(): self.item['href'] = attrs.get('href', '')
+
+	def handle_data(self, data):
+		if self.item is not None: self.item['text'].append(data)
+		if self.link is not None: self.link['text'].append(data)
+
+	def handle_endtag(self, tag):
+		if tag == 'a' and self.link is not None:
+			self.links.append((' '.join(self.link['text']).strip(), self.link['href']))
+			self.link = None
+		if tag == 'li' and self.stack:
+			if self.item is not None and self.item['depth'] == len(self.stack):
+				self.item['text'] = ' '.join(self.item['text'])
+				self.items.append(self.item)
+				self.item = None
+			self.stack.pop()
+
+
+def _make_subf2m_provider(core):
+	class Subf2mProvider(core.Provider):
+		name = 'subf2m'
+		base = 'https://subf2m.co'
+
+		def _page(self, path):
+			response = core._request('GET', self.base + path, self.name, self.cancelled, timeout=12, allow_redirects=False, stream=True)
+			try:
+				if response.status_code != 200: raise core.ProviderError('http_%s' % response.status_code)
+				chunks, size = [], 0
+				for chunk in response.iter_content(chunk_size=65536):
+					core._cancelled(self.cancelled)
+					size += len(chunk)
+					if size > 2 * 1024 * 1024: raise core.ProviderError('invalid_size')
+					chunks.append(chunk)
+				parser = _Parser(); parser.feed(b''.join(chunks).decode('utf-8', 'replace')); return parser
+			finally: response.close()
+
+		def search(self):
+			title = str(self.media.get('title') or '').strip()
+			if not title: return []
+			try:
+				page = self._page('/subtitles/searchbytitle?query=' + quote(title))
+				wanted = re.sub(r'[^a-z0-9]+', '', title.lower())
+				season = self.media.get('season')
+				matches = []
+				for label, path in page.links:
+					clean = re.sub(r'\s*[-–]\s*season\s+\d+.*$', '', label, flags=re.I)
+					clean = re.sub(r'\s*\(\d{4}\)\s*$', '', clean)
+					if re.sub(r'[^a-z0-9]+', '', clean.lower()) != wanted or not re.fullmatch(r'/subtitles/[a-z0-9-]+', path): continue
+					if season is not None and not re.search(r'(?i)season\s+%s\b' % int(season), label): continue
+					matches.append(path)
+				if len(set(matches)) != 1: return []
+				page = self._page(matches[0]); results = []
+				for item in page.items:
+					path, text = item['href'], item['text']
+					match = re.fullmatch(r'/subtitles/[a-z0-9-]+/(english|vietnamese)/(\d+)', path)
+					if not match: continue
+					if season is not None:
+						episode = int(self.media['episode'])
+						ranges = re.findall(r'(?i)\bepisodes?[\s_]+(\d+)(?:[\s_]*[-–][\s_]*(\d+))?', text)
+						if not core._episode_matches(text, season, episode) and not any(int(start) <= episode <= int(end or start) for start, end in ranges): continue
+					candidate = core._candidate(self.name, path, match.group(1), (text,), season=season, episode=self.media.get('episode'), extension='zip')
+					if candidate: results.append(candidate)
+				return results
+			except (core.ProviderError, ValueError, TypeError): self.failed = True; return []
+
+		def download(self, candidate):
+			path = str(candidate.get('id') or '')
+			if not re.fullmatch(r'/subtitles/[a-z0-9-]+/(?:english|vietnamese)/\d+', path): return None
+			try:
+				url = self.base + path + '/download'
+				for _ in range(4):
+					parsed = urlsplit(url)
+					if parsed.scheme != 'https' or parsed.hostname not in ('subf2m.co', 'isubcdn.com') or parsed.username or parsed.password or parsed.port not in (None, 443): raise core.ProviderError('invalid_redirect')
+					response = core._request('GET', url, self.name, self.cancelled, stream=True, allow_redirects=False, timeout=12)
+					try:
+						if response.status_code in (301, 302, 303, 307, 308):
+							location = response.headers.get('Location', '')
+							if not location: raise core.ProviderError('invalid_redirect')
+							url = urljoin(url, location); continue
+						if response.status_code != 200: raise core.ProviderError('http_%s' % response.status_code)
+						chunks, size = [], 0
+						for chunk in response.iter_content(chunk_size=65536):
+							core._cancelled(self.cancelled)
+							size += len(chunk)
+							if size > core.MAX_ARCHIVE_BYTES: raise core.ProviderError('invalid_size')
+							chunks.append(chunk)
+						content = b''.join(chunks); break
+					finally: response.close()
+				else: raise core.ProviderError('invalid_redirect')
+				return core.extract_subtitle_archive(content, self.media.get('season'), self.media.get('episode'), self.media.get('release_name', ''), allow_episode_names=True)
+			except core.ProviderError: self.failed = True; return None
+	return Subf2mProvider
+
+
+"""SubtitleDB integration for BINGIE's subtitle manager."""
+import re
+from urllib.parse import urljoin, urlsplit
+
+
+def _make_tsdb_provider(core):
+	class SubtitleDBProvider(core.Provider):
+		name = 'subtitledb'
+		api_url = 'https://api.thesubtitledb.org'
+
+		def search(self):
+			imdb = str(self.media.get('imdb_id') or '')
+			if not re.fullmatch(r'tt\d+', imdb): return []
+			path = '/v1/by-imdb/' + imdb
+			season, episode = core._as_int(self.media.get('season')), core._as_int(self.media.get('episode'))
+			if season is not None:
+				if episode is None or season < 0 or episode < 0: return []
+				path += '/season/%d/episode/%d' % (season, episode)
+			try:
+				response = core._request('GET', self.api_url + path, self.name, self.cancelled, params={'lang': 'en,vi', 'limit': 100, 'client': 'kodi'})
+				if response.status_code == 404:
+					response.close()
+					return []
+				payload = core._json_response(response, self.name, 'search')
+			except core.ProviderError as error:
+				self.failed = True
+				core._log('search', 'failed', self.name, str(error))
+				return []
+			container = payload.get('subtitles')
+			items = container.get('items', []) if isinstance(container, dict) else []
+			results = []
+			for item in items:
+				if not isinstance(item, dict) or not str(item.get('id', '')).isdigit(): continue
+				extension = str(item.get('format') or '').lower()
+				if '.' + extension not in core.SUPPORTED_EXTENSIONS: continue
+				candidate = core._candidate(self.name, item['id'], item.get('language'), (item.get('release_name'),), season=season, episode=episode, hearing_impaired=item.get('hearing_impaired'), fps=item.get('fps'), extension=extension)
+				if candidate: results.append(candidate)
+			return results
+
+		def download(self, candidate):
+			item_id = str(candidate.get('id') or '')
+			if not item_id.isdigit(): return None
+			url = '%s/get/%s?client=kodi' % (self.api_url, item_id)
+			try:
+				for _ in range(4):
+					response = core._request('GET', url, self.name, self.cancelled, stream=True, allow_redirects=False)
+					try:
+						if response.status_code in (301, 302, 303, 307, 308):
+							next_url = urljoin(url, response.headers.get('Location', ''))
+							parsed = urlsplit(next_url)
+							if parsed.scheme != 'https' or parsed.hostname not in ('api.thesubtitledb.org', 'cdn.thesubtitledb.org', 'files.thesubtitledb.org') or parsed.username or parsed.password or parsed.port not in (None, 443): raise core.ProviderError('invalid_redirect')
+							url = next_url
+							continue
+						if not 200 <= response.status_code < 300: raise core.ProviderError('http_%s' % response.status_code)
+						chunks, total = [], 0
+						for chunk in response.iter_content(chunk_size=65536):
+							core._cancelled(self.cancelled)
+							if not chunk: continue
+							total += len(chunk)
+							if total > core.MAX_SUBTITLE_BYTES: raise core.ProviderError('invalid_size')
+							chunks.append(chunk)
+						if not chunks: raise core.ProviderError('empty_response')
+						return {'content': b''.join(chunks), 'extension': candidate.get('extension') or 'srt'}
+					finally: response.close()
+				raise core.ProviderError('invalid_redirect')
+			except core.ProviderError as error:
+				core._log('download', 'failed', self.name, str(error))
+				return None
+	return SubtitleDBProvider
+
+
+"""Gestdown TV subtitle provider."""
+import re
+from urllib.parse import quote
+
+
+def _make_gestdown_provider(core):
+	class GestdownProvider(core.Provider):
+		name = 'gestdown'
+		api_url = 'https://api.gestdown.info'
+
+		def _lookup(self, path, operation):
+			try:
+				response = core._request('GET', self.api_url + path, self.name, self.cancelled)
+				if response.status_code == 404:
+					response.close()
+					return None
+				return core._json_response(response, self.name, operation)
+			except core.ProviderError as error:
+				self.failed = True
+				core._log(operation, 'failed', self.name, str(error))
+				return None
+
+		def search(self):
+			season, episode = core._as_int(self.media.get('season')), core._as_int(self.media.get('episode'))
+			title = str(self.media.get('title') or '').strip()
+			if season is None or episode is None or not title: return []
+			payload = self._lookup('/shows/search/%s' % quote(title, safe=''), 'lookup')
+			if payload is None: return []
+			shows = [show for show in payload.get('shows', []) if isinstance(show, dict)]
+			tmdb = str(self.media.get('tmdb_id') or '')
+			matches = [show for show in shows if tmdb and str(show.get('tmdbId') or '') == tmdb]
+			if not matches: matches = [show for show in shows if core._addic7ed_title(show.get('name')) == core._addic7ed_title(title)]
+			if len(matches) != 1: return []
+			show_id = str(matches[0].get('id') or '')
+			if not re.fullmatch(r'[A-Za-z0-9_-]+', show_id): return []
+			results = []
+			for language in ('en', 'vi'):
+				payload = self._lookup('/subtitles/get/%s/%d/%d/%s' % (show_id, season, episode, language), 'search')
+				if payload is None: continue
+				for item in payload.get('matchingSubtitles', []):
+					if not isinstance(item, dict) or item.get('completed') is not True: continue
+					subtitle_id = str(item.get('subtitleId') or '')
+					if not re.fullmatch(r'[A-Za-z0-9_-]+', subtitle_id): continue
+					candidate = core._candidate(self.name, subtitle_id, item.get('language') or language, (item.get('version'), item.get('release')), season=season, episode=episode, hearing_impaired=item.get('hearingImpaired'), downloads=item.get('downloadCount'), extension='srt')
+					if candidate: results.append(candidate)
+			return results
+
+		def download(self, candidate):
+			subtitle_id = str(candidate.get('id') or '')
+			if not re.fullmatch(r'[A-Za-z0-9_-]+', subtitle_id): return None
+			try:
+				content = core._download_binary('%s/subtitles/download/%s' % (self.api_url, subtitle_id), self.name, core.MAX_SUBTITLE_BYTES, self.cancelled)
+				if b'-->' not in content: raise core.ProviderError('invalid_subtitle')
+				return {'content': content, 'extension': 'srt'}
+			except core.ProviderError as error:
+				core._log('download', 'failed', self.name, str(error))
+				return None
+
+	return GestdownProvider
+
+
+_provider_core = SimpleNamespace(**globals())
+PROVIDER_CLASSES = {'opensubtitles': OpenSubtitlesProvider, 'subdl': SubDLProvider, 'addic7ed': Addic7edProvider, 'subf2m': _make_subf2m_provider(_provider_core), 'subtitledb': _make_tsdb_provider(_provider_core), 'gestdown': _make_gestdown_provider(_provider_core)}
 
 
 def _release_tokens(value):

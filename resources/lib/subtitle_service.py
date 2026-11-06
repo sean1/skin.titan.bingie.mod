@@ -18,7 +18,7 @@ except ImportError:
 from modules import kodi_utils
 
 language_names = {'eng': 'English', 'vie': 'Vietnamese'}
-provider_names = {'opensubtitles': 'OpenSubtitles', 'subdl': 'SubDL', 'subsource': 'SubSource', 'addic7ed': 'Addic7ed'}
+provider_names = {'opensubtitles': 'OpenSubtitles', 'subdl': 'SubDL', 'subf2m': 'Subf2m', 'subtitledb': 'SubtitleDB', 'gestdown': 'Gestdown', 'addic7ed': 'Addic7ed'}
 config_issue_names = {
 	'missing': 'provider settings are missing', 'unreadable': 'provider settings cannot be read',
 	'invalid_json': 'provider settings contain invalid JSON', 'invalid_schema': 'provider settings are invalid'
@@ -146,7 +146,7 @@ def _download(handle, params):
 		payload = client.download_candidate(candidate)
 	else:
 		provider, candidate_id = params.get('provider', ''), params.get('candidate', '')
-		if provider not in ('opensubtitles', 'subdl', 'subsource', 'addic7ed') or not candidate_id: return
+		if provider not in ('opensubtitles', 'subdl', 'addic7ed', 'subf2m', 'subtitledb', 'gestdown') or not candidate_id: return
 		language = params.get('language', 'eng')
 		payload = client.download_by_id(provider, candidate_id)
 	if not payload: return

@@ -436,7 +436,7 @@
                                 <include content="Bingie_InfoDialog_Button_Texture">
                                     <param name="radiotexture" value="dialogs/videoinfo/info/play2.png"/>
                                 </include>
-                                <label>$LOCALIZE[208]$INFO[ListItem.Season, $LOCALIZE[20373] ,]$INFO[ListItem.Episode,: $LOCALIZE[20359] ,]</label>
+                                <label>$LOCALIZE[208]</label>
                                 <radioposx>17</radioposx>
                                 <radiowidth>22</radiowidth>
                                 <radioheight>22</radioheight>

@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BINGIE -->
 <includes>
+    <variable name="HomeHeroFanart">
+        <value condition="!ControlGroup(77777).HasFocus() | $EXP[IsCategoryDBType]">$INFO[Control.GetLabel(99004)]</value>
+        <value condition="!String.IsEmpty(Window(Home).Property(PovFocusedFanart)) +
+            [[!String.IsEmpty(ListItem.Property(PovFocusIdentity)) + String.IsEqual(ListItem.Property(PovFocusIdentity),Window(Home).Property(PovFocusedFanartIdentity))] |
+            [String.IsEmpty(ListItem.Property(PovFocusIdentity)) +
+            [String.IsEqual(ListItem.Art(fanart),Window(Home).Property(PovFocusedFanart)) |
+            String.IsEqual(ListItem.Art(season.fanart),Window(Home).Property(PovFocusedFanart)) |
+            String.IsEqual(ListItem.Art(tvshow.fanart),Window(Home).Property(PovFocusedFanart))]]]">$INFO[Window(Home).Property(PovFocusedFanart)]</value>
+        <value>colors/color_black.png</value>
+    </variable>
+
     <include name="HomeBingie">
         <include content="Bingie_Base_BG">
             <param name="visibility" value="!$EXP[IsPlayingRecognizedContent]" />
@@ -25,7 +36,8 @@
 				<include>BingieRowTrailerPreviewWindow</include>
                 <include content="BingieSpotlightCornerImage">
                     <param name="visibility" value="!Player.HasVideo | [!String.IsEmpty(Window(Home).Property(BingieTrailerPreview)) + !$EXP[BingieTrailerPreviewVisible]]" />
-                    <param name="image" value="$INFO[Control.GetLabel(99004)]" />
+                    <param name="image" value="$VAR[HomeHeroFanart]" />
+                    <param name="fade" value="0" />
                 </include>
 				<include content="BingieSpotlightBottomFade">
 					<param name="visibility" value="$EXP[BingieTrailerPreviewVisible] | !Player.HasVideo | !String.IsEmpty(Window(Home).Property(BingieTrailerPreview))" />
@@ -51,7 +63,8 @@
                         <param name="id" value="9000" />
                         <param name="image" value="$VAR[BingieInfoClearlogo]" />
                         <param name="text" value="$VAR[BingieInfoLabel]" />
-                        <param name="text_visibility" value="![[$EXP[IsMainMenuOpened] + [
+                        <param name="logo_fadetime" value="0" />
+                        <param name="text_visibility" value="[ControlGroup(77777).HasFocus() + $EXP[IsMovieOrTvShowListItem]] | ![[$EXP[IsMainMenuOpened] + [
                             [!String.IsEmpty(Window(Home).Property(ListItem.Label)) + $EXP[IsCategoryDBType] +
                             [String.IsEqual(Window(Home).Property(ListItem.DBTYPE),movie) |
                             String.IsEqual(Window(Home).Property(ListItem.DBTYPE),tvshow) |

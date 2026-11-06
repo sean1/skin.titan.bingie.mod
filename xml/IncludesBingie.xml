@@ -1225,6 +1225,7 @@
 <!-- SPOTLIGHT IMAGE MAIN HOME-->
 <!--the whole fanart image now fits the spotlight like Netflix -->
     <include name="BingieSpotlightCornerImage">
+        <param name="fade" default="200"/>
         <param name="top" default="0"/>
         <param name="right" default="-2"/>
         <param name="width" default="1220"/>
@@ -1239,10 +1240,10 @@
                 <width>$PARAM[width]</width>
                 <height>$PARAM[height]</height>
                 <texture background="true" diffuse="bingie/new_bingie_spotlight_diffuse.png">$PARAM[image]</texture>
-				<fadetime>200</fadetime>
+				<fadetime>$PARAM[fade]</fadetime>
                 <aspectratio scalediffuse="true" aligny="top" align="right">keep</aspectratio>
-                <animation effect="fade" end="0" time="200">Hidden</animation>
-                <animation effect="fade" start="0" end="100" time="200">Visible</animation>
+                <animation effect="fade" end="0" time="$PARAM[fade]">Hidden</animation>
+                <animation effect="fade" start="0" end="100" time="$PARAM[fade]">Visible</animation>
             </control>
 	    </definition>
     </include>
@@ -1251,6 +1252,7 @@
     <include name="Bingie_Headline_Item">
         <param name="visibility" default="true" />
         <param name="logoheight" default="190" />
+        <param name="logo_fadetime" default="350" />
         <param name="titleheight" default="184" />
         <param name="titleoffset" default="-194" />
         <param name="genre_adjust" default="false" />
@@ -1263,7 +1265,7 @@
                 <height>$PARAM[logoheight]</height>
                 <width>490</width>
                 <align>left</align>
-                <fadetime>350</fadetime>
+                <fadetime>$PARAM[logo_fadetime]</fadetime>
                 <aspectratio align="center" aligny="center">keep</aspectratio>
                 <texture background="true" fallback="colors/color_transparent.png">$PARAM[image]</texture>
             </control>

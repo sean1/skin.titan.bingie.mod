@@ -52,12 +52,6 @@ def autoplay_next_settings():
 def autoscrape_next_episode():
 	return get_setting('autoscrape_next_episode', 'false') == 'true'
 
-def calendar_focus_today():
-	return get_setting('trakt.calendar_focus_today') == 'true'
-
-def calendar_sort_order():
-	return int(get_setting('trakt.calendar_sort_order', '0'))
-
 def context_menu_sort():
 	return {
 		'options': int(get_setting('context.options', '1')),

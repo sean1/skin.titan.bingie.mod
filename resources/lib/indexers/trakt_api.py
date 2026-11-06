@@ -1,6 +1,5 @@
 import requests
 import time
-from concurrent.futures import ThreadPoolExecutor
 from caches import trakt_cache
 from caches.main_cache import cache_object
 from modules import kodi_utils
@@ -30,24 +29,6 @@ def call_trakt(path, params=None, pagination=False, page=1, pagination_details=F
 		return result
 	except requests.RequestException as e:
 		logger('trakt error', str(e))
-
-def _get_trakt_paginated_list(url):
-	params = {'limit': 250, 'page': 1}
-	try: items, pages = call_trakt(url, params=params, pagination=True)
-	except: return []
-	if pages <= 1: return items
-	args = ({'path': url, 'params': {**params, 'page': page}} for page in range(2, pages + 1))
-	with ThreadPoolExecutor() as executor:
-		for result in executor.map(call_trakt, args):
-			if isinstance(result, list): items.extend(result)
-	return items
-
-def trakt_calendar_days(current_date):
-	from datetime import timedelta
-	previous_days = int(get_setting('trakt.calendar_previous_days', '3'))
-	future_days = int(get_setting('trakt.calendar_future_days', '7'))
-	start = (current_date - timedelta(days=previous_days)).strftime('%Y-%m-%d')
-	return start, str(previous_days + future_days)
 
 def trakt_movies_trending(page_no):
 	params = {'limit': 20, 'page': page_no}
@@ -119,32 +100,6 @@ def trakt_trending_popular_lists(list_type):
 def trakt_search_lists(search_title, page):
 	params = {'limit': 100, 'page': page, 'query': search_title}
 	return call_trakt('search/list', params=params, pagination=True)
-
-def trakt_calendar_data(url):
-	result = []
-	seen = set()
-	for item in call_trakt(url) or []:
-		try:
-			if item['episode']['season'] <= 0: continue
-			season, episode = item['episode']['season'], item['episode']['number']
-			sort_title = '%s s%02d e%02d' % (item['show']['title'], season, episode)
-			if sort_title not in seen and not seen.add(sort_title): result.append({
-				'sort_title': sort_title, 'first_aired': item['first_aired'],
-				'media_ids': item['show']['ids'], 'season': season, 'episode': episode
-			})
-		except: pass
-	return result
-
-def trakt_anime_calendar(current_date):
-	start, finish = trakt_calendar_days(current_date)
-	string = 'trakt_anime_calendar_%s_%s' % (start, finish)
-	url = {'path': 'calendars/all/shows/%s/%s' % (start, finish), 'params': {'genres': 'anime'}}
-	return cache_object(trakt_calendar_data, string, url)
-
-def get_trakt_list_contents(list_type, list_id, user, slug):
-	string = 'trakt_list_contents_%s_%s_%s' % (list_type, user, slug)
-	url = 'users/%s/lists/%s/items' % (user, list_id)
-	return trakt_cache.cache_trakt_object(_get_trakt_paginated_list, string, url)
 
 def get_trakt_list_page(list_type, list_id, user, slug, page, limit):
 	"""Return one display page and its total, keeping complete and page caches separate."""

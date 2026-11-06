@@ -61,9 +61,6 @@ def clear_property(prop):
 def addon(addon_id=None):
 	return addon_object if addon_id is None else Addon(id=addon_id)
 
-def addon_installed(addon_id):
-	return get_visibility('System.AddonIsEnabled(%s)' % addon_id)
-
 def add_item(handle, url, listitem, isFolder):
 	xbmcplugin.addDirectoryItem(handle, url, listitem, isFolder)
 
@@ -94,12 +91,6 @@ def make_cast_list(cast=None):
 	if not cast: return []
 	return [xbmc.Actor(**actor) for actor in cast]
 
-def make_playlist(_type='video'):
-	return xbmc.PlayList(xbmc.PLAYLIST_VIDEO) if _type == 'video' else xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-
-def convert_language(lang, format='long'):
-	return xbmc.convertLanguage(lang, xbmc.ISO_639_2 if format == 'long' else xbmc.ISO_639_1)
-
 def supported_media():
 	return xbmc.getSupportedMedia('video')
 
@@ -120,9 +111,6 @@ def open_file(file, mode='r'):
 
 def delete_file(_file):
 	xbmcvfs.delete(_file)
-
-def rename_file(old, new):
-	xbmcvfs.rename(old, new)
 
 def list_dirs(location):
 	return xbmcvfs.listdir(location)
@@ -319,10 +307,6 @@ def add_dir(__handle__, url_params, list_name, iconImage=None, fanartImage=None,
 	listitem.setArt({'icon': icon, 'poster': icon, 'thumb': icon, 'fanart': fanart, 'banner': icon})
 	add_item(__handle__, url, listitem, isFolder)
 
-def remove_meta_keys(dict_item, dict_removals):
-	for k in dict_removals: dict_item.pop(k, None)
-	return dict_item
-
 def volume_checker(volume_setting=None):
 	try: # 0% == -60db, 100% == 0db
 		if get_visibility('Player.Muted'): return
@@ -333,23 +317,6 @@ def volume_checker(volume_setting=None):
 		current_volume_percent = int(100 - ((float(current_volume_db)/60)*100))
 		if current_volume_percent > max_volume: execute_builtin('SetVolume(%d)' % int(max_volume))
 	except: pass
-
-def focus_index(index, sleep_time=100):
-	sleep(sleep_time)
-	current_window = current_window_id()
-	focus_id = current_window.getFocusId()
-	try: current_window.getControl(focus_id).selectItem(index)
-	except: pass
-
-def fetch_kodi_imagecache(image):
-	result = None
-	try:
-		dbcon = database_connect('special://profile/Database/Textures13.db')
-		dbcur = dbcon.cursor()
-		dbcur.execute("""SELECT cachedurl FROM texture WHERE url = ?""", (image,))
-		result = dbcur.fetchone()[0]
-	except: pass
-	return result
 
 FIXED_SETTINGS = {
 	'amble.indicators': '',
@@ -470,10 +437,6 @@ FIXED_SETTINGS = {
 	),
 	'torrent.display.uncached': 'false',
 	'torrent.identify': 'magenta',
-	'trakt.calendar_focus_today': 'true',
-	'trakt.calendar_future_days': '7',
-	'trakt.calendar_previous_days': '7',
-	'trakt.calendar_sort_order': '0',
 	'trakt.client_id': '6bc29124c3d9466e06a3ed19a7b5976fcb28311008401e1ce04cf08196f8b16a',
 	'use_season_title': 'false',
 	'volumecheck.enabled': 'false',
@@ -533,14 +496,3 @@ def set_settings(settings_dict):
 
 def set_setting(setting_id, value):
 	return set_settings({setting_id: value})
-
-def timeIt(func):
-	# Thanks to 123Venom
-	import time
-	fnc_name = func.__name__
-	def wrap(*args, **kwargs):
-		started_at = time.perf_counter()
-		result = func(*args, **kwargs)
-		logger('%s.%s' % (__name__ , fnc_name), (time.perf_counter() - started_at))
-		return result
-	return wrap

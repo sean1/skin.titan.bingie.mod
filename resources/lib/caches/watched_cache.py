@@ -68,15 +68,6 @@ def erase_bookmark(mediatype, tmdb_id, season='', episode='', refresh='false'):
 	from caches.progress_cache import erase_bookmark as erase
 	return erase(mediatype, tmdb_id, season, episode, refresh)
 
-def batch_erase_bookmark(watched_indicators, insert_list, action):
-	try:
-		if action == 'mark_as_watched': modified_list = [(i[0], i[1], i[2], i[3]) for i in insert_list]
-		else: modified_list = insert_list
-		dbcon = _database_connect(get_database(watched_indicators))
-		dbcur = set_PRAGMAS(dbcon)
-		dbcur.executemany(DELETE_BM, modified_list)
-	except: pass
-
 def mark_as_watched_unwatched_movie(params):
 	mediatype, action = 'movie', params.get('action')
 	tmdb_id, title = params.get('tmdb_id'), params.get('title')

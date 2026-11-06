@@ -1,6 +1,5 @@
 from threading import Thread
 from indexers.metadata import tvshow_meta, season_episodes_meta, art_infodict, episode_infodict, info_tagger, main_actors, resized_cast
-from indexers.trakt_api import trakt_anime_calendar
 from caches.watched_cache import get_resumetime, set_resumetime, get_watched_status_episode, get_watched_info_tv, get_bookmarks, get_next_episodes, get_in_progress_items
 from modules import kodi_utils, settings
 from menus.media import card_coming_soon
@@ -10,7 +9,6 @@ from modules.utils import LIST_WORKERS, get_next_episode_pointer, adjust_premier
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
 string, ls, build_url, default_duration = str, kodi_utils.local_string, kodi_utils.build_url, 3600
-calendar_sort_order, calendar_focus_today = settings.calendar_sort_order, settings.calendar_focus_today
 nextep_content_settings, nextep_display_settings = settings.nextep_content_settings, settings.nextep_display_settings
 thumb_fanart_info, default_all_episodes = settings.thumb_fanart, settings.default_all_episodes
 single_ep_display_title, single_ep_format = settings.single_ep_display_title, settings.single_ep_format
@@ -20,7 +18,7 @@ fanart_empty = kodi_utils.get_addoninfo('fanart')
 poster_empty = kodi_utils.media_path('box_office.png')
 item_next = kodi_utils.media_path('item_next.png')
 watched_str, unwatched_str, extras_str, options_str = ls(32642), ls(32643), ls(32645), ls(32646)
-clearprog_str, browse_str, browse_seas_str, today_str = ls(32651), ls(32652), ls(32544), ls(32849).upper()
+clearprog_str, browse_str, browse_seas_str = ls(32651), ls(32652), ls(32544)
 nextpage_str = ls(32799)
 unaired_label, date_label = 'cyan', 'magenta'
 
@@ -164,16 +162,12 @@ class Episodes:
 		str_season, str_episode = string(season).zfill(1), string(episode).zfill(2)
 		title_string = ''.join([title, ': ']) if self.display_title == 0 else ''
 		seas_ep = ''.join([str_season, 'x', str_episode, ' - ']) if self.display_title in (0, 1) else ''
-		if self.list_type.startswith('next_episode') or self.list_type == 'trakt_calendar':
+		if self.list_type.startswith('next_episode'):
 			if episode_date: display_premiered = make_day_function(self.current_date, episode_date, self.date_format)
 			else: display_premiered = 'UNKNOWN'
-			if self.list_type.startswith('next_episode'):
-				airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ') if self.nextep_include_airdate else ''
-				if unaired: highlight_color = self.nextep_unaired_color
-				else: highlight_color = self.nextep_unwatched_color if unwatched else ''
-			else: # trakt_calendar
-				airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ')
-				highlight_color = unaired_label if unaired else ''
+			airdate = ('[[COLOR ', date_label, ']', display_premiered, '[/COLOR]] ') if self.nextep_include_airdate else ''
+			if unaired: highlight_color = self.nextep_unaired_color
+			else: highlight_color = self.nextep_unwatched_color if unwatched else ''
 			italics_open, italics_close = ('[I]', '[/I]') if highlight_color else ('', '')
 			if highlight_color:
 				episode_info = seas_ep, '[COLOR', highlight_color, ']', italics_open, ep_name, italics_close, '[/COLOR]'
@@ -190,7 +184,6 @@ class Menu(Episodes):
 #		threads = list(make_thread_list_enumerate(self.build_episode_content, self.list, Thread))
 		for i in TaskPool(LIST_WORKERS).tasks_enumerate(self.build_episode_content, self.list, Thread): i.join()
 		if self.list_type.startswith('next_episode'): self._sort_next_episode()
-		elif self.list_type in ('trakt_calendar', 'trakt_recently_aired'): self._sort_calendar()
 		else: self.items.sort(key=lambda k: int(k[1].getProperty('pov_lite_sort_order')))
 		return self.items
 
@@ -202,8 +195,7 @@ class Menu(Episodes):
 		mode = params_get('mode')
 		func = next((i for key, i in {
 			'in_progress': self._setup_in_progress,
-			'next_episode': self._setup_next_episode,
-				'anime_calendar': self._setup_anime_calendar
+			'next_episode': self._setup_next_episode
 		}.items() if key in mode), None)
 		if callable(func): func(params_get)
 		if self.list: kodi_utils.add_items(__handle__, self.worker())
@@ -211,16 +203,11 @@ class Menu(Episodes):
 			page_params = {'mode': mode}
 			if category: page_params['name'] = category
 			kodi_utils.add_dir(__handle__, page_params, 'See all' if params_get('home_next') == 'true' else nextpage_str, item_next)
-		if self.list_type == 'trakt_calendar' and calendar_focus_today():
-			labels = enumerate((i[1].getLabel() for i in self.items), 1)
-			index = next((i for i, x in labels if today_str in x), None)
-		else: index = False
 		kodi_utils.set_category(__handle__, category)
 		kodi_utils.set_sort_method(__handle__, sort_type)
 		kodi_utils.set_content(__handle__, content_type)
 		kodi_utils.end_directory(__handle__, False)
 		kodi_utils.set_view_mode(view_type, content_type, self.is_widget)
-		if index: kodi_utils.focus_index(index)
 
 	def _setup_in_progress(self, params_get):
 		self.list_type = 'in_progress'
@@ -239,9 +226,6 @@ class Menu(Episodes):
 		self.nextep_include_airdate = nextep_disp_settings['include_airdate']
 		self.nextep_unwatched_color = nextep_disp_settings['unwatched_color']
 		self.nextep_unaired_color = nextep_disp_settings['unaired_color']
-	def _setup_anime_calendar(self, params_get):
-		self.list = sorted(trakt_anime_calendar(self.current_date), key=lambda k: k['sort_title'])
-		self.list_type = 'trakt_calendar'
 
 	def _sort_next_episode(self):
 		def func(function):
@@ -254,8 +238,3 @@ class Menu(Episodes):
 		self.items.sort(key=lambda k: func(k[1].getProperty(sort_key)), reverse=sort_direction)
 		self.items.sort(key=lambda k: k[1].getProperty('pov_lite_unaired') == 'true', reverse=False)
 		if sort_airing_today_to_top: self.items.sort(key=lambda k: aired_today(k[1]), reverse=True)
-
-	def _sort_calendar(self):
-		reverse = calendar_sort_order() == 0 if self.list_type == 'trakt_calendar' else True
-		self.items.sort(key=lambda k: int(k[1].getProperty('pov_lite_sort_order')))
-		self.items.sort(key=lambda k: k[1].getProperty('pov_lite_first_aired'), reverse=reverse)

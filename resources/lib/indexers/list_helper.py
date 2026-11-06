@@ -1,8 +1,8 @@
 from threading import Thread
 from queue import Empty, SimpleQueue
 from modules import kodi_utils
-from modules.utils import LIST_WORKERS, paginate_list, TaskPool
-from modules.settings import paginate, page_limit, nav_jump_use_alphabet
+from modules.utils import LIST_WORKERS, TaskPool
+from modules.settings import nav_jump_use_alphabet
 # logger = kodi_utils.logger
 
 ls, media_path = kodi_utils.local_string, kodi_utils.media_path
@@ -68,13 +68,8 @@ class BaseMediaListBuilder:
 			except: continue
 			else: target(*args)
 
-	def fetch_results(self):
-		raise NotImplementedError
-
 	def fetch_page(self):
-		results = self.fetch_results()
-		if paginate() and results: return paginate_list(results, self.page, page_limit())
-		return results, 1
+		raise NotImplementedError
 
 	def process_media_types(self, queue, process_list):
 		raise NotImplementedError

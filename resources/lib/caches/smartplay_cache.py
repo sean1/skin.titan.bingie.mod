@@ -62,21 +62,6 @@ def _delete_progress(dbcur, tmdb_id, season, episode):
 	return dbcur.rowcount > 0
 
 
-def advance(tmdb_id, season, episode):
-	tmdb_id, season, episode = _identity(tmdb_id, season, episode)
-	dbcon = _connect()
-	try:
-		dbcur = dbcon.cursor()
-		dbcur.execute('BEGIN IMMEDIATE')
-		advanced = _advance(dbcur, tmdb_id, season, episode)
-		dbcon.commit()
-		return advanced
-	except Exception:
-		dbcon.rollback()
-		raise
-	finally: dbcon.close()
-
-
 def advance_and_delete_progress(tmdb_id, season, episode, completed_season, completed_episode):
 	tmdb_id, season, episode = _identity(tmdb_id, season, episode)
 	_, completed_season, completed_episode = _identity(tmdb_id, completed_season, completed_episode)

@@ -849,14 +849,6 @@ def rank_candidates(candidates, media):
 	return sorted(valid, key=lambda item: (LANGUAGES.index(item['lang']), ('full', 'unknown', 'partial').index(subtitle_coverage(item)), -item['score'], item['provider'], item['id']))
 
 
-def public_candidate(candidate):
-	release = next(iter(candidate.get('release_names') or ()), '') or candidate.get('release', '')
-	result = {key: candidate.get(key) for key in ('provider', 'id', 'lang', 'score')} | {'release': release[:180]}
-	if candidate.get('rating') is not None: result['rating'] = candidate['rating']
-	if candidate.get('sync') is True: result['sync'] = True
-	return result
-
-
 class ProviderManager:
 	def __init__(self, media, cancelled=None, config=None, provider_classes=None, *, preferred_language=None, try_early_match=None):
 		self.media, self.cancelled = media, cancelled

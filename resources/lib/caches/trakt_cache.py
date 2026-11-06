@@ -24,17 +24,6 @@ def set_cached(string, value):
 	try: TraktCache().dbcur.execute(TC_BASE_SET, (string, json.dumps(value)))
 	except Exception: pass
 
-def cache_trakt_object(function, string, url):
-	dbcur = TraktCache().dbcur
-	dbcur.execute(TC_BASE_GET, (string,))
-	cached_data = dbcur.fetchone()
-	try:
-		if cached_data: return json.loads(cached_data[0])
-	except: pass
-	result = function(url)
-	dbcur.execute(TC_BASE_SET, (string, json.dumps(result)))
-	return result
-
 def clear_all_trakt_cache_data():
 	try:
 		dbcur = TraktCache().dbcur

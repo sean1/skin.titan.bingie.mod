@@ -4,6 +4,7 @@ from menus.movies import Movies
 from menus.seasons import Seasons
 from menus.tvshows import TVShows
 from modules import kodi_utils
+from modules.settings import page_limit
 
 KODI_VERSION, ls = kodi_utils.get_kodi_version(), kodi_utils.local_string
 build_url, make_listitem = kodi_utils.build_url, kodi_utils.make_listitem
@@ -84,12 +85,8 @@ class TraktListBuilder(list_helper.BaseMediaListBuilder):
 		self.slug = params.get('slug')
 		self.list_type = 'user_lists'
 
-	def fetch_results(self):
-		return trakt_api.get_trakt_list_contents(self.list_type, self.list_id, self.user, self.slug)
-
 	def fetch_page(self):
-		if not list_helper.paginate(): return super().fetch_page()
-		try: return trakt_api.get_trakt_list_page(self.list_type, self.list_id, self.user, self.slug, self.page, list_helper.page_limit())
+		try: return trakt_api.get_trakt_list_page(self.list_type, self.list_id, self.user, self.slug, self.page, page_limit())
 		except ValueError: raise list_helper.PageFetchError from None
 
 	def process_media_types(self, queue, process_list):

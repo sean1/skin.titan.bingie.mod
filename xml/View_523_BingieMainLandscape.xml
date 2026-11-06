@@ -694,12 +694,7 @@
             <control type="label"><left>18</left><width>80</width><top>151</top><height>23</height><font>Reg18</font><textcolor>ffffffff</textcolor><align>center</align><label>$INFO[ListItem.Property(LiveTV.StartTime)]</label><visible>String.IsEqual(ListItem.Property(LiveTV.MatchState),Live) + !String.IsEmpty(ListItem.Property(LiveTV.StartTime))</visible></control>
             <control type="label"><left>18</left><width>80</width><top>151</top><height>23</height><font>Reg18</font><textcolor>ffffffff</textcolor><align>center</align><label>LIVE</label><visible>String.IsEqual(ListItem.Property(LiveTV.MatchState),Live) + String.IsEmpty(ListItem.Property(LiveTV.StartTime))</visible></control>
             <control type="label"><right>18</right><width>175</width><top>152</top><height>23</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align>
-                <label>$INFO[ListItem.Property(LiveTV.Feeds)]</label>
-                <visible>!String.IsEqual(ListItem.Property(LiveTV.Feeds),Finding feeds…) | String.IsEmpty(Window(Home).Property(LiveTV.Sports.Progress.WaitStatus))</visible>
-            </control>
-            <control type="label"><right>18</right><width>175</width><top>152</top><height>23</height><font>Reg18</font><textcolor>ffbcbcbc</textcolor><align>right</align>
-                <label>$INFO[Window(Home).Property(LiveTV.Sports.Progress.WaitStatus)]</label><scroll>$PARAM[focused]</scroll>
-                <visible>String.IsEqual(ListItem.Property(LiveTV.Feeds),Finding feeds…) + !String.IsEmpty(Window(Home).Property(LiveTV.Sports.Progress.WaitStatus))</visible>
+                <label>$INFO[ListItem.Property(LiveTV.Feeds)]</label><scroll>$PARAM[focused]</scroll>
             </control>
         </control>
     </include>
@@ -722,11 +717,6 @@
             <control type="label"><left>18</left><right>195</right><top>151</top><height>23</height><font>Reg18</font><textcolor>ffdddddd</textcolor><label>$INFO[ListItem.Property(LiveTV.Kickoff)]</label><scroll>$PARAM[focused]</scroll><visible>!String.IsEmpty(ListItem.Property(LiveTV.Kickoff))</visible></control>
             <control type="label"><right>18</right><width>175</width><top>151</top><height>23</height><font>Reg18</font><textcolor>ffdddddd</textcolor><align>right</align>
                 <label>$INFO[ListItem.Property(LiveTV.Feeds)]</label><scroll>$PARAM[focused]</scroll>
-                <visible>!String.IsEqual(ListItem.Property(LiveTV.Feeds),Finding feeds…) | String.IsEmpty(Window(Home).Property(LiveTV.Sports.Progress.WaitStatus))</visible>
-            </control>
-            <control type="label"><right>18</right><width>175</width><top>151</top><height>23</height><font>Reg18</font><textcolor>ffdddddd</textcolor><align>right</align>
-                <label>$INFO[Window(Home).Property(LiveTV.Sports.Progress.WaitStatus)]</label><scroll>$PARAM[focused]</scroll>
-                <visible>String.IsEqual(ListItem.Property(LiveTV.Feeds),Finding feeds…) + !String.IsEmpty(Window(Home).Property(LiveTV.Sports.Progress.WaitStatus))</visible>
             </control>
         </control>
     </include>
@@ -756,11 +746,6 @@
             <control type="label"><left>18</left><width>80</width><top>158</top><height>23</height><font>Reg18</font><textcolor>ffffffff</textcolor><align>center</align><label>LIVE</label><visible>String.IsEqual(ListItem.Property(LiveTV.MatchState),Live) + String.IsEmpty(ListItem.Property(LiveTV.StartTime))</visible></control>
             <control type="label"><right>18</right><width>175</width><top>158</top><height>23</height><font>Reg18</font><textcolor>ffdddddd</textcolor><align>right</align>
                 <label>$INFO[ListItem.Property(LiveTV.Feeds)]</label><scroll>$PARAM[focused]</scroll>
-                <visible>!String.IsEqual(ListItem.Property(LiveTV.Feeds),Finding feeds…) | String.IsEmpty(Window(Home).Property(LiveTV.Sports.Progress.WaitStatus))</visible>
-            </control>
-            <control type="label"><right>18</right><width>175</width><top>158</top><height>23</height><font>Reg18</font><textcolor>ffdddddd</textcolor><align>right</align>
-                <label>$INFO[Window(Home).Property(LiveTV.Sports.Progress.WaitStatus)]</label><scroll>$PARAM[focused]</scroll>
-                <visible>String.IsEqual(ListItem.Property(LiveTV.Feeds),Finding feeds…) + !String.IsEmpty(Window(Home).Property(LiveTV.Sports.Progress.WaitStatus))</visible>
             </control>
             <control type="label"><left>18</left><right>195</right><top>158</top><height>23</height><font>Reg18</font><textcolor>ffdddddd</textcolor><label>$INFO[ListItem.Property(LiveTV.Kickoff)]</label><scroll>$PARAM[focused]</scroll><visible>!String.IsEqual(ListItem.Property(LiveTV.MatchState),Live)</visible></control>
         </control>

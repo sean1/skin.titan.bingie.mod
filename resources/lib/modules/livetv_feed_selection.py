@@ -5,7 +5,7 @@ import math
 import time
 import uuid
 from queue import Empty, SimpleQueue
-from threading import Thread
+from threading import Event, Thread
 from urllib.parse import parse_qs, urlsplit
 
 from modules import kodi_utils as ku
@@ -24,7 +24,6 @@ _NO_RESULT_RETRY_SECONDS = 10
 _HANDOFF = 'LiveTV.FeedSelection.Handoffs'
 _ORDER = 'LiveTV.FeedSelection.Order'
 _HANDOFF_SECONDS = 120
-_handoff_cache = None
 
 
 def _timing(phase, created):
@@ -80,72 +79,6 @@ def _selection(snapshot, query):
 	return [[ref, feed, livetv._unique_match(groups, ref, str(feed.get('name') or ''))] for ref, feed in groups.get(key, {}).items()]
 
 
-def handoff(params, fixture, groups):
-	"""Save one short-lived snapshot for all event links on this sports page."""
-	global _handoff_cache
-	from menus import livetv
-	from modules import livetv_sports_progress as progress
-	try:
-		now = time.time()
-		query = {key: params.get(key, '') for key in _FIELDS}
-		sport = query['sport']
-		if _handoff_cache and _handoff_cache[2] is groups:
-			snapshot = _handoff_cache[1]
-			if not snapshot: return ''
-			key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
-			matching = [row for row in snapshot['fixtures'] if isinstance(row, dict) and _fixture_key(sport, row) == key]
-			identity = livetv._fixture_focus_identity(sport, fixture)
-			if snapshot['sport'] == sport and now < snapshot['expires'] and _fixture_key(sport, fixture) == key and len(matching) == 1 and identity and livetv._fixture_focus_identity(sport, matching[0]) == identity: return snapshot['token']
-			return ''
-		_handoff_cache = (None, None, groups)
-		request = progress._read(progress._REQUEST)
-		request_id = request.get('id', '')
-		accounts = livetv._feed_accounts_fingerprint()
-		if not request_id or not progress._current(sport) or not progress._valid(request, sport) or request.get('accounts') != accounts or ku.get_property(progress._CANCEL) == request_id: return ''
-		cache_key = (request_id, id(groups))
-		if _handoff_cache and _handoff_cache[0] == cache_key and _handoff_cache[2] is groups:
-			snapshot = _handoff_cache[1]
-		else:
-			accepted = progress.accepted_result(sport, now)
-			if not accepted or accepted['request'].get('id') != request_id or accepted['groups'] != groups: return ''
-			published = accepted['published']
-			if not 0 <= now - published < _HANDOFF_SECONDS: return ''
-			cache = progress._read(progress._FIXTURE_CACHE + sport)
-			if cache.get('accounts') != accounts or cache.get('fixtures') != request['fixtures'] or not isinstance(cache.get('source_expires'), (int, float)) or isinstance(cache.get('source_expires'), bool) or not math.isfinite(cache['source_expires']) or not now < cache['source_expires']: return ''
-			snapshot = {'token': uuid.uuid4().hex, 'sport': sport, 'accounts': accounts, 'fixtures': request['fixtures'], 'groups': list(groups.items()), 'expires': min(published + _HANDOFF_SECONDS, cache['source_expires']),
-				'unavailable': accepted['unavailable'], 'saved': accepted.get('saved', False), 'revision': accepted['revision'], 'request_id': request_id}
-			encoded = json.dumps(snapshot, ensure_ascii=False, separators=(',', ':'))
-			if len(encoded.encode('utf-8')) > _MAX_RESULT: return ''
-			ku.set_property(_HANDOFF, encoded)
-			_handoff_cache = (cache_key, snapshot, groups)
-		if not now < snapshot['expires'] or _fixture_key(sport, fixture) != (query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])): return ''
-		matching = [row for row in snapshot['fixtures'] if isinstance(row, dict) and _fixture_key(sport, row) == _fixture_key(sport, fixture)]
-		if len(matching) != 1 or not livetv._fixture_focus_identity(sport, fixture) or livetv._fixture_focus_identity(sport, matching[0]) != livetv._fixture_focus_identity(sport, fixture): return ''
-		return snapshot['token']
-	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return ''
-
-
-def overview_handoff(params, fixture, groups):
-	"""Bind a picker link to the current, short-lived overview snapshot."""
-	from menus import livetv
-	from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
-	try:
-		sport = params.get('sport', '')
-		if sport not in overview.SPORTS: return ''
-		raw = ku.get_property(overview.PREFIX + sport)
-		value = json.loads(raw or '{}')
-		now = time.time()
-		if value.get('accounts') != livetv._feed_accounts_fingerprint() or not 0 <= now - value['created'] < _HANDOFF_SECONDS or not _overview_fixture_fresh(value, now): return ''
-		if progress._filter_guide_groups(progress._groups_from_json(value['groups']), now) != groups: return ''
-		query = {key: params.get(key, '') for key in _FIELDS}
-		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
-		matching = [row for row in value['fixtures'] if isinstance(row, dict) and _fixture_key(sport, row) == key]
-		identity = livetv._fixture_focus_identity(sport, fixture)
-		if _fixture_key(sport, fixture) != key or len(matching) != 1 or matching[0].get('status') not in livetv._fixture_service.LIVE_STATUSES or not identity or livetv._fixture_focus_identity(sport, matching[0]) != identity: return ''
-		return 'o' + hashlib.sha256(raw.encode('utf-8')).hexdigest()
-	except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return ''
-
-
 def _overview_fixture_fresh(value, now):
 	expires = value.get('fixture_expires')
 	return isinstance(expires, (int, float)) and not isinstance(expires, bool) and math.isfinite(expires) and now < expires
@@ -186,20 +119,22 @@ def _handoff(params, query, accounts):
 
 
 
-def _retention_identity(query, accounts):
-	"""Identify a unique live event only while its fixture source is fresh."""
+def _snapshot_identity(query, fixtures):
 	from menus import livetv
-	from modules import livetv_sports_progress as progress
+	if fixtures is None: return ''
+	sport = query['sport']
+	key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
+	matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
+	if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: return ''
+	return livetv._fixture_focus_identity(sport, matches[0])
+
+
+def _retention_identity(query, accounts):
+	"""Identify a unique live event only while its newest fixture source is fresh."""
 	try:
 		sport = query['sport']
-		cached = progress._cached_fixtures(sport, accounts)
-		cache = progress._read(progress._FIXTURE_CACHE + sport)
-		expires = cache.get('source_expires')
-		if cached is None or cache.get('accounts') != accounts or not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or not time.time() < expires: return ''
 		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
-		matches = [fixture for fixture in cached[0] if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
-		if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: return ''
-		return livetv._fixture_focus_identity(sport, matches[0])
+		return _snapshot_identity(query, _schedule_snapshot(sport, accounts, key))
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return ''
 
 
@@ -224,13 +159,13 @@ def _retainable(request):
 
 
 def _fresh_cache_conflicts(request):
-	from modules import livetv_sports_progress as progress
 	try:
-		sport, accounts = request['query']['sport'], request['accounts']
-		cache = progress._read(progress._FIXTURE_CACHE + sport)
-		expires = cache.get('source_expires')
-		if progress._cached_fixtures(sport, accounts) is None or cache.get('accounts') != accounts or not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or not time.time() < expires: return False
-		return _retention_identity(request['query'], accounts) != request.get('fixture_identity')
+		query, accounts = request['query'], request['accounts']
+		sport = query['sport']
+		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
+		fixtures = _schedule_snapshot(sport, accounts, key)
+		if fixtures is None: return False
+		return _snapshot_identity(query, fixtures) != request.get('fixture_identity')
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return True
 
 
@@ -363,6 +298,30 @@ def _visible(request):
 	return query.get('mode') == ['livetv.match_feeds'] and all(query.get(key, ['']) == [request.get('query', {}).get(key, '')] for key in _FIELDS)
 
 
+def _schedule_snapshot(sport, accounts, key):
+	"""Return the newest fresh schedule containing enough information to validate the event."""
+	from modules import livetv_sports_overview as overview, livetv_sports_progress as progress
+	now = time.time()
+	candidates = []
+	def add(value, created, expires, partial=False):
+		try:
+			if value.get('accounts') != accounts or value.get('held_identity') or not isinstance(value.get('fixtures'), list): return
+			if any(not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) for v in (created, expires)): return
+			if not 0 <= now - created < _HANDOFF_SECONDS or not now < expires: return
+			if partial and not any(isinstance(row, dict) and _fixture_key(sport, row) == key for row in value['fixtures']): return
+			candidates.append((created, value['fixtures']))
+		except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return
+	value = _read(overview.PREFIX + sport)
+	add(value, value.get('created'), value.get('fixture_expires'), value.get('fixture_partial'))
+	cache = progress._read(progress._FIXTURE_CACHE + sport)
+	if progress._cached_fixtures(sport, accounts) is not None: add(cache, cache.get('captured'), cache.get('source_expires'))
+	fixture_request = progress._read(progress._FIXTURE_REQUEST)
+	result = progress._read(progress._FIXTURE_RESULT)
+	if fixture_request.get('sport') == sport and fixture_request.get('accounts') == accounts and result.get('id') and result.get('id') == fixture_request.get('id') and not result.get('unavailable'):
+		add(dict(result, accounts=accounts), result.get('captured'), result.get('expires'), result.get('complete') is False)
+	return max(candidates, key=lambda candidate: candidate[0])[1] if candidates else None
+
+
 class FeedSelection:
 	def __init__(self):
 		self.results = SimpleQueue()
@@ -376,6 +335,13 @@ class FeedSelection:
 		self.validation_worker = None
 		self.validating_id = ''
 		self.timed_refresh_id = ''
+		self.guide_id = ''
+		self.guide_cancel = None
+		self.guide_updates = SimpleQueue()
+		self.guide_pending = False
+		self.guide_worker = None
+		self.guide_match_worker = None
+		self.guide_matches = SimpleQueue()
 
 	def pending(self):
 		request = _read(_REQUEST)
@@ -383,7 +349,63 @@ class FeedSelection:
 		result = _read(_RESULT)
 		return result.get('id') != request['id'] or result.get('complete', True) is not True
 
-	def _work(self, request):
+	def _refresh_guide(self, request, canceled):
+		from modules import livetv_sports_guide
+		livetv_sports_guide.refresh(canceled, lambda: self.guide_updates.put(request['id']), permissive=request['query']['sport'] != 'soccer')
+
+	def _rematch_guide(self, request):
+		# Isolate intermediate revisions so direct choices remain usable during rematching.
+		collector = SimpleQueue()
+		self._work(request, results=collector)
+		latest = None
+		while True:
+			try: _, latest = collector.get_nowait()
+			except Empty: break
+		if latest: self.guide_matches.put((request['id'], latest))
+
+	def _guide_tick(self, request, visible):
+		request_id = request.get('id', '')
+		active = bool(visible and request_id and request.get('query', {}).get('sport') and request.get('fixture_observed') and _request_current(request) and not request.get('identity_conflict') and not ku.get_visibility('Player.HasMedia'))
+		if not active or self.guide_id != request_id:
+			if self.guide_cancel: self.guide_cancel.set()
+			self.guide_id = ''
+			self.guide_pending = False
+		if not active: return
+		if not self.guide_id:
+			self.guide_id = request_id
+			self.guide_cancel = Event()
+			self.guide_worker = Thread(target=self._refresh_guide, args=(request, self.guide_cancel), daemon=True)
+			self.guide_worker.start()
+		while True:
+			try: updated = self.guide_updates.get_nowait()
+			except Empty: break
+			if updated == request_id: self.guide_pending = True
+		while True:
+			try: match_id, encoded = self.guide_matches.get_nowait()
+			except Empty: break
+			if match_id != request_id or _read(_REQUEST).get('id') != request_id or not _request_current(request) or not _visible(request) or _fresh_cache_conflicts(request): continue
+			try:
+				result, current = json.loads(encoded), _read(_RESULT)
+				identity = result.get('fixture_identity')
+				if result.get('error') or result.get('incomplete_error') or result.get('complete') is not True or current.get('id') != request_id or (request.get('fixture_identity') and identity != request['fixture_identity']): continue
+				choices = result.get('choices')
+				if not isinstance(choices, list): continue
+				refs = {choice[0] for choice in choices if isinstance(choice, list) and len(choice) >= 2 and isinstance(choice[0], str)}
+				for choice in _current_choices(current.get('choices'))[0]:
+					if len(choice) < 2 or not isinstance(choice[0], str) or choice[0] in refs or choice[1].get('_guide_match'): continue
+					choices.append([choice[0], choice[1], False])
+					refs.add(choice[0])
+				result['revision'] = int(current.get('revision', 0)) + 1
+				ku.set_property(_RESULT, json.dumps(result, ensure_ascii=False, separators=(',', ':')))
+			except (TypeError, ValueError, AttributeError, OverflowError): continue
+		original = self.workers.get(request_id)
+		if self.guide_pending and (not original or not original.is_alive()) and (not self.guide_match_worker or not self.guide_match_worker.is_alive()):
+			self.guide_pending = False
+			self.guide_match_worker = Thread(target=self._rematch_guide, args=(request,), daemon=True)
+			self.guide_match_worker.start()
+
+	def _work(self, request, results=None):
+		results = self.results if results is None else results
 		revision = 0
 		seed = _handoff(request, request['query'], request['accounts']) if request.get('handoff') else None
 		last_choices = [[ref, feed, False] for ref, feed, _ in seed['choices']] if seed else []
@@ -402,10 +424,10 @@ class FeedSelection:
 			def observe_fixtures(fixtures):
 				nonlocal observed_identity
 				matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
-				if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: return
+				if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: raise ValueError('Fixture unavailable')
 				identity = livetv._fixture_focus_identity(sport, matches[0])
 				observed_identity = identity
-				if request.get('fixture_identity') and request['fixture_identity'] != identity: raise ValueError('Fixture changed')
+				if not identity or (request.get('fixture_identity') and request['fixture_identity'] != identity): raise ValueError('Fixture changed')
 			secrets = [str(account.get(field) or '') for _, account in livetv._sports_accounts(livetv._load()) for field in ('username', 'password')]
 			def publish(groups, complete, unavailable=False, saved=False):
 				nonlocal revision, last_choices, last_fresh, timed_choices
@@ -434,22 +456,16 @@ class FeedSelection:
 				if choices and not timed_choices:
 					_timing('first_choices', request['created'])
 					timed_choices = True
-				self.results.put((request['id'], encoded))
+				results.put((request['id'], encoded))
 			unavailable = []
 			if sport:
 				def publish_partial(groups, partial_unavailable, statuses):
 					nonlocal last_saved
 					last_saved = any(stale for _, stale in statuses)
 					publish(groups, False, partial_unavailable, last_saved)
-				from modules import livetv_sports_progress as progress
-				cached = progress._cached_fixtures(sport, request['accounts'])
-				fixture_cache = progress._read(progress._FIXTURE_CACHE + sport)
-				try:
-					source_expiry = fixture_cache.get('source_expires')
-					source_fresh = isinstance(source_expiry, (int, float)) and not isinstance(source_expiry, bool) and math.isfinite(source_expiry) and time.time() < source_expiry
-				except (TypeError, ValueError, OverflowError): source_fresh = False
-				if not source_fresh or cached is None or fixture_cache.get('accounts') != request['accounts'] or fixture_cache.get('fixtures') != cached[0]: cached = None
-				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=cached[0] if cached is not None else None, overlap_catalogs=cached is None, status_sink=unavailable.append, notify_stale=False, picker_priority=True, selected_fixture=key,
+				fixtures = _schedule_snapshot(sport, request['accounts'], key)
+				if fixtures is not None: observe_fixtures(fixtures)
+				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=fixtures, overlap_catalogs=False, status_sink=unavailable.append, notify_stale=False, picker_priority=True, selected_fixture=key,
 					on_partial=publish_partial, on_fixtures=observe_fixtures)
 			else:
 				groups = livetv._soccer_groups(livetv._catalog(account, 'get_live_streams', notify_stale=False))
@@ -457,13 +473,13 @@ class FeedSelection:
 		except Exception:
 			revision += 1
 			if observed_identity and request.get('fixture_identity') and observed_identity != request['fixture_identity']:
-				self.results.put((request['id'], json.dumps({'id': request['id'], 'fixture_identity': observed_identity, 'revision': revision, 'complete': True})))
+				results.put((request['id'], json.dumps({'id': request['id'], 'fixture_identity': observed_identity, 'revision': revision, 'complete': True})))
 				return
 			current_seed = _handoff(request, request['query'], request['accounts']) if request.get('handoff') else None
 			known = {choice[0] for choice in last_fresh}
 			additional = [[ref, feed, False] for ref, feed, _ in current_seed['choices'] if ref not in known] if current_seed else []
 			last_choices = last_fresh + additional
-			self.results.put((request['id'], json.dumps({'id': request['id'], 'choices': last_choices, 'incomplete_error': True, 'saved': last_saved or bool(additional and current_seed.get('saved')), 'revision': revision, 'complete': True, 'seeded': bool(additional), 'fresh_choices': last_fresh if additional else [], 'fresh_saved': last_saved})))
+			results.put((request['id'], json.dumps({'id': request['id'], 'choices': last_choices, 'incomplete_error': True, 'saved': last_saved or bool(additional and current_seed.get('saved')), 'revision': revision, 'complete': True, 'seeded': bool(additional), 'fresh_choices': last_fresh if additional else [], 'fresh_saved': last_saved})))
 
 	def _validate_fixture(self, request):
 		"""Recheck the event without fetching the provider catalogs again."""
@@ -493,6 +509,7 @@ class FeedSelection:
 		request = _read(_REQUEST)
 		request_id = request.get('id', '')
 		visible = bool(request_id and _visible(request))
+		if not visible: self._guide_tick(request, False)
 		seed = _read(_RESULT)
 		quick_play = bool(request_id and not visible and self.seen_id != request_id and request.get('handoff') and seed.get('id') == request_id and seed.get('seeded') and ku.get_visibility('Player.HasMedia') and _retainable(request) and 0 <= time.time() - request['created'] < 30)
 		if quick_play:
@@ -535,6 +552,7 @@ class FeedSelection:
 				ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
 				retaining = bool(request.get('retained'))
 			if visible or retaining: ku.set_property(_RESULT, encoded)
+		self._guide_tick(request, visible)
 		if visible and ku.get_property(_EARLY_RETRY) == request_id and _read(_REQUEST).get('id') == request_id:
 			current = _read(_RESULT)
 			if current.get('id') == request_id:
@@ -636,6 +654,7 @@ class FeedSelection:
 		worker.start()
 
 	def close(self):
+		if self.guide_cancel: self.guide_cancel.set()
 		ku.clear_property(_HEARTBEAT)
 		ku.clear_property(_ORDER)
 		ku.clear_property(_REQUEST)

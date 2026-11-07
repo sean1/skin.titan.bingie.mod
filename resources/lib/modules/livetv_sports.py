@@ -18,6 +18,17 @@ _METADATA_DATE = re.compile(r'(?<![\d/.-])(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}
 _EVENT = re.compile(r"^([\w .&'’\-]{2,80}?)\s+(?:vs\.?|v\.?|at|@)\s+([\w .&'’\-]{2,80}?)$", re.I)
 _NON_LIVE_TITLE = re.compile(r'\b(?:end|ended|highlights?|recaps?|previews?|replays?|delayed|encore|re-?runs?|repeats?|recorded)\b', re.I)
 _WORD = re.compile(r'\w+')
+_TEAM_WORD_SEPARATOR = re.compile(r'(?<!\w)(?:vs?\.?|at)(?!\w)|@', re.I)
+_TEAM_PUNCTUATION_SEPARATOR = re.compile(r'\s+[-/]\s+')
+
+
+def split_team_event(value):
+	"""Split a complete team listing while rejecting ambiguous punctuation."""
+	team = r"[\w .&'’/\-]{2,80}?"
+	match = re.fullmatch(r'(' + team + r')\s+(?:' + _TEAM_WORD_SEPARATOR.pattern + r')\s+(' + team + r')', value, re.I)
+	if not match and len(_TEAM_PUNCTUATION_SEPARATOR.findall(value)) == 1:
+		match = re.fullmatch(r'(' + team + r')' + _TEAM_PUNCTUATION_SEPARATOR.pattern + r'(' + team + r')', value, re.I)
+	return match.groups() if match else None
 
 
 def record_timing(phase, elapsed, sport='', outcome=''):
@@ -164,12 +175,12 @@ def fixture_groups(streams, sport, fixtures, live_only=False):
 		heads = [_WORD.match(alias) for alias in alias_teams]
 		if all(heads): alias_heads = {head.group().casefold().replace('ı', 'i') for head in heads}
 	pattern = re.compile(r'(?<!\w)(?:' + '|'.join(re.escape(alias).replace(r'\ ', r'\s+').replace('/', r'\s*/\s*') if sport == 'tennis' else re.escape(alias).replace(r'\ ', r'\s+') for alias in sorted(alias_teams, key=len, reverse=True)) + r')(?!\w)', re.I)
-	separator = re.compile(r'\b(?:vs?\.?|at)\b|@' + (r'|\s+-\s+' if sport == 'tennis' else ''), re.I)
+	separator = re.compile(_TEAM_WORD_SEPARATOR.pattern + (r'|\s+-\s+' if sport == 'tennis' else ''), re.I)
 	result = {}
 	for stream in streams:
 		if not isinstance(stream, dict): continue
 		stream_id, name = str(stream.get('stream_id') or ''), stream.get('name')
-		if not stream_id.isdecimal() or not isinstance(name, str) or not separator.search(name): continue
+		if not stream_id.isdecimal() or not isinstance(name, str) or not (separator.search(name) or _TEAM_PUNCTUATION_SEPARATOR.search(name)): continue
 		if non_live_title(name): continue
 		if sport == 'tennis': name = _tennis_text(name)
 		if alias_heads is not None and not any(word.group().casefold().replace('ı', 'i') in alias_heads for word in _WORD.finditer(name)): continue
@@ -187,10 +198,11 @@ def fixture_groups(streams, sport, fixtures, live_only=False):
 			pairs = [((a, 'home'), (b, 'away')) if a[0] < b[0] else ((b, 'away'), (a, 'home')) for a in sides['home'] for b in sides['away'] if a[1] <= b[0] or b[1] <= a[0]]
 			def find_separator(value):
 				matches = list(separator.finditer(value))
-				if sport == 'tennis': return next((match for match in matches if match.group().strip().rstrip('.') != 'v'), matches[0] if matches else None)
-				return matches[0] if matches else None
+				if sport == 'tennis' and matches: return next((match for match in matches if match.group().strip().rstrip('.') != 'v'), matches[0])
+				return matches[0] if matches else _TEAM_PUNCTUATION_SEPARATOR.fullmatch(value)
 			pairs = [(a, a_side, b, b_side, find_separator(name[a[1]:b[0]])) for (a, a_side), (b, b_side) in pairs]
 			pairs = [(a, a_side, b, b_side, sep) for a, a_side, b, b_side, sep in pairs if sep]
+			if sport == 'tennis' and fixture.get('discipline') != 'doubles' and not re.search(r'\bsingles\b', name, re.I): pairs = [pair for pair in pairs if pair[4].group().strip() != '/']
 			if not pairs: continue
 			if sport == 'tennis':
 				tours = set(re.findall(r'\b(?:atp|wta)\b', name))

@@ -1450,7 +1450,7 @@ def _soccer_feed_event(name):
 				if part_scope in league and re.match(re.escape(league) + r'\s+', part, re.I):
 					part = part[len(league):].lstrip()
 					break
-		part = re.sub(r'^([^:|]+):\s*(?=[^:|]+\s+v(?:s\.?)?\s+)', '', part, flags=re.I)
+		part = re.sub(r'^([^:|]+):\s*(?=[^:|]+(?:\s+(?:' + _sports._TEAM_WORD_SEPARATOR.pattern + r')\s+|' + _sports._TEAM_PUNCTUATION_SEPARATOR.pattern + r'))', '', part, flags=re.I)
 		part = re.sub(r'\s+@\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}\s+\d{1,2}:\d{2}\s*(?:am|pm)?\s*:.+$', '', part, flags=re.I)
 		part = re.sub(r'^laliga(?:\s+ea\s+sports)?(?:\s+(?:(?:\d{4}|\d{2})/\d{2}|\(t\d{2}/\d{2}\)))?\s*:\s*', '', part, flags=re.I)
 		part = re.sub(r'\s+-\s+spanish\s+laliga\s+\d{4}/\d{4}\s+-\s+week\s+\d{1,2}\s*$', '', part, flags=re.I)
@@ -1459,11 +1459,9 @@ def _soccer_feed_event(name):
 			# Keep identity markers when removing a parenthesized time or feed label.
 			markers = re.findall(r'\b(?:women|womens|ladies|wfc|w|reserve|reserves|ii|iii|b|(?:u|under)\s*[- ]?\s*\d{1,2})\b', ending.group(1), re.I)
 			part = part[:ending.start()] + (' ' + ' '.join(markers) if markers else '')
-		match = re.fullmatch(r"([\w .&'’/\-]{2,80}?)\s+(?:vs\.?|v\.?)\s+([\w .&'’/\-]{2,80}?)", part, re.I)
-		if not match and len(re.findall(r'\s+-\s+', part)) == 1:
-			match = re.fullmatch(r"([\w .&'’/\-]{2,80}?)\s+-\s+([\w .&'’/\-]{2,80}?)", part, re.I)
-		if match:
-			event = tuple(' '.join(side.casefold().split()) for side in match.groups())
+		teams = _sports.split_team_event(part)
+		if teams:
+			event = tuple(' '.join(side.casefold().split()) for side in teams)
 			if event[0] != event[1] and all(re.search(r'[^\W\d_]', side) for side in event): return event
 	return None
 

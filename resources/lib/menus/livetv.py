@@ -41,6 +41,7 @@ from modules.livetv_timezone import get_timezone
 _GUIDE_DOWNLOAD_LIMIT = 512 * 1024 * 1024
 _GUIDE_XML_LIMIT = 768 * 1024 * 1024
 _GUIDE_FRESH_SECONDS = 2 * 60 * 60
+_GENERIC_LIVE_SPORT_TITLES = {'hockey': r'(?:nhl\s+)?(?:ice\s+)?hockey', 'basketball': r'(?:nba\s+)?basketball', 'football': r'(?:nfl\s+)?football', 'soccer': r'(?:soccer|football)', 'tennis': r'tennis'}
 _GUIDE_MATCH_SLOTS = threading.BoundedSemaphore(2)
 _DIRECT_MATCH_SLOTS = threading.BoundedSemaphore(2)
 _CATALOG_PREFETCH_SLOTS = threading.BoundedSemaphore(4)
@@ -283,12 +284,25 @@ def _sports_guide_groups(account, streams, sport, fixtures, direct, now):
 		if not epg_id: continue
 		entries = programmes.get(epg_id)
 		if not isinstance(entries, list): continue
-		current = [entry for entry in entries if isinstance(entry, list) and len(entry) == 3 and isinstance(entry[0], (int, float)) and not isinstance(entry[0], bool) and isinstance(entry[1], (int, float)) and not isinstance(entry[1], bool) and isinstance(entry[2], str) and entry[0] <= now < entry[1]]
+		current = [entry for entry in entries if isinstance(entry, list) and len(entry) in (3, 4) and isinstance(entry[0], (int, float)) and not isinstance(entry[0], bool) and isinstance(entry[1], (int, float)) and not isinstance(entry[1], bool) and isinstance(entry[2], str) and entry[0] <= now < entry[1]]
 		if len(current) != 1: continue
 		if _sports.non_live_title(current[0][2]): continue
-		future = [entry[0] for entry in entries if isinstance(entry, list) and len(entry) == 3 and isinstance(entry[0], (int, float)) and not isinstance(entry[0], bool)
+		title = current[0][2]
+		if len(current[0]) == 4 and isinstance(current[0][3], str) and sport in _GENERIC_LIVE_SPORT_TITLES and re.fullmatch(r'\s*live\s+' + _GENERIC_LIVE_SPORT_TITLES[sport] + r'\s*', title, re.I):
+			description = current[0][3]
+			if not _sports.non_live_title(description) and not re.search(r'\b(?:upcoming|next|previous|earlier)\b', description, re.I):
+				first = re.split(r'\.\s+(?=[A-Z])', description, maxsplit=1)[0]
+				first = re.sub(r'\s*\((?:face-?off|kick-?off|start)\b[^()]*\)\s*\.?\s*$', '', first, flags=re.I).strip().rstrip('.')
+				teams = _sports.split_team_event(first)
+				if teams:
+					def fixture_names(fixture):
+						return tuple(' '.join(str(fixture.get(side, {}).get('name', '') if sport != 'soccer' else fixture.get(side, '')).casefold().split()) for side in ('home', 'away'))
+					pair = tuple(' '.join(team.casefold().split()) for team in teams)
+					if any(_schedule_state(fixture, now)[0] == 'Live' and (pair == fixture_names(fixture) or pair == fixture_names(fixture)[::-1]) for fixture in fixtures if isinstance(fixture, dict)):
+						title = first
+		future = [entry[0] for entry in entries if isinstance(entry, list) and len(entry) in (3, 4) and isinstance(entry[0], (int, float)) and not isinstance(entry[0], bool)
 			and isinstance(entry[1], (int, float)) and not isinstance(entry[1], bool) and isinstance(entry[2], str) and now < entry[0] < entry[1]]
-		candidates.append(dict(stream, name=current[0][2], _guide_until=min([current[0][1], created + _GUIDE_FRESH_SECONDS] + future)))
+		candidates.append(dict(stream, name=title, _guide_until=min([current[0][1], created + _GUIDE_FRESH_SECONDS] + future)))
 	matched = _f1.fixture_groups(candidates, fixtures, live_only=True) if sport == 'f1' else _soccer_fixture_groups(candidates, fixtures, live_only=True) if sport == 'soccer' else _sports.fixture_groups(candidates, sport, fixtures, live_only=True)
 	return {event: {stream_id: dict(by_id[stream_id][0], _guide_match=True, _guide_until=feed['_guide_until']) for stream_id, feed in feeds.items()} for event, feeds in matched.items() if event in live}
 
@@ -1070,7 +1084,9 @@ def _parse_guide(source, now, wanted=None, search_term=None, sports_window=False
 					count += 1
 					if search_term is None and count > 200000: raise ValueError('Too many programmes')
 					if search_term is None or count <= _SEARCH_GUIDE_LIMIT:
-						programmes.setdefault(channel, []).append([start, stop, title])
+						description = (node.findtext('desc') or '') if sports_window and any(re.fullmatch(r'\s*live\s+' + pattern + r'\s*', title, re.I) for pattern in _GENERIC_LIVE_SPORT_TITLES.values()) else ''
+						if len(description) > 1000: description = ''
+						programmes.setdefault(channel, []).append([start, stop, title, description] if description else [start, stop, title])
 				if root is not None: root.clear()
 			elif node.tag == 'channel' and root is not None: root.clear()
 	parser.close()
@@ -2149,13 +2165,19 @@ def match_feeds(params):
 				name = str(stream.get('name') or 'Live channel')
 				label = _feed_label_with_outcome(_feed_display_label(number, name), stream_id, outcomes)
 				_item(label, _matched_play_params(stream_id, name, sport, playable_choices if unique.get(stream_id) else [], feed_cache), False)
-		elif state in ('ready', 'ready_saved'):
+		elif state in ('ready', 'ready_saved') and livetv_feed_selection.guide_state() != 'searching':
 			_item('No matching live feeds are currently available', {}, False, playable=False)
 		if state == 'partial_saved_unavailable': waiting_row('Cached feeds · some providers unavailable — select to retry')
 		elif state == 'partial_unavailable': waiting_row('Some feeds unavailable — select to retry')
 		elif state == 'partial_saved': _item('Showing cached feeds · refreshing…', {}, False, playable=False)
 		elif state == 'ready_saved': _item('Showing cached feeds · refresh unavailable', {}, False, playable=False)
 		elif state == 'partial': waiting_row('Still finding feeds… — select to retry' if livetv_feed_selection.is_slow() else None)
+		guide_state = livetv_feed_selection.guide_state() if sport else ''
+		if guide_state == 'searching': _item('Checking programme guides for more feeds…', {}, False, playable=False)
+		elif guide_state == 'failed':
+			retry = {key: params.get(key, '') for key in ('sport', 'home', 'away', 'scope', 'session', 'display_title', 'fixture_identity', 'handoff')}
+			retry.update({'mode': 'livetv.match_feeds', 'guide_request': livetv_feed_selection.retry_request(), 'guide_retry': uuid.uuid4().hex})
+			_item('Some programme guides unavailable — select to retry', retry)
 		if sport: _save_feed_matches(feed_cache)
 	except (OSError, HTTPException, ValueError, TypeError):
 		_error('Could not load matching feeds. Try again.')

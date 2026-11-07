@@ -16,6 +16,8 @@ _RESULT = 'LiveTV.FeedSelection.Result'
 _HEARTBEAT = 'LiveTV.FeedSelection.Heartbeat'
 _EARLY_RETRY = 'LiveTV.FeedSelection.EarlyRetry'
 _EARLY_ACK = 'LiveTV.FeedSelection.EarlyRetryAcknowledged'
+_GUIDE = 'LiveTV.FeedSelection.Guide'
+_GUIDE_RETRY = 'LiveTV.FeedSelection.GuideRetry'
 _FIELDS = ('sport', 'home', 'away', 'scope', 'session')
 _MAX_AGE = 15 * 60
 _MAX_RESULT = 4 * 1024 * 1024
@@ -180,6 +182,11 @@ def prepare(params):
 	expected_identity = params.get('fixture_identity', '')
 	if expected_identity and (not isinstance(expected_identity, str) or len(expected_identity) != 64 or any(char not in '0123456789abcdef' for char in expected_identity)): return 'unavailable', []
 	request = _read(_REQUEST)
+	guide_retry = params.get('guide_retry', '')
+	if guide_retry and params.get('guide_request') == request.get('id') and request.get('query') == query and request.get('accounts') == accounts and request.get('guide_retry_seen') != guide_retry:
+		request['guide_retry_seen'] = guide_retry
+		ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False, separators=(',', ':')))
+		ku.set_property(_GUIDE_RETRY, request['id'])
 	token = params.get('handoff', '')
 	if isinstance(token, str) and token.startswith('o') and expected_identity and not _overview_handoff(token, query, accounts):
 		token = ''
@@ -287,6 +294,11 @@ def retry_request():
 	return _read(_REQUEST).get('id', '')
 
 
+def guide_state():
+	state, request = _read(_GUIDE), _read(_REQUEST)
+	return state.get('state', '') if state.get('id') == request.get('id') else ''
+
+
 def is_slow():
 	try: return time.time() - _read(_REQUEST)['created'] >= _SLOW_SECONDS
 	except (KeyError, TypeError): return False
@@ -336,8 +348,14 @@ class FeedSelection:
 		self.validating_id = ''
 		self.timed_refresh_id = ''
 		self.guide_id = ''
+		self.guide_run = ''
 		self.guide_cancel = None
 		self.guide_updates = SimpleQueue()
+		self.guide_done = SimpleQueue()
+		self.guide_outcome = None
+		self.guide_match_failed = False
+		self.guide_match_result_pending = False
+		self.guide_force_match = False
 		self.guide_pending = False
 		self.guide_worker = None
 		self.guide_match_worker = None
@@ -347,13 +365,15 @@ class FeedSelection:
 		request = _read(_REQUEST)
 		if not request.get('id') or not _visible(request) or ku.get_visibility('Player.HasMedia'): return False
 		result = _read(_RESULT)
-		return result.get('id') != request['id'] or result.get('complete', True) is not True
+		return result.get('id') != request['id'] or result.get('complete', True) is not True or guide_state() == 'searching'
 
-	def _refresh_guide(self, request, canceled):
+	def _refresh_guide(self, request, canceled, run):
 		from modules import livetv_sports_guide
-		livetv_sports_guide.refresh(canceled, lambda: self.guide_updates.put(request['id']), permissive=request['query']['sport'] != 'soccer')
+		try: success = livetv_sports_guide.refresh(canceled, lambda: self.guide_updates.put(run), permissive=request['query']['sport'] != 'soccer')
+		except Exception: success = False
+		if not canceled.is_set(): self.guide_done.put((run, bool(success)))
 
-	def _rematch_guide(self, request):
+	def _rematch_guide(self, request, run):
 		# Isolate intermediate revisions so direct choices remain usable during rematching.
 		collector = SimpleQueue()
 		self._work(request, results=collector)
@@ -361,7 +381,7 @@ class FeedSelection:
 		while True:
 			try: _, latest = collector.get_nowait()
 			except Empty: break
-		if latest: self.guide_matches.put((request['id'], latest))
+		self.guide_matches.put((run, latest))
 
 	def _guide_tick(self, request, visible):
 		request_id = request.get('id', '')
@@ -371,25 +391,51 @@ class FeedSelection:
 			self.guide_id = ''
 			self.guide_pending = False
 		if not active: return
+		if ku.get_property(_GUIDE_RETRY) == request_id and self.guide_id == request_id and (not self.guide_worker or not self.guide_worker.is_alive()):
+			self.guide_id = ''
 		if not self.guide_id:
+			self.guide_force_match = ku.get_property(_GUIDE_RETRY) == request_id
+			if self.guide_force_match: ku.clear_property(_GUIDE_RETRY)
 			self.guide_id = request_id
+			self.guide_run = uuid.uuid4().hex
+			self.guide_outcome = None
+			self.guide_match_failed = False
+			self.guide_match_result_pending = False
+			ku.set_property(_GUIDE, json.dumps({'id': request_id, 'state': 'searching'}))
 			self.guide_cancel = Event()
-			self.guide_worker = Thread(target=self._refresh_guide, args=(request, self.guide_cancel), daemon=True)
+			self.guide_worker = Thread(target=self._refresh_guide, args=(request, self.guide_cancel, self.guide_run), daemon=True)
 			self.guide_worker.start()
 		while True:
 			try: updated = self.guide_updates.get_nowait()
 			except Empty: break
-			if updated == request_id: self.guide_pending = True
+			if updated == self.guide_run: self.guide_pending = True
+		while True:
+			try: done_id, success = self.guide_done.get_nowait()
+			except Empty: break
+			if done_id == self.guide_run:
+				self.guide_outcome = success
+				if self.guide_force_match: self.guide_pending = True
 		while True:
 			try: match_id, encoded = self.guide_matches.get_nowait()
 			except Empty: break
-			if match_id != request_id or _read(_REQUEST).get('id') != request_id or not _request_current(request) or not _visible(request) or _fresh_cache_conflicts(request): continue
+			if match_id != self.guide_run: continue
+			self.guide_match_result_pending = False
+			if _read(_REQUEST).get('id') != request_id or not _request_current(request) or not _visible(request) or _fresh_cache_conflicts(request):
+				self.guide_match_failed = True
+				continue
 			try:
 				result, current = json.loads(encoded), _read(_RESULT)
 				identity = result.get('fixture_identity')
-				if result.get('error') or result.get('incomplete_error') or result.get('complete') is not True or current.get('id') != request_id or (request.get('fixture_identity') and identity != request['fixture_identity']): continue
+				if result.get('error') or result.get('incomplete_error') or result.get('complete') is not True:
+					self.guide_match_failed = True
+					continue
+				if current.get('id') != request_id or (request.get('fixture_identity') and identity != request['fixture_identity']):
+					self.guide_match_failed = True
+					continue
 				choices = result.get('choices')
-				if not isinstance(choices, list): continue
+				if not isinstance(choices, list):
+					self.guide_match_failed = True
+					continue
 				refs = {choice[0] for choice in choices if isinstance(choice, list) and len(choice) >= 2 and isinstance(choice[0], str)}
 				for choice in _current_choices(current.get('choices'))[0]:
 					if len(choice) < 2 or not isinstance(choice[0], str) or choice[0] in refs or choice[1].get('_guide_match'): continue
@@ -397,12 +443,18 @@ class FeedSelection:
 					refs.add(choice[0])
 				result['revision'] = int(current.get('revision', 0)) + 1
 				ku.set_property(_RESULT, json.dumps(result, ensure_ascii=False, separators=(',', ':')))
-			except (TypeError, ValueError, AttributeError, OverflowError): continue
+				self.guide_match_failed = False
+			except (TypeError, ValueError, AttributeError, OverflowError):
+				self.guide_match_failed = True
+				continue
 		original = self.workers.get(request_id)
 		if self.guide_pending and (not original or not original.is_alive()) and (not self.guide_match_worker or not self.guide_match_worker.is_alive()):
 			self.guide_pending = False
-			self.guide_match_worker = Thread(target=self._rematch_guide, args=(request,), daemon=True)
+			self.guide_match_result_pending = True
+			self.guide_match_worker = Thread(target=self._rematch_guide, args=(request, self.guide_run), daemon=True)
 			self.guide_match_worker.start()
+		if self.guide_outcome is not None and not self.guide_pending and not self.guide_match_result_pending and (not self.guide_worker or not self.guide_worker.is_alive()) and (not self.guide_match_worker or not self.guide_match_worker.is_alive()):
+			ku.set_property(_GUIDE, json.dumps({'id': request_id, 'state': 'ready' if self.guide_outcome and not self.guide_match_failed else 'failed'}))
 
 	def _work(self, request, results=None):
 		results = self.results if results is None else results
@@ -623,7 +675,7 @@ class FeedSelection:
 				self.seed_started = request_id
 				worker.start()
 		if result.get('id') == request_id:
-			result_key = request_id + ':' + str(result.get('revision', 0))
+			result_key = request_id + ':' + str(result.get('revision', 0)) + ':' + guide_state()
 			try: no_result_slow = self.slow_refreshed_id != request_id and time.time() - request['created'] >= _NO_RESULT_RETRY_SECONDS and not _current_choices(result.get('choices'))[0]
 			except (KeyError, TypeError): no_result_slow = False
 			slow_refresh = result.get('complete', True) is not True and (is_slow() or no_result_slow) and self.slow_refreshed_id != request_id
@@ -659,3 +711,5 @@ class FeedSelection:
 		ku.clear_property(_ORDER)
 		ku.clear_property(_REQUEST)
 		ku.clear_property(_RESULT)
+		ku.clear_property(_GUIDE)
+		ku.clear_property(_GUIDE_RETRY)

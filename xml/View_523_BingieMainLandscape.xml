@@ -645,13 +645,12 @@
 
     <include name="BingieSportsOverviewRow">
         <control type="group">
-            <height>40</height><width>1668</width>
+            <height>247</height><width>1668</width>
             <visible>Container($PARAM[id]).IsUpdating + Control.IsVisible($PARAM[id]) | Integer.IsGreater(Container($PARAM[id]).NumItems,0)</visible>
             <control type="label"><left>8</left><width>1600</width><height>38</height><font>Bold31</font><textcolor>ffffffff</textcolor><label>$PARAM[title]</label></control>
-        </control>
         <control type="fixedlist" id="$PARAM[id]">
                 <visible allowhiddenfocus="Integer.IsEqual(Container($PARAM[id]).NumItems,0)">Container($PARAM[id]).IsUpdating + Control.IsVisible($PARAM[id]) | Integer.IsGreater(Container($PARAM[id]).NumItems,0)</visible>
-                <width>1668</width><height>195</height><orientation>horizontal</orientation><preloaditems>2</preloaditems>
+                <top>52</top><width>1668</width><height>195</height><orientation>horizontal</orientation><preloaditems>2</preloaditems>
                 <onfocus>SetProperty(LiveTV.Sports.OverviewFocus,$PARAM[id],Home)</onfocus>
                 <onleft condition="Integer.IsEqual(Container($PARAM[id]).CurrentItem,1)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
                 <onleft condition="Integer.IsEqual(Container($PARAM[id]).CurrentItem,1)">9002</onleft>
@@ -670,6 +669,7 @@
                 <itemlayout height="193" width="333"><control type="group"><width>335</width><height>195</height><include content="BingieLiveSoccerCardArt"><param name="color" value="ff202020" /></include><include content="BingieLiveSoccerTitle"><param name="focused" value="false" /></include><include content="BingieTennisScoreboardCard"><param name="focused" value="false" /></include><include content="BingieSportsMatchupCard"><param name="focused" value="false" /></include></control></itemlayout>
                 <focusedlayout height="193" width="333"><control type="group"><width>335</width><height>195</height><control type="image"><visible>Control.HasFocus($PARAM[id])</visible><texture background="true">home/home_matte3.png</texture><colordiffuse>ffffffff</colordiffuse><include>thumbsborder_focused</include></control><include content="BingieLiveSoccerCardArt"><param name="color" value="ff303030" /></include><include content="BingieLiveSoccerTitle"><param name="focused" value="Control.HasFocus($PARAM[id])" /></include><include content="BingieTennisScoreboardCard"><param name="focused" value="Control.HasFocus($PARAM[id])" /></include><include content="BingieSportsMatchupCard"><param name="focused" value="Control.HasFocus($PARAM[id])" /></include></control></focusedlayout>
                 <content target="videos" browse="never">$INFO[Window(Home).Property(LiveTV.Sports.OverviewURL.$PARAM[sport])]</content>
+        </control>
         </control>
     </include>
 

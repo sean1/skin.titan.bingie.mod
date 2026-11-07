@@ -6,14 +6,7 @@
 
     <!-- Defaults -->
 	<!-- BINGIE -->
-    <onload condition="String.IsEmpty(Window(Home).Property(BingieHomeFirstLoadDone))">AlarmClock(BingieHomeWidgetStage2,SetProperty(BingieHomeWidgetStage,1,Home),00:00:01,silent)</onload>
-    <onload condition="String.IsEmpty(Window(Home).Property(BingieHomeFirstLoadDone))">AlarmClock(BingieHomeWidgetStage3,SetProperty(BingieHomeWidgetStage,2,Home),00:00:02,silent)</onload>
-    <onload condition="String.IsEmpty(Window(Home).Property(BingieHomeFirstLoadDone))">AlarmClock(BingieHomeWidgetStage4,SetProperty(BingieHomeWidgetStage,3,Home),00:00:03,silent)</onload>
-    <onload condition="!String.IsEmpty(Window(Home).Property(BingieHomeFirstLoadDone))">SetProperty(BingieHomeWidgetStage,3,Home)</onload>
-    <onload condition="String.IsEmpty(Window(Home).Property(BingieHomeFirstLoadDone))">SetProperty(BingieHomeFirstLoadDone,1,Home)</onload>
-    <onunload condition="System.HasAlarm(BingieHomeWidgetStage2)">CancelAlarm(BingieHomeWidgetStage2,silent)</onunload>
-    <onunload condition="System.HasAlarm(BingieHomeWidgetStage3)">CancelAlarm(BingieHomeWidgetStage3,silent)</onunload>
-    <onunload condition="System.HasAlarm(BingieHomeWidgetStage4)">CancelAlarm(BingieHomeWidgetStage4,silent)</onunload>
+    <onload>SetProperty(BingieHomeWidgetStage,3,Home)</onload>
     <onunload>ClearProperty(BingieHomeWidgetStage,Home)</onunload>
     <onunload>ClearProperty(ShowViewSubMenu,Home)</onunload>
     <include>BingieViews_WindowOpen_Fade</include>

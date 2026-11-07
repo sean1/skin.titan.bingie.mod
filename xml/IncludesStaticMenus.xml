@@ -439,7 +439,7 @@
 			<param name="widgetTarget" value="videos" />
 			<param name="widgetPath" value="$VAR[BingieHomeContinueMoviesPath]" />
 			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
+			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="6" />
 			<param name="widgetInfoPanel" value="top" />
@@ -460,7 +460,7 @@
 			<param name="widgetTarget" value="videos" />
 			<param name="widgetPath" value="$VAR[BingieHomeContinueTVPath]" />
 			<param name="widgetStyle" value="widget_layout_default" />
-			<param name="widgetSortBy" value="" />
+			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
 			<param name="widgetLimit" value="6" />
 			<param name="widgetInfoPanel" value="top" />

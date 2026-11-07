@@ -362,7 +362,7 @@ class POVPlayer(kodi_utils.xbmc_player):
 			if search_cancel_event: search_cancel_event.set()
 			if self.restart_from_beginning:
 				if self.playback_event is not True or kodi_utils.monitor.abortRequested(): return False
-				ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode)
+				ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode, 'progress')
 				self.restart_from_beginning = False
 			self._record_playback_health('startup_ok', latency=self._playback_health_elapsed())
 			if self.mediatype == 'episode':

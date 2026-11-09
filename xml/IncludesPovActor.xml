@@ -19,30 +19,41 @@
 				<param name="fadetop" value="510" /><param name="boundary" value="650" /><param name="coverheight" value="50" />
 			</include>
 
-				<control type="label">
+				<control type="image">
+					<visible>String.IsEqual(Window(Home).Property(PovActorReady),true)</visible>
 					<left>138</left>
-					<top>88</top>
-					<width>540</width>
+					<top>65</top>
+					<width>145</width>
+					<height>185</height>
+					<texture background="true" diffuse="actor/portrait-mask.png" fallback="DefaultActorPoster.png">$INFO[Window(Home).Property(PovActorProfile)]</texture>
+					<aspectratio scalediffuse="false" align="center" aligny="top">scale</aspectratio>
+				</control>
+				<control type="label">
+					<left>310</left>
+					<top>76</top>
+					<width>480</width>
 					<height>72</height>
 					<font>Bold50</font>
 					<textcolor>ffffffff</textcolor>
 					<label>$INFO[Window(Home).Property(PovActorName)]</label>
+					<scroll>true</scroll>
 				</control>
 				<control type="label">
 					<visible>String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorLifespan))</visible>
-					<left>138</left>
-					<top>170</top>
-					<width>540</width>
+					<left>310</left>
+					<top>158</top>
+					<width>480</width>
 					<height>34</height>
 					<font>Reg24</font>
 					<textcolor>d9ffffff</textcolor>
 					<label>$INFO[Window(Home).Property(PovActorLifespan)]</label>
+					<scroll>true</scroll>
 				</control>
 				<control type="textbox">
 					<visible>String.IsEqual(Window(Home).Property(PovActorReady),true) + !String.IsEmpty(Window(Home).Property(PovActorBirthplace))</visible>
-					<left>138</left>
-					<top>210</top>
-					<width>540</width>
+					<left>310</left>
+					<top>198</top>
+					<width>480</width>
 					<height>70</height>
 					<font>Reg24</font>
 					<textcolor>a6ffffff</textcolor>

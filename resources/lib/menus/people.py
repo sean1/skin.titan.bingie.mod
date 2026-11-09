@@ -252,6 +252,7 @@ def hydrate_person_info(params):
 			'PovActorHasMovies': str(bool(credits['movies'])).lower(), 'PovActorHasTVShows': str(bool(credits['tvshows'])).lower(),
 			'PovActorHasDirected': str(bool(credits['directed'])).lower()
 		}
+		if person_info.get('profile_path'): values['PovActorProfile'] = tmdb_image_base % ('w342', person_info['profile_path'])
 		for prop, value in values.items():
 			if not _actor_request_current(actor_id, request, require_window=True): return
 			kodi_utils.set_property(prop, str(value)) if value else kodi_utils.clear_property(prop)

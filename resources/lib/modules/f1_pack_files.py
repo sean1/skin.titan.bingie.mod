@@ -4,12 +4,14 @@ import re
 from modules import livetv_f1_search as f1_search
 
 _EXTRAS = re.compile(r'\b(?:highlights?|recaps?|previews?|interviews?|analysis|review|documentary|drive to survive|onboard|on board|build\s*up)\b|\b(?:pre|post)\s*(?:race|qualifying|quali|qual|practice|sprint|fp\s*[123])\b')
+_DIMENSIONS = re.compile(r'\b(?:640|720|1280|1366|1440|1600|1920|2048|2560|3840|4096|7680)\s*x\s*(?:360|480|540|576|720|768|900|1080|1088|1440|2160|4320)\b')
 
 
 def _round_agrees(text, fixture, year):
 	"""Reject conflicting explicit rounds, even when the race name also matches."""
 	round_number = fixture.get('race_round')
-	markers = re.findall(r'(?<!\d)((?:19|20)\d{2})\s*x\s*(\d{1,3})(?!\d)', text)
+	# Long episode identifiers such as 2016x109 are not F1 round numbers.
+	markers = [(found_year, number) for found_year, number in re.findall(r'(?<!\d)((?:19|20)\d{2})\s*x\s*(\d{1,3})(?!\d)', text) if int(number) <= 99]
 	rounds = re.findall(r'\b(?:round|r)\s*(\d{1,3})\b', text)
 	if any(found_year != year for found_year, _ in markers): return False
 	if not markers and not rounds: return True
@@ -49,7 +51,7 @@ def matching_files(files, fixture, pack_type):
 		parts = [part for part in re.split(r'[/\\]', path) if part]
 		if not parts: continue
 		basename = parts[-1]
-		text, filename = f1_search._text(path), f1_search._text(basename)
+		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(basename)
 		if not text or not filename or f1_search._REJECT.search(filename): continue
 		codes = {key for key, pattern in f1_search._SESSIONS.items() if re.search(pattern, filename)}
 		if codes != {code}: continue
@@ -99,7 +101,7 @@ def unconfirmed_race_files(files, fixture, pack_type):
 		if not isinstance(path, str) or not path or len(path) > 2000 or '\x00' in path: continue
 		parts = [part for part in re.split(r'[/\\]', path) if part]
 		if not parts: continue
-		text, filename = f1_search._text(path), f1_search._text(parts[-1])
+		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(parts[-1])
 		if not text or not filename or _EXTRAS.search(text) or f1_search._REJECT.search(filename): continue
 		if re.search(r'\b(?:practice|fp\s*[123]?|qualifying|quali|qual|sprint|shootout|warm\s*up|s?q\s*[123])\b', text): continue
 		if not re.search(r'\b(?:grand\s+prix|gp)\b', filename): continue

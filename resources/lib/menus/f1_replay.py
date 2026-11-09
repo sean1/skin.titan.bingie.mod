@@ -26,11 +26,18 @@ def _enrich(fixture, fixtures):
 	race = canonical.get(event_id, {})
 	race_name, race_round = race.get('name'), race.get('round')
 	fixture['aliases'] = list(fixture.get('aliases', []))
+	fixture['calendar_aliases'] = list(race.get('aliases', []))
 	if race_name:
 		fixture['race_name'] = race_name
 		fixture['aliases'].append(race_name)
+	fixture['aliases'] = list(dict.fromkeys(fixture['aliases'] + fixture['calendar_aliases']))
 	if isinstance(race_round, int) and not isinstance(race_round, bool) and 1 <= race_round <= 100: fixture['race_round'] = race_round
-	fixture['other_event_aliases'] = sorted({alias for row in fixtures if row['event_id'] != event_id for alias in row.get('aliases', [])} | {details['name'] for identity, details in canonical.items() if identity != event_id and details.get('name')})
+	other_aliases = {alias for row in fixtures if row['event_id'] != event_id for alias in row.get('aliases', [])}
+	for identity, details in canonical.items():
+		if identity == event_id: continue
+		if details.get('name'): other_aliases.add(details['name'])
+		other_aliases.update(details.get('aliases', []))
+	fixture['other_event_aliases'] = sorted(other_aliases)
 	return fixture
 
 

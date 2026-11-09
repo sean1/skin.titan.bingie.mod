@@ -38,9 +38,17 @@ def _contains(text, phrase):
 	return bool(phrase and re.search(r'(?<!\w)' + re.escape(phrase).replace(r'\ ', r'\s+') + r'(?!\w)', text))
 
 
+def _conflicting_year(text, year):
+	# Frame dimensions like 1920x1080 are not references to another season.
+	text = re.sub(r'\b(?:19|20)\d{2}\s*x\s*(?:720|1080|1200|1440|2160|4320)\b', ' ', text)
+	return any(value != year for value in re.findall(r'(?<!\d)((?:19|20)\d{2})(?!\d)', text))
+
+
 def _contains_race(text, phrase):
-	"""Accept a known race alias with an attached GP suffix, such as MonacoGP."""
-	return bool(phrase and re.search(r'(?<!\w)' + re.escape(phrase).replace(r'\ ', r'\s+') + r'(?:gp)?(?!\w)', text))
+	"""Accept verified aliases with joined words or an attached GP suffix."""
+	if not phrase: return False
+	variants = {phrase, phrase.replace(' ', '')}
+	return any(re.search(r'(?<!\w)' + re.escape(value).replace(r'\ ', r'\s+') + r'(?:gp)?(?!\w)', text) for value in variants)
 
 
 def _alias(value):
@@ -83,6 +91,11 @@ def _match(name, fixture):
 	if code not in _SESSIONS or not isinstance(date, str) or not re.match(r'^\d{4}-', date): return False
 	year = date[:4]
 	if not re.search(r'(?<!\d)' + year + r'(?!\d)', text) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', text) or _REJECT.search(text): return False
+	if _conflicting_year(text, year): return False
+	rounds = re.findall(r'\bround\s*(\d{1,3})\b', text)
+	if rounds:
+		round_number = fixture.get('race_round')
+		if not isinstance(round_number, bool) and isinstance(round_number, int) and 1 <= round_number <= 99 and any(int(found_round) != round_number for found_round in rounds): return False
 	codes = {key for key, pattern in _SESSIONS.items() if re.search(pattern, text)}
 	if codes != {code}: return False
 	aliases = fixture.get('aliases') if isinstance(fixture.get('aliases'), list) else []
@@ -103,7 +116,7 @@ def pack_type(name, fixture):
 	if not text or code not in _SESSIONS or not isinstance(date, str) or not re.match(r'^\d{4}-', date): return ''
 	year = date[:4]
 	if not re.search(r'(?<!\d)' + year + r'(?!\d)', text) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', text) or _PACK_REJECT.search(text): return ''
-	if any(value != year for value in re.findall(r'(?<!\d)((?:19|20)\d{2})(?!\d)', text)): return ''
+	if _conflicting_year(text, year): return ''
 	aliases = fixture.get('aliases') if isinstance(fixture.get('aliases'), list) else []
 	others = fixture.get('other_event_aliases') if isinstance(fixture.get('other_event_aliases'), list) else []
 	names, other_names = _race_names(fixture, aliases), _other_names(others)
@@ -117,7 +130,7 @@ def pack_type(name, fixture):
 		return 'season'
 	if not selected or conflicting: return ''
 	# Race-weekend packs can have one explicit round; never ignore a conflict.
-	year_rounds = re.findall(r'(?<!\d)((?:19|20)\d{2})\s*x\s*(\d{1,3})(?!\d)', text)
+	year_rounds = [(found_year, found_round) for found_year, found_round in re.findall(r'(?<!\d)((?:19|20)\d{2})\s*x\s*(\d{1,3})(?!\d)', text) if int(found_round) <= 99]
 	rounds = re.findall(r'\b(?:round|r)\s*(\d{1,3})\b', text)
 	round_number = fixture.get('race_round')
 	if year_rounds or rounds:
@@ -154,6 +167,18 @@ def search(fixture, status=None):
 	jobs.append(('knaben', 'Formula 1 ' + date[:4] + ' Season'))
 	if names:
 		jobs.extend(('knaben', query) for query in ('Formula 1 ' + date[:4] + ' ' + names[0], 'F1 ' + date[:4] + ' ' + names[0]))
+		# A short unique locality or country can be indexed under a different
+		# spelling from the calendar name, e.g. Brazil versus Brazilian.
+		alternates = sorted({_alias(value) for value in aliases}, key=lambda value: (len(value), value))
+		alternates = [name for name in alternates if 4 <= len(name) <= 25 and len(name.split()) <= 2 and name != names[0] and name in names and not re.search(r'\b(?:circuit|autodrome|autodromo|speedway)\b', name) and not any(len(other) >= 4 and (_contains_race(other, name) or _contains_race(name, other)) for other in other_names)]
+		if alternates: jobs.append(('knaben', 'Formula 1 ' + date[:4] + ' ' + alternates[0]))
+		# Calendar aliases are verified for this event and season. Search a small
+		# number of them as separate queries so an index can find circuit names
+		# even when the official Grand Prix name is absent from the release.
+		calendar_aliases = fixture.get('calendar_aliases') if isinstance(fixture.get('calendar_aliases'), list) else []
+		calendar_names = list(dict.fromkeys(_alias(value) for value in calendar_aliases))
+		calendar_names = [name for name in calendar_names if 4 <= len(name) <= 60 and len(name.split()) <= 6 and name in names and name != names[0] and not any(len(other) >= 4 and (_contains_race(other, name) or _contains_race(name, other)) for other in other_names)]
+		jobs.extend(('knaben', 'Formula 1 ' + date[:4] + ' ' + name) for name in calendar_names[:4])
 		if 'great britain' in names: jobs.append(('knaben', 'Formula 1 ' + date[:4] + ' great britain'))
 		if _text(fixture.get('race_name')) == 'united states grand prix' and isinstance(fixture.get('race_round'), int) and not isinstance(fixture['race_round'], bool) and 1 <= fixture['race_round'] <= 99:
 			jobs.append(('knaben', 'Formula 1 ' + date[:4] + ' usa'))
@@ -161,6 +186,7 @@ def search(fixture, status=None):
 		if int(date[:4]) <= datetime.now(timezone.utc).year - 5:
 			jobs.extend(('torrentdownload', query) for query in ('Formula 1 ' + date[:4] + ' ' + names[0], 'F1 ' + date[:4] + ' ' + names[0]))
 			if 'great britain' in names: jobs.append(('torrentdownload', 'Formula 1 ' + date[:4] + ' great britain'))
+	jobs = list(dict.fromkeys(jobs))
 	def fetch(job):
 		source, query = job
 		if source in ('knaben', 'torrentdownload', 'blackhole'):
@@ -185,7 +211,7 @@ def search(fixture, status=None):
 			return batch[:100], False
 		except (OSError, HTTPException, ValueError, TypeError, RecursionError):
 			return None, False
-	with ThreadPoolExecutor(max_workers=min(12, len(jobs))) as executor:
+	with ThreadPoolExecutor(max_workers=min(18, len(jobs))) as executor:
 		batches = list(executor.map(fetch, jobs))
 	successes = sum(batch is not None for batch, _ in batches)
 	if status is not None and (successes < len(batches) or any(degraded for _, degraded in batches)): status.append('partial' if successes else 'unavailable')

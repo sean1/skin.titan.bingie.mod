@@ -1,7 +1,5 @@
 """Live TV using an Xtream-compatible provider and Kodi's existing video player."""
 import json
-import base64
-import binascii
 import gzip
 import hashlib
 import io
@@ -16,7 +14,7 @@ import unicodedata
 import uuid
 import xml.etree.ElementTree as ET
 import zlib
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from functools import lru_cache
 from http.client import HTTPException
 from urllib.parse import quote, urlencode, urlsplit
@@ -1683,8 +1681,7 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 		if state not in ('ready', 'cached', 'cached_unavailable'):
 			if state == 'pending': _item('Loading Formula 1 sessions…', {}, False, playable=False)
 			else: _sports_retry_item('f1', 'Formula 1 sessions unavailable — select to retry')
-			_item('Browse Formula 1 channels', {'mode': 'livetv.f1_channels'})
-			_item('Browse Formula 1 replays', {'mode': 'livetv.f1_replays'})
+			_item('Browse Formula 1 replays', {'mode': 'livetv.f1_history'})
 			_finish()
 			return
 		cached = state in ('cached', 'cached_unavailable')
@@ -1708,183 +1705,58 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 	except (OSError, HTTPException, ValueError, TypeError):
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Sessions unavailable')
 		_sports_retry_item('f1', 'Formula 1 sessions unavailable — select to retry')
-	_item('Browse Formula 1 channels', {'mode': 'livetv.f1_channels'})
-	_item('Browse Formula 1 replays', {'mode': 'livetv.f1_replays'})
+	_item('Browse Formula 1 replays', {'mode': 'livetv.f1_history'})
 	_finish()
 	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer) + !Control.IsVisible(523)'):
 		xbmc.executebuiltin('Container.SetViewMode(523)')
 
 
-def _f1_archive_channels(account, deadline=None):
-	"""Load archive-capable F1 channels without caching private guide data."""
-	streams = _request(account, 'get_live_streams', _deadline=deadline or time.monotonic() + 20)
-	if not isinstance(streams, list): raise ValueError('Invalid channel catalog')
-	channels = []
-	for stream in streams:
-		if not isinstance(stream, dict): continue
-		identity, name = str(stream.get('stream_id') or ''), stream.get('name')
-		archive, days = stream.get('tv_archive'), stream.get('tv_archive_duration')
-		if not identity.isascii() or not identity.isdecimal() or len(identity) > 32 or not isinstance(name, str) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', name, re.I): continue
-		if isinstance(archive, bool) or archive not in (1, '1') or isinstance(days, bool) or not str(days).isascii() or not str(days).isdecimal() or not 1 <= int(days) <= 365: continue
-		channels.append((identity, int(days)))
-	return list(dict.fromkeys(channels))[:32]
-
-
-def _f1_archive_guide(account, channel, days, fixtures, deadline=None):
-	from modules.livetv_f1_replays import match_archives
-	data = _request(account, 'get_simple_data_table', _deadline=deadline or time.monotonic() + 20, stream_id=channel)
-	rows = data.get('epg_listings') if isinstance(data, dict) else None
-	if not isinstance(rows, list) or len(rows) > 10000: raise ValueError('Invalid programme guide')
-	decoded = []
-	for row in rows:
-		if not isinstance(row, dict): continue
-		entry = dict(row)
-		for field in ('title', 'description'):
-			value = row.get(field, '')
-			try:
-				if not isinstance(value, str) or len(value) > 12000: raise ValueError('Invalid guide text')
-				entry[field] = base64.b64decode(value, validate=True).decode('utf-8')
-			except (ValueError, UnicodeError, binascii.Error): entry[field] = ''
-		decoded.append(entry)
-	return match_archives(fixtures, decoded, days, time.time())
-
-
-def f1_replays(params):
-	"""Find recent sessions in provider archives without altering the live view."""
-	from concurrent.futures import ThreadPoolExecutor
-	try:
-		fixtures = _f1.get_recent_schedule()
-		accounts = _sports_accounts(_load())
-		if not accounts: raise ValueError('No Live TV account')
-		if not fixtures:
-			_item('No recent finished Formula 1 sessions', {}, False, playable=False)
-			_finish()
-			return
-		deadline = time.monotonic() + 15
-		def load_channels(entry):
-			try: return _f1_archive_channels(entry[1], deadline), False
-			except (OSError, HTTPException, ValueError, TypeError): return [], True
-		with ThreadPoolExecutor(max_workers=min(4, len(accounts))) as pool: results = list(pool.map(load_channels, accounts))
-		failed = any(result[1] for result in results)
-		jobs = [(identity, account, number, channel, days) for number, ((identity, account), (channels, _)) in enumerate(zip(accounts, results), 1) for channel, days in channels]
-		deadline = time.monotonic() + 15
-		def load_guide(job):
-			identity, account, number, channel, days = job
-			try: return job, _f1_archive_guide(account, channel, days, fixtures, deadline), False
-			except (OSError, HTTPException, ValueError, TypeError): return job, {}, True
-		with ThreadPoolExecutor(max_workers=8) as pool: guides = list(pool.map(load_guide, jobs))
-		failed = failed or any(result[2] for result in guides)
-		if failed: _item('Some recordings could not be checked — select to retry', {'mode': 'livetv.f1_replays'})
-		for fixture in sorted(fixtures, key=lambda row: row['date']):
-			title = fixture['event'] + ' — ' + fixture['session_label']
-			matches = [(job, row) for job, grouped, _ in guides for row in grouped.get(fixture['id'], [])]
-			if not matches:
-				_item(title + (' — Replay not found; some providers unavailable' if failed else ' — Replay unavailable'), {}, False, playable=False)
-				continue
-			for index, (job, row) in enumerate(matches, 1):
-				identity, _, number, channel, _ = job
-				query = {'mode': 'livetv.f1_replay_play', 'provider': identity, 'channel': channel, 'session': fixture['id'], 'start': str(row['start_timestamp'])}
-				_item(title + ' — ' + _provider_label(identity, number) + (' · Feed %d' % index if len(matches) > 1 else ''), query, False)
-		_finish()
-	except (OSError, HTTPException, ValueError, TypeError, KeyError):
-		_error('Could not check Formula 1 replays. Try again.')
-		_finish(False)
-
-
-def f1_replay_play(params):
-	"""Revalidate an archive entry and resolve it through the VPN relay."""
-	try:
-		provider, channel, session, start = (params.get(key, '') for key in ('provider', 'channel', 'session', 'start'))
-		if not all(isinstance(value, str) and value.isascii() and value.isdecimal() and len(value) <= 32 for value in (channel, session, start)): raise ValueError('Invalid replay')
-		account = _account_for_feed(provider)
-		if not account: raise ValueError('Missing provider')
-		deadline = time.monotonic() + 25
-		channels = _f1_archive_channels(account, deadline)
-		days = next((days for identity, days in channels if identity == channel), None)
-		if days is None: raise ValueError('Archive unavailable')
-		fixtures = _f1.get_recent_schedule()
-		matches = _f1_archive_guide(account, channel, days, fixtures, deadline).get(session, [])
-		matches = [row for row in matches if str(row['start_timestamp']) == start]
-		if len(matches) != 1: raise ValueError('Recording unavailable')
-		row = matches[0]
-		duration = (row['stop_timestamp'] - row['start_timestamp'] + 59) // 60
-		wall = datetime.strptime(row['start'], '%Y-%m-%d %H:%M:%S')
-		if wall.second or not 1 <= duration <= 480: raise ValueError('Invalid recording interval')
-		url = '%s/timeshift/%s/%s/%d/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), duration, wall.strftime('%Y-%m-%d:%H-%M'), channel)
-		url = _vpn_register(url)
-		item = xbmcgui.ListItem(path=url + '|seekable=0')
-		item.setMimeType('video/mp2t')
-		item.setContentLookup(False)
-		xbmcplugin.setResolvedUrl(_handle(), True, item)
-	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError):
-		_error(_vpn_failure_message() or 'This replay is unavailable. Refresh the list and try again.')
-		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
-
-
-def f1_channels(params):
-	"""Browse F1 channels without treating different feeds as interchangeable."""
-	from concurrent.futures import ThreadPoolExecutor
-	from modules.livetv_catalog import catalog_lock_supported, saved_catalog
-	legacy = _load()
-	accounts = _sports_accounts(legacy)
-	if not accounts:
-		_error('No Live TV account is available.')
-		_finish(False)
-		return
-	profile = ku.translate_path(ku.profile_path)
-	retry = params.get('refresh') == 'true'
-	saved = {} if retry else {identity: saved_catalog(account, 'get_live_streams', profile) for identity, account in accounts}
-	locking = not retry and catalog_lock_supported(profile)
-	background = any(value is not None for value in saved.values()) and locking
-	def load(entry):
-		identity, account = entry
-		status = []
-		try:
-			if saved.get(identity) is not None and locking:
-				catalog = _browse_catalog(account, 'get_live_streams', status=status, _saved=saved[identity])
-			else:
-				catalog = _catalog(account, 'get_live_streams', force_refresh=retry, notify_stale=False, _deadline=time.monotonic() + _SPORTS_SEARCH_SECONDS, on_status=lambda created, stale: status.append('Showing saved channels · refresh unavailable') if stale else None)
-			if not isinstance(catalog, list): raise ValueError('Invalid channel catalog')
-			return catalog, 'failed_saved' if status and status[0].endswith('unavailable') else 'saved' if status else ''
-		except (OSError, HTTPException, ValueError, TypeError): return None, 'failed'
-	results, foreground = {}, []
-	for identity, account in accounts:
-		if background and saved.get(identity) is None:
-			from modules.livetv_browse_refresh import request, status as refresh_status
-			state = refresh_status(account, 'get_live_streams', {})
-			request(account, 'get_live_streams', {})
-			results[identity] = (None, 'failed' if state == 'unavailable' else 'pending')
-		elif saved.get(identity) is not None and locking:
-			results[identity] = load((identity, account))
-		else: foreground.append((identity, account))
-	if foreground:
-		with ThreadPoolExecutor(max_workers=min(4, len(foreground))) as pool:
-			for (identity, _), result in zip(foreground, pool.map(load, foreground)): results[identity] = result
-	streams, failed, stale, pending = [], [], [], []
-	for index, (identity, account) in enumerate(accounts):
-		catalog, state = results[identity]
-		label = _provider_label(identity, index + 1)
-		if state in ('failed', 'failed_saved'): failed.append(label)
-		if state in ('saved', 'failed_saved'): stale.append(label)
-		if state == 'pending': pending.append(label)
-		for stream in catalog or []:
-			if not isinstance(stream, dict) or not str(stream.get('stream_id') or '').isdecimal(): continue
-			name = stream.get('name')
-			if not isinstance(name, str) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', name, re.I) or re.match(r'^\s*#+', name): continue
-			streams.append(dict(stream, _provider=identity) if len(accounts) > 1 or not legacy else stream)
-	streams.sort(key=lambda stream: (stream['name'].casefold(), stream.get('_provider', ''), int(stream['stream_id'])))
-	page_streams, page, has_next = _channel_page(streams, params)
-	if failed or stale or pending:
-		messages = []
-		if failed: messages.append('Unavailable: ' + ', '.join(failed))
-		if stale: messages.append('Saved channels: ' + ', '.join(stale))
-		if pending: messages.append('Updating: ' + ', '.join(pending))
-		_item(('Retry' if failed else 'Reload') + ' — ' + ' · '.join(messages) + ' · results may be incomplete', {'mode': 'livetv.f1_channels', 'page': str(page), **({'refresh': 'true'} if failed else {})}, True, None, False)
-	if page: _item('Previous page', {'mode': 'livetv.f1_channels', 'page': str(page - 1)})
-	_browse_items([(stream['name'], {'mode': 'livetv.play', 'id': _sports_ref(stream)}, False, stream.get('stream_icon')) for stream in page_streams])
-	if has_next: _item('Next page', {'mode': 'livetv.f1_channels', 'page': str(page + 1)})
-	if not streams and not pending and len(failed) < len(accounts): _item('No Formula 1 channels found', {}, False, playable=False)
+def _f1_history_finish(content, category):
+	ku.set_category(_handle(), category)
+	ku.set_sort_method(_handle(), 'unsorted')
+	ku.set_content(_handle(), content)
 	_finish()
+	ku.set_view_mode('view.' + content, content, ku.external_browse())
+
+
+def f1_history(params):
+	"""Browse finished Formula 1 seasons and race weekends."""
+	value = params.get('year', '')
+	if not value:
+		for year in range(datetime.now(timezone.utc).year, 1949, -1):
+			_item(str(year), {'mode': 'livetv.f1_history', 'year': str(year)})
+		_f1_history_finish('seasons', 'Formula 1')
+		return
+	try:
+		if not isinstance(value, str) or not value.isascii() or not value.isdecimal() or len(value) != 4: raise ValueError('Invalid season')
+		year = int(value)
+		fixtures = _f1.get_season_schedule(year)
+		events = {}
+		for fixture in sorted(fixtures, key=lambda row: row['date'], reverse=True):
+			events.setdefault(fixture['event_id'], fixture)
+		for identity, fixture in events.items():
+			_item(fixture['event'], {'mode': 'livetv.f1_history_sessions', 'year': value, 'event_id': identity}, extra_properties={'BingieEpisodePage': 'true'})
+		if not events: _item('No finished Formula 1 sessions found', {}, False, playable=False)
+		_f1_history_finish('episodes', 'Formula 1 · ' + value)
+	except (OSError, HTTPException, ValueError, TypeError, KeyError):
+		_error('Could not load Formula 1 season. Try again.')
+		_finish(False)
+
+
+def f1_history_sessions(params):
+	"""List finished sessions for a selected race weekend."""
+	try:
+		value, identity = params.get('year', ''), params.get('event_id', '')
+		if not isinstance(value, str) or not value.isascii() or not value.isdecimal() or len(value) != 4 or not isinstance(identity, str) or not identity or len(identity) > 200: raise ValueError('Invalid event')
+		fixtures = [row for row in _f1.get_season_schedule(int(value)) if row['event_id'] == identity]
+		for fixture in sorted(fixtures, key=lambda row: row['date']):
+			query = {'mode': 'livetv.f1_replay_search', 'year': value, 'event': fixture['event'], 'event_id': identity, 'session_id': fixture['id'], 'session': fixture['session_label'], 'session_code': fixture['session_code'], 'date': fixture['date'], 'aliases': json.dumps(fixture['aliases'], ensure_ascii=True)}
+			_item(fixture['session_label'], query, extra_properties={'BingieEpisodePage': 'true'})
+		if not fixtures: _item('No finished sessions found', {}, False, playable=False)
+		_f1_history_finish('episodes', fixtures[0]['event'] if fixtures else 'Formula 1')
+	except (OSError, HTTPException, ValueError, TypeError, KeyError):
+		_error('Could not load Formula 1 sessions. Try again.')
+		_finish(False)
 
 
 def _sports_retry_item(sport, label='Fixtures unavailable — select to retry'):
@@ -2067,6 +1939,8 @@ def soccer(params):
 	sport = params.get('sport', 'soccer')
 	if sport not in ('all', 'soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'): sport = 'soccer'
 	ku.set_property('LiveTV.Sport', sport)
+	if sport == 'f1' and not ku.get_property('BingieF1.Season'):
+		ku.set_property('BingieF1.Season', str(datetime.now(timezone.utc).year))
 	if sport != 'all': ku.clear_property('LiveTV.Sports.OverviewStatus')
 	ku.set_property('LiveTV.Sport.Title', 'LIVE SPORTS' if sport == 'all' else 'LIVE ' + ('FORMULA 1' if sport == 'f1' else sport.upper()))
 	action = params.get('action', '')
@@ -2093,7 +1967,7 @@ def soccer(params):
 		from modules import livetv_sports_progress
 		if livetv_sports_progress.url_refresh_requested(sport): reload = 'refresh'
 	account = _sports_primary()
-	if not account:
+	if not account and sport != 'f1':
 		_error('No Live TV account is available.')
 		if not params.get('action'): _finish(False)
 		return

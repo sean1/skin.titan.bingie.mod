@@ -101,7 +101,7 @@ class TorBoxAPI:
 				else: raise Exception('torbox cached torrent unavailable')
 			elif not transfer.get('download_present') or not transfer.get('files'): raise Exception('torbox torrent unavailable')
 			extensions = tuple(supported_video_extensions())
-			return [
+			files = [
 				{
 					'link': '%s,%s' % (transfer['id'], item['id']), 'size': item.get('size', 0), 'torrent_id': transfer_id,
 					'filename': item.get('short_name') or item.get('name', '')
@@ -109,6 +109,8 @@ class TorBoxAPI:
 				for item in transfer['files']
 				if (item.get('short_name') or item.get('name', '')).lower().endswith(extensions)
 			]
+			if not files and transfer_id not in ('', None): self.delete_torrent(transfer_id)
+			return files
 		except Exception:
 			if transfer_id not in ('', None): self.delete_torrent(transfer_id)
 			if errors: raise

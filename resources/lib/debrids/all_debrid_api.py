@@ -188,11 +188,13 @@ class AllDebridAPI:
 					if status.get('statusCode') == 4: break
 				else: raise Exception('alldebrid uncached magnet')
 			extensions = tuple(supported_video_extensions())
-			return [
+			files = [
 				{**item, 'torrent_id': transfer_id}
 				for item in self.flatten_magnet_files(self.torrent_files(lookup_id))
 				if item.get('link') and item['filename'].lower().endswith(extensions)
 			]
+			if not files and transfer_id: self.delete_torrent(transfer_id)
+			return files
 		except Exception:
 			if transfer_id: self.delete_torrent(transfer_id)
 			if errors: raise

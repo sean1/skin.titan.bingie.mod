@@ -7,6 +7,7 @@ import tempfile
 import threading
 import time
 import unicodedata
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from http.client import HTTPException
@@ -235,33 +236,24 @@ def get_schedule(cache_dir=None, with_expiry=False):
 	return ([], time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else []
 
 
-def get_recent_schedule(now=None):
-	"""Return recently finished sessions from the latest started race weekend."""
-	now = now or datetime.now(timezone.utc)
-	if now.utcoffset() is None: raise ValueError('Expected a timezone-aware date')
-	now = now.astimezone(timezone.utc)
-	for year in (now.year, now.year - 1):
-		url = 'https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard?dates=%s&limit=1000' % year
-		with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV'}), timeout=10) as response:
-			body = response.read(8 * 1024 * 1024 + 1)
-		if len(body) > 8 * 1024 * 1024: raise ValueError('Scoreboard response too large')
-		data = json.loads(body)
-		events = data.get('events') if isinstance(data, dict) else None
-		if not isinstance(events, list): raise ValueError('Invalid Formula 1 scoreboard response')
-		weekends = {}
-		for fixture in _weekends(events, now): weekends.setdefault(fixture['event_id'], []).append(fixture)
-		started = []
-		for sessions in weekends.values():
-			dates = [datetime.fromisoformat(item['date'].replace('Z', '+00:00')) for item in sessions]
-			first = min(dates)
-			if first <= now: started.append((first, sessions))
-		if started:
-			first, sessions = max(started, key=lambda item: item[0])
-			if first < now - timedelta(days=7): return []
-			selected_aliases = {_normal(alias) for item in sessions for alias in item.get('aliases', []) if isinstance(alias, str) and len(alias.strip()) >= 4}
-			other_aliases = {alias.strip() for event_id, items in weekends.items() if event_id != sessions[0]['event_id'] for item in items for alias in item.get('aliases', []) if isinstance(alias, str) and len(alias.strip()) >= 4 and _normal(alias) not in selected_aliases}
-			return [dict(item, other_event_aliases=sorted(other_aliases)) for item in sessions if item['status'] == 'Finished' and datetime.fromisoformat(item['date'].replace('Z', '+00:00')) <= now]
-	return []
+def get_show_schedule(year):
+	"""Return scheduled, live and finished sessions for a Formula 1 season."""
+	if isinstance(year, bool) or not isinstance(year, int) or not 1950 <= year <= datetime.now(timezone.utc).year: raise ValueError('Invalid Formula 1 season')
+	url = 'https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard?dates=%s&limit=1000' % year
+	with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV'}), timeout=10) as response:
+		body = response.read(8 * 1024 * 1024 + 1)
+	if len(body) > 8 * 1024 * 1024: raise ValueError('Scoreboard response too large')
+	data = json.loads(body)
+	events = data.get('events') if isinstance(data, dict) else None
+	if not isinstance(events, list): raise ValueError('Invalid Formula 1 scoreboard response')
+	now = datetime.now(timezone.utc)
+	return _weekends(events, now)
+
+
+def get_season_schedule(year):
+	"""Return finished sessions for a Formula 1 season."""
+	now = datetime.now(timezone.utc)
+	return [fixture for fixture in get_show_schedule(year) if fixture['status'] == 'Finished' and datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')) <= now]
 
 
 def _weekends(events, now):
@@ -273,12 +265,12 @@ def _weekends(events, now):
 		circuit = event.get('circuit') if isinstance(event.get('circuit'), dict) else {}
 		address = circuit.get('address') if isinstance(circuit.get('address'), dict) else {}
 		aliases = [value.strip() for value in (name, event.get('shortName'), circuit.get('fullName'), address.get('city'), address.get('country')) if isinstance(value, str) and len(value.strip()) >= 4]
-		seen = set()
+		identities = Counter(str(session.get('id') or '') for session in competitions if isinstance(session, dict) and session.get('id'))
 		for session in competitions:
 			if not isinstance(session, dict): continue
 			identity, date = str(session.get('id') or ''), session.get('date')
 			kind, status = session.get('type'), session.get('status')
-			if not identity or identity in seen or not isinstance(date, str) or not isinstance(kind, dict) or not isinstance(status, dict): continue
+			if not identity or identities[identity] != 1 or not isinstance(date, str) or not isinstance(kind, dict) or not isinstance(status, dict): continue
 			code, status = str(kind.get('abbreviation') or '').upper(), status.get('type')
 			if code not in _SESSIONS or not isinstance(status, dict) or status.get('name') in ('STATUS_POSTPONED', 'STATUS_CANCELED', 'STATUS_CANCELLED'): continue
 			state = status.get('state')
@@ -289,7 +281,6 @@ def _weekends(events, now):
 			except (ValueError, TypeError, OverflowError): continue
 			if state == 'pre' and when + timedelta(hours=6) <= now: continue
 			fixtures.append({'id': identity, 'event_id': str(event.get('id') or name.strip()), 'event': name.strip(), 'aliases': aliases, 'session_code': code, 'session_label': _SESSIONS[code], 'date': date, 'status': {'in': 'LIVE', 'pre': 'Scheduled', 'post': 'Finished'}[state]})
-			seen.add(identity)
 	return fixtures
 
 

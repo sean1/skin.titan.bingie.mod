@@ -549,6 +549,7 @@
             <viewtype label="31018">panel</viewtype>
             <onfocus condition="String.Contains(Container.FolderPath,mode=livetv.news) + !String.Contains(Container.FolderPath,channel=) + !Player.HasMedia + !Container.IsUpdating + !System.HasActiveModalDialog + !Window.IsVisible(busydialog) + !Window.IsVisible(busydialognocancel)">Container.SetViewMode(524)</onfocus>
             <onfocus condition="String.IsEqual(Window(Home).Property(LiveTV.Sport),all) + String.Contains(Container.FolderPath,mode=livetv.soccer)">SetFocus(9500)</onfocus>
+            <onfocus condition="String.IsEqual(Window(Home).Property(LiveTV.Sport),f1) + String.Contains(Container.FolderPath,mode=livetv.soccer)">SetFocus(9702)</onfocus>
             <focusedposition>0</focusedposition>
             <top>51</top>
             <width>1850</width>

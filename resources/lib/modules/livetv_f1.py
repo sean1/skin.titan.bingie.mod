@@ -235,6 +235,35 @@ def get_schedule(cache_dir=None, with_expiry=False):
 	return ([], time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else []
 
 
+def get_recent_schedule(now=None):
+	"""Return recently finished sessions from the latest started race weekend."""
+	now = now or datetime.now(timezone.utc)
+	if now.utcoffset() is None: raise ValueError('Expected a timezone-aware date')
+	now = now.astimezone(timezone.utc)
+	for year in (now.year, now.year - 1):
+		url = 'https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard?dates=%s&limit=1000' % year
+		with urlopen(Request(url, headers={'User-Agent': 'BINGIE Live TV'}), timeout=10) as response:
+			body = response.read(8 * 1024 * 1024 + 1)
+		if len(body) > 8 * 1024 * 1024: raise ValueError('Scoreboard response too large')
+		data = json.loads(body)
+		events = data.get('events') if isinstance(data, dict) else None
+		if not isinstance(events, list): raise ValueError('Invalid Formula 1 scoreboard response')
+		weekends = {}
+		for fixture in _weekends(events, now): weekends.setdefault(fixture['event_id'], []).append(fixture)
+		started = []
+		for sessions in weekends.values():
+			dates = [datetime.fromisoformat(item['date'].replace('Z', '+00:00')) for item in sessions]
+			first = min(dates)
+			if first <= now: started.append((first, sessions))
+		if started:
+			first, sessions = max(started, key=lambda item: item[0])
+			if first < now - timedelta(days=7): return []
+			selected_aliases = {_normal(alias) for item in sessions for alias in item.get('aliases', []) if isinstance(alias, str) and len(alias.strip()) >= 4}
+			other_aliases = {alias.strip() for event_id, items in weekends.items() if event_id != sessions[0]['event_id'] for item in items for alias in item.get('aliases', []) if isinstance(alias, str) and len(alias.strip()) >= 4 and _normal(alias) not in selected_aliases}
+			return [dict(item, other_event_aliases=sorted(other_aliases)) for item in sessions if item['status'] == 'Finished' and datetime.fromisoformat(item['date'].replace('Z', '+00:00')) <= now]
+	return []
+
+
 def _weekends(events, now):
 	fixtures = []
 	for event in events:

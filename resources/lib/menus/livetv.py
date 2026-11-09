@@ -1,5 +1,7 @@
 """Live TV using an Xtream-compatible provider and Kodi's existing video player."""
 import json
+import base64
+import binascii
 import gzip
 import hashlib
 import io
@@ -1682,6 +1684,7 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 			if state == 'pending': _item('Loading Formula 1 sessions…', {}, False, playable=False)
 			else: _sports_retry_item('f1', 'Formula 1 sessions unavailable — select to retry')
 			_item('Browse Formula 1 channels', {'mode': 'livetv.f1_channels'})
+			_item('Browse Formula 1 replays', {'mode': 'livetv.f1_replays'})
 			_finish()
 			return
 		cached = state in ('cached', 'cached_unavailable')
@@ -1706,9 +1709,116 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 		ku.set_property('LiveTV.Soccer.FixtureStatus', 'Sessions unavailable')
 		_sports_retry_item('f1', 'Formula 1 sessions unavailable — select to retry')
 	_item('Browse Formula 1 channels', {'mode': 'livetv.f1_channels'})
+	_item('Browse Formula 1 replays', {'mode': 'livetv.f1_replays'})
 	_finish()
 	if xbmc.getCondVisibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer) + !Control.IsVisible(523)'):
 		xbmc.executebuiltin('Container.SetViewMode(523)')
+
+
+def _f1_archive_channels(account, deadline=None):
+	"""Load archive-capable F1 channels without caching private guide data."""
+	streams = _request(account, 'get_live_streams', _deadline=deadline or time.monotonic() + 20)
+	if not isinstance(streams, list): raise ValueError('Invalid channel catalog')
+	channels = []
+	for stream in streams:
+		if not isinstance(stream, dict): continue
+		identity, name = str(stream.get('stream_id') or ''), stream.get('name')
+		archive, days = stream.get('tv_archive'), stream.get('tv_archive_duration')
+		if not identity.isascii() or not identity.isdecimal() or len(identity) > 32 or not isinstance(name, str) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', name, re.I): continue
+		if isinstance(archive, bool) or archive not in (1, '1') or isinstance(days, bool) or not str(days).isascii() or not str(days).isdecimal() or not 1 <= int(days) <= 365: continue
+		channels.append((identity, int(days)))
+	return list(dict.fromkeys(channels))[:32]
+
+
+def _f1_archive_guide(account, channel, days, fixtures, deadline=None):
+	from modules.livetv_f1_replays import match_archives
+	data = _request(account, 'get_simple_data_table', _deadline=deadline or time.monotonic() + 20, stream_id=channel)
+	rows = data.get('epg_listings') if isinstance(data, dict) else None
+	if not isinstance(rows, list) or len(rows) > 10000: raise ValueError('Invalid programme guide')
+	decoded = []
+	for row in rows:
+		if not isinstance(row, dict): continue
+		entry = dict(row)
+		for field in ('title', 'description'):
+			value = row.get(field, '')
+			try:
+				if not isinstance(value, str) or len(value) > 12000: raise ValueError('Invalid guide text')
+				entry[field] = base64.b64decode(value, validate=True).decode('utf-8')
+			except (ValueError, UnicodeError, binascii.Error): entry[field] = ''
+		decoded.append(entry)
+	return match_archives(fixtures, decoded, days, time.time())
+
+
+def f1_replays(params):
+	"""Find recent sessions in provider archives without altering the live view."""
+	from concurrent.futures import ThreadPoolExecutor
+	try:
+		fixtures = _f1.get_recent_schedule()
+		accounts = _sports_accounts(_load())
+		if not accounts: raise ValueError('No Live TV account')
+		if not fixtures:
+			_item('No recent finished Formula 1 sessions', {}, False, playable=False)
+			_finish()
+			return
+		deadline = time.monotonic() + 15
+		def load_channels(entry):
+			try: return _f1_archive_channels(entry[1], deadline), False
+			except (OSError, HTTPException, ValueError, TypeError): return [], True
+		with ThreadPoolExecutor(max_workers=min(4, len(accounts))) as pool: results = list(pool.map(load_channels, accounts))
+		failed = any(result[1] for result in results)
+		jobs = [(identity, account, number, channel, days) for number, ((identity, account), (channels, _)) in enumerate(zip(accounts, results), 1) for channel, days in channels]
+		deadline = time.monotonic() + 15
+		def load_guide(job):
+			identity, account, number, channel, days = job
+			try: return job, _f1_archive_guide(account, channel, days, fixtures, deadline), False
+			except (OSError, HTTPException, ValueError, TypeError): return job, {}, True
+		with ThreadPoolExecutor(max_workers=8) as pool: guides = list(pool.map(load_guide, jobs))
+		failed = failed or any(result[2] for result in guides)
+		if failed: _item('Some recordings could not be checked — select to retry', {'mode': 'livetv.f1_replays'})
+		for fixture in sorted(fixtures, key=lambda row: row['date']):
+			title = fixture['event'] + ' — ' + fixture['session_label']
+			matches = [(job, row) for job, grouped, _ in guides for row in grouped.get(fixture['id'], [])]
+			if not matches:
+				_item(title + (' — Replay not found; some providers unavailable' if failed else ' — Replay unavailable'), {}, False, playable=False)
+				continue
+			for index, (job, row) in enumerate(matches, 1):
+				identity, _, number, channel, _ = job
+				query = {'mode': 'livetv.f1_replay_play', 'provider': identity, 'channel': channel, 'session': fixture['id'], 'start': str(row['start_timestamp'])}
+				_item(title + ' — ' + _provider_label(identity, number) + (' · Feed %d' % index if len(matches) > 1 else ''), query, False)
+		_finish()
+	except (OSError, HTTPException, ValueError, TypeError, KeyError):
+		_error('Could not check Formula 1 replays. Try again.')
+		_finish(False)
+
+
+def f1_replay_play(params):
+	"""Revalidate an archive entry and resolve it through the VPN relay."""
+	try:
+		provider, channel, session, start = (params.get(key, '') for key in ('provider', 'channel', 'session', 'start'))
+		if not all(isinstance(value, str) and value.isascii() and value.isdecimal() and len(value) <= 32 for value in (channel, session, start)): raise ValueError('Invalid replay')
+		account = _account_for_feed(provider)
+		if not account: raise ValueError('Missing provider')
+		deadline = time.monotonic() + 25
+		channels = _f1_archive_channels(account, deadline)
+		days = next((days for identity, days in channels if identity == channel), None)
+		if days is None: raise ValueError('Archive unavailable')
+		fixtures = _f1.get_recent_schedule()
+		matches = _f1_archive_guide(account, channel, days, fixtures, deadline).get(session, [])
+		matches = [row for row in matches if str(row['start_timestamp']) == start]
+		if len(matches) != 1: raise ValueError('Recording unavailable')
+		row = matches[0]
+		duration = (row['stop_timestamp'] - row['start_timestamp'] + 59) // 60
+		wall = datetime.strptime(row['start'], '%Y-%m-%d %H:%M:%S')
+		if wall.second or not 1 <= duration <= 480: raise ValueError('Invalid recording interval')
+		url = '%s/timeshift/%s/%s/%d/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), duration, wall.strftime('%Y-%m-%d:%H-%M'), channel)
+		url = _vpn_register(url)
+		item = xbmcgui.ListItem(path=url + '|seekable=0')
+		item.setMimeType('video/mp2t')
+		item.setContentLookup(False)
+		xbmcplugin.setResolvedUrl(_handle(), True, item)
+	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError):
+		_error(_vpn_failure_message() or 'This replay is unavailable. Refresh the list and try again.')
+		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 
 
 def f1_channels(params):

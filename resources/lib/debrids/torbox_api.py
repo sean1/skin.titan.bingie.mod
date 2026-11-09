@@ -104,7 +104,7 @@ class TorBoxAPI:
 			files = [
 				{
 					'link': '%s,%s' % (transfer['id'], item['id']), 'size': item.get('size', 0), 'torrent_id': transfer_id,
-					'filename': item.get('short_name') or item.get('name', '')
+					'filename': item.get('short_name') or item.get('name', ''), 'full_filename': item.get('name') or item.get('short_name', '')
 				}
 				for item in transfer['files']
 				if (item.get('short_name') or item.get('name', '')).lower().endswith(extensions)

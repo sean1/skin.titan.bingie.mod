@@ -88,19 +88,23 @@ def _prepare_real_debrid(api, candidate):
 		if created: api.delete_torrent(created)
 
 
-def discard(candidate, files):
-	"""Remove only transfers created for this selection, according to the setting."""
-	if settings.store_resolved_torrent_to_cloud(candidate['debrid']): return
+def discard(candidate, files, force=False):
+	"""Remove transfers created for this selection, unless a resolved file is retained."""
+	if not force and settings.store_resolved_torrent_to_cloud(candidate['debrid']): return
 	transfer_id = next((item.get('torrent_id') for item in files if item.get('torrent_id')), None)
 	if transfer_id:
 		api = debrid.import_debrid(candidate['debrid'])
 		if api: Thread(target=api.delete_torrent, args=(transfer_id,)).start()
 
 
-def resolve(candidate, files, selected):
+def resolve(candidate, files, selected, force_cleanup_on_failure=False):
 	"""Unlock the chosen file and clean up a temporary transfer."""
+	resolved = False
 	try:
 		api = debrid.import_debrid(candidate['debrid'])
-		return api.unrestrict_link(selected['link']) if api else None
+		url = api.unrestrict_link(selected['link']) if api else None
+		resolved = bool(url)
+		return url
 	finally:
-		discard(candidate, files)
+		if force_cleanup_on_failure and not resolved: discard(candidate, files, force=True)
+		else: discard(candidate, files)

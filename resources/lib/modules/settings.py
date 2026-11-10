@@ -27,7 +27,7 @@ def autoplay_next_show_window():
 	return get_setting('autoplay_next_show_window') == 'true'
 
 def autoplay_next_window_time():
-	return int(get_setting('autoplay_next_window_time', '20'))
+	return int(get_setting('autoplay_next_window_time', '180'))
 
 def autoplay_next_window_percentage():
 	return int(get_setting('autoplay_next_window_percentage', '95'))

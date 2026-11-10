@@ -319,7 +319,7 @@ FIXED_SETTINGS = {
 	'autoplay_next_episode': 'true',
 	'autoplay_next_show_window': 'true',
 	'autoplay_next_window_percentage': '95',
-	'autoplay_next_window_time': '20',
+	'autoplay_next_window_time': '180',
 	'autoplay_next_window_timer_method': '0',
 	'autoplay_quality_episode': 'SD, 720p, 1080p, 4K',
 	'autoplay_quality_movie': 'SD, 720p, 1080p, 4K',

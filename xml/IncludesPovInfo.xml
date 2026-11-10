@@ -9,6 +9,43 @@
 		<value condition="$EXP[PovInfoCastLoading]">$LOCALIZE[206] · Loading…</value>
 		<value>$LOCALIZE[206]</value>
 	</variable>
+	<expression name="PovInfoPreviewFocused">Control.HasFocus(560) | Control.HasFocus(563)</expression>
+	<variable name="PovInfoPagePreviewTitle">
+		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Label]</value>
+		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Label]</value>
+	</variable>
+	<variable name="PovInfoPagePreviewRating">
+		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(PovTMDBRating),TMDB ]</value>
+		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Property(PovTMDBRating),TMDB ]</value>
+	</variable>
+	<variable name="PovInfoPagePreviewYear">
+		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(year)]</value>
+		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Property(year)]</value>
+	</variable>
+	<expression name="PovInfoPreviewMetadataMatches">
+		[Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(PovFocusIdentity)) + String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),Container(560).ListItem.Property(PovFocusIdentity))] |
+		[Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(PovFocusIdentity)) + String.IsEqual(Window(Home).Property(PovFocusedMetaIdentity),Container(563).ListItem.Property(PovFocusIdentity))]
+	</expression>
+	<variable name="PovInfoPagePreviewDetails">
+		<value condition="Control.HasFocus(560) + $EXP[PovInfoPreviewMetadataMatches] + !String.IsEmpty(Container(560).ListItem.Property(genre))">$INFO[Container(560).ListItem.Property(genre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
+		<value condition="Control.HasFocus(560) + $EXP[PovInfoPreviewMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedGenre))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
+		<value condition="Control.HasFocus(560) + $EXP[PovInfoPreviewMetadataMatches]">$INFO[Window(Home).Property(PovFocusedMainActors)]</value>
+		<value condition="Control.HasFocus(563) + $EXP[PovInfoPreviewMetadataMatches] + !String.IsEmpty(Container(563).ListItem.Property(genre))">$INFO[Container(563).ListItem.Property(genre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
+		<value condition="Control.HasFocus(563) + $EXP[PovInfoPreviewMetadataMatches] + !String.IsEmpty(Window(Home).Property(PovFocusedGenre))">$INFO[Window(Home).Property(PovFocusedGenre)]$INFO[Window(Home).Property(PovFocusedMainActors),[CR]]</value>
+		<value condition="Control.HasFocus(563) + $EXP[PovInfoPreviewMetadataMatches]">$INFO[Window(Home).Property(PovFocusedMainActors)]</value>
+		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(genre)]</value>
+		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Property(genre)]</value>
+	</variable>
+	<variable name="PovInfoPageFanart">
+		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(PovPreviewFanart)]</value>
+		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Property(PovPreviewFanart)]</value>
+		<value>$INFO[Window(Home).Property(PovInfoFanart)]</value>
+	</variable>
+	<variable name="PovInfoPagePlot">
+		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(PovPreviewPlot)]</value>
+		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Property(PovPreviewPlot)]</value>
+		<value>$INFO[Window(Home).Property(PovInfoPlot)]</value>
+	</variable>
 	<variable name="PovSeasonBrowserPath">
 		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb))">plugin://skin.titan.bingie.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)]</value>
 		<value condition="!String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">plugin://skin.titan.bingie.lite/?mode=build_season_list&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoPendingTmdb)]</value>
@@ -257,13 +294,14 @@
 			<include>BingieRowTrailerPreviewWindow</include>
 			<include content="BingieSpotlightCornerImage">
 				<param name="visibility" value="!$EXP[BingieTrailerPreviewVisible]" />
-				<param name="image" value="$VAR[PovInfoResolvedFanart]" />
+				<param name="image" value="$VAR[PovInfoPageFanart]" />
 			</include>
 			<include content="BingieSpotlightBottomFade">
 				<param name="fadetop" value="515" /><param name="boundary" value="655" /><param name="coverheight" value="45" />
 			</include>
 
 			<control type="image" id="9105">
+				<visible>!$EXP[PovInfoPreviewFocused]</visible>
 				<left>138</left>
 				<top>10</top>
 				<width>490</width>
@@ -273,7 +311,15 @@
 				<texture background="true">$INFO[Window(Home).Property(PovInfoLogo)]</texture>
 			</control>
 
+			<control type="textbox">
+				<visible>$EXP[PovInfoPreviewFocused]</visible>
+				<left>138</left><top>20</top><width>820</width><height>180</height>
+				<font>Reg60</font><align>left</align><aligny>center</aligny><textcolor>ffffffff</textcolor>
+				<label>$VAR[PovInfoPagePreviewTitle]</label>
+			</control>
+
 			<control type="grouplist">
+				<visible>!$EXP[PovInfoPreviewFocused]</visible>
 				<left>138</left>
 				<top>220</top>
 				<width>850</width>
@@ -322,6 +368,22 @@
 				</control>
 			</control>
 
+			<control type="grouplist">
+				<visible>$EXP[PovInfoPreviewFocused]</visible>
+				<left>138</left><top>220</top><width>850</width><height>40</height>
+				<orientation>horizontal</orientation><itemgap>20</itemgap>
+				<include content="BingieRatingBadge">
+					<param name="label" value="$VAR[PovInfoPagePreviewRating]" />
+					<param name="visibility" value="[Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(PovTMDBRating))] | [Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(PovTMDBRating))]" />
+					<param name="id" value="9106" />
+				</include>
+				<control type="label">
+					<visible>[Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(year))] | [Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(year))]</visible>
+					<width max="180">auto</width><height>40</height><font>Reg24</font>
+					<aligny>center</aligny><textcolor>d9ffffff</textcolor><label>$VAR[PovInfoPagePreviewYear]</label>
+				</control>
+			</control>
+
 			<control type="textbox">
 				<left>138</left>
 				<top>275</top>
@@ -331,11 +393,12 @@
 				<textcolor>b3ffffff</textcolor>
 				<align>left</align>
 				<aligny>top</aligny>
-				<label>$VAR[PovInfoResolvedPlot]</label>
-				<autoscroll delay="3000" time="3000" repeat="8000">true</autoscroll>
+				<label>$VAR[PovInfoPagePlot]</label>
+				<autoscroll delay="3000" time="3000" repeat="8000">!$EXP[PovInfoPreviewFocused]</autoscroll>
 			</control>
 
 			<control type="grouplist" id="8000">
+				<animation effect="fade" start="100" end="0" time="0" condition="$EXP[PovInfoPreviewFocused]">Conditional</animation>
 				<left>138</left>
 				<top>500</top>
 				<width>400</width>
@@ -393,6 +456,7 @@
 				</control>
 			</control>
 			<control type="grouplist" id="8002">
+				<animation effect="fade" start="100" end="0" time="0" condition="$EXP[PovInfoPreviewFocused]">Conditional</animation>
 				<left>558</left>
 				<top>500</top>
 				<width>400</width>
@@ -438,6 +502,21 @@
 					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
 				</control>
 			</control>
+			<control type="group">
+				<visible>$EXP[PovInfoPreviewFocused]</visible>
+				<left>138</left><top>500</top><width>820</width><height>115</height>
+				<control type="image">
+					<visible>[Control.HasFocus(560) + !String.IsEmpty(Container(560).ListItem.Property(genre))] | [Control.HasFocus(563) + !String.IsEmpty(Container(563).ListItem.Property(genre))] | [$EXP[PovInfoPreviewMetadataMatches] + [!String.IsEmpty(Window(Home).Property(PovFocusedGenre)) | !String.IsEmpty(Window(Home).Property(PovFocusedMainActors))]]</visible>
+					<left>1</left><top>23</top><width>70</width><height>70</height>
+					<texture>bingie/details/white/genre.png</texture>
+				</control>
+				<control type="textbox" id="9108">
+					<left>95</left><width>650</width><height>115</height>
+					<font>Reg28</font><align>left</align><aligny>center</aligny><textcolor>ffffffff</textcolor>
+					<label>$VAR[PovInfoPagePreviewDetails]</label>
+				</control>
+			</control>
+
 			<control type="button" id="8010">
 				<visible allowhiddenfocus="true">true</visible>
 				<left>-100</left>
@@ -612,7 +691,7 @@
 						<height>45</height>
 						<font>Bold31</font>
 						<textcolor>ffffffff</textcolor>
-						<label>$LOCALIZE[31622]</label>
+						<label>$LOCALIZE[31622] · $INFO[Window(Home).Property(PovInfoTitle)]</label>
 					</control>
 					<control type="panel" id="560">
 						<visible allowhiddenfocus="true">true</visible>

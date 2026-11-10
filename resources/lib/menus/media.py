@@ -73,6 +73,15 @@ def complete_media_directory(handle, mode, action, exit_list_params, category, c
 	kodi_utils.set_view_mode(view_type, content_type, is_widget)
 
 
+def detail_shelf_preview_plot(plot, limit=180):
+	plot = ' '.join((plot or '').split())
+	if len(plot) <= limit: return plot
+	preview = plot[:limit]
+	boundary = preview.rfind(' ')
+	if boundary >= limit // 2: preview = preview[:boundary]
+	return preview.rstrip(' .,;:') + '…'
+
+
 def build_tmdb_detail_shelf_item(position, item, source_tmdb_id, mediatype, genre_names, poster_empty, fanart_empty, kodi_version):
 	item_get = item.get
 	is_tvshow = mediatype == 'tvshow'
@@ -91,6 +100,8 @@ def build_tmdb_detail_shelf_item(position, item, source_tmdb_id, mediatype, genr
 	props = {
 		'PovLiteItem': 'true', 'PovLiteSummary': 'true', 'PovFocusIdentity': 'listing|%s|%s' % (mediatype, tmdb_id),
 		'pov_lite_sort_order': str(position), 'tmdb_id': str(tmdb_id), 'PovInfoSourceTmdb': str(source_tmdb_id or ''),
+		'PovPreviewFanart': tmdb_image_base % ('w1280', backdrop_path) if backdrop_path else '',
+		'PovPreviewPlot': detail_shelf_preview_plot(item_get('overview')),
 		'PovLiteSourceSelect': kodi_utils.build_url(
 			{'mode': 'smart_play_media', 'tmdb_id': tmdb_id, 'autoplay': 'false'} if is_tvshow
 			else {'mode': 'play_media', 'mediatype': 'movie', 'tmdb_id': tmdb_id, 'autoplay': 'false'}

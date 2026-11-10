@@ -265,6 +265,9 @@ class TrailerPreview:
 		self.prepare_token = None
 		self.closed = False
 		self.focused_metadata_published = False
+		self.metadata_identity = ''
+		self.metadata_tracking_started = False
+		self.metadata_focused_at = 0.0
 		self.manifest_server = None
 		clear_property(TRAILER_PREVIEW_PROPERTY)
 		clear_property(TRAILER_PREVIEW_READY_PROPERTY)
@@ -313,6 +316,7 @@ class TrailerPreview:
 		self.focus_token = None
 		self._invalidate_preparation()
 		self._clear_focused_metadata()
+		self.metadata_identity = ''
 		self._stop_pending_preview(monotonic())
 		if not self.active: return self._stop_retired_preview(monotonic()) or bool(self.pending_stop_trailer)
 		self.cancelled = True
@@ -352,6 +356,7 @@ class TrailerPreview:
 		candidate, token = self._eligible_candidate()
 		focus_changed = token != self.focus_token or (candidate[0] if candidate else '') != self.identity
 		if focus_changed: self._track_candidate(candidate, now, token)
+		self._update_focused_metadata(candidate, now)
 		manual_required = bool(candidate and candidate[4])
 		if get_property(TRAILER_PREVIEW_REQUEST_PROPERTY):
 			clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
@@ -387,12 +392,7 @@ class TrailerPreview:
 		if manual_required or now - self.focused_at >= TRAILER_PREVIEW_DELAY:
 			self._consume_prepare_results()
 		if self.active: return True
-		if focus_changed:
-			if candidate[5] and candidate[0] in self.resolved_focused_metadata:
-				self._ensure_focused_metadata(candidate[0], candidate[2], candidate[3])
-			if not manual_requested: return True
-		if candidate[5] and now - self.focused_at >= FOCUSED_METADATA_DELAY:
-			self._ensure_focused_metadata(candidate[0], candidate[2], candidate[3])
+		if focus_changed and not manual_requested: return True
 		if manual_required and not manual_requested: return bool(self.pending_stop_trailer) or self._preparing()
 		if self.played: return bool(self.pending_stop_trailer) or self._preparing()
 		if kodi_utils.get_visibility('Player.HasMedia'):
@@ -520,8 +520,6 @@ class TrailerPreview:
 	def _track_candidate(self, candidate, now, token=None):
 		identity = candidate[0] if candidate else ''
 		if self.lookup_pending and self.lookup_pending[0] != identity: self.lookup_pending = None
-		if identity != self.identity:
-			self._clear_focused_metadata()
 		if identity != self.identity or token != self.focus_token:
 			self._invalidate_preparation()
 			self.manual_identity = ''
@@ -628,7 +626,7 @@ class TrailerPreview:
 			self.resolved_focused_metadata[identity] = metadata
 			if len(self.resolved_focused_metadata) > TRAILER_PREVIEW_CACHE_LIMIT: self.resolved_focused_metadata.popitem(last=False)
 			self._cache_trailer(identity, metadata.get('trailer') or '')
-			if self.identity == identity: self._publish_focused_metadata(identity, metadata)
+			if (self.metadata_identity if self.metadata_tracking_started else self.identity) == identity: self._publish_focused_metadata(identity, metadata)
 			return
 		trailer = result
 		if trailer is None:
@@ -642,6 +640,29 @@ class TrailerPreview:
 		self.resolved_trailers[identity] = trailer
 		if len(self.resolved_trailers) > TRAILER_PREVIEW_CACHE_LIMIT: self.resolved_trailers.popitem(last=False)
 
+	def _info_shelf_metadata_candidate(self):
+		if not kodi_utils.get_visibility('Window.IsActive(1123)'): return None
+		media_type = get_property('PovInfoType').strip().lower()
+		if media_type not in ('movie', 'tvshow'): return None
+		for control in (560, 563):
+			if not kodi_utils.get_visibility('Control.HasFocus(%s)' % control): continue
+			item_id = kodi_utils.get_infolabel('Container(%s).ListItem.Property(tmdb_id)' % control).strip()
+			identity = kodi_utils.get_infolabel('Container(%s).ListItem.Property(PovFocusIdentity)' % control).strip()
+			if item_id.isdecimal() and identity: return identity, media_type, item_id
+		return None
+
+	def _update_focused_metadata(self, candidate, now):
+		self.metadata_tracking_started = True
+		metadata_candidate = (candidate[0], candidate[2], candidate[3]) if candidate and candidate[5] else self._info_shelf_metadata_candidate() if candidate else None
+		identity = metadata_candidate[0] if metadata_candidate else ''
+		if identity != self.metadata_identity:
+			self._clear_focused_metadata()
+			if self.lookup_pending and self.lookup_pending[3] and self.lookup_pending[0] != identity: self.lookup_pending = None
+			self.metadata_identity = identity
+			self.metadata_focused_at = now
+			if identity and identity in self.resolved_focused_metadata: self._ensure_focused_metadata(*metadata_candidate)
+		if identity and now - self.metadata_focused_at >= FOCUSED_METADATA_DELAY: self._ensure_focused_metadata(*metadata_candidate)
+
 	def _ensure_focused_metadata(self, identity, media_type, tmdb_id):
 		if get_property(FOCUSED_METADATA_IDENTITY_PROPERTY) == identity: return
 		if monotonic() < self.focused_metadata_retries.get(identity, 0.0): return
@@ -654,7 +675,7 @@ class TrailerPreview:
 		self._publish_focused_metadata(identity, metadata)
 
 	def _publish_focused_metadata(self, identity, metadata):
-		if self.identity != identity: return
+		if (self.metadata_identity if self.metadata_tracking_started else self.identity) != identity: return
 		clear_property(FOCUSED_METADATA_IDENTITY_PROPERTY)
 		for prop, key in FOCUSED_METADATA_FIELDS:
 			value = metadata.get(key) or ''

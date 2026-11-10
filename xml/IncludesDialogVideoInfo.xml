@@ -750,11 +750,15 @@
 			<label>$INFO[Container(565).ListItemAbsolute($PARAM[index]).Label]</label>
 			<icon>$INFO[Container(565).ListItemAbsolute($PARAM[index]).Icon]</icon>
 			<property name="DBTYPE">$INFO[Container(565).ListItemAbsolute($PARAM[index]).DBType]</property>
+			<property name="PovFocusIdentity">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(PovFocusIdentity)]</property>
+			<property name="genre">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Genre]</property>
 			<property name="tmdb_id">$INFO[Container(565).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
 			<property name="trailer">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Trailer]</property>
 			<property name="landscape">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Art(landscape)]</property>
 			<property name="fanart">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="PovPreviewFanart">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(PovPreviewFanart)]</property>
 			<property name="plot">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Plot]</property>
+			<property name="PovPreviewPlot">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(PovPreviewPlot)]</property>
 			<property name="rating">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Rating]</property>
 			<property name="PovTMDBRating">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Property(PovTMDBRating)]</property>
 			<property name="year">$INFO[Container(565).ListItemAbsolute($PARAM[index]).Year]</property>
@@ -792,11 +796,15 @@
 			<label>$INFO[Container(566).ListItemAbsolute($PARAM[index]).Label]</label>
 			<icon>$INFO[Container(566).ListItemAbsolute($PARAM[index]).Icon]</icon>
 			<property name="DBTYPE">$INFO[Container(566).ListItemAbsolute($PARAM[index]).DBType]</property>
+			<property name="PovFocusIdentity">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovFocusIdentity)]</property>
+			<property name="genre">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Genre]</property>
 			<property name="tmdb_id">$INFO[Container(566).ListItemAbsolute($PARAM[index]).UniqueID(tmdb)]</property>
 			<property name="trailer">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Trailer]</property>
 			<property name="landscape">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Art(landscape)]</property>
 			<property name="fanart">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Art(fanart)]</property>
+			<property name="PovPreviewFanart">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovPreviewFanart)]</property>
 			<property name="plot">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Plot]</property>
+			<property name="PovPreviewPlot">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovPreviewPlot)]</property>
 			<property name="rating">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Rating]</property>
 			<property name="PovTMDBRating">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Property(PovTMDBRating)]</property>
 			<property name="year">$INFO[Container(566).ListItemAbsolute($PARAM[index]).Year]</property>

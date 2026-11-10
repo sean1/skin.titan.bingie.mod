@@ -183,6 +183,8 @@
 							<orientation>horizontal</orientation>
 							<preloaditems>4</preloaditems>
 							<scrolltime tween="quadratic">300</scrolltime>
+							<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,550,$INFO[Container(550).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onleft>
+							<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,550,$INFO[Container(550).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onright>
 							<onup>8000</onup>
 							<ondown condition="Integer.IsGreater(Container(563).NumItems,0)">563</ondown>
 							<ondown condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
@@ -218,6 +220,8 @@
 							<orientation>horizontal</orientation>
 							<preloaditems>2</preloaditems>
 							<scrolltime tween="quadratic">300</scrolltime>
+							<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,563,$INFO[Container(563).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onleft>
+							<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,563,$INFO[Container(563).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onright>
 							<onup condition="Integer.IsGreater(Container(50).NumItems,0)">550</onup>
 							<onup condition="!Integer.IsGreater(Container(50).NumItems,0)">8000</onup>
 							<ondown condition="Integer.IsGreater(Container(560).NumItems,0)">560</ondown>
@@ -260,6 +264,8 @@
 							<orientation>horizontal</orientation>
 							<preloaditems>2</preloaditems>
 							<scrolltime tween="quadratic">300</scrolltime>
+							<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,560,$INFO[Container(560).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onleft>
+							<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,560,$INFO[Container(560).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onright>
 							<onup condition="Integer.IsGreater(Container(563).NumItems,0)">563</onup>
 							<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + Integer.IsGreater(Container(50).NumItems,0)">550</onup>
 							<onup condition="!Integer.IsGreater(Container(563).NumItems,0) + !Integer.IsGreater(Container(50).NumItems,0)">8000</onup>

@@ -2,6 +2,18 @@
 <!-- BINGIE -->
 <includes>
     <!-- includes -->
+    <include name="BingieGridRowNavigation">
+        <param name="firstleft" default="noop" />
+        <definition>
+            <onright condition="Integer.IsGreater(Container($PARAM[id]).NumAllItems,Container($PARAM[id]).ListItem.CurrentItem)">SetFocus($PARAM[id],$INFO[Container($PARAM[id]).ListItem.CurrentItem],absolute)</onright>
+            <onright condition="!Integer.IsGreater(Container($PARAM[id]).NumAllItems,Container($PARAM[id]).ListItem.CurrentItem)">noop</onright>
+            <onleft
+                condition="Integer.IsGreater(Container($PARAM[id]).ListItem.CurrentItem,1)"
+                >RunScript(special://skin/resources/lib/grid_previous.py,$PARAM[id],$INFO[Container($PARAM[id]).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],$ESCINFO[Container.FolderPath])</onleft>
+            <onleft condition="Integer.IsEqual(Container($PARAM[id]).ListItem.CurrentItem,1)">$PARAM[firstleft]</onleft>
+        </definition>
+    </include>
+
     <!-- Fixed Focus Navigation -->
     <include name="Fixed_Focus_Navigation">
 		<animation effect="slide" end="0,$PARAM[FixedAnimationHeight]" time="300" condition="Integer.IsGreater(Container(77777).Position,2)">Conditional</animation>

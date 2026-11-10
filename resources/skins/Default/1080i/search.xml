@@ -103,7 +103,8 @@
 		<control type="panel" id="500">
 			<left>600</left><top>280</top><width>1220</width><height>680</height>
 			<orientation>vertical</orientation><scrolltime>150</scrolltime>
-			<onleft>200</onleft><onright>500</onright><onup>204</onup><ondown>501</ondown>
+			<include content="BingieGridRowNavigation"><param name="id" value="500" /><param name="firstleft" value="200" /></include>
+			<onup>204</onup><ondown>501</ondown>
 			<preloaditems>5</preloaditems>
 			<itemlayout width="406" height="226">
 				<include>BingieSearchResultCard</include>

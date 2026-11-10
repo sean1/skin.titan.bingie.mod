@@ -351,6 +351,12 @@
             <width>100%</width>
             <include>ScrollTime</include>
             <preloaditems>1</preloaditems>
+            <onright
+                condition="Window.IsActive(Home) + Integer.IsEqual(Container($PARAM[widgetid]).ListItem.CurrentItem,Container($PARAM[widgetid]).NumAllItems)"
+                >RunScript(special://skin/resources/lib/shelf_navigation.py,right,$PARAM[widgetid],$INFO[Container($PARAM[widgetid]).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],2510|2520|2550|2560|2570,noop)</onright>
+            <onleft
+                condition="Window.IsActive(Home) + Integer.IsEqual(Container($PARAM[widgetid]).ListItem.CurrentItem,1)"
+                >RunScript(special://skin/resources/lib/shelf_navigation.py,left,$PARAM[widgetid],$INFO[Container($PARAM[widgetid]).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],2510|2520|2550|2560|2570,900)</onleft>
             <include content="WidgetBaseBingieIncludes">
                 <param name="widgetid" value="$PARAM[widgetid]" />
             </include>

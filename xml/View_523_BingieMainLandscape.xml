@@ -517,7 +517,8 @@
                 <left>131</left><top>120</top><width>1668</width><height>900</height>
                 <orientation>vertical</orientation><itemgap>0</itemgap><preloaditems>4</preloaditems><pagecontrol>61</pagecontrol>
                 <include>ScrollTime</include>
-                <onleft>524</onleft><onright>61</onright><onup>524</onup><ondown>524</ondown>
+                <include content="BingieGridRowNavigation"><param name="id" value="524" /></include>
+                <onup>524</onup><ondown>524</ondown>
                 <itemlayout height="193" width="333">
                     <control type="group"><width>335</width><height>195</height><include>BingieNewsCardArt</include><include content="BingieNewsTitle"><param name="focused" value="false" /></include></control>
                 </itemlayout>
@@ -559,17 +560,17 @@
             <preloaditems>4</preloaditems>
             <pagecontrol>60</pagecontrol>
             <include>ScrollTime</include>
-            <onright condition="[Container.Content(movies) | Container.Content(tvshows)] + Integer.IsGreater(Container(523).NumAllItems,Container(523).ListItem.CurrentItem)">SetFocus(523,$INFO[Container(523).ListItem.CurrentItem],absolute)</onright>
-            <onright condition="[Container.Content(movies) | Container.Content(tvshows)] + !Integer.IsGreater(Container(523).NumAllItems,Container(523).ListItem.CurrentItem)">noop</onright>
-            <onright condition="!Container.Content(movies) + !Container.Content(tvshows)">60</onright>
-            <onleft condition="[Container.Content(movies) | Container.Content(tvshows)] + Integer.IsGreater(Container(523).ListItem.CurrentItem,1)">RunScript(special://skin/resources/lib/grid_previous.py,$INFO[Container(523).ListItem.CurrentItem],$ESCINFO[Container.FolderPath])</onleft>
+            <onright condition="Integer.IsGreater(Container(523).NumAllItems,Container(523).ListItem.CurrentItem)">SetFocus(523,$INFO[Container(523).ListItem.CurrentItem],absolute)</onright>
+            <onright condition="!Integer.IsGreater(Container(523).NumAllItems,Container(523).ListItem.CurrentItem)">noop</onright>
+            <onleft condition="Integer.IsGreater(Container(523).ListItem.CurrentItem,1)">RunScript(special://skin/resources/lib/grid_previous.py,$INFO[Container(523).ListItem.CurrentItem],$ESCINFO[Container.FolderPath])</onleft>
 			<onleft condition="[Container.Content(movies) | Container.Content(tvshows)] + Integer.IsEqual(Container(523).ListItem.CurrentItem,1)">RunPlugin(plugin://skin.titan.bingie.lite/?mode=refine.initialize)</onleft>
 			<onleft condition="[Container.Content(movies) | Container.Content(tvshows)] + Integer.IsEqual(Container(523).ListItem.CurrentItem,1)">9000</onleft>
-			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.refine)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
-			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.refine)">9001</onleft>
-			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.soccer)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
-			<onleft condition="String.Contains(Container.FolderPath,mode=livetv.soccer)">9002</onleft>
-			<onleft condition="!Container.Content(movies) + !Container.Content(tvshows)">523</onleft>
+			<onleft condition="Integer.IsEqual(Container(523).ListItem.CurrentItem,1) + String.Contains(Container.FolderPath,mode=livetv.refine)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
+			<onleft condition="Integer.IsEqual(Container(523).ListItem.CurrentItem,1) + String.Contains(Container.FolderPath,mode=livetv.refine)">9001</onleft>
+			<onleft condition="Integer.IsEqual(Container(523).ListItem.CurrentItem,1) + String.Contains(Container.FolderPath,mode=livetv.soccer)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
+			<onleft condition="Integer.IsEqual(Container(523).ListItem.CurrentItem,1) + String.Contains(Container.FolderPath,mode=livetv.soccer)">9002</onleft>
+			<onleft condition="Integer.IsEqual(Container(523).ListItem.CurrentItem,1) + !Container.Content(movies) + !Container.Content(tvshows) + !String.Contains(Container.FolderPath,mode=livetv.refine) +
+                !String.Contains(Container.FolderPath,mode=livetv.soccer)">noop</onleft>
             <onup>523</onup>
             <ondown>523</ondown>
 			<onclick condition="$EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
@@ -656,8 +657,8 @@
                 <visible allowhiddenfocus="Integer.IsEqual(Container($PARAM[id]).NumItems,0)">Container($PARAM[id]).IsUpdating + Control.IsVisible($PARAM[id]) | Integer.IsGreater(Container($PARAM[id]).NumItems,0)</visible>
                 <top>52</top><width>1668</width><height>195</height><orientation>horizontal</orientation><preloaditems>2</preloaditems>
                 <onfocus>SetProperty(LiveTV.Sports.OverviewFocus,$PARAM[id],Home)</onfocus>
-                <onleft condition="Integer.IsEqual(Container($PARAM[id]).CurrentItem,1)">SetProperty(ShowViewSubMenu,show,Home)</onleft>
-                <onleft condition="Integer.IsEqual(Container($PARAM[id]).CurrentItem,1)">9002</onleft>
+                <onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,$PARAM[id],$INFO[Container($PARAM[id]).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],9501|9502|9503|9504|9505|9506,sports)</onleft>
+                <onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,$PARAM[id],$INFO[Container($PARAM[id]).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],9501|9502|9503|9504|9505|9506,noop)</onright>
                 <onup condition="Integer.IsGreater(Container($PARAM[up1]).NumItems,0)">$PARAM[up1]</onup>
                 <onup condition="!Integer.IsGreater(Container($PARAM[up1]).NumItems,0) + Integer.IsGreater(Container($PARAM[up2]).NumItems,0)">$PARAM[up2]</onup>
                 <onup condition="!Integer.IsGreater(Container($PARAM[up1]).NumItems,0) + !Integer.IsGreater(Container($PARAM[up2]).NumItems,0) + Integer.IsGreater(Container($PARAM[up3]).NumItems,0)">$PARAM[up3]</onup>

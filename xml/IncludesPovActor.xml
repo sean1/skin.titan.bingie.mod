@@ -161,6 +161,8 @@
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">300</scrolltime>
+						<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,610,$INFO[Container(610).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],610|620|630,noop)</onleft>
+						<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,610,$INFO[Container(610).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],610|620|630,noop)</onright>
 						<onup>610</onup>
 						<ondown condition="$EXP[PovActorHasCurrentTVShows]">620</ondown>
 						<ondown condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentDirected]">630</ondown>
@@ -197,6 +199,8 @@
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">300</scrolltime>
+						<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,620,$INFO[Container(620).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],610|620|630,noop)</onleft>
+						<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,620,$INFO[Container(620).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],610|620|630,noop)</onright>
 						<onup condition="$EXP[PovActorHasCurrentMovies]">610</onup>
 						<onup condition="!$EXP[PovActorHasCurrentMovies]">620</onup>
 						<ondown condition="$EXP[PovActorHasCurrentDirected]">630</ondown>
@@ -232,6 +236,8 @@
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">300</scrolltime>
+						<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,630,$INFO[Container(630).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],610|620|630,noop)</onleft>
+						<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,630,$INFO[Container(630).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],610|620|630,noop)</onright>
 						<onup condition="$EXP[PovActorHasCurrentTVShows]">620</onup>
 						<onup condition="!$EXP[PovActorHasCurrentTVShows] + $EXP[PovActorHasCurrentMovies]">610</onup>
 						<onup condition="!$EXP[PovActorHasCurrentTVShows] + !$EXP[PovActorHasCurrentMovies]">630</onup>

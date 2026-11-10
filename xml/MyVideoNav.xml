@@ -60,6 +60,7 @@
                 <visible allowhiddenfocus="true">String.IsEmpty(Container(9601).ListItemAbsolute(0).Property(BingieMyListStatus))</visible>
                 <left>60</left><top>120</top><width>1800</width><height>848</height><orientation>vertical</orientation><preloaditems>2</preloaditems>
                 <onup>9601</onup><ondown>9601</ondown>
+                <include content="BingieGridRowNavigation"><param name="id" value="9601" /></include>
 				<onclick condition="!String.IsEmpty(Container(9601).ListItem.Property(BingieMyListPage))">SetProperty(BingieMyListPage,$INFO[Container(9601).ListItem.Property(BingieMyListPage)],Home)</onclick>
 				<onclick condition="String.IsEmpty(Container(9601).ListItem.Property(BingieMyListPage)) + $EXP[IsPovLiteInfoListItem]">RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[ListItem.DBType]&amp;tmdb_id=$INFO[ListItem.UniqueID(tmdb)])</onclick>
 				<onclick condition="String.IsEmpty(Container(9601).ListItem.Property(BingieMyListPage)) + !$EXP[IsMovieOrTvShowListItem]">Action(Info)</onclick>

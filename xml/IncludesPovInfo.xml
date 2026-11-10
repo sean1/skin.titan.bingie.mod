@@ -237,7 +237,8 @@
 		<control type="panel" id="5027">
 			<left>bingie_no_circular_posx</left><top>620</top><width>1760</width><height>424</height>
 			<orientation>vertical</orientation>
-			<onup>528</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright>
+			<onup>528</onup><ondown>noop</ondown>
+			<include content="BingieGridRowNavigation"><param name="id" value="5027" /></include>
 			<onclick condition="Container(5027).IsUpdating">noop</onclick>
 			<onclick condition="!Container(5027).IsUpdating">Action(Info)</onclick>
 			<animation effect="fade" start="100" end="0" time="120" condition="Container(5027).IsUpdating">Conditional</animation>
@@ -611,6 +612,8 @@
 						<orientation>horizontal</orientation>
 						<preloaditems>4</preloaditems>
 						<scrolltime tween="quadratic">300</scrolltime>
+						<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,550,$INFO[Container(550).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onleft>
+						<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,550,$INFO[Container(550).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onright>
 						<onup>8000</onup>
 						<ondown condition="$EXP[PovInfoHasCurrentCollection]">563</ondown>
 						<ondown condition="!$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentMoreLikeThis]">560</ondown>
@@ -649,12 +652,15 @@
 					</control>
 					<control type="panel" id="563">
 						<visible allowhiddenfocus="true">true</visible>
+						<enable>$EXP[PovInfoHasCurrentCollection]</enable>
 						<top>50</top>
 						<width>1668</width>
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">300</scrolltime>
+						<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,563,$INFO[Container(563).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onleft>
+						<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,563,$INFO[Container(563).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onright>
 						<onup condition="$EXP[PovInfoHasCurrentCast]">550</onup>
 						<onup condition="!$EXP[PovInfoHasCurrentCast]">8000</onup>
 						<ondown condition="$EXP[PovInfoHasCurrentMoreLikeThis]">560</ondown>
@@ -695,12 +701,15 @@
 					</control>
 					<control type="panel" id="560">
 						<visible allowhiddenfocus="true">true</visible>
+						<enable>$EXP[PovInfoHasCurrentMoreLikeThis]</enable>
 						<top>50</top>
 						<width>1668</width>
 						<height>220</height>
 						<orientation>horizontal</orientation>
 						<preloaditems>2</preloaditems>
 						<scrolltime tween="quadratic">300</scrolltime>
+						<onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,560,$INFO[Container(560).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onleft>
+						<onright>RunScript(special://skin/resources/lib/shelf_navigation.py,right,560,$INFO[Container(560).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],550|563|560,noop)</onright>
 						<onup condition="$EXP[PovInfoHasCurrentCollection]">563</onup>
 						<onup condition="!$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentCast]">550</onup>
 						<onup condition="!$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentCast]">8000</onup>

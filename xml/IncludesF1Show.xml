@@ -15,7 +15,15 @@
             <control type="label"><left>138</left><top>315</top><width>1200</width><height>38</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>RACES</label></control>
             <control type="list" id="9711">
                 <left>138</left><top>365</top><width>1650</width><height>256</height><orientation>horizontal</orientation><preloaditems>2</preloaditems>
-                <onup>9702</onup><ondown>9701</ondown><onleft condition="Integer.IsEqual(Container(9711).CurrentItem,1)">SetProperty(ShowViewSubMenu,show,Home)</onleft><onleft condition="Integer.IsEqual(Container(9711).CurrentItem,1)">9002</onleft>
+                <onup>9702</onup><ondown>9701</ondown>
+                <onleft>RunScript(special://skin/resources/lib/shelf_navigation.py,left,9711,$INFO[Container(9711).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],9711|9701,sports)</onleft>
+                <onright condition="!Container(9701).IsUpdating
+                    + !String.IsEmpty(Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.EventId),Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))
+                    + String.IsEqual(Container(9711).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))
+                    ">RunScript(special://skin/resources/lib/shelf_navigation.py,right,9711,$INFO[Container(9711).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],9711|9701,noop)</onright>
+                <onright>noop</onright>
                 <onclick condition="!Container(9711).IsUpdating + !String.IsEmpty(Container(9711).ListItem.Property(F1.EventId)) + String.IsEqual(Container(9711).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))">SetFocus(9701)</onclick>
                 <itemlayout width="330" height="250"><include content="BingieF1RaceCard"><param name="focus" value="false" /></include></itemlayout>
                 <focusedlayout width="330" height="250"><include content="BingieF1RaceCard"><param name="focus" value="true" /></include></focusedlayout>
@@ -25,7 +33,24 @@
             <control type="label"><left>138</left><top>650</top><width>1500</width><height>42</height><font>Bold26</font><textcolor>ffffffff</textcolor><label>$INFO[Container(9711).ListItem.Property(F1.Event),, · SESSIONS]</label><scroll>true</scroll></control>
             <control type="list" id="9701">
                 <left>138</left><top>710</top><width>1650</width><height>160</height><orientation>horizontal</orientation><preloaditems>2</preloaditems>
-                <onup>9711</onup><ondown>9701</ondown><onleft condition="Integer.IsEqual(Container(9701).CurrentItem,1)">SetProperty(ShowViewSubMenu,show,Home)</onleft><onleft condition="Integer.IsEqual(Container(9701).CurrentItem,1)">9002</onleft>
+                <onup>9711</onup><ondown>9701</ondown>
+                <onleft condition="!Container(9701).IsUpdating
+                    + !String.IsEmpty(Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.EventId),Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))
+                    + String.IsEqual(Container(9711).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))
+                    ">RunScript(special://skin/resources/lib/shelf_navigation.py,left,9701,$INFO[Container(9701).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],9711|9701,sports)</onleft>
+                <onleft condition="![!Container(9701).IsUpdating
+                    + !String.IsEmpty(Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.EventId),Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))
+                    + String.IsEqual(Container(9711).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))]">SetProperty(ShowViewSubMenu,show,Home)</onleft>
+                <onleft condition="![!Container(9701).IsUpdating
+                    + !String.IsEmpty(Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.EventId),Container(9711).ListItem.Property(F1.EventId))
+                    + String.IsEqual(Container(9701).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))
+                    + String.IsEqual(Container(9711).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))]">9002</onleft>
+                <onright>noop</onright>
                 <onclick condition="!Container(9701).IsUpdating + !String.IsEmpty(Container(9711).ListItem.Property(F1.EventId)) + String.IsEqual(Container(9701).ListItem.Property(F1.EventId),Container(9711).ListItem.Property(F1.EventId)) + String.IsEqual(Container(9701).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season)) + String.IsEqual(Container(9711).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season)) + !String.IsEmpty(Container(9701).ListItem.Property(F1.Action))">ActivateWindow(Videos,$ESCINFO[Container(9701).ListItem.FileNameAndPath],return)</onclick>
                 <itemlayout width="260" height="120"><include content="BingieF1SessionCard"><param name="focus" value="false" /></include></itemlayout>
                 <focusedlayout width="260" height="120"><include content="BingieF1SessionCard"><param name="focus" value="true" /></include></focusedlayout>

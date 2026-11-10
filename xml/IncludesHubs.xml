@@ -46,6 +46,10 @@
             <include>ScrollTime</include>
             <preloaditems>2</preloaditems>
             <orientation>horizontal</orientation>
+            <onright condition="!Window.IsActive(1118) + Integer.IsEqual(Container($PARAM[widgetid]).ListItem.CurrentItem,Container($PARAM[widgetid]).NumAllItems)"
+                >RunScript(special://skin/resources/lib/shelf_navigation.py,right,$PARAM[widgetid],$INFO[Container($PARAM[widgetid]).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],1510|1520|1530|1540|1550|1560|1570,noop)</onright>
+            <onleft condition="!Window.IsActive(1118) + Integer.IsEqual(Container($PARAM[widgetid]).ListItem.CurrentItem,1)"
+                >RunScript(special://skin/resources/lib/shelf_navigation.py,left,$PARAM[widgetid],$INFO[Container($PARAM[widgetid]).ListItem.CurrentItem],$ESCINFO[System.CurrentWindow],1510|1520|1530|1540|1550|1560|1570,900)</onleft>
             <onback condition="$EXP[IsPlayingRecognizedContent]">SetFocus(509)</onback>
             <onback condition="!$EXP[IsPlayingRecognizedContent]">900</onback>
             <include content="SetFixedVerticalNavigationProps">

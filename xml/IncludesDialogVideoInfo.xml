@@ -160,7 +160,7 @@
 					<itemgap>2</itemgap>
 					<animation effect="slide" end="0,-382" time="300" tween="cubic" easing="inout" condition="[Control.HasFocus(563) | Control.HasFocus(560)] + Integer.IsGreater(Container(50).NumItems,0)">Conditional</animation>
 					<animation effect="slide" end="0,-272" time="300" tween="cubic" easing="inout" condition="Control.HasFocus(560) + Integer.IsGreater(Container(566).NumItems,0)">Conditional</animation>
-					<animation effect="slide" end="0,75" time="0" condition="[Control.IsVisible(51) | Control.IsVisible(54)] + Control.IsVisible(90) + Control.IsVisible(52)">Conditional</animation>
+					<animation effect="slide" end="0,75" time="0" condition="Control.IsVisible(52)">Conditional</animation>
 
 					<!-- Control 50 is reserved by Kodi, so this normal panel proxies its cast data through POV. -->
 					<control type="group">

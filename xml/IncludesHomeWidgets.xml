@@ -196,6 +196,13 @@
                     <visible>Control.HasFocus($PARAM[widgetid])</visible>
                     <include content="Bingie_Main_Landscape_Title"><param name="focused" value="true" /></include>
                 </control>
+                <control type="image">
+                    <visible>Window.IsActive(Home) + Control.HasFocus($PARAM[widgetid]) + [Integer.IsEqual($PARAM[widgetid],2510) | Integer.IsEqual($PARAM[widgetid],2520) | Integer.IsEqual($PARAM[widgetid],2550) | Integer.IsEqual($PARAM[widgetid],2560)]</visible>
+                    <width>landscape_width</width>
+                    <height>210</height>
+                    <texture background="true" border="-4">bingie/border/thumb_fo_4.png</texture>
+                    <bordersize>2</bordersize>
+                </control>
             </control>
         </focusedlayout>
     </include>

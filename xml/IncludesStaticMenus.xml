@@ -370,10 +370,10 @@
 	</include>
 	<!-- An empty dynamic content path defers its provider job; container visibility alone does not. -->
 	<variable name="BingieHomeContinueMoviesPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;name=Continue+Watching+Movies&amp;limit=5&amp;hub_next=true&amp;home_next=true&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),1)">plugin://skin.titan.bingie.lite/?mode=build_movie_list&amp;action=in_progress_movies&amp;name=Continue+Watching+Movies&amp;limit=4&amp;hub_next=true&amp;home_next=true&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshMovie)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshMovie)]</value>
 	</variable>
 	<variable name="BingieHomeContinueTVPath">
-		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;name=Continue+Watching+TV&amp;limit=5&amp;hub_next=true&amp;home_next=true&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
+		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),2)">plugin://skin.titan.bingie.lite/?mode=build_in_progress_episode&amp;name=Continue+Watching+TV&amp;limit=4&amp;hub_next=true&amp;home_next=true&amp;refresh=$INFO[Window(Home).Property(BingieProgressRefreshEpisode)]&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
 	</variable>
 	<variable name="BingieHomeTrendingTVPath">
 		<value condition="Integer.IsGreater(Window(Home).Property(BingieHomeWidgetStage),0)">plugin://skin.titan.bingie.lite/?mode=build_tvshow_list&amp;action=tmdb_tv_trending_day&amp;limit=10&amp;watched_refresh=$INFO[Window(Home).Property(BingieWatchedRefreshTV)]</value>
@@ -387,8 +387,8 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetName" value="Trending Movies Today" />
 		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
+		<include content="widget_base_normal" condition="true">
+			<param name="containerType" value="list" />
 			<param name="contentStyle" value="normal" />
 			<param name="widgetid" value="2510" />
 			<param name="widgetName" value="Trending Movies Today" />
@@ -408,8 +408,8 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetName" value="Trending TV Shows Today" />
 		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
+		<include content="widget_base_normal" condition="true">
+			<param name="containerType" value="list" />
 			<param name="contentStyle" value="normal" />
 			<param name="widgetid" value="2520" />
 			<param name="widgetName" value="Trending TV Shows Today" />
@@ -429,8 +429,8 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetName" value="Continue Watching Movies" />
 		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
+		<include content="widget_base_normal" condition="true">
+			<param name="containerType" value="list" />
 			<param name="contentStyle" value="normal" />
 			<param name="widgetid" value="2550" />
 			<param name="widgetName" value="Continue Watching Movies" />
@@ -441,7 +441,7 @@
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="6" />
+			<param name="widgetLimit" value="5" />
 			<param name="widgetInfoPanel" value="top" />
 			<param name="visibility" value="true" />
 		</include>
@@ -450,8 +450,8 @@
 			<param name="submenuid" value="num-10000" />
 			<param name="widgetName" value="Continue Watching TV" />
 		</include>
-		<include content="widget_base" condition="true">
-			<param name="containerType" value="panel" />
+		<include content="widget_base_normal" condition="true">
+			<param name="containerType" value="list" />
 			<param name="contentStyle" value="normal" />
 			<param name="widgetid" value="2560" />
 			<param name="widgetName" value="Continue Watching TV" />
@@ -462,7 +462,7 @@
 			<param name="widgetStyle" value="widget_layout_default" />
 			<param name="widgetSortBy" value="playlist" />
 			<param name="widgetSortOrder" value="" />
-			<param name="widgetLimit" value="6" />
+			<param name="widgetLimit" value="5" />
 			<param name="widgetInfoPanel" value="top" />
 			<param name="visibility" value="true" />
 		</include>

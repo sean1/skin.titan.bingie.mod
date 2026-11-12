@@ -62,8 +62,10 @@
     </include>
     <include name="BingieF1RaceCard">
         <control type="group"><width>318</width><height>238</height>
-            <control type="image"><visible>$PARAM[focus]</visible><texture background="true">home/home_matte3.png</texture><colordiffuse>ffffffff</colordiffuse><include>thumbsborder_focused</include></control>
+            <control type="image"><visible>$PARAM[focus] + !Control.HasFocus(9711)</visible><texture background="true">home/home_matte3.png</texture><colordiffuse>ff888888</colordiffuse><include>thumbsborder_focused</include></control>
+            <control type="image"><visible>$PARAM[focus] + Control.HasFocus(9711)</visible><texture background="true">home/home_matte3.png</texture><colordiffuse>ffffffff</colordiffuse><include>thumbsborder_focused</include></control>
             <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>livetv/f1-card-circuit.jpg</texture><aspectratio>scale</aspectratio></control>
+            <control type="image"><left>8</left><right>8</right><top>8</top><bottom>8</bottom><texture>colors/color_white.png</texture><colordiffuse>30ffffff</colordiffuse><visible>$PARAM[focus] + Control.HasFocus(9711)</visible></control>
             <control type="image"><left>8</left><right>8</right><top>8</top><height>160</height><texture flipy="true">overlays/gradient_episodes.png</texture><aspectratio>stretch</aspectratio></control>
             <control type="image"><left>8</left><right>8</right><bottom>8</bottom><height>128</height><texture>overlays/gradient_episodes.png</texture><aspectratio>stretch</aspectratio></control>
             <control type="label"><left>16</left><top>8</top><width>120</width><height>38</height><font>Reg20</font><textcolor>ffffffff</textcolor><aligny>center</aligny><label>$INFO[ListItem.Property(F1.CardWhen)]</label></control>
@@ -74,7 +76,8 @@
     <include name="BingieF1SessionCard">
         <control type="group"><visible>!Container(9701).IsUpdating + !String.IsEmpty(Container(9711).ListItem.Property(F1.EventId)) + String.IsEqual(Container(9701).ListItem.Property(F1.EventId),Container(9711).ListItem.Property(F1.EventId)) + String.IsEqual(Container(9701).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season)) + String.IsEqual(Container(9711).ListItem.Property(F1.Year),Window(Home).Property(BingieF1.Season))</visible><width>248</width><height>108</height>
             <control type="image"><width>248</width><height>108</height><texture>colors/color_white.png</texture><colordiffuse>ff202020</colordiffuse></control>
-            <control type="image"><width>248</width><height>108</height><texture border="10">bingie/border/default_button_fo_4.png</texture><visible>$PARAM[focus]</visible></control>
+            <control type="image"><width>248</width><height>108</height><texture>colors/color_white.png</texture><colordiffuse>ff505050</colordiffuse><visible>$PARAM[focus] + Control.HasFocus(9701)</visible></control>
+            <control type="image"><width>248</width><height>108</height><texture border="10">bingie/border/default_button_fo_4.png</texture><visible>$PARAM[focus] + Control.HasFocus(9701)</visible></control>
             <control type="label"><left>14</left><right>14</right><top>14</top><height>33</height><font>Reg24</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(F1.Session)]</label><scroll>$PARAM[focus]</scroll></control>
             <control type="label"><left>14</left><right>14</right><top>48</top><height>24</height><font>Reg20</font><textcolor>ffbcbcbc</textcolor><label>$INFO[ListItem.Property(F1.ShortWhen)]</label><scroll>$PARAM[focus]</scroll></control>
             <control type="label"><left>14</left><right>14</right><top>78</top><height>24</height><font>Reg20</font><textcolor>ffffffff</textcolor><label>$INFO[ListItem.Property(F1.Status)]</label></control>

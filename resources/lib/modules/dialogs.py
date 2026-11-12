@@ -163,10 +163,15 @@ def push_native_info_state():
 	_push_page_history({'page': 'native_info'})
 
 def pov_page_back(params=None):
+	if get_property('PovPageBackTransition'): return
+	token = str(monotonic_ns())
+	set_property('PovPageBackTransition', token)
+	try: _pov_page_back()
+	finally:
+		if get_property('PovPageBackTransition') == token: clear_property('PovPageBackTransition')
+
+def _pov_page_back():
 	_stop_owned_trailer_preview()
-	clear_property(POV_INFO_HYDRATION_PROPERTY)
-	clear_property(POV_INFO_PENDING_TMDB_PROPERTY)
-	clear_property(POV_ACTOR_HYDRATION_PROPERTY)
 	history = _page_history()
 	if history:
 		state = history.pop()
@@ -174,6 +179,42 @@ def pov_page_back(params=None):
 		focus = state.get('focus') or {}
 		properties = POV_INFO_PROPERTIES if page_type == 'info' else POV_ACTOR_PROPERTIES if page_type == 'actor' else ()
 		values = state.get('values') or {}
+		if page_type == 'actor':
+			source = next((window for window in (1123, 1122) if kodi_utils.get_visibility('Window.IsActive(%s)' % window)), None)
+			if source is None: return
+			deadline = monotonic() + 2.0
+			while kodi_utils.get_visibility('System.HasActiveModalDialog'):
+				if monotonic() >= deadline or kodi_utils.monitor.waitForAbort(0.025): return
+			if not kodi_utils.get_visibility('Window.IsActive(%s)' % source) or _page_history() != history + [state]: return
+			previous = {prop: get_property(prop) for prop in properties}
+			for prop in properties:
+				value = values.get(prop) or ''
+				set_property(prop, str(value)) if value else clear_property(prop)
+			actor_id = get_property('PovActorId')
+			set_property('PovActorRestoreFocus', actor_id)
+			try:
+				if source == 1122: kodi_utils.xbmc.executebuiltin('SetFocus(600)', True)
+				else: kodi_utils.xbmc.executebuiltin('ReplaceWindow(1122)', True)
+				deadline = monotonic() + 2.0
+				while not kodi_utils.get_visibility('Window.IsActive(1122)'):
+					if monotonic() >= deadline or kodi_utils.monitor.waitForAbort(0.025):
+						if kodi_utils.get_visibility('Window.IsActive(%s)' % source) and _page_history() == history + [state]:
+							for prop, value in previous.items():
+								set_property(prop, str(value)) if value else clear_property(prop)
+						return
+				if _page_history() != history + [state]: return
+				clear_property(POV_INFO_HYDRATION_PROPERTY)
+				clear_property(POV_INFO_PENDING_TMDB_PROPERTY)
+				clear_property(POV_ACTOR_HYDRATION_PROPERTY)
+				if history: set_property(POV_PAGE_HISTORY_PROPERTY, json.dumps(history, separators=(',', ':')))
+				else: clear_property(POV_PAGE_HISTORY_PROPERTY)
+				if focus.get('control') in POV_ACTOR_FOCUS_CONTROLS: _restore_page_focus(focus, POV_ACTOR_FOCUS_CONTROLS, 1122)
+			finally:
+				if get_property('PovActorRestoreFocus') == actor_id: clear_property('PovActorRestoreFocus')
+			return
+		clear_property(POV_INFO_HYDRATION_PROPERTY)
+		clear_property(POV_INFO_PENDING_TMDB_PROPERTY)
+		clear_property(POV_ACTOR_HYDRATION_PROPERTY)
 		if page_type == 'info': clear_property('PovInfoTmdb')
 		for prop in properties:
 			if page_type == 'info' and prop == 'PovInfoTmdb': continue
@@ -189,24 +230,15 @@ def pov_page_back(params=None):
 			execute_builtin('ReplaceWindow(%s)' % POV_INFO_WINDOW_ID)
 			_restore_page_focus(focus, POV_INFO_FOCUS_CONTROLS, POV_INFO_WINDOW_ID, 80 if get_property('PovInfoType') == 'movie' else 51)
 			return
-		if page_type == 'actor':
-			actor_id = get_property('PovActorId')
-			if focus.get('control') not in POV_ACTOR_FOCUS_CONTROLS:
-				execute_builtin('ReplaceWindow(1122)')
-				return
-			set_property('PovActorRestoreFocus', actor_id)
-			try:
-				execute_builtin('ReplaceWindow(1122)')
-				_restore_page_focus(focus, POV_ACTOR_FOCUS_CONTROLS, 1122)
-			finally:
-				if get_property('PovActorRestoreFocus') == actor_id: clear_property('PovActorRestoreFocus')
-			return
 		if page_type == 'native_info':
-			execute_builtin('PreviousMenu')
+			execute_builtin('Action(PreviousMenu)')
 			refresh_after_info()
 			execute_builtin('AlarmClock(PovNativeInfoBack,Action(Info),00:00,silent)')
 			return
-	execute_builtin('PreviousMenu')
+	clear_property(POV_INFO_HYDRATION_PROPERTY)
+	clear_property(POV_INFO_PENDING_TMDB_PROPERTY)
+	clear_property(POV_ACTOR_HYDRATION_PROPERTY)
+	execute_builtin('Action(PreviousMenu)')
 	refresh_after_info()
 
 def get_media_metadata(media_type, tmdb_id):

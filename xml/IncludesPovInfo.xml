@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <includes>
+	<!-- Kodi needs a focus target to consume Back after running the navigation script. -->
+	<include name="PovPageBackTargets">
+		<control type="button" id="8990">
+			<left>-100</left><top>-100</top><width>1</width><height>1</height>
+			<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback><onback>8991</onback>
+		</control>
+		<control type="button" id="8991">
+			<left>-100</left><top>-100</top><width>1</width><height>1</height>
+			<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback><onback>8990</onback>
+		</control>
+	</include>
 	<variable name="PovInfoMyListLabel">
 		<value condition="String.IsEqual(Window(Home).Property(PovInfoMyListSaved),true)">Remove from My List</value>
 		<value condition="String.IsEqual(Window(Home).Property(PovInfoMyListSaved),false)">Add to My List</value>
@@ -284,6 +295,7 @@
 	</include>
 	<include name="PovInfoPage">
 		<control type="group">
+			<include>PovPageBackTargets</include>
 			<visible>String.IsEmpty(Window(Home).Property(PovInfoTransition))</visible>
 			<animation effect="fade" start="0" end="100" time="250">WindowOpen</animation>
 			<animation effect="fade" start="100" end="0" time="180">WindowClose</animation>
@@ -409,7 +421,8 @@
 				<onup>noop</onup>
 				<onleft>noop</onleft>
 				<ondown>8010</ondown>
-				<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+				<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+				<onback>8990</onback>
 				<control type="radiobutton" id="80">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),movie)</visible>
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>
@@ -423,7 +436,8 @@
 					<radioheight>22</radioheight>
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=play_from_info&amp;mediatype=movie&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)])</onclick>
 					<onright>54</onright>
-					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+					<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+					<onback>8990</onback>
 				</control>
 				<control type="radiobutton" id="51">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
@@ -438,7 +452,8 @@
 					<radioheight>22</radioheight>
 					<onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=play_from_info&amp;mediatype=tvshow&amp;tmdb_id=$INFO[Window(Home).Property(PovInfoTmdb)])</onclick>
 					<onright>53</onright>
-					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+					<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+					<onback>8990</onback>
 				</control>
 				<control type="radiobutton" id="55">
 					<visible>String.IsEqual(Window(Home).Property(PovInfoType),movie) | String.IsEqual(Window(Home).Property(PovInfoType),tvshow)</visible>
@@ -453,7 +468,8 @@
 					<radioheight>22</radioheight>
 					<onclick>SetProperty(BingieTrailerPreviewRequest,true,Home)</onclick>
 					<onright>54</onright>
-					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+					<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+					<onback>8990</onback>
 				</control>
 			</control>
 			<control type="grouplist" id="8002">
@@ -484,7 +500,8 @@
 					<onclick condition="!String.IsEmpty(Window(Home).Property(PovInfoTmdb))">ActivateWindow(1124,return)</onclick>
 					<onclick condition="String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + !String.IsEmpty(Window(Home).Property(PovInfoPendingTmdb))">ActivateWindow(1124,return)</onclick>
 					<onleft>51</onleft>
-					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+					<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+					<onback>8990</onback>
 				</control>
 				<control type="radiobutton" id="54">
 					<include>Bingie_InfoDialog_Button_Default_Defs</include>
@@ -500,7 +517,8 @@
 					<onclick>$INFO[Window(Home).Property(PovInfoMyListCommand)]</onclick>
 					<onleft condition="String.IsEqual(Window(Home).Property(PovInfoType),movie)">80</onleft>
 					<onleft condition="String.IsEqual(Window(Home).Property(PovInfoType),tvshow)">55</onleft>
-					<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+					<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+					<onback>8990</onback>
 				</control>
 			</control>
 			<control type="group">
@@ -524,6 +542,8 @@
 				<top>-100</top>
 				<width>1</width>
 				<height>1</height>
+				<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+				<onback>8990</onback>
 				<onfocus condition="$EXP[PovInfoHasCurrentCast]">SetFocus(550)</onfocus>
 				<onfocus condition="$EXP[PovInfoCastLoading]">SetFocus(551)</onfocus>
 				<onfocus condition="!$EXP[PovInfoCastAvailable] + $EXP[PovInfoHasCurrentCollection]">SetFocus(563)</onfocus>
@@ -539,7 +559,8 @@
 				<ondown condition="!$EXP[PovInfoCastLoading]">8010</ondown>
 				<onleft>noop</onleft>
 				<onright>noop</onright>
-				<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+				<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+				<onback>8990</onback>
 			</control>
 
 			<control type="list" id="566">
@@ -618,7 +639,8 @@
 						<ondown condition="$EXP[PovInfoHasCurrentCollection]">563</ondown>
 						<ondown condition="!$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentMoreLikeThis]">560</ondown>
 						<ondown condition="!$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentMoreLikeThis]">550</ondown>
-						<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+						<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+						<onback>8990</onback>
 						<onclick>RunPlugin($INFO[ListItem.Property(PovActorPath)])</onclick>
 						<oninfo>RunPlugin($INFO[ListItem.Property(PovActorPath)])</oninfo>
 						<itemlayout width="238" height="320">
@@ -665,7 +687,8 @@
 						<onup condition="!$EXP[PovInfoHasCurrentCast]">8000</onup>
 						<ondown condition="$EXP[PovInfoHasCurrentMoreLikeThis]">560</ondown>
 						<ondown condition="!$EXP[PovInfoHasCurrentMoreLikeThis]">563</ondown>
-						<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+						<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+						<onback>8990</onback>
 						<oninfo>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=movie&amp;tmdb_id=$INFO[ListItem.Property(tmdb_id)])</oninfo>
 						<itemlayout width="333" height="193">
 							<control type="group">
@@ -714,7 +737,8 @@
 						<onup condition="!$EXP[PovInfoHasCurrentCollection] + $EXP[PovInfoHasCurrentCast]">550</onup>
 						<onup condition="!$EXP[PovInfoHasCurrentCollection] + !$EXP[PovInfoHasCurrentCast]">8000</onup>
 						<ondown>560</ondown>
-						<onback>RunPlugin(plugin://skin.titan.bingie.lite/?mode=pov_page_back)</onback>
+						<onback>RunScript(special://skin/resources/lib/pov_page_back.py)</onback>
+						<onback>8990</onback>
 						<oninfo>RunPlugin(plugin://skin.titan.bingie.lite/?mode=show_media_info&amp;mediatype=$INFO[Window(Home).Property(PovInfoType)]&amp;tmdb_id=$INFO[ListItem.Property(tmdb_id)])</oninfo>
 						<itemlayout width="333" height="193">
 							<control type="group">

@@ -5,7 +5,9 @@ import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 from xbmcaddon import Addon
 from modules.source_search import EXTERNAL_PROVIDERS
 
-addon_object, window, execJSONRPC = Addon(), xbmcgui.Window(10000), xbmc.executeJSONRPC
+try: addon_object = Addon(id='skin.titan.bingie.lite')
+except TypeError: addon_object = Addon()
+window, execJSONRPC = xbmcgui.Window(10000), xbmc.executeJSONRPC
 player, xbmc_player, monitor, xbmc_monitor = xbmc.Player(), xbmc.Player, xbmc.Monitor(), xbmc.Monitor
 dialog, progressDialog, progressDialogBG = xbmcgui.Dialog(), xbmcgui.DialogProgress(), xbmcgui.DialogProgressBG()
 get_addoninfo, get_infolabel, get_visibility = addon_object.getAddonInfo, xbmc.getInfoLabel, xbmc.getCondVisibility

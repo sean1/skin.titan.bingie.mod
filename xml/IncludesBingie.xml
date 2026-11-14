@@ -1284,6 +1284,10 @@
         <param name="titleoffset" default="-194" />
         <param name="titlefont" default="Title" />
         <param name="genre_adjust" default="false" />
+        <param name="media_item" default="[Container.Content(movies) | Container.Content(tvshows) | String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) |
+            String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) |
+            String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(ListItem.Property(mediatype),movie) | String.IsEqual(ListItem.Property(mediatype),tvshow) |
+            String.IsEqual(ListItem.Property(mediatype),season) | String.IsEqual(ListItem.Property(mediatype),episode)]" />
         <param name="text_visibility" default="![String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) |
             String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) |
             String.IsEqual(ListItem.Property(mediatype),movie) | String.IsEqual(ListItem.Property(mediatype),tvshow) | String.IsEqual(ListItem.Property(mediatype),season) | String.IsEqual(ListItem.Property(mediatype),episode)]" />
@@ -1300,8 +1304,11 @@
 <!-- Movie Title with no Clearlogo -->
 			<control type="textbox" id="$PARAM[id]6">
                 <visible>$PARAM[visibility]</visible>
-				<visible>$PARAM[text_visibility]</visible>
-				<visible>String.EndsWith(Control.GetLabel($PARAM[id]5),color_transparent.png)</visible>
+				<visible>[!$PARAM[media_item] + $PARAM[text_visibility] + String.EndsWith(Control.GetLabel($PARAM[id]5),color_transparent.png)] |
+                    [$PARAM[media_item] + String.EndsWith(Control.GetLabel($PARAM[id]5),color_transparent.png) +
+                    [!String.IsEqual(ListItem.Property(PovLiteSummary),true) | String.IsEmpty(ListItem.Property(PovFocusIdentity)) | $EXP[PovFocusedMetadataMatches] |
+                    String.IsEqual(Window(Home).Property(PovFocusedMetaFailureIdentity),ListItem.Property(PovFocusIdentity))]]</visible>
+                <animation effect="fade" start="0" end="100" delay="300" time="150">Visible</animation>
                 <top>$PARAM[titleoffset]</top>
                 <height>$PARAM[titleheight]</height>
                 <width max="650">auto</width>
@@ -1384,13 +1391,12 @@
                     <param name="id" value="$PARAM[id]1" /><param name="image" value="$VAR[BingieInfoClearlogo]" /><param name="text" value="$VAR[BingieMainFallbackTitle]" />
                     <param name="visibility" value="[Container.Content(movies) | Container.Content(tvshows)] + !Integer.IsGreater(ListItem.PercentPlayed,1)" />
                     <param name="logoheight" value="130" /><param name="titleheight" value="124" /><param name="titleoffset" value="-134" />
-                    <param name="logo_fadetime" value="0" /><param name="titlefont" value="Bold45" /><param name="text_visibility" value="true" />
+                    <param name="titlefont" value="Bold45" /><param name="text_visibility" value="false" />
                 </include>
                 <include content="Bingie_Headline_Item">
                     <param name="id" value="$PARAM[id]2" /><param name="image" value="$VAR[BingieInfoClearlogo]" /><param name="text" value="$VAR[BingieMainFallbackTitle]" />
                     <param name="visibility" value="[!Container.Content(movies) + !Container.Content(tvshows)] | Integer.IsGreater(ListItem.PercentPlayed,1)" />
-                    <param name="logo_fadetime" value="0" />
-                    <param name="text_visibility" value="[Container.Content(movies) | Container.Content(tvshows)] | ![String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(ListItem.Property(mediatype),season) | String.IsEqual(ListItem.Property(mediatype),episode)]" />
+                    <param name="text_visibility" value="!Container.Content(movies) + !Container.Content(tvshows) + ![String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(ListItem.Property(mediatype),movie) | String.IsEqual(ListItem.Property(mediatype),tvshow) | String.IsEqual(ListItem.Property(mediatype),season) | String.IsEqual(ListItem.Property(mediatype),episode)]" />
                 </include>
 
                 <!-- spotlight row details -->

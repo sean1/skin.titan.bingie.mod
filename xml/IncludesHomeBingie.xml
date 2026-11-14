@@ -63,8 +63,7 @@
                         <param name="id" value="9000" />
                         <param name="image" value="$VAR[BingieInfoClearlogo]" />
                         <param name="text" value="$VAR[BingieInfoLabel]" />
-                        <param name="logo_fadetime" value="0" />
-                        <param name="text_visibility" value="[ControlGroup(77777).HasFocus() + $EXP[IsMovieOrTvShowListItem]] | ![[$EXP[IsMainMenuOpened] + [
+                        <param name="text_visibility" value="![String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode) | String.IsEqual(ListItem.Property(DBTYPE),movie) | String.IsEqual(ListItem.Property(DBTYPE),tvshow) | String.IsEqual(ListItem.Property(DBTYPE),season) | String.IsEqual(ListItem.Property(DBTYPE),episode) | String.IsEqual(ListItem.Property(mediatype),movie) | String.IsEqual(ListItem.Property(mediatype),tvshow) | String.IsEqual(ListItem.Property(mediatype),season) | String.IsEqual(ListItem.Property(mediatype),episode)] + ![[$EXP[IsMainMenuOpened] + [
                             [!String.IsEmpty(Window(Home).Property(ListItem.Label)) + $EXP[IsCategoryDBType] +
                             [String.IsEqual(Window(Home).Property(ListItem.DBTYPE),movie) |
                             String.IsEqual(Window(Home).Property(ListItem.DBTYPE),tvshow) |

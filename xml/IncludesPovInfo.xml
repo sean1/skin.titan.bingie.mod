@@ -172,11 +172,13 @@
 		<include>BingieSpotlightBottomFade</include>
 		<control type="image" id="529">
 			<left>138</left><top>34</top><width>490</width><height>132</height>
+			<fadetime>350</fadetime>
 			<aspectratio align="left" aligny="center">keep</aspectratio>
 			<texture background="true" fallback="colors/color_transparent.png">$VAR[PovSpotlightShowLogo]</texture>
 		</control>
 		<control type="label">
-			<visible>[String.IsEmpty(Window(Home).Property(PovInfoLogo)) + String.IsEmpty(Container(527).ListItem.Art(clearlogo))] | String.EndsWith(Control.GetLabel(529),color_transparent.png)</visible>
+			<visible>!String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + [[String.IsEmpty(Window(Home).Property(PovInfoLogo)) + String.IsEmpty(Container(527).ListItem.Art(clearlogo))] | String.EndsWith(Control.GetLabel(529),color_transparent.png)]</visible>
+			<animation effect="fade" start="0" end="100" delay="300" time="150">Visible</animation>
 			<left>138</left><top>34</top><width>700</width><height>132</height>
 			<aligny>center</aligny>
 			<font>Title</font>
@@ -321,7 +323,15 @@
 				<height>190</height>
 				<aspectratio align="left" aligny="center">keep</aspectratio>
 				<fadetime>350</fadetime>
-				<texture background="true">$INFO[Window(Home).Property(PovInfoLogo)]</texture>
+				<texture background="true" fallback="colors/color_transparent.png">$INFO[Window(Home).Property(PovInfoLogo)]</texture>
+			</control>
+
+			<control type="textbox">
+				<visible>!$EXP[PovInfoPreviewFocused] + !String.IsEmpty(Window(Home).Property(PovInfoTmdb)) + [String.IsEmpty(Window(Home).Property(PovInfoLogo)) | String.EndsWith(Control.GetLabel(9105),color_transparent.png)]</visible>
+				<animation effect="fade" start="0" end="100" delay="300" time="150">Visible</animation>
+				<left>138</left><top>20</top><width>820</width><height>180</height>
+				<font>Reg60</font><align>left</align><aligny>center</aligny><textcolor>ffffffff</textcolor>
+				<label>$INFO[Window(Home).Property(PovInfoTitle)]</label>
 			</control>
 
 			<control type="textbox">

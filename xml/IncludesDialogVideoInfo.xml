@@ -319,6 +319,14 @@
 						<aspectratio align="center" aligny="center">keep</aspectratio>
 						<texture background="true" fallback="colors/color_transparent.png">$VAR[BingieInfoClearlogo]</texture>
 					</control>
+					<control type="textbox" id="90006">
+						<visible>String.EndsWith(Control.GetLabel(90005),color_transparent.png)</visible>
+						<animation effect="fade" start="0" end="100" delay="300" time="150">Visible</animation>
+						<top>-189</top><height>184</height><width max="650">auto</width>
+						<font>Title</font><align>left</align><aligny>center</aligny><textcolor>ffffffff</textcolor>
+						<label>$VAR[BingieInfoLabel]</label>
+						<autoscroll delay="4000" time="2000" repeat="6000">true</autoscroll>
+					</control>
 					<control type="group">
 						<top>-2</top>
 						<width>1000</width>

@@ -50,6 +50,7 @@ FOCUSED_FANART_VIDEO_FOCUS = 'Control.HasFocus(50) | Control.HasFocus(523) | Con
 FOCUSED_METADATA_DELAY = 0.25
 FOCUSED_METADATA_RETRY_DELAY = 2.0
 FOCUSED_METADATA_IDENTITY_PROPERTY = 'PovFocusedMetaIdentity'
+FOCUSED_METADATA_FAILURE_IDENTITY_PROPERTY = 'PovFocusedMetaFailureIdentity'
 FOCUSED_METADATA_FIELDS = (
 	('PovFocusedMainActors', 'main_actors'), ('PovFocusedGenre', 'genre'), ('PovFocusedClearLogo', 'clearlogo'), ('PovFocusedMpaa', 'mpaa'),
 	('PovFocusedDuration', 'duration'), ('PovFocusedSeasons', 'seasons'), ('PovFocusedYearRange', 'year_range')
@@ -619,6 +620,9 @@ class TrailerPreview:
 				self.focused_metadata_retries.pop(identity, None)
 				self.focused_metadata_retries[identity] = monotonic() + FOCUSED_METADATA_RETRY_DELAY
 				if len(self.focused_metadata_retries) > TRAILER_PREVIEW_CACHE_LIMIT: self.focused_metadata_retries.popitem(last=False)
+				if (self.metadata_identity if self.metadata_tracking_started else self.identity) == identity:
+					set_property(FOCUSED_METADATA_FAILURE_IDENTITY_PROPERTY, identity)
+					self.focused_metadata_published = True
 				return
 			metadata = result
 			self.focused_metadata_retries.pop(identity, None)
@@ -676,6 +680,7 @@ class TrailerPreview:
 
 	def _publish_focused_metadata(self, identity, metadata):
 		if (self.metadata_identity if self.metadata_tracking_started else self.identity) != identity: return
+		clear_property(FOCUSED_METADATA_FAILURE_IDENTITY_PROPERTY)
 		clear_property(FOCUSED_METADATA_IDENTITY_PROPERTY)
 		for prop, key in FOCUSED_METADATA_FIELDS:
 			value = metadata.get(key) or ''
@@ -686,6 +691,7 @@ class TrailerPreview:
 	def _clear_focused_metadata(self, force=False):
 		if not force and not self.focused_metadata_published: return
 		clear_property(FOCUSED_METADATA_IDENTITY_PROPERTY)
+		clear_property(FOCUSED_METADATA_FAILURE_IDENTITY_PROPERTY)
 		for prop, _ in FOCUSED_METADATA_FIELDS: clear_property(prop)
 		self.focused_metadata_published = False
 

@@ -434,10 +434,10 @@
                         </control>
                         <control type="group">
                             <visible>$EXP[HasBingieItemRating] + !ListItem.Property(season_finale) + !ListItem.Property(series_finale)</visible>
-                            <width>124</width>
+                            <width>76</width>
                             <height>30</height>
                             <include content="BingieListRatingBadge">
-                                <param name="label" value="$VAR[BingieItemRating]" />
+                                <param name="label" value="$VAR[BingieItemScore]" />
                             </include>
                         </control>
                     </control>

@@ -284,10 +284,10 @@ def get_focused_media_info(media_type, tmdb_id):
 		'year_range': _show_year_range(meta) if media_type == 'tvshow' else str(meta.get('year') or ''), 'trailer': meta.get('trailer') or ''
 	}
 
-def _rating_label(rating, tmdb=False):
+def _rating_label(rating):
 	try: rating = float(rating or 0)
 	except: return ''
-	return '%s %.1f' % ('TMDB' if tmdb else 'Rating', rating) if 0 < rating <= 10 else ''
+	return '%.1f' % rating if 0 < rating <= 10 else ''
 
 def _stop_owned_trailer_preview(suppress_identity=''):
 	clear_property(TRAILER_PREVIEW_REQUEST_PROPERTY)
@@ -328,7 +328,7 @@ def _set_media_info_properties(media_type, tmdb_id, meta):
 		'PovInfoFanart': meta.get('fanart') or '', 'PovInfoPoster': meta.get('poster') or '', 'PovInfoPlot': meta.get('plot') or '',
 		'PovInfoYear': str(meta.get('year') or ''), 'PovInfoYearRange': _show_year_range(meta) if media_type == 'tvshow' else str(meta.get('year') or ''),
 		'PovInfoMpaa': meta.get('mpaa') or '', 'PovInfoRuntime': _runtime_label(meta.get('duration')),
-		'PovInfoSeasons': _seasons_label(meta.get('total_seasons')) if media_type == 'tvshow' else '', 'PovInfoMatch': _rating_label(meta.get('rating'), tmdb=True),
+		'PovInfoSeasons': _seasons_label(meta.get('total_seasons')) if media_type == 'tvshow' else '', 'PovInfoMatch': _rating_label(meta.get('rating')),
 		'PovInfoTrailer': meta.get('trailer') or '', 'PovInfoStatus': status, 'PovInfoHasCast': str(bool(cast)).lower(),
 		'PovInfoCollectionId': extra_info.get('collection_id') if media_type == 'movie' else '', 'PovInfoCastSnapshot': cast_snapshot
 	}

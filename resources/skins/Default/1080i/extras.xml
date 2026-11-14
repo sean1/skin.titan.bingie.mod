@@ -237,20 +237,25 @@
 					<visible>!String.IsEmpty(Window.Property(tikiskins.extras.year))</visible>
 				</control>
 				<control type="group">
-					<width>124</width>
+					<width>72</width>
 					<height>30</height>
 					<visible>!String.IsEmpty(Window.Property(tikiskins.extras.rating))</visible>
-					<control type="image">
-						<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
-					</control>
 					<control type="label">
-						<width>100%</width>
+						<width>50</width>
 						<height>100%</height>
 						<font>Bold22</font>
-						<align>center</align>
+						<align>right</align>
 						<aligny>center</aligny>
-						<textcolor>FF9CEAB3</textcolor>
-						<label>$INFO[Window.Property(tikiskins.extras.rating),TMDB ]</label>
+						<textcolor>FFFFFFFF</textcolor>
+						<shadowcolor>FF000000</shadowcolor>
+						<label>$INFO[Window.Property(tikiskins.extras.rating)]</label>
+					</control>
+					<control type="image">
+						<left>54</left>
+						<top>7</top>
+						<width>16</width>
+						<height>16</height>
+						<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 					</control>
 				</control>
 				<control type="label">
@@ -503,13 +508,34 @@
 						<label>[B]$INFO[Window.Property(tikiskins.extras.more_from_collection.name)][/B] $INFO[Window.Property(tikiskins.extras.more_from_collection.number)]</label>
 						<visible>!Control.HasFocus(2062)</visible>
 					</control>
-					<control type="label">
-						<width min="30" max="1820">auto</width>
+					<control type="grouplist">
+						<width>1820</width>
 						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]$INFO[Window.Property(tikiskins.extras.more_from_collection.name)][/B]  |  [I]$INFO[Container(2062).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2062).ListItem.Property(tikiskins.extras.release_date)]$INFO[Container(2062).ListItem.Property(tikiskins.extras.vote_average), • ][/I]</label>
+						<itemgap>5</itemgap>
+						<orientation>horizontal</orientation>
 						<visible>Control.HasFocus(2062)</visible>
+						<control type="label">
+							<width min="30" max="1710">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[B]$INFO[Window.Property(tikiskins.extras.more_from_collection.name)][/B]  |  [I]$INFO[Container(2062).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2062).ListItem.Property(tikiskins.extras.release_date)][/I]</label>
+						</control>
+						<control type="label">
+							<width min="1" max="80">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[I]$INFO[Container(2062).ListItem.Property(tikiskins.extras.vote_average)][/I]</label>
+							<visible>!String.IsEmpty(Container(2062).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
+						<control type="image">
+							<width>18</width>
+							<height>18</height>
+							<aspectratio>keep</aspectratio>
+							<texture colordiffuse="FFCCCCCC">bingie/rating-star.png</texture>
+							<visible>!String.IsEmpty(Container(2062).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
 					</control>
 					<control type="group">
 						<top>45</top>
@@ -568,15 +594,15 @@
 								<aspectratio>scale</aspectratio>
 								<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 							</control>
-							<control type="image">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+							<control type="label">
+								<left>14</left><top>14</top><width>50</width><height>30</height>
+								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
-							<control type="label">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+							<control type="image">
+								<left>65</left><top>23</top><width>12</width><height>12</height>
+								<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
 							<control type="image">
@@ -615,15 +641,15 @@
 									<aspectratio>scale</aspectratio>
 									<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 								</control>
-								<control type="image">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+								<control type="label">
+									<left>14</left><top>14</top><width>50</width><height>30</height>
+									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
-								<control type="label">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+								<control type="image">
+									<left>65</left><top>23</top><width>12</width><height>12</height>
+									<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
 								<control type="image">
@@ -1477,13 +1503,34 @@
 						<label>[B]Recommended[/B] $INFO[Window.Property(tikiskins.extras.recommended.number)]</label>
 						<visible>!Control.HasFocus(2051)</visible>
 					</control>
-					<control type="label">
-						<width min="30" max="1820">auto</width>
+					<control type="grouplist">
+						<width>1820</width>
 						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]Recommended[/B]  |  [I]$INFO[Container(2051).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2051).ListItem.Property(tikiskins.extras.release_date)]$INFO[Container(2051).ListItem.Property(tikiskins.extras.vote_average), • ][/I]</label>
+						<itemgap>5</itemgap>
+						<orientation>horizontal</orientation>
 						<visible>Control.HasFocus(2051)</visible>
+						<control type="label">
+							<width min="30" max="1710">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[B]Recommended[/B]  |  [I]$INFO[Container(2051).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2051).ListItem.Property(tikiskins.extras.release_date)][/I]</label>
+						</control>
+						<control type="label">
+							<width min="1" max="80">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[I]$INFO[Container(2051).ListItem.Property(tikiskins.extras.vote_average)][/I]</label>
+							<visible>!String.IsEmpty(Container(2051).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
+						<control type="image">
+							<width>18</width>
+							<height>18</height>
+							<aspectratio>keep</aspectratio>
+							<texture colordiffuse="FFCCCCCC">bingie/rating-star.png</texture>
+							<visible>!String.IsEmpty(Container(2051).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
 					</control>
 					<control type="panel" id="2051">
 						<pagecontrol>4051</pagecontrol>
@@ -1506,15 +1553,15 @@
 								<aspectratio>scale</aspectratio>
 								<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 							</control>
-							<control type="image">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+							<control type="label">
+								<left>14</left><top>14</top><width>50</width><height>30</height>
+								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
-							<control type="label">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+							<control type="image">
+								<left>65</left><top>23</top><width>12</width><height>12</height>
+								<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
 							<control type="image">
@@ -1553,15 +1600,15 @@
 									<aspectratio>scale</aspectratio>
 									<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 								</control>
-								<control type="image">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+								<control type="label">
+									<left>14</left><top>14</top><width>50</width><height>30</height>
+									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
-								<control type="label">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+								<control type="image">
+									<left>65</left><top>23</top><width>12</width><height>12</height>
+									<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
 								<control type="image">
@@ -1628,13 +1675,34 @@
 						<label>[B]More from $INFO[Window.Property(tikiskins.extras.year)][/B] $INFO[Window.Property(tikiskins.extras.more_from_year.number)]</label>
 						<visible>!Control.HasFocus(2059)</visible>
 					</control>
-					<control type="label">
-						<width min="30" max="1820">auto</width>
+					<control type="grouplist">
+						<width>1820</width>
 						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]More from $INFO[Window.Property(tikiskins.extras.year)][/B]  |  [I]$INFO[Container(2059).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2059).ListItem.Property(tikiskins.extras.release_date)]$INFO[Container(2059).ListItem.Property(tikiskins.extras.vote_average), • ][/I]</label>
+						<itemgap>5</itemgap>
+						<orientation>horizontal</orientation>
 						<visible>Control.HasFocus(2059)</visible>
+						<control type="label">
+							<width min="30" max="1710">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[B]More from $INFO[Window.Property(tikiskins.extras.year)][/B]  |  [I]$INFO[Container(2059).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2059).ListItem.Property(tikiskins.extras.release_date)][/I]</label>
+						</control>
+						<control type="label">
+							<width min="1" max="80">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[I]$INFO[Container(2059).ListItem.Property(tikiskins.extras.vote_average)][/I]</label>
+							<visible>!String.IsEmpty(Container(2059).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
+						<control type="image">
+							<width>18</width>
+							<height>18</height>
+							<aspectratio>keep</aspectratio>
+							<texture colordiffuse="FFCCCCCC">bingie/rating-star.png</texture>
+							<visible>!String.IsEmpty(Container(2059).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
 					</control>
 					<control type="panel" id="2059">
 						<pagecontrol>4059</pagecontrol>
@@ -1657,15 +1725,15 @@
 								<aspectratio>scale</aspectratio>
 								<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 							</control>
-							<control type="image">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+							<control type="label">
+								<left>14</left><top>14</top><width>50</width><height>30</height>
+								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
-							<control type="label">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+							<control type="image">
+								<left>65</left><top>23</top><width>12</width><height>12</height>
+								<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
 							<control type="image">
@@ -1704,15 +1772,15 @@
 									<aspectratio>scale</aspectratio>
 									<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 								</control>
-								<control type="image">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+								<control type="label">
+									<left>14</left><top>14</top><width>50</width><height>30</height>
+									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
-								<control type="label">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+								<control type="image">
+									<left>65</left><top>23</top><width>12</width><height>12</height>
+									<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
 								<control type="image">
@@ -1779,13 +1847,34 @@
 						<label>[B]More from $INFO[Window.Property(tikiskins.extras.genre)][/B] $INFO[Window.Property(tikiskins.extras.more_from_genres.number)]</label>
 						<visible>!Control.HasFocus(2060)</visible>
 					</control>
-					<control type="label">
-						<width min="30" max="1820">auto</width>
+					<control type="grouplist">
+						<width>1820</width>
 						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]More from $INFO[Window.Property(tikiskins.extras.genre)][/B]  |  [I]$INFO[Container(2060).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2060).ListItem.Property(tikiskins.extras.release_date)]$INFO[Container(2060).ListItem.Property(tikiskins.extras.vote_average), • ][/I]</label>
+						<itemgap>5</itemgap>
+						<orientation>horizontal</orientation>
 						<visible>Control.HasFocus(2060)</visible>
+						<control type="label">
+							<width min="30" max="1710">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[B]More from $INFO[Window.Property(tikiskins.extras.genre)][/B]  |  [I]$INFO[Container(2060).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2060).ListItem.Property(tikiskins.extras.release_date)][/I]</label>
+						</control>
+						<control type="label">
+							<width min="1" max="80">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[I]$INFO[Container(2060).ListItem.Property(tikiskins.extras.vote_average)][/I]</label>
+							<visible>!String.IsEmpty(Container(2060).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
+						<control type="image">
+							<width>18</width>
+							<height>18</height>
+							<aspectratio>keep</aspectratio>
+							<texture colordiffuse="FFCCCCCC">bingie/rating-star.png</texture>
+							<visible>!String.IsEmpty(Container(2060).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
 					</control>
 					<control type="panel" id="2060">
 						<pagecontrol>4060</pagecontrol>
@@ -1808,15 +1897,15 @@
 								<aspectratio>scale</aspectratio>
 								<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 							</control>
-							<control type="image">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+							<control type="label">
+								<left>14</left><top>14</top><width>50</width><height>30</height>
+								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
-							<control type="label">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+							<control type="image">
+								<left>65</left><top>23</top><width>12</width><height>12</height>
+								<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
 							<control type="image">
@@ -1855,15 +1944,15 @@
 									<aspectratio>scale</aspectratio>
 									<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 								</control>
-								<control type="image">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+								<control type="label">
+									<left>14</left><top>14</top><width>50</width><height>30</height>
+									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
-								<control type="label">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+								<control type="image">
+									<left>65</left><top>23</top><width>12</width><height>12</height>
+									<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
 								<control type="image">
@@ -1930,13 +2019,34 @@
 						<label>[B]More from $INFO[Window.Property(tikiskins.extras.network)][/B] $INFO[Window.Property(tikiskins.extras.more_from_networks.number)]</label>
 						<visible>!Control.HasFocus(2061)</visible>
 					</control>
-					<control type="label">
-						<width min="30" max="1820">auto</width>
+					<control type="grouplist">
+						<width>1820</width>
 						<height>20</height>
-						<font>font14</font>
-						<textcolor>FFCCCCCC</textcolor>
-						<label>[B]More from $INFO[Window.Property(tikiskins.extras.network)][/B]  |  [I]$INFO[Container(2061).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2061).ListItem.Property(tikiskins.extras.release_date)]$INFO[Container(2061).ListItem.Property(tikiskins.extras.vote_average), • ][/I]</label>
+						<itemgap>5</itemgap>
+						<orientation>horizontal</orientation>
 						<visible>Control.HasFocus(2061)</visible>
+						<control type="label">
+							<width min="30" max="1710">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[B]More from $INFO[Window.Property(tikiskins.extras.network)][/B]  |  [I]$INFO[Container(2061).ListItem.Property(tikiskins.extras.name)] • $INFO[Container(2061).ListItem.Property(tikiskins.extras.release_date)][/I]</label>
+						</control>
+						<control type="label">
+							<width min="1" max="80">auto</width>
+							<height>20</height>
+							<font>font14</font>
+							<textcolor>FFCCCCCC</textcolor>
+							<label>[I]$INFO[Container(2061).ListItem.Property(tikiskins.extras.vote_average)][/I]</label>
+							<visible>!String.IsEmpty(Container(2061).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
+						<control type="image">
+							<width>18</width>
+							<height>18</height>
+							<aspectratio>keep</aspectratio>
+							<texture colordiffuse="FFCCCCCC">bingie/rating-star.png</texture>
+							<visible>!String.IsEmpty(Container(2061).ListItem.Property(tikiskins.extras.vote_average))</visible>
+						</control>
 					</control>
 					<control type="panel" id="2061">
 						<pagecontrol>4061</pagecontrol>
@@ -1959,15 +2069,15 @@
 								<aspectratio>scale</aspectratio>
 								<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 							</control>
-							<control type="image">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+							<control type="label">
+								<left>14</left><top>14</top><width>50</width><height>30</height>
+								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
-							<control type="label">
-								<left>14</left><top>14</top><width>58</width><height>30</height>
-								<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-								<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+							<control type="image">
+								<left>65</left><top>23</top><width>12</width><height>12</height>
+								<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 								<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 							</control>
 							<control type="image">
@@ -2006,15 +2116,15 @@
 									<aspectratio>scale</aspectratio>
 									<texture>$INFO[ListItem.Property(tikiskins.extras.thumbnail)]</texture>
 								</control>
-								<control type="image">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<texture colordiffuse="FF183B2B" border="10">bingie/square-rounded.png</texture>
+								<control type="label">
+									<left>14</left><top>14</top><width>50</width><height>30</height>
+									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor>
+									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
-								<control type="label">
-									<left>14</left><top>14</top><width>58</width><height>30</height>
-									<font>font10</font><align>center</align><aligny>center</aligny><textcolor>FF9CEAB3</textcolor>
-									<label>$INFO[ListItem.Property(tikiskins.extras.vote_average)]</label>
+								<control type="image">
+									<left>65</left><top>23</top><width>12</width><height>12</height>
+									<texture colordiffuse="FFFFFFFF">bingie/rating-star.png</texture>
 									<visible>!String.IsEmpty(ListItem.Property(tikiskins.extras.vote_average))</visible>
 								</control>
 								<control type="image">

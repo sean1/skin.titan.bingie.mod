@@ -26,8 +26,8 @@
 		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Label]</value>
 	</variable>
 	<variable name="PovInfoPagePreviewRating">
-		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Property(PovTMDBRating),TMDB ]</value>
+		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(PovTMDBRating)]</value>
+		<value condition="Control.HasFocus(563)">$INFO[Container(563).ListItem.Property(PovTMDBRating)]</value>
 	</variable>
 	<variable name="PovInfoPagePreviewYear">
 		<value condition="Control.HasFocus(560)">$INFO[Container(560).ListItem.Property(year)]</value>

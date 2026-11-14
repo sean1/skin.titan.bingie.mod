@@ -2,8 +2,8 @@
 <!-- BINGIE -->
 <includes>
 	<variable name="BingieSeasonRating">
-		<value condition="!String.IsEmpty(Container(5027).ListItem.Property(PovTMDBRating))">$INFO[Container(5027).ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value>$INFO[Container(5027).ListItem.Rating,Rating ]</value>
+		<value condition="!String.IsEmpty(Container(5027).ListItem.Property(PovTMDBRating))">$INFO[Container(5027).ListItem.Property(PovTMDBRating)]</value>
+		<value>$INFO[Container(5027).ListItem.Rating]</value>
 	</variable>
 
 	<!-- View 527 row details -->

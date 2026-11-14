@@ -99,20 +99,31 @@
 		<param name="id" default="0" />
 		<param name="top" default="0" />
 		<definition>
-			<control type="button" id="$PARAM[id]">
+			<control type="grouplist">
 				<visible>$PARAM[visibility]</visible>
-				<enable>false</enable>
 				<top>$PARAM[top]</top>
+				<width>88</width>
 				<height>36</height>
-				<width>auto</width>
-				<align>center</align>
-				<aligny>center</aligny>
-				<font>Bold22</font>
-				<textoffsetx>12</textoffsetx>
-				<textcolor>ff9ceab3</textcolor>
-				<disabledcolor>ff9ceab3</disabledcolor>
-				<texturenofocus colordiffuse="ff183b2b" border="10">bingie/square-rounded.png</texturenofocus>
-				<label>$PARAM[label]</label>
+				<orientation>horizontal</orientation>
+				<usecontrolcoords>true</usecontrolcoords>
+				<itemgap>3</itemgap>
+				<control type="label" id="$PARAM[id]">
+					<width max="62">auto</width>
+					<top>-2</top>
+					<height>36</height>
+					<align>left</align>
+					<aligny>center</aligny>
+					<font>Bold26</font>
+					<textcolor>ffffffff</textcolor>
+					<shadowcolor>black</shadowcolor>
+					<label>$PARAM[label]</label>
+				</control>
+				<control type="image">
+					<top>8</top>
+					<width>20</width>
+					<height>20</height>
+					<texture>bingie/rating-star.png</texture>
+				</control>
 			</control>
 		</definition>
 	</include>
@@ -129,19 +140,23 @@
 	<include name="BingieListRatingBadge">
 		<param name="label" default="$VAR[BingieItemScore]" />
 		<definition>
-		<control type="image">
-			<width>100%</width>
-			<height>100%</height>
-			<texture colordiffuse="b3183b2b" border="10">bingie/square-rounded.png</texture>
-		</control>
 		<control type="label">
-			<width>100%</width>
+			<left>0</left>
+			<right>24</right>
 			<height>100%</height>
-			<align>center</align>
+			<align>right</align>
 			<aligny>center</aligny>
 			<font>Bold18</font>
-			<textcolor>ff9ceab3</textcolor>
+			<textcolor>ffffffff</textcolor>
+			<shadowcolor>black</shadowcolor>
 			<label>$PARAM[label]</label>
+		</control>
+		<control type="image">
+			<right>2</right>
+			<top>7</top>
+			<width>16</width>
+			<height>16</height>
+			<texture>bingie/rating-star.png</texture>
 		</control>
 		</definition>
 	</include>
@@ -1605,21 +1620,16 @@
 		<value>$INFO[ListItem.Property(rating)]</value>
 	</variable>
 
-	<variable name="BingieItemRating">
-		<value condition="!String.IsEmpty(ListItem.Property(PovTMDBRating))">$INFO[ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value>$VAR[BingieItemScore,Rating ]</value>
-	</variable>
-
 	<expression name="HasBingieItemRating">!String.IsEmpty(ListItem.Property(PovTMDBRating)) | !String.IsEmpty(ListItem.Rating) | !String.IsEmpty(ListItem.Property(rating))</expression>
 
 	<variable name="BingieRating">
-		<value condition="$EXP[HasBingieItemRating]">$VAR[BingieItemRating]</value>
-		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2510)">$INFO[Container(2510).ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2520)">$INFO[Container(2520).ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2530)">$INFO[Container(2530).ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2540)">$INFO[Container(2540).ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2550)">$INFO[Container(2550).ListItem.Property(PovTMDBRating),TMDB ]</value>
-		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2560)">$INFO[Container(2560).ListItem.Property(PovTMDBRating),TMDB ]</value>
+		<value condition="$EXP[HasBingieItemRating]">$VAR[BingieItemScore]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2510)">$INFO[Container(2510).ListItem.Property(PovTMDBRating)]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2520)">$INFO[Container(2520).ListItem.Property(PovTMDBRating)]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2530)">$INFO[Container(2530).ListItem.Property(PovTMDBRating)]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2540)">$INFO[Container(2540).ListItem.Property(PovTMDBRating)]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2550)">$INFO[Container(2550).ListItem.Property(PovTMDBRating)]</value>
+		<value condition="$EXP[IsMainMenuOpened] + String.IsEqual(Window(Home).Property(CurrentWidgetID),2560)">$INFO[Container(2560).ListItem.Property(PovTMDBRating)]</value>
 	</variable>
 
     <variable name="PercentRemained">

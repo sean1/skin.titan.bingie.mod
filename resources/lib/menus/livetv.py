@@ -97,7 +97,7 @@ def _play_params(stream_id, name, sport=''):
 	return params
 
 
-def _matched_play_params(stream_id, name, sport, feeds, cache):
+def _matched_play_params(stream_id, name, sport, feeds, cache, provider_labels):
 	params = _play_params(stream_id, name, sport)
 	if not sport or len(feeds) < 2 or len(cache) >= 500: return params
 	deadlines = {ref: feed.get('_news_until') for ref, feed in feeds} if sport == 'news' else {ref: feed.get('_guide_until') for ref, feed in feeds if feed.get('_guide_match')}
@@ -107,7 +107,10 @@ def _matched_play_params(stream_id, name, sport, feeds, cache):
 	token = uuid.uuid4().hex
 	cache[token] = {'sport': sport, 'feeds': [[ref, hashlib.sha256(str(feed.get('name') or '').encode('utf-8')).hexdigest()] for ref, feed in feeds[:100]]}
 	if deadlines: cache[token]['guide_expiries'] = {ref: deadlines[ref] for ref, _ in feeds[:100] if ref in deadlines}
-	cache[token]['labels'] = {ref: _switch_feed_label(feed.get('_news_label') or feed.get('_feed_label') or 'Feed %d' % (index + 1), ref, feed.get('name', '')) for index, (ref, feed) in enumerate(feeds[:100])}
+	cache[token]['labels'] = {
+		ref: _feed_display_label(feed.get('_news_label') or feed.get('_feed_label') or 'Feed %d' % (index + 1), ref, str(feed.get('name') or ''), provider_labels, description_limit=100)
+		for index, (ref, feed) in enumerate(feeds[:100])
+	}
 	params['feeds_token'] = token
 	return params
 
@@ -214,16 +217,11 @@ def _feed_display_name(name):
 	return name
 
 
-def _feed_display_label(number, name):
-	return ' · '.join(part for part in ('Feed %d' % number, _feed_display_name(name)) if part)
-
-
-def _switch_feed_label(label, ref, name):
+def _feed_display_label(label, ref, name, provider_labels, *, description_limit=None):
 	identity = ref.partition(':')[0] if ':' in ref else 'primary'
-	backup = re.fullmatch(r'backup_([1-9][0-9]{0,2})', identity, re.I)
-	provider = 'Primary' if identity == 'primary' else 'Backup %s' % backup.group(1) if backup else 'Other provider'
-	description = re.sub(r'[\x00-\x1f\x7f]+', ' ', _feed_display_name(str(name))).strip()[:100]
-	return ' · '.join(part for part in (label, description, provider) if part)
+	provider = provider_labels.get(identity) or _provider_label(identity)
+	description = re.sub(r'[\x00-\x1f\x7f]+', ' ', _feed_display_name(name)).strip()
+	return ' · '.join(part for part in (label, provider, description[:description_limit]) if part)
 
 
 def _recent_feed_outcomes():
@@ -578,21 +576,27 @@ def _sports_ref(stream):
 	return identity + ':' + str(stream['stream_id']) if identity else str(stream['stream_id'])
 
 
-def _provider_label(identity, number):
+def _provider_label(identity, number=None):
+	if identity == 'primary' or number == 1: return 'Primary'
 	backup = re.fullmatch(r'backup_([1-9][0-9]{0,2})', identity, re.I)
-	return 'Primary' if number == 1 else 'Backup %s' % backup.group(1) if backup else 'Provider %d' % number
+	if backup: return 'Backup %s' % backup.group(1)
+	return 'Provider %d' % number if number is not None else 'Other provider'
 
 
-def _catalog_provider_label(account):
+def _provider_display_value(account, field, pattern):
 	secrets = [str(account.get(key, '')).casefold() for key in ('username', 'password')]
+	value = account.get(field)
+	if isinstance(value, str) and re.fullmatch(pattern, value) and _catalog_redact(value.casefold(), secrets) == value.casefold(): return value
+	return ''
 
-	def display(field, pattern):
-		value = account.get(field)
-		if isinstance(value, str) and re.fullmatch(pattern, value) and _catalog_redact(value.casefold(), secrets) == value.casefold(): return value
-		return ''
 
-	label = display('label', r'[A-Za-z0-9][A-Za-z0-9 &-]{0,23}')
-	seller = display('seller', r'[A-Za-z0-9][A-Za-z0-9 _-]{0,23}')
+def _provider_labels(accounts):
+	return {identity: _account_provider_label(account, _provider_label(identity, number)) for number, (identity, account) in enumerate(accounts, 1)}
+
+
+def _account_provider_label(account, fallback=''):
+	label = _provider_display_value(account, 'label', r'[A-Za-z0-9][A-Za-z0-9 &-]{0,23}') or fallback
+	seller = _provider_display_value(account, 'seller', r'[A-Za-z0-9][A-Za-z0-9 _-]{0,23}')
 	if not label:
 		label = 'Provider'
 		for number, (identity, provider) in enumerate(_sports_accounts(_load()), 1):
@@ -859,7 +863,7 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=
 		if message:
 			try:
 				if message == 'Catalog request failed' and _vpn_failure_message(): message = 'Catalog unavailable while the VPN is offline'
-				message = '%s: %s' % (_catalog_provider_label(account), message)
+				message = '%s: %s' % (_account_provider_label(account), message)
 				ku.logger('Live TV', message)
 				ku.dialog.notification('Live TV', '%s · %s' % (message, datetime.now().strftime('%H:%M:%S.%f')[:-3]), time=5000, sound=False)
 			except Exception: pass
@@ -1042,6 +1046,7 @@ def news(params):
 		state, feeds = livetv_news_refresh.prepare(channel, params)
 		refresh = [('Refresh news feeds', 'RunPlugin(%s)' % ku.build_url({'mode': 'livetv.news', 'action': 'refresh', 'channel': channel}))]
 		outcomes = _recent_feed_outcomes()
+		provider_labels = _provider_labels(_sports_accounts(_load()))
 		icon = 'special://home/addons/skin.titan.bingie.lite/media/livetv/news/%s.png' % channel
 		counts = {}
 		for ref, _ in feeds: counts[ref] = counts.get(ref, 0) + 1
@@ -1056,13 +1061,13 @@ def news(params):
 		if len(chunks) > 1 and len(chunks[-1]) == 1: chunks[-1].insert(0, chunks[-2].pop())
 		for chunk in chunks:
 			ref, feed = chunk[0]
-			token = _matched_play_params(ref, feed['name'], 'news', chunk, feed_cache).get('feeds_token')
+			token = _matched_play_params(ref, feed['name'], 'news', chunk, feed_cache, provider_labels).get('feeds_token')
 			if token: tokens.update({value: token for value, _ in chunk})
 		for index, (ref, feed) in enumerate(feeds, 1):
 			name = str(feed.get('name') or _NEWS_LABELS[channel])
 			play_params = _play_params(ref, name, 'news') if ref in tokens else _play_params(ref, name)
 			if ref in tokens: play_params['feeds_token'] = tokens[ref]
-			_item(_feed_label_with_outcome(_feed_display_label(index, name), ref, outcomes), play_params, False, icon, extra_context=refresh)
+			_item(_feed_label_with_outcome(_feed_display_label('Feed %d' % index, ref, name, provider_labels), ref, outcomes), play_params, False, icon, extra_context=refresh)
 		if feed_cache:
 			snapshot_accounts = {feed.get('_news_accounts') for _, feed in choices}
 			if len(snapshot_accounts) == 1 and isinstance(next(iter(snapshot_accounts)), str): _save_feed_matches(feed_cache, expected_accounts=next(iter(snapshot_accounts)))
@@ -1237,6 +1242,7 @@ def search(params):
 
 def _search_rows(query, accounts, streams):
 	terms = query.casefold().split()
+	provider_labels = _provider_labels(accounts)
 	event_feeds = {}
 	channel_matches = []
 	for stream in streams:
@@ -1254,7 +1260,7 @@ def _search_rows(query, accounts, streams):
 		key = (event, scope)
 		feeds = event_feeds.get(key, {}) if stream['_search_provider_number'] == 1 else {}
 		identity = stream['_search_provider']
-		label = _provider_label(identity, stream['_search_provider_number'])
+		label = provider_labels.get(identity) or _provider_label(identity, stream['_search_provider_number'])
 		provider_label = ' · ' + label if len(accounts) > 1 else ''
 		if event and len(feeds) > 1:
 			if key in seen_events: continue
@@ -2224,16 +2230,18 @@ def match_feeds(params):
 		choices.sort(key=lambda entry: (0 if re.search(r'\bCA\s*:', str(entry[1].get('name') or ''), re.I) else 1, str(entry[1].get('name') or '').casefold(), int(str(entry[1].get('stream_id') or entry[0]).rsplit(':', 1)[-1])))
 		choices = livetv_feed_selection.order_choices(choices)
 		outcomes = _recent_feed_outcomes()
+		provider_labels = _provider_labels(_sports_accounts(_load()))
 		playable_choices = [(ref, {**feed, '_feed_label': 'Feed %d' % number}) for number, (ref, feed) in enumerate(choices, 1) if not feed.get('_unavailable')]
 		feed_cache = {}
 		if choices:
 			for number, (stream_id, stream) in enumerate(choices, 1):
+				feed_label = 'Feed %d' % number
 				if stream.get('_unavailable'):
-					_item('Feed %d — no longer available' % number, {}, False, playable=False)
+					_item(_feed_display_label(feed_label, stream_id, 'No longer available', provider_labels), {}, False, playable=False)
 					continue
 				name = str(stream.get('name') or 'Live channel')
-				label = _feed_label_with_outcome(_feed_display_label(number, name), stream_id, outcomes)
-				_item(label, _matched_play_params(stream_id, name, sport, playable_choices if unique.get(stream_id) else [], feed_cache), False)
+				label = _feed_label_with_outcome(_feed_display_label(feed_label, stream_id, name, provider_labels), stream_id, outcomes)
+				_item(label, _matched_play_params(stream_id, name, sport, playable_choices if unique.get(stream_id) else [], feed_cache, provider_labels), False)
 		elif state in ('ready', 'ready_saved') and livetv_feed_selection.guide_state() != 'searching':
 			_item('No matching live feeds are currently available', {}, False, playable=False)
 		if state == 'partial_saved_unavailable': waiting_row('Cached feeds · some providers unavailable — select to retry')

@@ -1,6 +1,7 @@
 """Match discovered Formula 1 torrents to enabled debrid services."""
 
 from concurrent.futures import ThreadPoolExecutor
+from itertools import islice, zip_longest
 from threading import Thread
 
 from modules import debrid, kodi_utils, settings
@@ -48,7 +49,8 @@ def cached_pack_candidates(candidates, fixture):
 	from modules.source_utils import supported_video_extensions
 	api = debrid.import_debrid('torbox')
 	if not api: return cached_candidates(labelled)
-	probe = ([candidate for candidate in candidates if candidate['pack'] == 'unlabelled'] + labelled)[:25]
+	groups = [[candidate for candidate in candidates if candidate['pack'] == kind] for kind in ('weekend', 'season', 'unlabelled')]
+	probe = list(islice((candidate for batch in zip_longest(*groups) for candidate in batch if candidate is not None), 25))
 	try: cached_files = api.cached_torrent_files([candidate['hash'] for candidate in probe])
 	except Exception: cached_files = {}
 	extensions = tuple(supported_video_extensions())

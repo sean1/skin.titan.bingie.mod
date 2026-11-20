@@ -12,6 +12,16 @@ session.custom_errors = requests.exceptions.ConnectionError, requests.exceptions
 session.mount('https://api.torbox.app', requests.adapters.HTTPAdapter(max_retries=1))
 
 
+def _full_filename(file):
+	paths = {key: value for key in ('name', 'path', 'filename', 'short_name') if isinstance(value := file.get(key), str) and 0 < len(value) <= 2000 and '\x00' not in value}
+	name = next(iter(paths.values()), '')
+	if '/' in name or '\\' in name: return name
+	for key in ('path', 'filename'):
+		path = paths.get(key, '')
+		if path != name and re.split(r'[/\\]', path)[-1] == name: return path
+	return name
+
+
 class TorBoxAPI:
 	icon = 'premium.png'
 	defaults_to_cloud = True
@@ -89,7 +99,7 @@ class TorBoxAPI:
 				filenames = []
 				for file in entry['files']:
 					if not isinstance(file, dict): continue
-					filename = next((value for key in ('name', 'path', 'filename', 'short_name') if isinstance(value := file.get(key), str) and 0 < len(value) <= 2000 and '\x00' not in value), '')
+					filename = _full_filename(file)
 					if filename: filenames.append(filename)
 				results[info_hash] = filenames
 		return results
@@ -125,7 +135,7 @@ class TorBoxAPI:
 			files = [
 				{
 					'link': '%s,%s' % (transfer['id'], item['id']), 'size': item.get('size', 0), 'torrent_id': transfer_id,
-					'filename': item.get('short_name') or item.get('name', ''), 'full_filename': item.get('name') or item.get('short_name', '')
+					'filename': item.get('short_name') or item.get('name', ''), 'full_filename': _full_filename(item)
 				}
 				for item in transfer['files']
 				if (item.get('short_name') or item.get('name', '')).lower().endswith(extensions)

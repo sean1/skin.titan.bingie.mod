@@ -32,13 +32,19 @@ def _folder_conflicts(folders, filename, fixture, *, season, require_exact_sessi
 		if f1_search._SUPPORT_SERIES.search(folder):
 			if not collection or not _F1.search(folder): return True
 			if not _F1.search(filename) and not any(_F1.search(f1_search._text(part)) for part in folders[1:]): return True
-		codes = f1_search._session_codes(folder, season=season)
-		numbered = codes.intersection(_QUALIFYING_DAYS | _QUALIFYING_PHASES)
+		codes = f1_search._session_codes(f1_search._session_text(part), season=season)
+		if codes.intersection(f1_search._QUALIFYING_WEEKDAYS):
+			if not f1_search._session_matches(codes, fixture): return True
+			continue
+		numbered = codes.intersection(_QUALIFYING_DAYS | _QUALIFYING_PHASES | {'QUALIFYING_PAIR'})
 		if code in ('QUAL', 'SS') and numbered: return True
 		if code in _QUALIFYING_DAYS and numbered.intersection(_QUALIFYING_PHASES): return True
 		if code in _QUALIFYING_DAYS and re.fullmatch(f1_search._QUALIFYING, folder): continue
 		if collection and not numbered: continue
-		if 'FAM' in codes and not f1_search._session_matches(codes, fixture): return True
+		if code in ('FP1', 'FP2', 'FP3', 'FP4') and codes == {'FREE_PRACTICE'}: continue
+		if codes.intersection({'FAM', 'FREE_PRACTICE', 'QUALIFYING_PAIR'}) or _QUALIFYING_DAYS <= codes:
+			if not f1_search._session_matches(codes, fixture): return True
+			continue
 		if codes and (code not in codes or (require_exact_session and codes != {code})): return True
 	return False
 
@@ -63,7 +69,7 @@ def matching_files(files, fixture, pack_type):
 		basename = parts[-1]
 		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(basename)
 		if not text or not filename or f1_search._recording_rejected(filename, f1_search._FILE_REJECT, code=code, season=year): continue
-		if not f1_search._session_matches(f1_search._session_codes(filename, season=year), fixture): continue
+		if not f1_search._session_matches(f1_search._session_codes(f1_search._session_text(basename), season=year), fixture): continue
 		if _folder_conflicts(parts[:-1], filename, fixture, season=year): continue
 		folder_rounds = _folder_rounds(parts[:-1], year)
 		event_named = pack_type == 'weekend' or (bool(fixture.get('round_aliases')) and f1_search.event_name_matches(text, fixture))

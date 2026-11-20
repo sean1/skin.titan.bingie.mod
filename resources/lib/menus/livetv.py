@@ -219,7 +219,7 @@ def _feed_display_name(name):
 
 def _feed_display_label(label, ref, name, provider_labels, *, description_limit=None):
 	identity = ref.partition(':')[0] if ':' in ref else 'primary'
-	provider = provider_labels.get(identity) or _provider_label(identity)
+	provider = provider_labels.get(identity) or 'Provider'
 	description = re.sub(r'[\x00-\x1f\x7f]+', ' ', _feed_display_name(name)).strip()
 	return ' · '.join(part for part in (label, provider, description[:description_limit]) if part)
 
@@ -576,11 +576,8 @@ def _sports_ref(stream):
 	return identity + ':' + str(stream['stream_id']) if identity else str(stream['stream_id'])
 
 
-def _provider_label(identity, number=None):
-	if identity == 'primary' or number == 1: return 'Primary'
-	backup = re.fullmatch(r'backup_([1-9][0-9]{0,2})', identity, re.I)
-	if backup: return 'Backup %s' % backup.group(1)
-	return 'Provider %d' % number if number is not None else 'Other provider'
+def _provider_label(number):
+	return 'Provider %d' % number
 
 
 def _provider_display_value(account, field, pattern):
@@ -590,20 +587,38 @@ def _provider_display_value(account, field, pattern):
 	return ''
 
 
-def _provider_labels(accounts):
-	return {identity: _account_provider_label(account, _provider_label(identity, number)) for number, (identity, account) in enumerate(accounts, 1)}
+def _provider_labels(accounts, *, show_seller=True):
+	return {identity: _account_provider_label(account, _provider_label(number), show_seller=show_seller) for number, (identity, account) in enumerate(accounts, 1)}
 
 
-def _account_provider_label(account, fallback=''):
+def _account_provider_label(account, fallback='', *, show_seller=True):
 	label = _provider_display_value(account, 'label', r'[A-Za-z0-9][A-Za-z0-9 &-]{0,23}') or fallback
-	seller = _provider_display_value(account, 'seller', r'[A-Za-z0-9][A-Za-z0-9 _-]{0,23}')
+	seller = _provider_display_value(account, 'seller', r'[A-Za-z0-9][A-Za-z0-9 _-]{0,23}') if show_seller else ''
 	if not label:
 		label = 'Provider'
-		for number, (identity, provider) in enumerate(_sports_accounts(_load()), 1):
+		for number, (_, provider) in enumerate(_sports_accounts(_load()), 1):
 			if all(account.get(key) == provider.get(key) for key in ('server', 'username', 'password')):
-				label = _provider_label(identity, number)
+				label = _provider_label(number)
 				break
 	return '%s (%s)' % (label, seller) if seller else label
+
+
+def _provider_expiry_text(account):
+	value = account.get('expires_at')
+	if not isinstance(value, str): return 'Expiry unknown'
+	try:
+		expiry = datetime.fromisoformat(value.replace('Z', '+00:00'))
+		if expiry.tzinfo is not None: expiry = expiry.astimezone(get_timezone('America/Vancouver'))
+	except (ValueError, OverflowError):
+		return 'Expiry unknown'
+	return f'Last known expiry {expiry:%b} {expiry.day}, {expiry.year}'
+
+
+def show_providers():
+	accounts = _sports_accounts(_load())
+	providers = _provider_labels(accounts, show_seller=False)
+	lines = [f'{providers[identity]} · {_provider_expiry_text(account)}' for identity, account in accounts]
+	ku.dialog.textviewer('IPTV Providers', '\n'.join(lines) or 'No IPTV providers are configured.')
 
 
 def _bundled_credentials_path():
@@ -1260,7 +1275,7 @@ def _search_rows(query, accounts, streams):
 		key = (event, scope)
 		feeds = event_feeds.get(key, {}) if stream['_search_provider_number'] == 1 else {}
 		identity = stream['_search_provider']
-		label = provider_labels.get(identity) or _provider_label(identity, stream['_search_provider_number'])
+		label = provider_labels.get(identity) or _provider_label(stream['_search_provider_number'])
 		provider_label = ' · ' + label if len(accounts) > 1 else ''
 		if event and len(feeds) > 1:
 			if key in seen_events: continue

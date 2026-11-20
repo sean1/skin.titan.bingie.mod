@@ -70,8 +70,7 @@ def cached_pack_candidates(candidates, fixture):
 	eligible = [candidate for candidate in ordered if candidate['hash'] not in confirmed and candidate.get('detail_path')]
 	public_groups = ([candidate for candidate in eligible if candidate['pack'] == 'unlabelled'], [candidate for candidate in eligible if candidate['pack'] != 'unlabelled'])
 	public_probe = (candidate for batch in zip_longest(*public_groups) for candidate in batch if candidate is not None)
-	for index, candidate in enumerate(islice(public_probe, 3)):
-		if index == 2 and public: break
+	for candidate in islice(public_probe, 3):
 		try: filenames = f1_torrentdownload.manifest_files(candidate['hash'], candidate['detail_path'])
 		except (OSError, HTTPException, ValueError): continue
 		if has_session(candidate, filenames):

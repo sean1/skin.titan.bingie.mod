@@ -13,6 +13,17 @@ from modules.f1_calendar import circuit_locality
 _URL = 'https://apibay.org/q.php?'
 _LIMIT = 2 * 1024 * 1024
 _HASH = re.compile(r'^[0-9a-f]{40}$')
+_F1 = re.compile(r'\b(?:f\s*1|formula\s*(?:1|one))\b')
+_F1TV_EPISODE = re.compile(r'^formula\s+1\s+20\d{2}\s*x\s*[3-9]\d\s+(.+\b(?:f1tv|multi)\s+(?:4k\s+)?(?:hlg\s+)?(?:720p|1080p|2160p)\s+ss(?:\s+(?:mkv|mp4))?)$')
+_INDY_EVENT = re.compile(r'\b(?:indianapolis|indy)\s*500\b')
+_INDY_TRIALS = re.compile(r'\b(?:time\s+trials?|pole\s+day|bump\s+day)\b')
+_INDY_TRIAL_SLOT = re.compile(r'\b(?:time\s+trials?|qualifying)\s+day\s+([1-6])\b')
+_TRIAL_MONTHS = {month: index for index, month in enumerate(('january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'), 1)}
+_TRIAL_MONTH = '|'.join(_TRIAL_MONTHS)
+_INDY_TRIAL_DATE = re.compile(rf'\b(?:19\d{{2}}\s+(\d{{2}})\s+(\d{{2}})|({_TRIAL_MONTH})\s+(\d{{1,2}})(?:st|nd|rd|th)?|(\d{{1,2}})(?:st|nd|rd|th)?\s+({_TRIAL_MONTH}))\b')
+_INDY_TRIAL_RANGE = re.compile(rf'\b(?:day\s+[1-6]|(?:{_TRIAL_MONTH})\s+\d{{1,2}}(?:st|nd|rd|th)?|19\d{{2}}\s+\d{{2}}\s+\d{{2}})\s+(?:(?:and|or|to|through)\s+(?:day\s+)?)?\d{{1,2}}\b')
+_INDY_WEEKDAYS = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
+_INDY_WEEKDAY = re.compile(rf'\b(?:{"|".join(_INDY_WEEKDAYS)})\b')
 _WARM_UP_LABEL = r'(?:warm\s*up|wu)'
 _WARM_UP = re.compile(rf'\b{_WARM_UP_LABEL}\b')
 _QUALIFYING_WARM_UP = re.compile(rf'(?<!sprint )\b(?:pre\s*)?qualifying\s+{_WARM_UP_LABEL}\b')
@@ -28,6 +39,11 @@ _QUALIFYING_PERIODS = {'QUAL_MORNING', 'QUAL_AFTERNOON'}
 _PRACTICE_LABEL = r'(?:free\s*)?practice(?:\s*session)?'
 _FIRST_PRACTICE = r'(?:first|1st)'
 _SECOND_PRACTICE = r'(?:second|2nd)'
+_PRACTICE_ORDINAL = rf'(?:{_FIRST_PRACTICE}|{_SECOND_PRACTICE})'
+_PRACTICE_2002_LABEL = rf'(thursday|friday|saturday)\s+({_PRACTICE_ORDINAL})\s+{_PRACTICE_LABEL}'
+_PRACTICE_2002_SLOT = re.compile(rf'\b{_PRACTICE_2002_LABEL}\b')
+_PRACTICE_2002_WEEKDAYS = {3: 'THURSDAY', 4: 'FRIDAY', 5: 'SATURDAY'}
+_PRACTICE_2002_SLOTS = {f'FP_2002_{day}_{ordinal}' for day in _PRACTICE_2002_WEEKDAYS.values() for ordinal in ('FIRST', 'SECOND')}
 _PRACTICE_2003_LABELS = {
 	'FP_THURSDAY': rf'thursday\s+(?:{_PRACTICE_LABEL}|fp\s*0?[1-4]|0?[1-4]\s*practice)',
 	'FP_FRIDAY': rf'friday\s+(?:{_PRACTICE_LABEL}|fp\s*0?[1-4]|0?[1-4]\s*practice)',
@@ -39,11 +55,13 @@ _PRACTICE_2003_LABELS = {
 _PRACTICE_2003_SATURDAY = {'FP_SATURDAY_FIRST', 'FP_SATURDAY_SECOND', 'FP_SATURDAY_BOTH'}
 _PRACTICE_2003_PATTERNS = {code: re.compile(rf'\b{label}\b') for code, label in _PRACTICE_2003_LABELS.items()}
 _PRACTICE_2003_DAY_LABEL = re.compile(rf'\b(?:{"|".join(_PRACTICE_2003_LABELS.values())})\b')
-_PRACTICE_2003_UNSCOPED = re.compile(rf'\b(?:{_FIRST_PRACTICE}|{_SECOND_PRACTICE})\s+{_PRACTICE_LABEL}\b')
+_PRACTICE_ORDINAL_UNSCOPED = re.compile(rf'\b{_PRACTICE_ORDINAL}\s+{_PRACTICE_LABEL}\b')
 _SPANISH_PRACTICE = r'(?:(?:entrenamientos?|practicas?)\s+)?libres'
 _SPANISH_QUALIFYING = r'clasificac?ion'
 _PORTUGUESE_PRACTICE = r'treinos?\s+livres?'
 _PORTUGUESE_RACE = r'corrida(?!\s+(?:de\s+)?sprint\b)'
+_PORTUGUESE_QUALIFYING = r'classificacao'
+_PORTUGUESE_SPRINT_QUALIFYING = re.compile(rf'\b{_PORTUGUESE_QUALIFYING}\s+sprint\b(?:\s+(?:(?:fase|parte|sessao)\s+)?(?:sq\s*)?0?([123])\b)?')
 _FRENCH_QUALIFYING = r'essais\s+qualificatifs'
 _FRENCH_RACE = r'(?:la\s+grille\s+course\s+podium|la\s+course\s+grand\s+prix)'
 _CZECH_RACE = r'hlavni\s+zavod'
@@ -51,9 +69,10 @@ _LANGUAGE_NAMES = r'(?:castellano|cestina|czech|deutsch|english|espanol|francais
 _LANGUAGE_TAG = re.compile(rf'\[\s*(?:{_LANGUAGE_NAMES}|cze|eng|esp|fra|ger|ita|por|slk)\s*\]')
 _SEASON_LANGUAGE_SUFFIX = re.compile(rf'(\b(?:complete|full)\s+season)\s+{_LANGUAGE_NAMES}$')
 _PACK_EXTRAS = re.compile(
-	rf'\b(?:temps\s+forts|resumes?|debrief(?:ing)?|avant\s+course|apres\s+course|(?:avant|apres)\s+(?:la\s+course|les\s+{_FRENCH_QUALIFYING})|course\s+en\s+\d{{1,3}}|{_FRENCH_QUALIFYING}\s+(?:du\s+)?sprint)\b|'
-	rf'\b(?:(?:pre|pos|post|(?:antes|depois)\s+d[ao])\s+(?:corrida|{_PORTUGUESE_PRACTICE})|corrida(?:\s+sprint)?\s+em\s+\d{{1,3}}|analises?|melhores\s+momentos|resumos?|resultados?\s+d[ao]\s+(?:corrida|{_PORTUGUESE_PRACTICE}))\b|'
+	rf'\b(?:no\s+qualif(?:ying|ication)|temps\s+forts|resumes?|debrief(?:ing)?|avant\s+course|apres\s+course|(?:avant|apres)\s+(?:la\s+course|les\s+{_FRENCH_QUALIFYING})|course\s+en\s+\d{{1,3}}|{_FRENCH_QUALIFYING}\s+(?:du\s+)?sprint)\b|'
+	rf'\b(?:(?:pre|pos|post|(?:antes|depois)\s+d[ao])\s+(?:corrida|{_PORTUGUESE_PRACTICE}|{_PORTUGUESE_QUALIFYING})|corrida(?:\s+sprint)?\s+em\s+\d{{1,3}}|analises?|melhores\s+momentos|resumos?|resultados?\s+d[ao]\s+(?:corrida|{_PORTUGUESE_PRACTICE}|{_PORTUGUESE_QUALIFYING}))\b|'
 	rf'\b(?:pre|post)\s*{_WEEKDAY}(?:\s+(?:{_DAY_PERIOD}))?\s+qual(?:ifying|ification|i)?\b|'
+	rf'\b(?:pre|post)\s*{_PRACTICE_2002_LABEL}\b|'
 	rf'\b(?:pre|post)\s*(?:{"|".join(_PRACTICE_2003_LABELS.values())})\b|'
 	r'\b(?:highlights?|recaps?|previews?|interviews?|analysis|review|documentary|drive to survive|onboard|on board|build\s*up|press\s+conferences?|paddock\s+uncut|season\s+launch|the\s+f\s*1\s+show|samples?|resumen(?:es)?|previ[ao]s?|entrevistas?|analisis|sestrihy?)\b'
 	r'|\b(?:ted\s*s\s+(?:(?:qualifying|race)\s+)?notebook|ruedas?\s+de\s+prensa)\b'
@@ -65,9 +84,12 @@ _PACK_EXTRAS = re.compile(
 _SUPPORT_SERIES = re.compile(r'\b(?:f\s*1\s*academy|formula\s*(?:1|one)\s*academy|f\s*[234]|formula\s*[234]|formula\s+(?:two|three|four)|gp\s*[23])\b')
 _PACK_REJECT = re.compile(_PACK_EXTRAS.pattern + '|' + _SUPPORT_SERIES.pattern)
 _FILE_REJECT = re.compile(_PACK_REJECT.pattern + r'|\bsprint\s+(?:weekend|pack|sessions?)\b|\b(?:complete|full)\s+(?:race\s+)?(?:weekend|season)\b|\b(?:weekend|season)\s+(?:pack|collection)\b')
-_QUALIFYING = rf'(?:qualifying|qualification|quali|qual|{_SPANISH_QUALIFYING}|{_FRENCH_QUALIFYING})'
+_QUALIFYING = rf'(?:qualifying|qualification|quali|qual|{_SPANISH_QUALIFYING}|{_FRENCH_QUALIFYING}|{_PORTUGUESE_QUALIFYING})'
 _SPRINT_QUALIFYING = re.compile(rf'\bsprint\s+(?:race\s+)?(?:{_QUALIFYING}|shootout)\b(?:\s+(?:(?:session|stage|part)\s+)?(?:(?:sq|q)\s*)?0?([123])\b)?')
-_WEEKDAY_QUALIFYING = re.compile(rf'\b(?:{_WEEKDAY}(?:\s+({_DAY_PERIOD}))?\s+and\s+)?{_WEEKDAY}(?:\s+({_DAY_PERIOD}))?\s+{_QUALIFYING}\b')
+_SPRINT_WEEKEND_INVENTORY = re.compile(r'\b(?:free\s+)?practice(?:\s+1)?\s*[,.]\s*sprint\s+(?:qualifying|qualification|shootout)\s*[,.]\s*sprint(?:\s+race)?\s*[,.]\s*(?:qualifying|qualification)\s*[,.]\s*race\b')
+_WEEKEND_STAGE = re.compile(r'(?:^|/)\s*stage\s+(\d{1,3})\s*(?=/|$)')
+_WEEKDAY_QUALIFYING = re.compile(rf'\b(?:{_WEEKDAY}(?:\s+({_DAY_PERIOD}))?\s+and\s+)?{_WEEKDAY}(?:\s+({_DAY_PERIOD}))?\s+{_QUALIFYING}\b(?:\s+(?:practice\s+)?({_DAY_PERIOD})\b)?')
+_DAY_PERIODS = re.compile(rf'\b(?:{_DAY_PERIOD})\b')
 _SPRINT_QUALIFYING_PHASE = re.compile(r'\bsq\s*0?([123])\b')
 _QUALIFYING_PHASE = re.compile(rf'\b(?:{_QUALIFYING}\s+(?:phase|stage|part)\s*0?[123]|q\s*0?[123]\s+(?:phase|stage|part))\b')
 _NUMBERED_QUALIFYING = re.compile(
@@ -85,7 +107,7 @@ _SESSION_PATTERNS = {
 	'RACE': rf'(?<!sprint )\b(?:race|{_CZECH_RACE}|{_PORTUGUESE_RACE}|{_FRENCH_RACE})\b',
 }
 _PRACTICE_PATTERNS = {f'FP{n}': re.compile(rf'\b(?:fp\s*0?{n}|{_PRACTICE_LABEL}(?:\s*0?{n}|\s+{word})|0?{n}\s*practice|(?:{_SPANISH_PRACTICE}|{_PORTUGUESE_PRACTICE})\s*0?{n})\b') for n, word in _PRACTICE_NUMBERS.items()}
-_SESSIONS = _SESSION_PATTERNS.keys() | _PRACTICE_PATTERNS.keys() | {'SS', 'Q1', 'Q2', 'Q3', 'PQ'}
+_SESSIONS = _SESSION_PATTERNS.keys() | _PRACTICE_PATTERNS.keys() | {'SS', 'Q1', 'Q2', 'Q3', 'PQ', 'TT'}
 
 
 def _historical_session_allowed(code: str, season: str) -> bool:
@@ -108,6 +130,7 @@ def _fixture_session_allowed(fixture):
 	code = fixture.get('session_code')
 	if code == 'FAM': return _qatar_familiarisation(fixture)
 	year = _fixture_year(fixture)
+	if code == 'TT': return '1950' <= year <= '1960' and type(fixture.get('indy_trial_day')) is int and _INDY_EVENT.search(_text(fixture.get('event'))) is not None
 	if code == 'Q3': return fixture.get('qualifying_practice') == 3 and len(year) == 4 and '1950' <= year <= '1975'
 	if code == 'PQ' and (fixture.get('historical_pre_qualifying') is not True or year == '1965' and fixture['date'][:10] != '1964-12-29'): return False
 	return _historical_session_allowed(code, year)
@@ -128,8 +151,20 @@ def _practice_2003_matches(markers, codes, fixture):
 
 def _session_matches(codes, fixture):
 	code = fixture.get('session_code')
+	if code == 'TT':
+		identity = fixture.get('indy_trial_day')
+		weekdays = {marker for marker in codes if marker.startswith('TT_WEEKDAY_')}
+		markers = codes - weekdays - {'TT', 'QUAL'}
+		valid = {'TT_DATE_' + fixture['date'][5:10].replace('-', ''), 'TT_SLOT_%s' % identity}
+		if identity == fixture.get('indy_last_trial_day'): valid.add('TT_BUMP')
+		weekday = 'TT_WEEKDAY_' + _INDY_WEEKDAYS[datetime.fromisoformat(fixture['date'][:10]).weekday()]
+		return 'TT' in codes and bool(markers) and markers <= valid and (not weekdays or weekdays == {weekday})
 	practice_slots = codes.intersection(_PRACTICE_2003_PATTERNS)
 	if practice_slots: return _practice_2003_matches(practice_slots, codes, fixture)
+	if fixture.get('practice_format_2002') is True:
+		weekday = _PRACTICE_2002_WEEKDAYS.get(fixture.get('practice_weekday'))
+		ordinal = 'FIRST' if code in ('FP1', 'FP3') else 'SECOND'
+		return bool(weekday) and codes == {f'FP_2002_{weekday}_{ordinal}'}
 	if code in ('FP2', 'FP3') and _fixture_year(fixture) == '2003' and fixture.get('practice_format_2003') == 'combined': return False
 	weekdays = codes.intersection(_QUALIFYING_WEEKDAYS)
 	period = fixture.get('qualifying_period')
@@ -154,6 +189,7 @@ def _session_matches(codes, fixture):
 
 def _recording_rejected(text: str, pattern: re.Pattern, *, code: str, season: str) -> bool:
 	if _QUALIFYING_PHASE.search(text): return True
+	if code == 'TT' and re.search(r'\b(?:clips?|laps?\s+in\s+(?:time\s+trials?|qualifying))\b', text): return True
 	if season == '2003':
 		text = _QUALIFYING_WARM_UP.sub('warm up', text)
 		if _SUNDAY_WARM_UP.search(text): return True
@@ -165,9 +201,16 @@ def _recording_rejected(text: str, pattern: re.Pattern, *, code: str, season: st
 
 def _session_codes(normalized_text: str, *, season: str = '') -> set[str]:
 	codes = set()
+	trial_text = ''
+	if '1950' <= season <= '1960' and (_INDY_TRIALS.search(normalized_text) or _INDY_EVENT.search(normalized_text) and re.search(r'\bqualif(?:ying|ications?)\b', normalized_text)):
+		trial_text = normalized_text
+		normalized_text = _INDY_TRIAL_SLOT.sub(' ', normalized_text)
 	if season == '2003': normalized_text = _QUALIFYING_WARM_UP.sub('warm up', normalized_text)
 	if _PRE_QUALIFYING.search(normalized_text): codes.add('PQ')
 	normalized_text = _PRE_QUALIFYING.sub(' ', normalized_text)
+	for phase in _PORTUGUESE_SPRINT_QUALIFYING.findall(normalized_text):
+		codes.add('SQ' + phase if phase else 'SS')
+	normalized_text = _PORTUGUESE_SPRINT_QUALIFYING.sub(' ', normalized_text)
 	for match in _SPRINT_QUALIFYING.finditer(normalized_text):
 		phase = match.group(1)
 		if phase: codes.add('SQ' + phase)
@@ -176,9 +219,10 @@ def _session_codes(normalized_text: str, *, season: str = '') -> set[str]:
 	normalized_text = _SPRINT_QUALIFYING.sub(' ', normalized_text)
 	if season == '2023' and re.search(r'\bshootout\b(?!\s+(?:(?:session|stage|part)\s+)?0?[123]\b)', normalized_text): codes.add('SS')
 	codes.update('SQ' + phase for phase in _SPRINT_QUALIFYING_PHASE.findall(normalized_text))
-	for first, first_period, day, period in _WEEKDAY_QUALIFYING.findall(normalized_text):
+	for first, first_period, day, period, trailing_period in _WEEKDAY_QUALIFYING.findall(normalized_text):
 		codes.update('QUAL_' + value.upper() for value in (first, day) if value)
-		codes.update('QUAL_MORNING' if value.startswith(('a ', 'am', 'morning')) else 'QUAL_AFTERNOON' for value in (first_period, period) if value)
+		if '1950' <= season <= '1975' and (first_period or period or trailing_period):
+			codes.update('QUAL_MORNING' if value.replace(' ', '') in ('am', 'morning') else 'QUAL_AFTERNOON' for value in _DAY_PERIODS.findall(normalized_text))
 	for third in _QUALIFYING_PAIR.findall(normalized_text):
 		codes.add('QUALIFYING_PAIR')
 		if third: codes.add('Q3')
@@ -190,17 +234,30 @@ def _session_codes(normalized_text: str, *, season: str = '') -> set[str]:
 		codes.update('QUAL_' + day.upper() for day in re.findall(rf'\b{_WEEKDAY}\b', normalized_text))
 	normalized_text = _NUMBERED_QUALIFYING.sub(' ', normalized_text)
 	normalized_text = _WEEKDAY_QUALIFYING.sub(' ', normalized_text)
+	if season == '2002':
+		for day, ordinal in _PRACTICE_2002_SLOT.findall(normalized_text):
+			codes.add('FP_2002_' + day.upper() + ('_FIRST' if ordinal in ('first', '1st') else '_SECOND'))
+		normalized_text = _PRACTICE_2002_SLOT.sub(' ', normalized_text)
+		if _PRACTICE_ORDINAL_UNSCOPED.search(normalized_text): codes.add('FP_ORDINAL_UNSCOPED')
 	if season == '2003':
 		codes.update(code for code, pattern in _PRACTICE_2003_PATTERNS.items() if pattern.search(normalized_text))
-		if _PRACTICE_2003_UNSCOPED.search(_PRACTICE_2003_DAY_LABEL.sub(' ', normalized_text)): codes.add('FP_ORDINAL_UNSCOPED')
+		if _PRACTICE_ORDINAL_UNSCOPED.search(_PRACTICE_2003_DAY_LABEL.sub(' ', normalized_text)): codes.add('FP_ORDINAL_UNSCOPED')
 	for pair in _PRACTICE_PAIR.findall(normalized_text):
 		codes.update('FP' + number for number in pair)
 	normalized_text = _PRACTICE_PAIR.sub(' ', normalized_text)
 	for code, pattern in _PRACTICE_PATTERNS.items():
 		if pattern.search(normalized_text): codes.add(code)
 		normalized_text = pattern.sub(' ', normalized_text)
-	if re.search(r'\bfree\s+practice\b', normalized_text) and codes.isdisjoint(_PRACTICE_PATTERNS.keys() | _PRACTICE_2003_PATTERNS.keys() | {'FP_ORDINAL_UNSCOPED'}): codes.add('FREE_PRACTICE')
+	if re.search(rf'\b(?:free\s+practice|{_PORTUGUESE_PRACTICE})\b', normalized_text) and codes.isdisjoint(_PRACTICE_PATTERNS.keys() | _PRACTICE_2003_PATTERNS.keys() | {'FP_ORDINAL_UNSCOPED'}): codes.add('FREE_PRACTICE')
 	codes.update(code for code, pattern in _SESSION_PATTERNS.items() if re.search(pattern, normalized_text))
+	if trial_text:
+		codes.add('TT')
+		codes.update('TT_SLOT_' + number for number in _INDY_TRIAL_SLOT.findall(trial_text))
+		if 'pole day' in trial_text: codes.add('TT_SLOT_1')
+		if 'bump day' in trial_text or 'final day' in trial_text: codes.add('TT_BUMP')
+		if _INDY_TRIAL_RANGE.search(trial_text): codes.add('TT_RANGE')
+		codes.update('TT_WEEKDAY_' + value for value in _INDY_WEEKDAY.findall(trial_text))
+		codes.update('TT_DATE_' + value for value in _indy_dates(trial_text))
 	return codes
 
 
@@ -232,6 +289,16 @@ def _conflicting_year(text, year):
 	# Frame dimensions like 1920x1080 are not references to another season.
 	text = re.sub(r'\b(?:19|20)\d{2}\s*x\s*(?:720|1080|1200|1440|2160|4320)\b', ' ', text)
 	return any(value != year for value in re.findall(r'(?<!\d)((?:19|20)\d{2})(?!\d)', text))
+
+
+def _indy_dates(text):
+	return {'%02d%02d' % (int(month) if month else _TRIAL_MONTHS[month_first or month_second], int(day or day_first or day_second))
+		for month, day, month_first, day_second, day_first, month_second in _INDY_TRIAL_DATE.findall(text)}
+
+
+def _indy_race_date_conflicts(text, fixture):
+	if fixture.get('session_code') != 'RACE' or not '1950' <= _fixture_year(fixture) <= '1960' or not _INDY_EVENT.search(_text(fixture.get('event'))): return False
+	return bool(_indy_dates(text) - {fixture['date'][5:10].replace('-', '')})
 
 
 def _contains_race(text, phrase):
@@ -322,6 +389,7 @@ def _explicit_rounds(text):
 def _round_numbers(text):
 	explicit = _explicit_rounds(text)
 	if explicit: return explicit
+	if episode := _F1TV_EPISODE.fullmatch(text): text = episode[1]
 	return [int(value) for value in re.findall(r'(?<!\d)(?:19|20)\d{2}\s*x\s*(\d{1,3})(?!\d)', text) if int(value) <= 99]
 
 
@@ -340,8 +408,9 @@ def _match(name, fixture):
 	if code not in _SESSIONS or not year: return False
 	if not _fixture_session_allowed(fixture): return False
 	session_text = _session_text(name)
-	if not re.search(r'(?<!\d)' + year + r'(?!\d)', text) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', text) or _recording_rejected(session_text, _FILE_REJECT, code=code, season=year): return False
-	if _conflicting_year(text, year): return False
+	series = _INDY_EVENT if code == 'TT' else _F1
+	if not re.search(r'(?<!\d)' + year + r'(?!\d)', text) or not series.search(text) or _recording_rejected(session_text, _FILE_REJECT, code=code, season=year): return False
+	if _conflicting_year(text, year) or _indy_race_date_conflicts(text, fixture): return False
 	event_named = bool(fixture.get('round_aliases')) and event_name_matches(text, fixture)
 	if not _rounds_agree(_round_numbers(text), fixture, event_named=event_named): return False
 	return _session_matches(_session_codes(session_text, season=year), fixture) and _event_matches(text, fixture, require_name=code == 'PQ' and year == '1965')
@@ -357,10 +426,14 @@ def pack_type(name, fixture):
 	if year == '2003':
 		session_text = _QUALIFYING_WARM_UP.sub('warm up', session_text)
 		if _SUNDAY_WARM_UP.search(session_text): return ''
-	if not re.search(r'(?<!\d)' + year + r'(?!\d)', text) or not re.search(r'\b(?:f\s*1|formula\s*(?:1|one))\b', text): return ''
-	if (_recording_rejected(session_text, _PACK_REJECT, code=code, season=year) if _PRE_QUALIFYING.search(session_text) else _PACK_REJECT.search(session_text)): return ''
+	if not re.search(r'(?<!\d)' + year + r'(?!\d)', text) or not (_F1.search(text) or code == 'TT' and _INDY_EVENT.search(text)): return ''
+	if (_recording_rejected(session_text, _PACK_REJECT, code=code, season=year) if code == 'TT' or _PRE_QUALIFYING.search(session_text) else _PACK_REJECT.search(session_text)): return ''
 	if _WARM_UP.search(text) and not _historical_session_allowed('WU', year): return ''
 	if _conflicting_year(text, year): return ''
+	if year >= '2023' and _SPRINT_WEEKEND_INVENTORY.search(raw_title := _unaccented(name)):
+		if code not in {'FP1', 'SS', 'SR', 'QUAL', 'RACE'} or not event_name_matches(text, fixture): return ''
+		rounds = _round_numbers(text) + [int(stage) for stage in _WEEKEND_STAGE.findall(raw_title)]
+		return 'weekend' if _rounds_agree(rounds, fixture, require_known=True, event_named=True) else ''
 	season = re.search(rf'\b(?:season\s*{year}|{year}\s*(?:(?:f\s*1|formula\s*(?:1|one))\s+)?(?:complete\s+|full\s+)?season)\b', text)
 	if season:
 		# A season bundle must not be a race-specific release with a season tag.
@@ -373,6 +446,8 @@ def pack_type(name, fixture):
 	if not selected or not _rounds_agree(rounds, fixture, require_known=True, event_named=event_named): return ''
 	codes = _session_codes(session_text, season=year)
 	if 'FAM' in codes and not _qatar_familiarisation(fixture): return ''
+	if code == 'TT' and 'TT' in codes:
+		return 'unlabelled' if codes <= {'TT', 'QUAL'} and event_name_matches(text, fixture) else ''
 	weekend = bool(re.search(r'\b(?:weekend|pack|bundle|all\s+sessions|complete\s+(?:race\s+)?weekend)\b', text))
 	if weekend and (code in codes or _session_matches(codes, fixture) or codes not in ({'WU'}, {'FAM'}, {'FREE_PRACTICE'}, {'QUALIFYING_PAIR'})): return 'weekend'
 	if _session_matches(codes, fixture): return ''
@@ -410,6 +485,9 @@ def search(fixture, status=None):
 	current_year = datetime.now(timezone.utc).year
 	legacy = int(year) <= current_year - 5
 	if legacy: jobs.append(('torrentdownload', 'F1 ' + year + ' Season'))
+	code = fixture.get('session_code')
+	if code in _PRACTICE_PATTERNS:
+		jobs.extend((('knaben_archive', 'Formula 1 ' + year + ' practice'), ('knaben_archive', 'F1 ' + year + ' ' + code.lower())))
 	round_number = fixture.get('race_round')
 	if type(round_number) is int and 1 <= round_number <= 99:
 		for number in [round_number] + (fixture.get('round_aliases') or [])[:1]:
@@ -419,16 +497,18 @@ def search(fixture, status=None):
 		full_query, short_query = 'Formula 1 ' + year + ' ' + primary, 'F1 ' + year + ' ' + primary
 		jobs.extend(('piratebay', query) for query in ('Formula 1 ' + primary, full_query, short_query))
 		jobs.extend((('knaben_archive' if int(year) < current_year else 'knaben', full_query), ('knaben', short_query), ('blackhole', full_query), ('blackhole', short_query)))
-		code = fixture.get('session_code')
 		session = {'FP1': 'practice 1', 'FP2': 'practice 2', 'FP3': 'practice 3', 'FP4': 'practice 4', 'FAM': 'familiarisation', 'SS': 'sprint qualifying', 'SR': 'sprint', 'QUAL': 'qualifying', 'Q1': 'qualifying 1', 'Q2': 'qualifying 2', 'Q3': 'qualifying 3', 'WU': 'warm up', 'RACE': 'race'}.get(code)
-		if fixture.get('qualifying_practice'): session = fixture['session_label'].lower()
+		if fixture.get('qualifying_practice') or fixture.get('practice_format_2002') is True: session = fixture['session_label'].lower()
 		if session: jobs.append(('piratebay', full_query + ' ' + session))
 		if code == 'FP1' and fixture.get('single_practice') is True: jobs.append(('piratebay', full_query + ' free practice'))
 		if code == 'PQ' and _fixture_session_allowed(fixture):
 			jobs.extend((('piratebay', full_query + ' pre-qualifying'), ('torrentdownload', full_query + ' prequalifying')))
+		if code == 'TT':
+			jobs.extend((('knaben_archive', year + ' Indianapolis 500 Time Trials'), ('torrentdownload', year + ' Indy 500 Time Trials')))
 		if code in ('Q1', 'Q2') and fixture.get('split_qualifying') is True: jobs.append(('piratebay', full_query + ' qualifying'))
 		if code in ('FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'Q3', 'WU'): jobs.append(('piratebay', short_query + ' ' + code.lower()))
 		if fixture.get('qualifying_practice'): jobs.append(('torrentdownload', short_query + ' ' + session))
+		if fixture.get('practice_format_2002') is True: jobs.append(('knaben_archive', full_query + ' ' + session))
 		if code in ('FP4', 'WU') and int(year) <= 2005: jobs.append(('torrentdownload', full_query + ' ' + session))
 		if code in ('FAM', 'SS') and _qatar_familiarisation(fixture):
 			jobs.extend((source, full_query + ' familiarisation') for source in ('knaben', 'torrentdownload'))

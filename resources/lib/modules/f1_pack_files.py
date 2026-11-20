@@ -5,6 +5,7 @@ from modules import livetv_f1_search as f1_search
 
 _DIMENSIONS = re.compile(r'\b(?:640|720|1280|1366|1440|1600|1920|2048|2560|3840|4096|7680)\s*x\s*(?:360|480|540|576|720|768|900|1080|1088|1440|2160|4320)\b')
 _F1 = re.compile(r'\b(?:f\s*1|formula\s*(?:1|one))\b(?!\s*academy\b)')
+_SKY_PRACTICE = re.compile(r'\b(?:grand prix|gp)\s+practice\s+sky sports f\s*1\b')
 _QUALIFYING_DAYS = {'Q1', 'Q2', 'Q3'}
 _QUALIFYING_PHASES = {'SQ1', 'SQ2', 'SQ3'}
 _SATURDAY_PRACTICE_SLOTS = {'FP_SATURDAY_FIRST', 'FP_SATURDAY_SECOND'}
@@ -35,7 +36,10 @@ def _folder_conflicts(folders, filename, fixture, *, season, require_exact_sessi
 			if not collection or not _F1.search(folder): return True
 			if not _F1.search(filename) and not any(_F1.search(f1_search._text(part)) for part in folders[1:]): return True
 		codes = f1_search._session_codes(session_text, season=season)
-		if 'PQ' in codes or codes.intersection(f1_search._QUALIFYING_WEEKDAYS) or codes.intersection(f1_search._PRACTICE_2003_PATTERNS):
+		if code == 'TT' and 'TT' in codes and not codes <= {'TT', 'QUAL'}:
+			if not f1_search._session_matches(codes, fixture): return True
+			continue
+		if 'PQ' in codes or codes.intersection(f1_search._QUALIFYING_WEEKDAYS.keys() | f1_search._PRACTICE_2002_SLOTS | f1_search._PRACTICE_2003_PATTERNS.keys()):
 			if not f1_search._session_matches(codes, fixture): return True
 			continue
 		numbered = codes.intersection(_QUALIFYING_DAYS | _QUALIFYING_PHASES | {'QUALIFYING_PAIR'})
@@ -84,11 +88,18 @@ def matching_files(files, fixture, pack_type):
 		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(basename)
 		session_text = f1_search._session_text(basename)
 		if not text or not filename or f1_search._recording_rejected(session_text, f1_search._FILE_REJECT, code=code, season=year): continue
-		if not _file_session_matches(f1_search._session_codes(session_text, season=year), parts[:-1], fixture, year): continue
+		if f1_search._indy_race_date_conflicts(session_text, fixture): continue
+		codes = f1_search._session_codes(session_text, season=year)
+		if not codes and fixture.get('single_practice') is True and _SKY_PRACTICE.search(session_text) and f1_search._explicit_rounds(session_text) and f1_search.event_name_matches(session_text, fixture):
+			codes = {'FREE_PRACTICE'}
+		if not _file_session_matches(codes, parts[:-1], fixture, year): continue
 		if _folder_conflicts(parts[:-1], filename, fixture, season=year): continue
 		folder_rounds = _folder_rounds(parts[:-1], year)
 		event_named = pack_type == 'weekend' or (bool(fixture.get('round_aliases')) and f1_search.event_name_matches(text, fixture))
-		if not _round_agrees(text, fixture, year, _path_rounds(text, folder_rounds), event_named=event_named): continue
+		round_text = text
+		if (episode := f1_search._F1TV_EPISODE.fullmatch(filename)) and text.endswith(filename) and f1_search.event_name_matches(filename, fixture):
+			round_text = text[:-len(filename)] + episode[1]
+		if not _round_agrees(text, fixture, year, _path_rounds(round_text, folder_rounds), event_named=event_named): continue
 		if pack_type == 'season':
 			if not f1_search._event_matches(text, fixture, folder_rounds=folder_rounds, require_name=year != date[:4]): continue
 		elif f1_search._event_conflicts(text, fixture): continue

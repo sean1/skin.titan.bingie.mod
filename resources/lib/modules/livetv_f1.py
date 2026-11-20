@@ -33,6 +33,11 @@ _RESCHEDULED_QUALIFYING = {
 	2010: ('3905', '400463706', '2010-10-09T06:00Z', '2010-10-10T01:00Z'),
 	2015: ('18755', '401022085', '2015-10-25T19:00Z', '2015-10-25T14:00Z'),
 }
+_INDY_TIME_TRIALS = {
+	1955: ('3113', '400462793', '1955-05-30', ((1, '1955-05-14'), (2, '1955-05-15'), (3, '1955-05-21'), (4, '1955-05-22')), 4),
+	1956: ('3120', '400462800', '1956-05-30', ((1, '1956-05-19'), (2, '1956-05-20'), (4, '1956-05-27')), None),
+	1960: ('3156', '400462836', '1960-05-30', ((1, '1960-05-14'), (2, '1960-05-15'), (3, '1960-05-21'), (4, '1960-05-22')), 4),
+}
 _SESSION_PATTERNS = {
 	'FP1': re.compile(r'\b(?:fp\s*1|(?:free\s+)?practice\s*1)\b', re.I),
 	'FP2': re.compile(r'\b(?:fp\s*2|(?:free\s+)?practice\s*2)\b', re.I),
@@ -259,6 +264,8 @@ def get_show_schedule(year):
 		fixtures = _weekends(events, now, known_sessions=known_sessions)
 		fixtures += _archive_sessions(fixtures, known_sessions, year)
 		fixtures += _classified_archive_sessions(fixtures, known_sessions, year)
+		if year in _INDY_TIME_TRIALS: _indy_time_trials(fixtures, year)
+		if year == 2004: _suzuka_2004_schedule(fixtures)
 		if year <= 2005:
 			codes_by_event = {}
 			for event_id, code in sorted(known_sessions):
@@ -278,6 +285,29 @@ def get_show_schedule(year):
 	if year in (2020, 2021) and year < now.year: _historical_event_names(fixtures, year)
 	if year == 2023 and year < now.year: _qatar_2023_schedule(fixtures)
 	return fixtures
+
+
+def _indy_time_trials(fixtures, year):
+	event_id, race_id, race_day, trials, bump_day = _INDY_TIME_TRIALS[year]
+	races = [row for row in fixtures if row['event_id'] == event_id and row['session_code'] == 'RACE']
+	if len(races) != 1 or (races[0]['id'], races[0]['date'][:10], races[0]['status']) != (race_id, race_day, 'Finished'): return
+	race = races[0]
+	race.update(date_only=True, calendar_day=race_day)
+	fixtures[:] = [row for row in fixtures if row['event_id'] != event_id or row['session_code'] not in ('Q1', 'Q2') or not row['id'].startswith('jolpica-archive-')]
+	for index, day in trials:
+		label = 'Pole Day Time Trials' if index == 1 else 'Time Trials Day %d' % index
+		fixtures.append({**race, 'id': 'f1-indy-trials-' + day, 'date': day + 'T00:00Z', 'calendar_day': day, 'session_code': 'TT', 'session_label': label,
+			'aliases': [*race['aliases'], 'Indy 500'], 'archive_schedule': True, 'indy_trial_day': index, 'indy_last_trial_day': bump_day})
+
+
+def _suzuka_2004_schedule(fixtures):
+	weekend = [row for row in fixtures if row['event_id'] == '3799' and row['status'] == 'Finished']
+	if [(row['id'], row['date']) for row in weekend if row['session_code'] == 'RACE'] != [('400463479', '2004-10-10T04:00Z')]: return
+	dates = {'FP1': '2004-10-08T00:00Z', 'FP2': '2004-10-08T00:00Z', 'Q1': '2004-10-10T00:00Z', 'Q2': '2004-10-10T01:00Z', 'RACE': '2004-10-10T04:00Z'}
+	for row in weekend:
+		if when := dates.get(row['session_code']):
+			row.update(date=when, calendar_day=when[:10], date_only=True)
+			row.pop('archive_undated', None)
 
 
 def _historical_event_names(fixtures, year):
@@ -354,6 +384,10 @@ def _classified_archive_sessions(fixtures, known_sessions, year):
 		if counts[event_id] != 1 or race['status'] != 'Finished' or event_id not in inventory: continue
 		race_day, round_number, source_id, sessions = inventory[event_id]
 		if race['date'][:10] != race_day: continue
+		practice_slots_2002 = {'FP1': 'opening-first', 'FP2': 'opening-second', 'FP3': 'saturday-first', 'FP4': 'saturday-second'} if year == 2002 else {}
+		if practice_slots_2002:
+			fixtures[:] = [row for row in fixtures if row['event_id'] != event_id or row['session_code'] not in practice_slots_2002]
+			known.difference_update((event_id, code) for code in practice_slots_2002)
 		qualifying_practice = year <= 1975 and sessions.get('Q1') and sessions.get('Q2') and (event_id, 'QUAL') not in known
 		if (qualifying_practice or sessions.get('WU') == race_day) and race['date'] in (race_day + 'T04:00Z', race_day + 'T05:00Z'):
 			race.update(date_only=True, calendar_day=race_day)
@@ -373,6 +407,12 @@ def _classified_archive_sessions(fixtures, known_sessions, year):
 					identities.add(identity)
 				continue
 			if code == 'Q3' or isinstance(day, list): continue
+			if code in practice_slots_2002: identity = 'f1-2002-%d-%s' % (source_id, practice_slots_2002[code])
+			if year == 2002 and day is not None and code in ('QUAL', 'WU') and (event_id, code) in known:
+				previous = [row for row in fixtures if row['event_id'] == event_id and row['session_code'] == code and row['status'] == 'Finished']
+				if len(previous) == 1:
+					previous[0].update(date=day + 'T00:00Z', date_only=True, calendar_day=day, race_round=round_number)
+					if code == 'QUAL': previous[0]['qualifying_weekday'] = datetime.fromisoformat(day).weekday()
 			practice_2003 = year == 2003 and day is not None and code in ('FP1', 'FP2', 'FP3')
 			if practice_2003 and round_number <= 8 and code == 'FP2': identity = 'f1-2003-%d-saturday-first' % source_id
 			if (event_id, code) in known or identity in identities: continue
@@ -384,6 +424,11 @@ def _classified_archive_sessions(fixtures, known_sessions, year):
 				row.update(date=day + 'T00:00Z', date_only=True, calendar_day=day)
 				if day[:4] != str(year): row['race_season'] = str(year)
 			if code == 'PQ': row['historical_pre_qualifying'] = True
+			if code in practice_slots_2002:
+				when = datetime.fromisoformat(day)
+				ordinal = practice_slots_2002[code].rsplit('-', 1)[1].title()
+				row.update(practice_format_2002=True, practice_weekday=when.weekday(), session_label='%s %s Practice' % (when.strftime('%A'), ordinal))
+			if year == 2002 and code == 'QUAL' and day is not None: row['qualifying_weekday'] = datetime.fromisoformat(day).weekday()
 			if practice_2003:
 				row['practice_format_2003'] = 'combined' if round_number <= 8 else 'split'
 				opening = 'Thursday Practice' if datetime.fromisoformat(day).weekday() == 3 else 'Friday Practice'
@@ -422,6 +467,7 @@ def get_archive_event_sessions(year, fixtures, event_id):
 		official_ids.add(official_id)
 		identity = 'f1-results-%d-%s-%s' % (year, official_id, code.lower())
 		if code in known_codes or identity in existing_ids: continue
+		if code in ('Q1', 'Q2', 'QUAL') and 'TT' in known_codes: continue
 		if code in ('Q1', 'Q2') and 'QUAL' in known_codes: continue
 		if code == 'QUAL' and any(half in known_codes or half in links for half in ('Q1', 'Q2')): continue
 		added.append({**race, 'id': identity, 'session_code': code, 'session_label': _archive_session_label(code, year), 'archive_schedule': True, 'archive_undated': True, 'archive_result_url': link})

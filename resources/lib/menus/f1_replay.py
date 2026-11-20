@@ -33,6 +33,14 @@ def _enrich(fixture, fixtures):
 		return list(dict.fromkeys(values + details.get('aliases', []) + details.get('shared_aliases', [])))
 
 	canonical = f1_calendar.aliases_by_event(fixtures)
+
+	def race_details(row):
+		details = canonical.get(row['event_id'], {})
+		names = row.get('event_names') or [row['event']]
+		if not details.get('name') and any(re.search(r'(?<!\w)british\s+(?:grand\s+prix|gp)\s*$', name, re.I) for name in names):
+			return {**details, 'name': 'British Grand Prix', 'aliases': ['British Grand Prix']}
+		return details
+
 	event_id = fixture['event_id']
 	code = fixture['session_code']
 	weekend = [row for row in fixtures if row['event_id'] == event_id]
@@ -49,7 +57,7 @@ def _enrich(fixture, fixtures):
 			if all(row.get('date_only') and not row.get('archive_undated') and row.get('calendar_day') == row['date'][:10] for row in split):
 				days = {row['session_code']: date.fromisoformat(row['calendar_day']).weekday() for row in split}
 				if len(set(days.values())) == 2: fixture['qualifying_weekday'] = days[code]
-	race = canonical.get(event_id, {})
+	race = race_details(fixture)
 	race_name, race_round = race.get('name'), race.get('round')
 	fixture['aliases'] = aliases(fixture, race)
 	fixture['calendar_aliases'] = list(race.get('aliases', []))
@@ -61,8 +69,8 @@ def _enrich(fixture, fixtures):
 		if key in race: fixture[key] = race[key]
 	other_events = {row['event_id']: row for row in fixtures if row['event_id'] != event_id}
 	other_aliases, other_names = set(race.get('shared_aliases', [])), set()
-	for identity, row in other_events.items():
-		details = canonical.get(identity, {})
+	for row in other_events.values():
+		details = race_details(row)
 		other_aliases.update(aliases(row, details))
 		other_names.add(details.get('name') or row['event'])
 	fixture['other_event_aliases'] = sorted(other_aliases)

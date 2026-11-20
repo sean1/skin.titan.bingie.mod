@@ -28,6 +28,11 @@ _ACCOUNT_CHECK_INTERVAL = 15
 _BINDING_RETRY_SECONDS = 5 * 60
 _STATUS_PROPERTY = 'BingieLiveTVVPNStatus'
 _REQUEST_PROPERTY = 'BingieLiveTVVPNRequest'
+_SPEED_REQUEST_PROPERTY = 'BingieLiveTVVPNSpeedRequest'
+_SPEED_STATUS_PROPERTY = 'BingieLiveTVVPNSpeedStatus'
+_SPEED_PAUSE_PROPERTY = 'BingieLiveTVVPNSpeedPaused'
+_SPEED_QUEUED = 'VPN server test queued until Kodi is idle.'
+_SPEED_TESTING = 'Comparing VPN servers. Live TV may pause briefly.'
 _FAILURE_MESSAGES = {
 	'account': 'Mullvad account setup is invalid. Check the bundled account number.',
 	'device_limit': 'Mullvad has no free device slots. Remove an unused device from your Mullvad account, then retry.',
@@ -80,14 +85,36 @@ def _requested_at():
 	except (ValueError, TypeError): return 0.0
 
 
+def speed_test_status():
+	return ku.get_property(_SPEED_STATUS_PROPERTY)
+
+
+def request_speed_test():
+	if speed_test_status() in (_SPEED_QUEUED, _SPEED_TESTING): return False
+	ku.set_property(_SPEED_STATUS_PROPERTY, _SPEED_QUEUED)
+	ku.set_property(_SPEED_REQUEST_PROPERTY, str(monotonic()))
+	return True
+
+
+def _speed_requested_at():
+	try: return float(ku.get_property(_SPEED_REQUEST_PROPERTY))
+	except (ValueError, TypeError): return 0.0
+
+
+def _speed_result(message):
+	ku.set_property(_SPEED_STATUS_PROPERTY, message)
+	ku.dialog.notification('Live TV', message, time=7000)
+
+
 def wait_for_connection(seconds=4):
 	"""Give an explicit Live TV action a short, abortable wait for the relay."""
 	from modules.livetv_vpn_relay import _descriptor
 	deadline = monotonic() + seconds
 	while True:
 		try:
-			port, _ = _descriptor()
-			with socket.create_connection(('127.0.0.1', port), timeout=0.1): return True
+			if not ku.get_property(_SPEED_PAUSE_PROPERTY):
+				port, _ = _descriptor()
+				with socket.create_connection(('127.0.0.1', port), timeout=0.1): return not ku.get_property(_SPEED_PAUSE_PROPERTY)
 		except (OSError, ValueError, TypeError, AttributeError): pass
 		remaining = deadline - monotonic()
 		if remaining <= 0 or ku.monitor.waitForAbort(min(0.1, remaining)): return False
@@ -197,7 +224,7 @@ def _unused_port():
 		return reserved.getsockname()[1]
 
 
-def _verify_exit(port, password):
+def _verify_exit(port, password, hostname=None):
 	"""Verify Mullvad over the CONNECT-only proxy without any direct fallback."""
 	credentials = base64.b64encode(('bingie:' + password).encode('ascii')).decode('ascii')
 	connection = http.client.HTTPSConnection('127.0.0.1', port, timeout=8)
@@ -208,7 +235,8 @@ def _verify_exit(port, password):
 		if response.status != 200: return False
 		payload = response.read(16385)
 		if len(payload) > 16384: return False
-		return json.loads(payload).get('mullvad_exit_ip') is True
+		data = json.loads(payload)
+		return data.get('mullvad_exit_ip') is True and (hostname is None or data.get('mullvad_exit_ip_hostname') == hostname)
 	finally:
 		connection.close()
 
@@ -252,11 +280,84 @@ class VPNManager:
 				self._thread = None
 				self._state = 'VPN stopped'
 
-	def _wait_for_check(self, seconds, seen_request):
+	def _wait_for_check(self, seconds, seen_request, seen_speed=None):
 		deadline = monotonic() + seconds
 		while not self._stop.is_set() and _requested_at() <= seen_request:
+			if seen_speed is not None and _speed_requested_at() > seen_speed and not ku.get_visibility('Player.HasMedia'): break
 			remaining = deadline - monotonic()
 			if remaining <= 0 or self._stop.wait(min(1, remaining)): break
+
+	def _probe_speed(self, library, probe_config, probe_descriptor, candidate, accounts, cancel):
+		from modules import livetv_vpn_relay, livetv_vpn_speed
+		port, password = _unused_port(), secrets.token_urlsafe(32)
+		if cancel() or library.Start(os.fsencode(probe_config), password.encode('ascii'), port) != 0: return {}
+		probe = None
+		try:
+			try:
+				if cancel() or not _verify_exit(port, password, candidate['hostname']): return {}
+			except (OSError, http.client.HTTPException, ValueError, TypeError, AttributeError): return {}
+			probe = livetv_vpn_relay.Relay(port, password, probe_descriptor)
+			probe.start()
+			return livetv_vpn_speed.measure_exit(accounts, probe_descriptor, timeout=45, cancel=cancel)
+		finally:
+			try:
+				if probe is not None: probe.close()
+			finally:
+				if library.Stop() != 0: raise VPNUnavailable('IPTV VPN test could not stop')
+
+	def _compare_speed(self, private, library, config, signature, port, password):
+		from menus import livetv
+		from modules import livetv_vpn_provision, livetv_vpn_speed
+		ku.set_property(_SPEED_STATUS_PROPERTY, _SPEED_TESTING)
+		live_request = _requested_at()
+
+		def cancelled():
+			if self._stop.is_set() or _requested_at() > live_request or ku.get_visibility('Player.HasMedia'): return True
+			try: return _signature(config) != signature
+			except (OSError, VPNUnavailable): return True
+
+		current = livetv_vpn_provision.current_relay(private, signature)
+		accounts = livetv._sports_accounts(livetv._load())
+		if not current or not accounts:
+			_speed_result('No VPN server comparison is available.')
+			return None
+		relays = livetv_vpn_provision.relay_candidates()
+		current_name = next((peer['hostname'] for peer in relays if peer['host'] == current['host'] and peer['public_key'] == current['public_key']), 'current server')
+		alternates = [peer for peer in relays if peer['public_key'] != current['public_key']]
+		candidates = livetv_vpn_speed.shortlist_relays(alternates, current['host'], limit=1, cancel=cancelled)
+		if not candidates:
+			_speed_result('VPN server test cancelled.' if cancelled() else 'No alternate VPN server is available.')
+			return None
+		candidate = candidates[0]
+		ping = candidate['ping_ms']
+		ku.logger('Live TV', 'VPN candidate %s (%s)' % (candidate['hostname'], '%.1f ms median %s ping' % (ping, candidate['ping_method']) if ping is not None else 'no latency replies'))
+		baseline = livetv_vpn_speed.measure_exit(accounts, descriptor_path(), timeout=45, cancel=cancelled)
+		result = {}
+		switched = None
+		with tempfile.TemporaryDirectory(prefix='.relay-probe-', dir=private) as directory:
+			probe_config = os.path.join(directory, 'wireguard.conf')
+			if not cancelled() and livetv_vpn_provision.stage_relay(private, candidate, signature, probe_config) and not cancelled():
+				ku.set_property(_SPEED_PAUSE_PROPERTY, '1')
+				if library.Stop() != 0: raise VPNUnavailable('IPTV VPN could not pause for testing')
+				try:
+					result = self._probe_speed(library, probe_config, os.path.join(directory, 'relay.json'), candidate, accounts, cancelled)
+					if not cancelled() and livetv_vpn_speed.is_faster(result, baseline):
+						new_signature = livetv_vpn_provision.select_relay(private, candidate, signature)
+						if new_signature: switched = (current, candidate, new_signature)
+				finally:
+					if not switched and not self._stop.is_set():
+						if _signature(config) != signature or library.Start(os.fsencode(config), password.encode('ascii'), port) != 0:
+							raise VPNUnavailable('IPTV VPN could not resume after testing')
+						ku.clear_property(_SPEED_PAUSE_PROPERTY)
+		comparison = 'VPN server test: %s %d/%d, %s %d/%d' % (current_name, len(baseline), len(accounts), candidate['hostname'], len(result), len(accounts))
+		for label, timings in (('current', baseline), ('candidate', result)):
+			comparison += ' | ' + label + ' seconds ' + ', '.join('%s %.2f' % item for item in sorted(timings.items()))
+		ku.logger('Live TV', comparison)
+		if switched: return switched
+		if cancelled(): _speed_result('VPN server test cancelled.')
+		elif baseline or result: _speed_result('Kept %s. The alternate VPN server did not improve Live TV.' % current_name)
+		else: _speed_result('Neither VPN server completed a Live TV catalog. Kept %s.' % current_name)
+		return None
 
 	def _run(self):
 		from modules import livetv_vpn_provision, livetv_vpn_relay
@@ -264,7 +365,12 @@ class VPNManager:
 		handled_request = seen_request = checked_request = account_check_after = 0.0
 		binding_signature, binding_retry = None, 0.0
 		revoked_signature = None
+		seen_speed = 0.0
+		speed_switch = None
+		if speed_test_status() == _SPEED_TESTING: ku.clear_property(_SPEED_STATUS_PROPERTY)
 		while not self._stop.is_set():
+			applying_speed = speed_switch is not None
+			reconnect = False
 			library = None
 			relay = None
 			started = False
@@ -282,6 +388,10 @@ class VPNManager:
 					config = livetv_vpn_provision.ensure_config(private, account_path, library, allow_registration=False)
 					if not config:
 						if requested <= handled_request or self._stop.is_set():
+							if _speed_requested_at() > seen_speed:
+								seen_speed = _speed_requested_at()
+								ku.clear_property(_SPEED_REQUEST_PROPERTY)
+								_speed_result('Connect to Live TV before testing VPN servers.')
 							self._wait_for_check(_RETRY_SECONDS, seen_request)
 							continue
 						handled_request = requested
@@ -294,6 +404,9 @@ class VPNManager:
 				private_real = os.path.realpath(private)
 				if os.path.commonpath((private_real, os.path.realpath(config))) != private_real: raise VPNUnavailable('VPN configuration unavailable')
 				signature = _signature(config)
+				if speed_switch and signature != speed_switch[2]:
+					speed_switch = None
+					_speed_result('VPN configuration changed. Test result was not applied.')
 				if signature == revoked_signature: raise VPNUnavailable('Live TV Mullvad registration was removed')
 				port = _unused_port()
 				password = secrets.token_urlsafe(32)
@@ -306,7 +419,7 @@ class VPNManager:
 				verified = False
 				for _ in range(3):
 					if self._stop.is_set(): break
-					try: verified = _verify_exit(port, password)
+					try: verified = _verify_exit(port, password, speed_switch[1]['hostname']) if speed_switch else _verify_exit(port, password)
 					except Exception: verified = False
 					if verified: break
 					if _requested_at() > handled_request: break
@@ -316,8 +429,12 @@ class VPNManager:
 					raise VPNUnavailable('IPTV VPN is unavailable')
 				relay = livetv_vpn_relay.Relay(port, password, descriptor_path())
 				relay.start()
+				ku.clear_property(_SPEED_PAUSE_PROPERTY)
 				_set_failure()
 				self._set_state('IPTV VPN connected')
+				if speed_switch:
+					_speed_result('Live TV VPN switched to %s.' % speed_switch[1]['hostname'])
+					speed_switch = None
 				connection_failures = failures = 0
 				while not self._stop.is_set():
 					if replaced:
@@ -345,8 +462,19 @@ class VPNManager:
 							if isinstance(error, (livetv_vpn_provision.DeviceLimitError, livetv_vpn_provision.RegistrationPendingError)):
 								handled_request = requested
 								revoked_signature = signature
+					speed_requested = _speed_requested_at()
+					if not failures and signature != revoked_signature and not replaced and speed_requested > seen_speed and not ku.get_visibility('Player.HasMedia'):
+						seen_speed = speed_requested
+						ku.clear_property(_SPEED_REQUEST_PROPERTY)
+						try: speed_switch = self._compare_speed(private, library, config, signature, port, password)
+						except VPNUnavailable:
+							_speed_result('VPN server test ended. Reconnecting Live TV.')
+							reconnect = True
+							break
+						except Exception: _speed_result('Unable to complete the VPN server test.')
+						if speed_switch: break
 					retry_seconds = _CHECK_SECONDS if pending_check or (failures and requested > handled_request) else _HEALTH_SECONDS
-					self._wait_for_check(retry_seconds, seen_request)
+					self._wait_for_check(retry_seconds, seen_request, seen_speed if not failures else None)
 					if self._stop.is_set(): break
 					if _signature(config) != signature: break
 					requested = _requested_at()
@@ -368,7 +496,19 @@ class VPNManager:
 					try:
 						if library.Stop() != 0: stopped = False; self._set_state('IPTV VPN unavailable')
 					except Exception: stopped = False; self._set_state('IPTV VPN unavailable')
-			if replaced and stopped:
+			if speed_switch and stopped:
+				if not applying_speed and not self._stop.is_set(): continue
+				old, _, tested_signature = speed_switch
+				speed_switch = None
+				try: restored = livetv_vpn_provision.select_relay(private, old, tested_signature)
+				except livetv_vpn_provision.ProvisionError: restored = False
+				_speed_result('Could not activate the tested VPN server. Restoring the previous server.' if restored else 'Could not activate the tested VPN server.')
+				if restored: continue
+			if _speed_requested_at() > seen_speed:
+				seen_speed = _speed_requested_at()
+				ku.clear_property(_SPEED_REQUEST_PROPERTY)
+				_speed_result('Connect to Live TV before testing VPN servers.')
+			if (replaced or reconnect) and stopped:
 				continue
 			if connection_failed or (signature is not None and signature == revoked_signature):
 				connection_failures += 1

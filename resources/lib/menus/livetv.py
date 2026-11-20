@@ -742,7 +742,7 @@ def _finish(success=True):
 	xbmcplugin.endOfDirectory(_handle(), succeeded=success, cacheToDisc=False)
 
 
-def _request(account, action, *, _deadline=None, _on_timing=None, **params):
+def _request(account, action, *, _deadline=None, _on_timing=None, _vpn_opener=None, **params):
 	query = {'username': account['username'], 'password': account['password'], 'action': action, **params}
 	url = account['server'] + '/player_api.php?' + urlencode(query)
 	headers = {'User-Agent': 'BINGIE Live TV'}
@@ -752,25 +752,25 @@ def _request(account, action, *, _deadline=None, _on_timing=None, **params):
 		timeout = min(timeout, _deadline - time.monotonic())
 		if timeout <= 0: raise OSError('Live TV catalog timed out')
 	started = time.monotonic()
-	try: response = _vpn_open(url, headers=headers, timeout=timeout)
+	try: response = (_vpn_open if _vpn_opener is None else _vpn_opener)(url, headers=headers, timeout=timeout)
 	except Exception:
 		if _on_timing: _on_timing('catalog_open', time.monotonic() - started, 'unavailable')
 		raise
-	with response:
+	with response as body:
 		if _on_timing: _on_timing('catalog_open', time.monotonic() - started, 'ok')
 		started = time.monotonic()
-		encoding = response.headers.get('Content-Encoding', '').strip().lower() if action == 'get_live_streams' else ''
+		encoding = body.headers.get('Content-Encoding', '').strip().lower() if action == 'get_live_streams' else ''
 		if encoding not in ('', 'identity', 'gzip'): raise ValueError('Unsupported response encoding')
 		try:
 			if _deadline is None:
-				data = response.read(_API_RESPONSE_LIMIT + 1)
+				data = body.read(_API_RESPONSE_LIMIT + 1)
 			else:
 				# read1 returns as bytes arrive, allowing a wall deadline even when a
 				# provider trickles a response without ever hitting the socket timeout.
 				chunks, size = [], 0
 				while True:
 					if time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
-					chunk = response.read1(min(65536, _API_RESPONSE_LIMIT + 1 - size)) if hasattr(response, 'read1') else response.read(1)
+					chunk = body.read1(min(65536, _API_RESPONSE_LIMIT + 1 - size)) if hasattr(body, 'read1') else body.read(1)
 					if not chunk: break
 					size += len(chunk)
 					if size > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
@@ -856,6 +856,12 @@ def next_feed(params):
 	request_manual_switch()
 
 
+def speed_test(params):
+	from modules.livetv_vpn import request_speed_test, speed_test_status
+	if request_speed_test(): _error('VPN server test queued.')
+	else: _error(speed_test_status())
+
+
 def browse(params):
 	account = _load()
 	if not account:
@@ -864,6 +870,7 @@ def browse(params):
 		return
 	_request_vpn()
 	_item('Search providers', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
+	_item('Test VPN servers', {'mode': 'livetv.speed_test', 'isFolder': 'false'}, False, None, False)
 	try:
 		status = []
 		categories = _browse_catalog(account, 'get_live_categories', status=status, retry=params.get('retry') == 'true')

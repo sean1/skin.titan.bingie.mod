@@ -115,6 +115,7 @@ def _private_write(path, content):
 			handle.write(content)
 			handle.flush()
 			os.fsync(handle.fileno())
+			info = os.fstat(handle.fileno())
 		os.replace(temp_path, path)
 		directory_fd = os.open(directory, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
 		try:
@@ -128,6 +129,7 @@ def _private_write(path, content):
 			os.unlink(temp_path)
 		except FileNotFoundError:
 			pass
+	return info.st_dev, info.st_ino, info.st_mtime_ns, info.st_size
 
 
 def _save_pending(path, state):
@@ -219,14 +221,15 @@ def _relays(opener):
 	relays = _request(opener, '/www/relays/all')
 	if not isinstance(relays, list):
 		raise ProvisionError('Mullvad relay list is unavailable')
-	candidates = [item for item in relays if isinstance(item, dict) and item.get('type') == 'wireguard' and item.get('active') and item.get('country_code') == 'ca']
+	candidates = [item for item in relays if isinstance(item, dict) and item.get('type') == 'wireguard' and item.get('active') is True and item.get('country_code') == 'ca']
 	candidates.sort(key=lambda item: (item.get('hostname') != _RELAY, str(item.get('hostname') or '')))
 	result = []
 	for item in candidates:
 		try:
 			address = str(ipaddress.IPv4Address(item['ipv4_addr_in']))
-			if _key(item.get('pubkey')):
-				result.append({'host': address, 'public_key': item['pubkey'], 'port': _RELAY_PORT})
+			hostname = item.get('hostname')
+			if _key(item.get('pubkey')) and isinstance(hostname, str) and re.fullmatch(r'ca-[a-z]{3}-wg-[0-9]+', hostname):
+				result.append({'hostname': hostname, 'host': address, 'public_key': item['pubkey'], 'port': _RELAY_PORT})
 		except (ValueError, KeyError, TypeError):
 			continue
 	if not result:
@@ -236,6 +239,15 @@ def _relays(opener):
 
 def _relay(opener):
 	return _relays(opener)[0]
+
+
+def relay_candidates():
+	"""Return the active Canadian WireGuard peers without accessing an account."""
+	try:
+		opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+		return _relays(opener)
+	except (OSError, ValueError, TypeError):
+		raise ProvisionError('Mullvad relay list is unavailable') from None
 
 
 def _registered_device(opener, token, public_key):
@@ -509,6 +521,78 @@ def recover_revoked_config(private_directory, account_path, native_library, expe
 		raise
 	except (OSError, ValueError, TypeError, KeyError, AttributeError):
 		raise ProvisionError('Mullvad device could not be checked; retry later') from None
+
+
+def current_relay(private_directory, expected_signature):
+	"""Return the configured peer if the expected private configuration still matches."""
+	try:
+		config_path = os.path.join(private_directory, _CONFIG)
+		with _lock_file(private_directory) as lock:
+			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+			if not _config_matches(config_path, expected_signature):
+				return None
+			config = _read_config(config_path)
+			if config is None or not _config_matches(config_path, expected_signature):
+				return None
+			peer = config['Peer']
+			host, port = peer['Endpoint'].rsplit(':', 1)
+			return {'host': host, 'port': int(port), 'public_key': peer['PublicKey'].strip()}
+	except OSError:
+		return None
+
+
+def _write_relay(private_directory, relay, expected_signature, target_path=None):
+	try:
+		host, port, key = relay['host'], relay['port'], relay['public_key']
+		if str(ipaddress.IPv4Address(host)) != host or type(port) is not int or not 1 <= port <= 65535 or not _key(key):
+			raise ValueError
+		config_path = os.path.join(private_directory, _CONFIG)
+		with _lock_file(private_directory) as lock:
+			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+			if not _config_matches(config_path, expected_signature):
+				return False
+			config = _read_config(config_path)
+			if config is None:
+				return False
+			private_key = config['Interface']['PrivateKey'].strip()
+			if _read_json_file(os.path.join(private_directory, _PENDING)).get('replaces') == _key_digest(private_key):
+				return False
+			peer = config['Peer']
+			if host == peer['Endpoint'].rsplit(':', 1)[0] or _key_digest(key) == _key_digest(peer['PublicKey'].strip()):
+				return False
+			if target_path is not None:
+				target_path = os.path.abspath(target_path)
+				info = os.lstat(os.path.dirname(target_path))
+				if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077 or os.path.lexists(target_path):
+					raise ProvisionError('Private Mullvad test configuration path is unavailable')
+			peer['PublicKey'] = key
+			peer['Endpoint'] = '%s:%d' % (host, port)
+			buffer = io.StringIO()
+			config.write(buffer)
+			if not _config_matches(config_path, expected_signature):
+				return False
+			signature = _private_write(config_path if target_path is None else target_path, buffer.getvalue())
+			return signature if target_path is None else True
+	except ProvisionError:
+		raise
+	except (OSError, ValueError, TypeError, KeyError, configparser.Error):
+		raise ProvisionError('Mullvad relay could not be changed; retry later') from None
+
+
+def stage_relay(private_directory, relay, expected_signature, target_path):
+	"""Stage a different peer for a separate tunnel using the current device identity."""
+	try:
+		target_path = os.fspath(target_path)
+	except TypeError:
+		raise ProvisionError('Private Mullvad test configuration path is unavailable') from None
+	if not isinstance(target_path, str) or not target_path:
+		raise ProvisionError('Private Mullvad test configuration path is unavailable')
+	return _write_relay(private_directory, relay, expected_signature, target_path)
+
+
+def select_relay(private_directory, relay, expected_signature):
+	"""Replace only the peer and return the new config signature, or False."""
+	return _write_relay(private_directory, relay, expected_signature)
 
 
 def rotate_relay(private_directory):

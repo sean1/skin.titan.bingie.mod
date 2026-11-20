@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from http.client import HTTPException
 from urllib.error import HTTPError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from modules.livetv_sports import non_live_title
@@ -25,7 +26,8 @@ _standings_cache = {}
 _standings_retry = {}
 _standings_rate_until = {}
 _standings_lock = threading.Lock()
-_SESSIONS = {'FP1': 'Practice 1', 'FP2': 'Practice 2', 'FP3': 'Practice 3', 'SS': 'Sprint Qualifying', 'SR': 'Sprint Race', 'QUAL': 'Qualifying', 'RACE': 'Race'}
+_SESSIONS = {'FP1': 'Practice 1', 'FP2': 'Practice 2', 'FP3': 'Practice 3', 'FP4': 'Practice 4', 'SS': 'Sprint Qualifying', 'SR': 'Sprint Race', 'QUAL': 'Qualifying', 'Q1': 'Qualifying 1', 'Q2': 'Qualifying 2', 'WU': 'Warm-up', 'RACE': 'Race'}
+_RESULTS_ARCHIVE_CODES = ('FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'QUAL', 'WU')
 _SESSION_PATTERNS = {
 	'FP1': re.compile(r'\b(?:fp\s*1|(?:free\s+)?practice\s*1)\b', re.I),
 	'FP2': re.compile(r'\b(?:fp\s*2|(?:free\s+)?practice\s*2)\b', re.I),
@@ -247,7 +249,110 @@ def get_show_schedule(year):
 	events = data.get('events') if isinstance(data, dict) else None
 	if not isinstance(events, list): raise ValueError('Invalid Formula 1 scoreboard response')
 	now = datetime.now(timezone.utc)
-	return _weekends(events, now)
+	if year <= 2009 and year < now.year:
+		known_sessions = set()
+		fixtures = _weekends(events, now, known_sessions=known_sessions)
+		added = _archive_sessions(fixtures, known_sessions, year)
+		if year <= 2005:
+			codes_by_event = {}
+			for event_id, code in sorted(known_sessions):
+				codes_by_event.setdefault(event_id, []).append(code)
+			for race in fixtures:
+				if race['session_code'] == 'RACE' and race['status'] == 'Finished':
+					race['archive_known_session_codes'] = codes_by_event.get(race['event_id'], [])
+		return fixtures + added
+	fixtures = _weekends(events, now)
+	if year in (2020, 2021) and year < now.year: _historical_event_names(fixtures, year)
+	if year == 2023 and year < now.year: _qatar_2023_schedule(fixtures)
+	return fixtures
+
+
+def _historical_event_names(fixtures, year):
+	"""Restore the official names of distinct races held at the same circuit."""
+	events = {
+		2020: (('401220848', '401222744', '2020-07-12', 'Styrian Grand Prix'), ('401220871', '401222777', '2020-08-09', '70th Anniversary Grand Prix')),
+		2021: (('600006840', '401275111', '2021-06-27', 'Styrian Grand Prix'), ('600001764', '401275121', '2021-07-04', 'Austrian Grand Prix')),
+	}
+	for event_id, race_id, day, name in events[year]:
+		weekend = [row for row in fixtures if row['event_id'] == event_id]
+		races = [row for row in weekend if row['session_code'] == 'RACE']
+		if len(races) != 1 or (races[0]['id'], races[0]['date'][:10], races[0]['status']) != (race_id, day, 'Finished'): continue
+		for row in weekend:
+			old_names = {row['event'], *row['event_names']}
+			row['aliases'] = [name, *(alias for alias in row['aliases'] if alias not in old_names)]
+			row['event'] = name
+			row['event_names'] = [name]
+
+
+def _qatar_2023_schedule(fixtures):
+	"""Apply the Qatar track familiarisation and shootout changes from FIA Decision 30."""
+	weekend = [row for row in fixtures if row['event_id'] == '600026765']
+	races = [row for row in weekend if row['session_code'] == 'RACE']
+	shootouts = [row for row in weekend if row['session_code'] == 'SS']
+	if len(races) != 1 or len(shootouts) != 1: return
+	race, shootout = races[0], shootouts[0]
+	if (race['id'], race['date'], race['status']) != ('401505969', '2023-10-08T17:00Z', 'Finished'): return
+	if shootout['id'] != '401511341' or shootout['status'] != 'Finished' or shootout['date'] not in ('2023-10-07T13:00Z', '2023-10-07T13:20Z'): return
+	shootout['date'] = '2023-10-07T13:20Z'
+	identity = 'fia-decision-2023-qatar-30-fam'
+	if any(row['id'] == identity for row in fixtures) or any(row['session_code'] == 'FAM' for row in weekend): return
+	fixtures.append({**race, 'id': identity, 'date': '2023-10-07T13:00Z', 'session_code': 'FAM', 'session_label': 'Track Familiarisation', 'archive_schedule': True})
+
+
+def _archive_sessions(fixtures, known_sessions, year):
+	from modules import f1_calendar
+	verified = f1_calendar.aliases_by_event(fixtures, include_archive_sessions=True)
+	existing_ids = {row['id'] for row in fixtures}
+	added = []
+	for race in fixtures:
+		if race['session_code'] != 'RACE' or race['status'] != 'Finished': continue
+		event_id = race['event_id']
+		details = verified.get(event_id, {})
+		round_number = details.get('round')
+		if round_number is None: continue
+		for code, session in details['sessions'].items():
+			identity = 'jolpica-archive-%d-%d-%s' % (year, round_number, code.lower())
+			if (event_id, code) in known_sessions or identity in existing_ids: continue
+			if code in ('Q1', 'Q2') and (event_id, 'QUAL') in known_sessions: continue
+			if code == 'QUAL' and any((event_id, half) in known_sessions for half in ('Q1', 'Q2')): continue
+			added.append({**race, **session, 'id': identity, 'session_code': code, 'session_label': _SESSIONS[code], 'archive_schedule': True})
+			existing_ids.add(identity)
+	return added
+
+
+def get_archive_event_sessions(year, fixtures, event_id):
+	"""Return additional verified sessions, or None when official results are unavailable."""
+	if isinstance(year, bool) or not isinstance(year, int) or not 1950 <= year <= 2005 or not event_id: return []
+	event = [row for row in fixtures if row.get('event_id') == event_id]
+	races = [row for row in event if row.get('session_code') == 'RACE']
+	if len(races) != 1 or races[0].get('status') != 'Finished': return []
+	race = races[0]
+	try:
+		when = datetime.fromisoformat(race['date'].replace('Z', '+00:00'))
+		if when.utcoffset() is None or when.year != year or when > datetime.now(timezone.utc): return []
+	except (KeyError, AttributeError, ValueError, OverflowError):
+		return []
+
+	from modules import f1_results_archive
+	links = f1_results_archive.race_sessions(year, race)
+	if links is None: return None
+	known_codes = set(race.get('archive_known_session_codes', ())) | {row.get('session_code') for row in event}
+	existing_ids = {row.get('id') for row in fixtures}
+	official_ids = set()
+	added = []
+	for code in _RESULTS_ARCHIVE_CODES:
+		if code not in links: continue
+		link = links[code]
+		match = re.match(r'^/en/results/%d/races/([0-9]+)/[^/]+/' % year, urlsplit(link).path)
+		if not match: return None
+		official_id = match.group(1)
+		official_ids.add(official_id)
+		identity = 'f1-results-%d-%s-%s' % (year, official_id, code.lower())
+		if code in known_codes or identity in existing_ids: continue
+		if code in ('Q1', 'Q2') and 'QUAL' in known_codes: continue
+		if code == 'QUAL' and any(half in known_codes or half in links for half in ('Q1', 'Q2')): continue
+		added.append({**race, 'id': identity, 'session_code': code, 'session_label': _SESSIONS[code], 'archive_schedule': True, 'archive_undated': True, 'archive_result_url': link})
+	return None if len(official_ids) > 1 else added
 
 
 def get_season_schedule(year):
@@ -256,23 +361,30 @@ def get_season_schedule(year):
 	return [fixture for fixture in get_show_schedule(year) if fixture['status'] == 'Finished' and datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')) <= now]
 
 
-def _weekends(events, now):
+def _weekends(events, now, *, known_sessions=None):
 	fixtures = []
 	for event in events:
 		if not isinstance(event, dict): continue
 		name, competitions = event.get('name'), event.get('competitions')
 		if not isinstance(name, str) or not name.strip() or not isinstance(competitions, list): continue
+		event_id = str(event.get('id') or name.strip())
 		circuit = event.get('circuit') if isinstance(event.get('circuit'), dict) else {}
 		address = circuit.get('address') if isinstance(circuit.get('address'), dict) else {}
-		aliases = [value.strip() for value in (name, event.get('shortName'), circuit.get('fullName'), address.get('city'), address.get('country')) if isinstance(value, str) and len(value.strip()) >= 4]
+		event_names = [value.strip() for value in (name, event.get('shortName')) if isinstance(value, str) and len(value.strip()) >= 4]
+		aliases = event_names + [value.strip() for value in (circuit.get('fullName'), address.get('city'), address.get('country')) if isinstance(value, str) and len(value.strip()) >= 4]
 		identities = Counter(str(session.get('id') or '') for session in competitions if isinstance(session, dict) and session.get('id'))
 		for session in competitions:
 			if not isinstance(session, dict): continue
 			identity, date = str(session.get('id') or ''), session.get('date')
 			kind, status = session.get('type'), session.get('status')
-			if not identity or identities[identity] != 1 or not isinstance(date, str) or not isinstance(kind, dict) or not isinstance(status, dict): continue
-			code, status = str(kind.get('abbreviation') or '').upper(), status.get('type')
-			if code not in _SESSIONS or not isinstance(status, dict) or status.get('name') in ('STATUS_POSTPONED', 'STATUS_CANCELED', 'STATUS_CANCELLED'): continue
+			if not isinstance(kind, dict): continue
+			code = str(kind.get('abbreviation') or '').upper()
+			if code == 'SPRINT': code = 'SR'
+			if code not in _SESSIONS: continue
+			if known_sessions is not None: known_sessions.add((event_id, code))
+			if not identity or identities[identity] != 1 or not isinstance(date, str) or not isinstance(status, dict): continue
+			status = status.get('type')
+			if not isinstance(status, dict) or status.get('name') in ('STATUS_POSTPONED', 'STATUS_CANCELED', 'STATUS_CANCELLED'): continue
 			state = status.get('state')
 			if state not in ('in', 'pre', 'post'): continue
 			try:
@@ -280,7 +392,10 @@ def _weekends(events, now):
 				if when.utcoffset() is None: continue
 			except (ValueError, TypeError, OverflowError): continue
 			if state == 'pre' and when + timedelta(hours=6) <= now: continue
-			fixtures.append({'id': identity, 'event_id': str(event.get('id') or name.strip()), 'event': name.strip(), 'aliases': aliases, 'session_code': code, 'session_label': _SESSIONS[code], 'date': date, 'status': {'in': 'LIVE', 'pre': 'Scheduled', 'post': 'Finished'}[state]})
+			fixtures.append({
+				'id': identity, 'event_id': event_id, 'event': name.strip(), 'event_names': event_names, 'aliases': aliases,
+				'session_code': code, 'session_label': _SESSIONS[code], 'date': date, 'status': {'in': 'LIVE', 'pre': 'Scheduled', 'post': 'Finished'}[state]
+			})
 	return fixtures
 
 

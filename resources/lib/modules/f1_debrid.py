@@ -39,6 +39,29 @@ def cached_candidates(candidates):
 	return results
 
 
+def cached_pack_candidates(candidates, fixture):
+	if not candidates: return []
+	providers = enabled_providers()
+	labelled = [candidate for candidate in candidates if candidate['pack'] != 'unlabelled']
+	if 'torbox' not in providers: return cached_candidates(labelled)
+	from modules import f1_pack_files
+	from modules.source_utils import supported_video_extensions
+	api = debrid.import_debrid('torbox')
+	if not api: return cached_candidates(labelled)
+	probe = ([candidate for candidate in candidates if candidate['pack'] == 'unlabelled'] + labelled)[:25]
+	try: cached_files = api.cached_torrent_files([candidate['hash'] for candidate in probe])
+	except Exception: cached_files = {}
+	extensions = tuple(supported_video_extensions())
+	results, confirmed = [], set()
+	for candidate in probe:
+		files = [{'filename': name} for name in cached_files.get(candidate['hash'], []) if name.lower().endswith(extensions)]
+		pack = 'season' if candidate['pack'] == 'season' else 'weekend'
+		if f1_pack_files.matching_files(files, fixture, pack):
+			confirmed.add(candidate['hash'])
+			results.extend({**candidate, 'debrid': provider, 'availability': 'cached' if provider == 'torbox' else 'unknown', 'session_verified': True} for provider in providers)
+	return results + cached_candidates([candidate for candidate in labelled if candidate['hash'] not in confirmed])
+
+
 def prepare(candidate):
 	"""Retrieve playable files; the caller must resolve or discard this result."""
 	api = debrid.import_debrid(candidate['debrid'])

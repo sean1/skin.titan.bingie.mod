@@ -1,3 +1,5 @@
+import re
+
 import requests
 from modules import kodi_utils
 
@@ -72,6 +74,25 @@ class TorBoxAPI:
 		if result is None: return {}
 		cached = {str(item).lower() for item in result} if isinstance(result, dict) else {str(item.get('hash', '')).lower() for item in result}
 		return {original: normalized in cached for normalized, original in original_hashes.items()}
+
+	def cached_torrent_files(self, hashes):
+		hashes = list(dict.fromkeys(value.lower() for value in hashes if isinstance(value, str) and re.fullmatch(r'[a-fA-F0-9]{40}', value) and value != '0' * 40))
+		results = {}
+		for start in range(0, len(hashes), 25):
+			batch = hashes[start:start + 25]
+			data = self._post('torrents/checkcached', params={'format': 'object', 'list_files': 'true'}, json={'hashes': batch})
+			if isinstance(data, list): data = {str(item.get('hash', '')): item for item in data if isinstance(item, dict)}
+			if not isinstance(data, dict): continue
+			for info_hash, entry in data.items():
+				info_hash = str(info_hash).lower()
+				if info_hash not in batch or not isinstance(entry, dict) or not isinstance(entry.get('files'), list): continue
+				filenames = []
+				for file in entry['files']:
+					if not isinstance(file, dict): continue
+					filename = next((value for key in ('name', 'path', 'filename', 'short_name') if isinstance(value := file.get(key), str) and 0 < len(value) <= 2000 and '\x00' not in value), '')
+					if filename: filenames.append(filename)
+				results[info_hash] = filenames
+		return results
 
 	def create_transfer(self, magnet, cached_only=False):
 		fields = {'magnet': (None, magnet), 'seed': (None, '3'), 'allow_zip': (None, 'false')}

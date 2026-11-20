@@ -14,8 +14,10 @@ from modules.livetv_timezone import get_timezone
 
 
 _SEASON_PROPERTY = 'BingieF1.Season'
-_SCHEDULE_PROPERTY = 'BingieF1.SeasonSchedule'
+_SCHEDULE_PROPERTY = 'BingieF1.SeasonSchedule.4'
+_ARCHIVE_PROPERTY = 'BingieF1.EventArchive.1'
 _SCHEDULE_LIMIT = 256 * 1024
+_ARCHIVE_ORDER = {code: index for index, code in enumerate(('FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'QUAL', 'WU', 'RACE'))}
 
 
 def _year(value):
@@ -97,7 +99,40 @@ def _group_order(group, year, now):
 	return 2, -max(when.timestamp() for _, when in dates)
 
 
+def _event_archive_sessions(year, fixtures, event_id):
+	if year > 2005: return []
+	selected = [row for row in fixtures if row['event_id'] == event_id]
+	if not selected: return []
+	fields = ('id', 'session_code', 'date', 'status', 'event', 'event_names', 'aliases', 'calendar_day', 'archive_known_session_codes')
+	identity = sorted([[row.get(field) for field in fields] for row in selected], key=lambda values: values[:4])
+	now, entries, prior = time.time(), {}, None
+	try:
+		raw = ku.get_property(_ARCHIVE_PROPERTY)
+		if len(raw) <= _SCHEDULE_LIMIT:
+			cached = json.loads(raw or '{}')
+			if cached.get('year') == year and isinstance(cached.get('events'), dict): entries = cached['events']
+			entry = entries.get(event_id, {})
+			if entry.get('identity') == identity and _valid_schedule(entry.get('rows')) and all(row['event_id'] == event_id and row.get('archive_undated') is True for row in entry['rows']):
+				prior = entry['rows']
+				if 0 <= now - entry['created'] < 24 * 60 * 60: return prior
+	except (ValueError, TypeError, KeyError, AttributeError, RuntimeError, RecursionError): pass
+	rows = livetv_f1.get_archive_event_sessions(year, fixtures, event_id)
+	if rows is None: return prior or []
+	if not _valid_schedule(rows): return prior or []
+	entries = dict(list(entries.items())[-31:])
+	entries[event_id] = {'identity': identity, 'created': now, 'rows': rows}
+	try:
+		encoded = json.dumps({'year': year, 'events': entries}, ensure_ascii=True, separators=(',', ':'))
+		if len(encoded) <= _SCHEDULE_LIMIT: ku.set_property(_ARCHIVE_PROPERTY, encoded)
+	except (ValueError, TypeError, RuntimeError, RecursionError): pass
+	return rows
+
+
 def _when(fixture, short=False):
+	if fixture.get('archive_undated'): return 'Date unavailable'
+	if fixture.get('date_only'):
+		day = datetime.fromisoformat(fixture['calendar_day'])
+		return day.strftime('%a %d %b' if short else '%a %d %b %Y')
 	when = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 	return when.astimezone(get_timezone('America/Vancouver')).strftime('%a %H:%M' if short else '%a %d %b %Y · %H:%M')
 
@@ -169,12 +204,16 @@ def sessions(params):
 			_message('No sessions found for this race', event_id, year)
 			livetv._finish()
 			return
+		archive = _event_archive_sessions(year, fixtures, event_id)
+		if archive:
+			selected += archive
+			fixtures = fixtures + archive
 		now = datetime.now(timezone.utc)
 		live = _live_snapshot() if any(row.get('status') == 'LIVE' for row in selected) else []
 		fixture_counts = Counter(row.get('id') for row in fixtures)
 		identities = Counter((row.get('event_id'), row.get('id')) for row in fixtures)
 		live_counts = Counter(row.get('id') for row in live)
-		for fixture in sorted(selected, key=lambda row: row['date']):
+		for fixture in sorted(selected, key=lambda row: (_ARCHIVE_ORDER.get(row['session_code'], len(_ARCHIVE_ORDER)) if archive else 0, row['date'])):
 			status = fixture.get('status')
 			when = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 			event, title = fixture['event'], fixture['session_label']
@@ -182,7 +221,7 @@ def sessions(params):
 			query, action = {}, ''
 			if status == 'Finished' and when <= now:
 				if identities[(fixture['event_id'], fixture['id'])] == 1:
-					status, action = 'FINISHED', 'replay'
+					status, action = ('ARCHIVE' if fixture.get('archive_schedule') else 'FINISHED'), 'replay'
 					query = {'mode': 'livetv.f1_replay_search', 'year': str(year), 'event_id': fixture['event_id'], 'session_id': fixture['id']}
 					description = 'Search for a replay of this session.'
 				else:

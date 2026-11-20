@@ -3,35 +3,44 @@ import re
 
 from modules import livetv_f1_search as f1_search
 
-_EXTRAS = re.compile(r'\b(?:highlights?|recaps?|previews?|interviews?|analysis|review|documentary|drive to survive|onboard|on board|build\s*up)\b|\b(?:pre|post)\s*(?:race|qualifying|quali|qual|practice|sprint|fp\s*[123])\b')
 _DIMENSIONS = re.compile(r'\b(?:640|720|1280|1366|1440|1600|1920|2048|2560|3840|4096|7680)\s*x\s*(?:360|480|540|576|720|768|900|1080|1088|1440|2160|4320)\b')
+_F1 = re.compile(r'\b(?:f\s*1|formula\s*(?:1|one))\b(?!\s*academy\b)')
+_QUALIFYING_DAYS = {'Q1', 'Q2'}
+_QUALIFYING_PHASES = {'Q3', 'SQ1', 'SQ2', 'SQ3'}
 
 
-def _round_agrees(text, fixture, year):
+def _round_agrees(text, fixture, year, round_numbers, *, event_named=False):
 	"""Reject conflicting explicit rounds, even when the race name also matches."""
-	round_number = fixture.get('race_round')
-	# Long episode identifiers such as 2016x109 are not F1 round numbers.
-	markers = [(found_year, number) for found_year, number in re.findall(r'(?<!\d)((?:19|20)\d{2})\s*x\s*(\d{1,3})(?!\d)', text) if int(number) <= 99]
-	rounds = re.findall(r'\b(?:round|r)\s*(\d{1,3})\b', text)
-	if any(found_year != year for found_year, _ in markers): return False
-	if not markers and not rounds: return True
-	if not isinstance(round_number, int) or isinstance(round_number, bool) or not 1 <= round_number <= 99: return False
-	return all(int(number) == round_number for _, number in markers) and all(int(number) == round_number for number in rounds)
+	return not f1_search._conflicting_year(text, year) and f1_search._rounds_agree(round_numbers, fixture, require_known=True, event_named=event_named)
 
 
-def _event_agrees(text, fixture, year):
-	aliases = fixture.get('aliases') if isinstance(fixture.get('aliases'), list) else []
-	others = fixture.get('other_event_aliases') if isinstance(fixture.get('other_event_aliases'), list) else []
-	names, other_names = f1_search._race_names(fixture, aliases), f1_search._other_names(others)
-	unique = {name for name in names if len(name) >= 4 and name not in other_names}
-	identified = any(f1_search._contains_race(text, name) for name in unique) or f1_search._usa_round(fixture, text, year)
-	# A validated official round identifies the weekend when a season pack
-	# uses folders such as "Round 06" instead of circuit names.
-	round_number = fixture.get('race_round')
-	if not identified and isinstance(round_number, int) and not isinstance(round_number, bool) and 1 <= round_number <= 99:
-		identified = any(int(number) == round_number for number in re.findall(r'\b(?:round|r)\s*(\d{1,3})\b', text)) and _round_agrees(text, fixture, year)
-	if not identified: return False
-	return not any(len(name) >= 4 and not any(f1_search._contains(own, name) for own in names) and f1_search._contains_race(text, name) for name in other_names)
+def _folder_rounds(folders, year):
+	pattern = re.compile(year + r'\s*x\s*(\d{1,3})')
+	return [int(match[1]) for folder in folders if (match := pattern.fullmatch(f1_search._text(folder))) and int(match[1]) <= 99]
+
+
+def _path_rounds(text, folder_rounds):
+	return (f1_search._explicit_rounds(text) + folder_rounds) or f1_search._round_numbers(text)
+
+
+def _folder_conflicts(folders, filename, fixture, *, season, require_exact_session=False):
+	code = fixture['session_code']
+	for index, part in enumerate(folders):
+		folder = f1_search._text(part)
+		if f1_search._recording_rejected(folder, f1_search._PACK_EXTRAS, code=code, season=season): return True
+		collection = index == 0 and re.search(r'\b(?:season|weekend|pack|collection)\b', folder)
+		if f1_search._SUPPORT_SERIES.search(folder):
+			if not collection or not _F1.search(folder): return True
+			if not _F1.search(filename) and not any(_F1.search(f1_search._text(part)) for part in folders[1:]): return True
+		codes = f1_search._session_codes(folder, season=season)
+		numbered = codes.intersection(_QUALIFYING_DAYS | _QUALIFYING_PHASES)
+		if code in ('QUAL', 'SS') and numbered: return True
+		if code in _QUALIFYING_DAYS and numbered.intersection(_QUALIFYING_PHASES): return True
+		if code in _QUALIFYING_DAYS and re.fullmatch(f1_search._QUALIFYING, folder): continue
+		if collection and not numbered: continue
+		if 'FAM' in codes and not f1_search._session_matches(codes, fixture): return True
+		if codes and (code not in codes or (require_exact_session and codes != {code})): return True
+	return False
 
 
 def matching_files(files, fixture, pack_type):
@@ -44,6 +53,7 @@ def matching_files(files, fixture, pack_type):
 	date, code = fixture.get('date', ''), fixture.get('session_code')
 	if not isinstance(date, str) or not re.match(r'^\d{4}-', date) or code not in f1_search._SESSIONS: return []
 	year, matched = date[:4], []
+	if not f1_search._fixture_session_allowed(fixture): return []
 	for item in files:
 		if not isinstance(item, dict): continue
 		path = item.get('full_filename') or item.get('filename')
@@ -52,31 +62,15 @@ def matching_files(files, fixture, pack_type):
 		if not parts: continue
 		basename = parts[-1]
 		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(basename)
-		if not text or not filename or f1_search._REJECT.search(filename): continue
-		codes = {key for key, pattern in f1_search._SESSIONS.items() if re.search(pattern, filename)}
-		if codes != {code}: continue
-		conflict = False
-		for index, part in enumerate(parts[:-1]):
-			folder = f1_search._text(part)
-			if _EXTRAS.search(folder):
-				conflict = True
-				break
-			if index == 0 and re.search(r'\b(?:season|weekend|pack|collection)\b', folder): continue
-			folder_codes = {key for key, pattern in f1_search._SESSIONS.items() if re.search(pattern, folder)}
-			if folder_codes and code not in folder_codes:
-				conflict = True
-				break
-		if conflict: continue
-		if any(found != year for found in re.findall(r'(?<!\d)(?:19|20)\d{2}(?!\d)', text)): continue
-		if not _round_agrees(text, fixture, year): continue
-		if pack_type == 'season' and not _event_agrees(text, fixture, year): continue
-		if pack_type == 'weekend':
-			# A pack title identifies the weekend, but an explicitly different
-			# event inside a file path must not override that identification.
-			others = fixture.get('other_event_aliases') if isinstance(fixture.get('other_event_aliases'), list) else []
-			aliases = fixture.get('aliases') if isinstance(fixture.get('aliases'), list) else []
-			names, other_names = f1_search._race_names(fixture, aliases), f1_search._other_names(others)
-			if any(len(name) >= 4 and not any(f1_search._contains(own, name) for own in names) and f1_search._contains_race(text, name) for name in other_names): continue
+		if not text or not filename or f1_search._recording_rejected(filename, f1_search._FILE_REJECT, code=code, season=year): continue
+		if not f1_search._session_matches(f1_search._session_codes(filename, season=year), fixture): continue
+		if _folder_conflicts(parts[:-1], filename, fixture, season=year): continue
+		folder_rounds = _folder_rounds(parts[:-1], year)
+		event_named = pack_type == 'weekend' or (bool(fixture.get('round_aliases')) and f1_search.event_name_matches(text, fixture))
+		if not _round_agrees(text, fixture, year, _path_rounds(text, folder_rounds), event_named=event_named): continue
+		if pack_type == 'season':
+			if not f1_search._event_matches(text, fixture, folder_rounds=folder_rounds): continue
+		elif f1_search._event_conflicts(text, fixture): continue
 		matched.append(item)
 	return matched
 
@@ -94,7 +88,7 @@ def unconfirmed_race_files(files, fixture, pack_type):
 	aliases = fixture.get('aliases') if isinstance(fixture.get('aliases'), list) else []
 	others = fixture.get('other_event_aliases') if isinstance(fixture.get('other_event_aliases'), list) else []
 	other_names = f1_search._other_names(others)
-	unique_names = {name for name in f1_search._race_names(fixture, aliases) if len(name) >= 4 and name not in other_names}
+	unique_names = {name for name in f1_search._race_names(fixture, aliases) if f1_search._valid_alias(name) and name not in other_names}
 	for item in files:
 		if not isinstance(item, dict): continue
 		path = item.get('full_filename') or item.get('filename')
@@ -102,22 +96,17 @@ def unconfirmed_race_files(files, fixture, pack_type):
 		parts = [part for part in re.split(r'[/\\]', path) if part]
 		if not parts: continue
 		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(parts[-1])
-		if not text or not filename or _EXTRAS.search(text) or f1_search._REJECT.search(filename): continue
-		if re.search(r'\b(?:practice|fp\s*[123]?|qualifying|quali|qual|sprint|shootout|warm\s*up|s?q\s*[123])\b', text): continue
+		if not text or not filename or f1_search._recording_rejected(text, f1_search._PACK_EXTRAS, code='RACE', season=year): continue
+		if f1_search._recording_rejected(filename, f1_search._FILE_REJECT, code='RACE', season=year): continue
+		if re.search(r'\b(?:practice|fp(?:\s*0?[1-4])?|qualifying|quali|qual|sprint|shootout|warm\s*ups?|wu|familiari[sz]ation|s?q\s*[123])\b', text): continue
 		if not re.search(r'\b(?:grand\s+prix|gp)\b', filename): continue
 		if not any(f1_search._contains_race(filename, name) for name in unique_names): continue
-		if any(re.search(pattern, filename) for pattern in f1_search._SESSIONS.values()): continue
+		if f1_search._session_codes(filename, season=year): continue
 		years = re.findall(r'(?<!\d)(?:19|20)\d{2}(?!\d)', text)
 		if not years or any(found != year for found in years): continue
-		if not any(int(number) == round_number for number in re.findall(r'\b(?:round|r)\s*(\d{1,3})\b', text)): continue
-		if not _round_agrees(text, fixture, year) or not _event_agrees(text, fixture, year): continue
-		conflict = False
-		for index, part in enumerate(parts[:-1]):
-			folder = f1_search._text(part)
-			if index == 0 and re.search(r'\b(?:season|weekend|pack|collection)\b', folder): continue
-			codes = {key for key, pattern in f1_search._SESSIONS.items() if re.search(pattern, folder)}
-			if codes and codes != {'RACE'}:
-				conflict = True
-				break
-		if not conflict: matched.append({**item, '_f1_unconfirmed': True})
+		folder_rounds = _folder_rounds(parts[:-1], year)
+		round_numbers = _path_rounds(text, folder_rounds)
+		if not round_numbers or not _round_agrees(text, fixture, year, round_numbers, event_named=True): continue
+		if not f1_search._event_matches(text, fixture, folder_rounds=folder_rounds): continue
+		if not _folder_conflicts(parts[:-1], filename, fixture, season=year, require_exact_session=True): matched.append({**item, '_f1_unconfirmed': True})
 	return matched

@@ -76,9 +76,12 @@ def shortlist_relays(relays, current_host, *, limit=2, cancel=None):
 		if host != current_host: eligible.setdefault(host, relay)
 	if not eligible: return []
 	cities = {}
+	host_cities = {}
 	for host, relay in eligible.items():
 		parts = str(relay.get('hostname', '')).split('-', 2)
-		cities.setdefault(parts[1] if len(parts) > 1 else '', host)
+		city = parts[1] if len(parts) > 1 else ''
+		host_cities[host] = city
+		cities.setdefault(city, host)
 	hosts = list(dict.fromkeys([*cities.values(), *eligible]))[:_PING_LIMIT]
 	jobs = {host: (host,) for host in hosts}
 	samples = dict(_collect(jobs, _ping, monotonic() + _PING_TIMEOUT + 1, cancel))
@@ -94,6 +97,12 @@ def shortlist_relays(relays, current_host, *, limit=2, cancel=None):
 		return -replies, delay, order[host]
 
 	ranked = sorted(hosts, key=preference)
+	if limit >= 2:
+		diverse = {}
+		for host in ranked:
+			city = host_cities[host]
+			if city and host in samples and samples[host][0] >= 2: diverse.setdefault(city, host)
+		ranked = list(dict.fromkeys([*diverse.values(), *ranked]))
 	return [dict(eligible[host], ping_ms=samples[host][1] if host in samples else None, ping_method=method) for host in ranked[:limit]]
 
 
@@ -142,3 +151,10 @@ def is_faster(candidate, current):
 	saved = median(current.values()) - median(candidate.values())
 	if saved < max(1, 0.2 * median(current.values())): return False
 	return all(candidate[key] <= value + max(1, 0.2 * value) for key, value in current.items())
+
+
+def best_relay(results, baseline):
+	"""Pick the best measured improvement over a shared baseline."""
+	eligible = ((relay, timings) for relay, timings in results if is_faster(timings, baseline))
+	winner = min(eligible, key=lambda item: (-len(item[1]), median(item[1].values()), max(item[1].values())), default=None)
+	return winner[0] if winner is not None else None

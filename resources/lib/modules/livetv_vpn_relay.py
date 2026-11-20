@@ -418,6 +418,7 @@ class Relay:
 			def _serve(self, method):
 				connection = None
 				sent = False
+				data_request = False
 				root = None
 				timer = None
 				initial_started = None
@@ -565,7 +566,7 @@ class Relay:
 				except Exception as exc:
 					trace_outcome = 'timeout' if isinstance(exc, TimeoutError) else 'error'
 					if not sent:
-						try: self._error(502)
+						try: self._error(504 if data_request and trace_outcome == 'timeout' else 502)
 						except OSError: pass
 				finally:
 					if trace_started is not None:

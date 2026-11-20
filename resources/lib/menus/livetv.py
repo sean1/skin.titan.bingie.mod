@@ -17,6 +17,7 @@ import zlib
 from datetime import datetime, timezone
 from functools import lru_cache
 from http.client import HTTPException
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit
 
 import xbmc
@@ -582,6 +583,25 @@ def _provider_label(identity, number):
 	return 'Primary' if number == 1 else 'Backup %s' % backup.group(1) if backup else 'Provider %d' % number
 
 
+def _catalog_provider_label(account):
+	secrets = [str(account.get(key, '')).casefold() for key in ('username', 'password')]
+
+	def display(field, pattern):
+		value = account.get(field)
+		if isinstance(value, str) and re.fullmatch(pattern, value) and _catalog_redact(value.casefold(), secrets) == value.casefold(): return value
+		return ''
+
+	label = display('label', r'[A-Za-z0-9][A-Za-z0-9 &-]{0,23}')
+	seller = display('seller', r'[A-Za-z0-9][A-Za-z0-9 _-]{0,23}')
+	if not label:
+		label = 'Provider'
+		for number, (identity, provider) in enumerate(_sports_accounts(_load()), 1):
+			if all(account.get(key) == provider.get(key) for key in ('server', 'username', 'password')):
+				label = _provider_label(identity, number)
+				break
+	return '%s (%s)' % (label, seller) if seller else label
+
+
 def _bundled_credentials_path():
 	return os.path.join(ku.translate_path(ku.addon_path), 'resources', 'private', 'livetv-account.json')
 
@@ -598,7 +618,7 @@ def _read_account(path):
 
 
 def _account_fingerprint(account):
-	account = {key: value for key, value in account.items() if key not in ('id', 'enabled', 'label', 'expires_at')}
+	account = {key: value for key, value in account.items() if key not in ('id', 'enabled', 'label', 'seller', 'expires_at')}
 	return hashlib.sha256(json.dumps(account, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
@@ -750,7 +770,7 @@ def _request(account, action, *, _deadline=None, _on_timing=None, _vpn_opener=No
 	timeout = 20
 	if _deadline is not None:
 		timeout = min(timeout, _deadline - time.monotonic())
-		if timeout <= 0: raise OSError('Live TV catalog timed out')
+		if timeout <= 0: raise TimeoutError('Live TV catalog timed out')
 	started = time.monotonic()
 	try: response = (_vpn_open if _vpn_opener is None else _vpn_opener)(url, headers=headers, timeout=timeout)
 	except Exception:
@@ -769,7 +789,7 @@ def _request(account, action, *, _deadline=None, _on_timing=None, _vpn_opener=No
 				# provider trickles a response without ever hitting the socket timeout.
 				chunks, size = [], 0
 				while True:
-					if time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
+					if time.monotonic() >= _deadline: raise TimeoutError('Live TV catalog timed out')
 					chunk = body.read1(min(65536, _API_RESPONSE_LIMIT + 1 - size)) if hasattr(body, 'read1') else body.read(1)
 					if not chunk: break
 					size += len(chunk)
@@ -787,36 +807,62 @@ def _request(account, action, *, _deadline=None, _on_timing=None, _vpn_opener=No
 			with gzip.GzipFile(fileobj=io.BytesIO(data)) as compressed: data = compressed.read(_API_RESPONSE_LIMIT + 1)
 		except (EOFError, zlib.error) as error: raise ValueError('Invalid compressed response') from error
 		if len(data) > _API_RESPONSE_LIMIT: raise ValueError('Response too large')
-	if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
+	if _deadline is not None and time.monotonic() >= _deadline: raise TimeoutError('Live TV catalog timed out')
 	result = json.loads(data.decode('utf-8-sig'))
 	if _on_timing: _on_timing('catalog_parse', time.monotonic() - started, 'ok')
-	if _deadline is not None and time.monotonic() >= _deadline: raise OSError('Live TV catalog timed out')
+	if _deadline is not None and time.monotonic() >= _deadline: raise TimeoutError('Live TV catalog timed out')
 	return result
 
 
 def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=None, on_timing=None, notify_stale=True, _deadline=None, **params):
-	on_stale = (lambda: _error(_vpn_failure_message() or 'Showing saved channels; check the VPN or provider connection.')) if notify_stale else None
 	full_live_catalog = action == 'get_live_streams' and not params
+	catalog_action = action in ('get_live_streams', 'get_live_categories')
 	degraded = False
+	first_problem = problem = ''
+	recovered = False
+
+	def on_stale():
+		vpn_message = _vpn_failure_message()
+		if vpn_message or not (problem or first_problem): _error(vpn_message or 'Showing saved channels; check the VPN or provider connection.')
 
 	def fetch(account, action, **options):
-		nonlocal degraded
-		if not full_live_catalog: return _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
+		nonlocal degraded, first_problem, problem, recovered
+		if not catalog_action: return _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
 		started = time.monotonic()
 		degraded = False
+		problem = ''
 		try: data = _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
-		except (OSError, HTTPException, ValueError, TypeError):
-			degraded = _deadline is None or _deadline - started >= 1
+		except (OSError, HTTPException, ValueError, TypeError) as error:
+			enough_time = _deadline is None or _deadline - started >= 1
+			degraded = full_live_catalog and enough_time
+			if enough_time or not (isinstance(error, TimeoutError) and str(error) == 'Live TV catalog timed out'):
+				timed_out = isinstance(error, TimeoutError) or (isinstance(error, HTTPError) and error.code in (408, 504)) or (isinstance(error, URLError) and isinstance(error.reason, TimeoutError))
+				problem = 'Catalog timed out' if timed_out else 'Invalid catalog response' if isinstance(error, (ValueError, TypeError)) else 'Catalog request failed'
 			raise
-		degraded = time.monotonic() - started >= 15 or not _usable_streams(data)
+		elapsed = time.monotonic() - started
+		if not isinstance(data, list): problem = 'Invalid catalog response'
+		elif full_live_catalog and not _usable_streams(data): problem = 'Catalog is empty' if not data else 'Invalid catalog response'
+		elif action == 'get_live_categories' and not options and not data: problem = 'Catalog is empty'
+		elif elapsed >= 15: problem = 'Slow catalog (%.0f s)' % elapsed
+		degraded = full_live_catalog and bool(problem)
+		recovered = bool(first_problem and not problem)
+		if not first_problem: first_problem = problem
 		return data
 
 	deadline_option = {} if _deadline is None else {'_deadline': _deadline}
 	if on_source: deadline_option['on_source'] = on_source
 	if on_timing: deadline_option['on_timing'] = on_timing
-	try: return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
+	try: return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale if notify_stale else None, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
 	finally:
 		if degraded: report_catalog_problem()
+		message = problem or (first_problem + ' · retry succeeded' if recovered else first_problem)
+		if message:
+			try:
+				if message == 'Catalog request failed' and _vpn_failure_message(): message = 'Catalog unavailable while the VPN is offline'
+				message = '%s: %s' % (_catalog_provider_label(account), message)
+				ku.logger('Live TV', message)
+				ku.dialog.notification('Live TV', '%s · %s' % (message, datetime.now().strftime('%H:%M:%S.%f')[:-3]), time=5000, sound=False)
+			except Exception: pass
 
 
 def _browse_catalog(account, action, *, status=None, retry=False, _saved=None, **params):
@@ -882,11 +928,14 @@ def browse(params):
 	account = _load()
 	if not account:
 		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
-		_finish(False)
+	else:
+		_request_vpn()
+		_item('Search providers', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
+		_item('Test VPN servers', {'mode': 'livetv.speed_test', 'isFolder': 'false'}, False, None, False)
+	_item('View Kodi log', {'mode': 'kodi_logs', 'session': 'current', 'isFolder': 'false'}, False, None, False)
+	if not account:
+		_finish()
 		return
-	_request_vpn()
-	_item('Search providers', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
-	_item('Test VPN servers', {'mode': 'livetv.speed_test', 'isFolder': 'false'}, False, None, False)
 	try:
 		status = []
 		categories = _browse_catalog(account, 'get_live_categories', status=status, retry=params.get('retry') == 'true')

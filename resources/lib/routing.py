@@ -76,6 +76,7 @@ POV_ROUTES = {
 	'show_text': lambda p: _import('modules.kodi_utils', 'show_text')(
 		p.get('heading'), p.get('text'), p.get('file'), p.get('font_size', 'small'), p.get('kodi_log', 'false') == 'true'
 	),
+	'kodi_logs': lambda p: _import('modules.kodi_log', 'show')(p.get('session')),
 
 	'toggle_provider': lambda p: _import('modules.utils', 'toggle_provider')(),
 	'myservices': lambda p: _import('modules.myservices', 'authorize')(),

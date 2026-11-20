@@ -148,6 +148,14 @@
                         <icon>special://skin/extras/media/backgrounds/settings_system_info.jpg</icon>
                         <thumb>special://skin/extras/media/backgrounds/systeminfo.png</thumb>
                     </item>
+                    <item id="16">
+                        <description>Kodi Logs</description>
+                        <label>Kodi Logs</label>
+                        <label2>Read the current or previous Kodi log.</label2>
+                        <onclick>RunPlugin(plugin://skin.titan.bingie.lite/?mode=kodi_logs)</onclick>
+                        <icon>special://skin/extras/media/backgrounds/settings_system_info.jpg</icon>
+                        <thumb>special://skin/extras/media/backgrounds/systeminfo.png</thumb>
+                    </item>
                     <item id="12">
                         <description>Profiles</description>
                         <label>13200</label>

@@ -391,13 +391,15 @@ def _classified_archive_sessions(fixtures, known_sessions, year):
 	counts = Counter(row['event_id'] for row in races)
 	identities = {row['id'] for row in fixtures}
 	known = known_sessions | {(row['event_id'], row['session_code']) for row in fixtures}
-	split_practices = {'FP1': 'opening-first', 'FP2': 'opening-second', 'FP3': 'saturday-first', 'FP4': 'saturday-second'} if 2000 <= year <= 2002 else {}
+	practice_slots = {'FP1': 'opening-first', 'FP2': 'opening-second', 'FP3': 'saturday-first', 'FP4': 'saturday-second'}
 	added = []
 	for race in races:
 		event_id = race['event_id']
 		if counts[event_id] != 1 or race['status'] != 'Finished' or event_id not in inventory: continue
 		race_day, round_number, source_id, sessions = inventory[event_id]
 		if race['date'][:10] != race_day: continue
+		split_practices = practice_slots if 1999 <= year <= 2002 or year == 1998 and practice_slots.keys() <= sessions.keys() else {}
+		dated_weekend = year == 1998 or bool(split_practices)
 		if split_practices:
 			fixtures[:] = [row for row in fixtures if row['event_id'] != event_id or row['session_code'] not in split_practices]
 			known.difference_update((event_id, code) for code in split_practices)
@@ -422,7 +424,7 @@ def _classified_archive_sessions(fixtures, known_sessions, year):
 				continue
 			if code == 'Q3' or isinstance(day, list): continue
 			if code in split_practices: identity = 'f1-%d-%d-%s' % (year, source_id, split_practices[code])
-			if split_practices and day is not None and code in ('QUAL', 'WU') and (event_id, code) in known:
+			if dated_weekend and day is not None and code in ('QUAL', 'WU') and (event_id, code) in known:
 				previous = [row for row in fixtures if row['event_id'] == event_id and row['session_code'] == code and row['status'] == 'Finished']
 				if len(previous) == 1:
 					previous[0].update(date=day + 'T00:00Z', date_only=True, calendar_day=day, race_round=round_number)
@@ -442,7 +444,10 @@ def _classified_archive_sessions(fixtures, known_sessions, year):
 				when = datetime.fromisoformat(day)
 				ordinal = split_practices[code].rsplit('-', 1)[1].title()
 				row.update(split_daily_practice=True, practice_weekday=when.weekday(), session_label='%s %s Practice' % (when.strftime('%A'), ordinal))
-			if split_practices and code == 'QUAL' and day is not None: row['qualifying_weekday'] = datetime.fromisoformat(day).weekday()
+			elif year == 1998 and code in ('FP1', 'FP2'):
+				when = datetime.fromisoformat(day)
+				row.update(aggregate_daily_practice=True, practice_weekday=when.weekday(), session_label=when.strftime('%A') + ' Practice')
+			if dated_weekend and code == 'QUAL' and day is not None: row['qualifying_weekday'] = datetime.fromisoformat(day).weekday()
 			if practice_2003:
 				row['practice_format_2003'] = 'combined' if round_number <= 8 else 'split'
 				opening = 'Thursday Practice' if datetime.fromisoformat(day).weekday() == 3 else 'Friday Practice'

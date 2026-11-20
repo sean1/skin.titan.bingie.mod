@@ -55,7 +55,7 @@ def cached_pack_candidates(candidates, fixture):
 	extensions = tuple(supported_video_extensions())
 
 	def has_session(candidate, names):
-		files = [{'filename': name} for name in names if name.lower().endswith(extensions)]
+		files = [{'filename': name} for name in names if isinstance(name, str) and name.lower().endswith(extensions)]
 		pack = 'season' if candidate['pack'] == 'season' else 'weekend'
 		return bool(f1_pack_files.matching_files(files, fixture, pack))
 
@@ -69,6 +69,10 @@ def cached_pack_candidates(candidates, fixture):
 			confirmed.add(candidate['hash'])
 			results.extend({**candidate, 'debrid': provider, 'availability': 'cached' if provider == 'torbox' else 'unknown', 'session_verified': True} for provider in providers)
 	public = []
+	for candidate in ordered:
+		if candidate['hash'] not in confirmed and has_session(candidate, candidate.get('manifest_files', [])):
+			public.append({**candidate, 'session_verified': True})
+			confirmed.add(candidate['hash'])
 	eligible = [candidate for candidate in ordered if candidate['hash'] not in confirmed and candidate.get('detail_path')]
 	public_groups = ([candidate for candidate in eligible if candidate['pack'] == 'unlabelled'], [candidate for candidate in eligible if candidate['pack'] != 'unlabelled'])
 	public_probe = (candidate for batch in zip_longest(*(islice(group, _PUBLIC_MANIFESTS_PER_GROUP) for group in public_groups)) for candidate in batch if candidate is not None)

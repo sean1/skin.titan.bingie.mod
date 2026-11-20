@@ -1,8 +1,10 @@
+import json
 import sys
 import unittest
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from tests.module_isolation import temporary_modules
 
@@ -10,6 +12,39 @@ MODULES_LIB = str(Path(__file__).resolve().parents[1] / 'resources' / 'lib')
 
 
 class F1ManifestCandidateTests(unittest.TestCase):
+	def test_verified_monaco_manifest_keeps_pack_verification_through_index_failures_and_duplicates(self):
+		fixture = {'event_id': '600057434', 'date': '2026-06-05', 'race_name': 'Monaco Grand Prix', 'race_round': 6, 'session_code': 'FP2'}
+		stubs = {
+			'modules.debrid': SimpleNamespace(debrid_enabled=lambda: ['realdebrid', 'alldebrid'], debrid_type_enabled=lambda kind, providers: providers),
+			'modules.kodi_utils': SimpleNamespace(),
+			'modules.settings': SimpleNamespace(),
+			'modules.source_utils': SimpleNamespace(supported_video_extensions=lambda: ['.mkv']),
+			'modules.f1_knaben': SimpleNamespace(search=Mock(side_effect=OSError), search_season=Mock(side_effect=OSError)),
+			'modules.f1_blackhole': SimpleNamespace(search=Mock(side_effect=OSError)),
+			'modules.f1_torrentdownload': SimpleNamespace(search=Mock(side_effect=OSError)),
+		}
+		with temporary_modules(stubs, isolate=('modules.f1_debrid', 'modules.f1_pack_files', 'modules.livetv_f1_search', 'modules.f1_calendar')):
+			sys.path.insert(0, MODULES_LIB)
+			from modules import f1_debrid, livetv_f1_search
+
+			hash_value = next(iter(livetv_f1_search._archive_rows('2026', fixture['event_id'])))
+			duplicate = json.dumps([{'name': 'Formula 1 2026 R06 Monaco Grand Prix Practice 2', 'info_hash': hash_value}]).encode()
+			for response in (Mock(side_effect=OSError), lambda *args, **kwargs: BytesIO(duplicate)):
+				status = []
+				with patch.object(livetv_f1_search, 'urlopen', side_effect=response):
+					candidates = livetv_f1_search.search(fixture, status)
+					self.assertEqual(len(candidates), 1)
+					self.assertEqual(candidates[0]['pack'], 'unlabelled')
+					verified = f1_debrid.cached_pack_candidates(candidates, fixture)
+					self.assertEqual(f1_debrid.cached_pack_candidates(candidates, dict(fixture, session_code='FP4')), [])
+				self.assertEqual(status, ['partial'])
+				self.assertCountEqual([row['debrid'] for row in verified], ['realdebrid', 'alldebrid'])
+				self.assertTrue(all(row['session_verified'] and row['availability'] == 'unknown' for row in verified))
+			stale = {hash_value: {'name': 'Formula 1 2026 R07 Barcelona Grand Prix SkyUHD', 'info_hash': hash_value, 'files': ['Practice 2.mkv']}}
+			with patch.object(livetv_f1_search, '_archive_rows', return_value=stale), patch.object(livetv_f1_search, 'urlopen', side_effect=lambda *args, **kwargs: BytesIO(duplicate)):
+				results = livetv_f1_search.search(fixture)
+			self.assertEqual([row['name'] for row in results], ['Formula 1 2026 R06 Monaco Grand Prix Practice 2'])
+			self.assertEqual(results[0]['pack'], '')
 	def test_public_manifest_budget_preserves_three_candidates_per_pack_class(self):
 		fixture = {'date': '2026-11-08', 'race_name': 'São Paulo Grand Prix', 'race_round': 20, 'session_code': 'FP2'}
 		press_conference = '01.F1.2026.R20.São.Paulo.Grand.Prix.Drivers.Press.Conference.SkyF1HD.1080P.mkv'

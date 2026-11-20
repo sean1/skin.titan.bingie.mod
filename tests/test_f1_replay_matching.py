@@ -1,3 +1,4 @@
+import json
 import sys
 import unittest
 from io import BytesIO
@@ -11,10 +12,72 @@ MODULES_LIB = str(Path(__file__).resolve().parents[1] / 'resources' / 'lib')
 
 with temporary_modules(isolate=('modules.f1_calendar', 'modules.livetv_f1_search', 'modules.f1_pack_files')):
 	sys.path.insert(0, MODULES_LIB)
-	from modules import f1_pack_files, livetv_f1_search
+	from modules import f1_calendar, f1_pack_files, livetv_f1_search
 
 
 class F1ReplayMatchingTests(unittest.TestCase):
+	def test_mexican_grand_prix_title_matches_mexico_city(self):
+		aliases = f1_calendar._calendar_aliases({'raceName': 'Mexico City Grand Prix', 'Circuit': {'circuitId': 'rodriguez', 'Location': {'locality': 'Mexico City', 'country': 'Mexico'}}})
+		fixture = {'date': '2026-10-30', 'race_name': 'Mexico City Grand Prix', 'aliases': aliases, 'race_round': 19, 'session_code': 'FP2'}
+		title = 'F1.2026.R19.Mexican.Grand.Prix.SkyF1HD.1080P'
+		files = [{'filename': title + '/06.F1.2026.R19.Mexican.Grand.Prix.Free.Practice.Two.SkyF1HD.1080P.mkv'}]
+		self.assertEqual(livetv_f1_search.pack_type(title, fixture), 'unlabelled')
+		self.assertEqual(livetv_f1_search.pack_type(title.replace('R19', 'R18'), fixture), '')
+		self.assertEqual(livetv_f1_search.pack_type(title.replace('Mexican', 'United.States'), fixture), '')
+		self.assertEqual(f1_pack_files.matching_files(files, fixture, 'weekend'), files)
+		self.assertEqual(f1_pack_files.matching_files(files, dict(fixture, session_code='FP1'), 'weekend'), [])
+
+	def test_1998_brazil_combined_practice_uses_day_or_both_slots(self):
+		fixture = {'date': '1998-03-28', 'race_name': 'Brazilian Grand Prix', 'race_round': 2, 'session_code': 'FP2', 'practice_weekday': 5, 'aggregate_daily_practice': True}
+		base = 'Formula 1 1998 R02 Brazilian Grand Prix'
+		for title in ('Saturday Free Practice', 'FP3 and FP4', 'Saturday Practice FP3 and FP4'):
+			with self.subTest(title=title):
+				self.assertTrue(livetv_f1_search._match(f'{base} {title}', fixture))
+				self.assertEqual(livetv_f1_search.pack_type(f'{base} {title}', fixture), '')
+		wrong = ('FP2', 'Friday Practice', 'Friday Practice FP3 and FP4', 'Saturday Second Free Practice', 'Pre Saturday Practice', 'Saturday Practice 2', 'Sunday Practice FP3 and FP4', 'Sunday Warm-up FP3 and FP4')
+		for title in wrong:
+			with self.subTest(title=title):
+				self.assertFalse(livetv_f1_search._match(f'{base} {title}', fixture))
+		saturday = {'filename': 'Saturday Practice/Saturday Practice.mkv'}
+		friday = {'filename': 'Friday Practice/Saturday Practice.mkv'}
+		sunday = {'filename': 'Sunday Practice/FP3 and FP4.mkv'}
+		self.assertEqual(f1_pack_files.matching_files([saturday, friday, sunday], fixture, 'weekend'), [saturday])
+	def test_singapore_release_checks_compact_round_and_rejects_telemetry(self):
+		fixture = {'date': '2026-10-09', 'race_name': 'Singapore Grand Prix', 'race_round': 17, 'session_code': 'FP1'}
+		title = 'F-1.2026.17GP.Singapore.01.FP01.F1TV.RUS+ENG+INT.50fps.1080p'
+		broadcast = {'filename': title + '.mkv'}
+		data = {'filename': 'DataPack/02.FP1/' + title + '.DataChannel.mkv'}
+		tracker = {'filename': 'DataPack/02.FP1/' + title + '.DriverTracker.mkv'}
+		wrong_round = {'filename': broadcast['filename'].replace('17GP', '16GP')}
+		self.assertTrue(livetv_f1_search._match(broadcast['filename'], fixture))
+		self.assertFalse(livetv_f1_search._match(data['filename'], fixture))
+		self.assertFalse(livetv_f1_search._match(tracker['filename'], fixture))
+		self.assertFalse(livetv_f1_search._match(wrong_round['filename'], fixture))
+		self.assertEqual(f1_pack_files.matching_files([data, broadcast, tracker, wrong_round], fixture, 'weekend'), [broadcast])
+
+	def test_sprint_qualify_filename_matches_only_sprint_qualifying(self):
+		fixture = {'date': '2026-10-09', 'race_name': 'Singapore Grand Prix', 'race_round': 17, 'session_code': 'SS'}
+		filename = 'F-1.2026.17GP.Singapore.02.Sprint.Qualify.F1TV.RUS3+ENG+INT.50fps.1080p.mkv'
+		file = {'filename': filename}
+		sprint = dict(fixture, session_code='SR')
+		self.assertTrue(livetv_f1_search._match(filename, fixture))
+		self.assertFalse(livetv_f1_search._match(filename, sprint))
+		self.assertEqual(f1_pack_files.matching_files([file], fixture, 'weekend'), [file])
+		self.assertEqual(f1_pack_files.matching_files([file], sprint, 'weekend'), [])
+	def test_search_decodes_city_and_session_names_before_matching(self):
+		titles = ['Formula 1 2026 S&atilde;o Paulo Grand Prix Practice 2', 'Formula 1 2013 Australian Grand Prix Qualifying - Q2 &amp; Q3 - ']
+		payload = json.dumps([{'name': title, 'info_hash': str(index) * 40} for index, title in enumerate(titles, 1)]).encode()
+		stubs = {
+			'modules.f1_knaben': SimpleNamespace(search=lambda *args, **kwargs: [], search_season=lambda year: ([], False)),
+			'modules.f1_blackhole': SimpleNamespace(search=lambda query: ([], False)),
+			'modules.f1_torrentdownload': SimpleNamespace(search=lambda query: []),
+		}
+		sao_paulo = {'date': '2026-11-06', 'race_name': 'São Paulo Grand Prix', 'session_code': 'FP2'}
+		melbourne = {'date': '2013-03-17', 'race_name': 'Australian Grand Prix', 'session_code': 'QUAL', 'qualifying_portion': 'q2-q3'}
+		with temporary_modules(stubs), patch.object(livetv_f1_search, 'urlopen', side_effect=lambda *args, **kwargs: BytesIO(payload)):
+			self.assertEqual([row['name'] for row in livetv_f1_search.search(sao_paulo)], ['Formula 1 2026 São Paulo Grand Prix Practice 2'])
+			self.assertEqual([row['name'] for row in livetv_f1_search.search(melbourne)], ['Formula 1 2013 Australian Grand Prix Qualifying - Q2 & Q3 -'])
+
 	def test_practice_search_matches_unseeded_titles_by_venue_and_session(self):
 		fixture = {'date': '2026-06-26', 'race_name': 'Austrian Grand Prix', 'race_round': 8, 'aliases': ['Austria'], 'session_code': 'FP3'}
 		correct = 'Formula 1 2026 Austria Rd 08 FP3 1080P Multi-Audio F1TV WEB-DL AAC2.0 H.265 F1GP'
@@ -82,15 +145,22 @@ class F1ReplayMatchingTests(unittest.TestCase):
 		self.assertEqual(f1_pack_files.matching_files(files, dict(fixture, qualifying_portion='q2-q3'), 'weekend'), files)
 		self.assertEqual(f1_pack_files.matching_files(files, dict(fixture, qualifying_portion='q1'), 'weekend'), [])
 
-	def test_canadian_manifest_bare_practice_requires_single_practice_and_exact_round(self):
-		practice = '03.F1.2026.R05.Canadian.Grand.Prix.Practice.Sky.Sports.F1.UHD.2160p.mkv'
-		fixture = {'date': '2026-05-22', 'race_name': 'Canadian Grand Prix', 'race_round': 5, 'session_code': 'FP1', 'single_practice': True}
-		files = [{'filename': practice}]
-		self.assertEqual(f1_pack_files.matching_files(files, fixture, 'weekend'), files)
-		self.assertEqual(f1_pack_files.matching_files(files, dict(fixture, single_practice=False), 'weekend'), [])
-		for filename in (practice.replace('R05.', ''), practice.replace('R05.', 'R06.'), practice.replace('Canadian', 'Miami'), practice.replace('Practice.', 'Practice.Highlights.')):
-			with self.subTest(filename=filename):
-				self.assertEqual(f1_pack_files.matching_files([{'filename': filename}], fixture, 'weekend'), [])
+	def test_sky_manifest_bare_practice_requires_single_practice_and_exact_round(self):
+		for venue, round_number, day, tag in (('Canadian', 5, '2026-05-22', 'Sky.Sports.F1.UHD.2160p'), ('Chinese', 2, '2026-03-13', 'SkyF1HD.1080P')):
+			round_tag = f'R{round_number:02d}.'
+			practice = f'03.F1.2026.{round_tag}{venue}.Grand.Prix.Practice.{tag}.mkv'
+			fixture = {'date': day, 'race_name': f'{venue} Grand Prix', 'race_round': round_number, 'session_code': 'FP1', 'single_practice': True}
+			files = [{'filename': practice}]
+			self.assertEqual(f1_pack_files.matching_files(files, fixture, 'weekend'), files)
+			self.assertEqual(f1_pack_files.matching_files(files, dict(fixture, single_practice=False), 'weekend'), [])
+			wrong = (practice.replace(round_tag, ''), practice.replace(round_tag, 'R06.'), practice.replace(venue, 'Miami'), practice.replace('Practice.', 'Practice.Highlights.'))
+			for filename in wrong:
+				with self.subTest(filename=filename):
+					self.assertEqual(f1_pack_files.matching_files([{'filename': filename}], fixture, 'weekend'), [])
+		chinese_sprint = {'date': '2026-03-14', 'race_name': 'Chinese Grand Prix', 'race_round': 2, 'session_code': 'SR'}
+		notebook = '07.F1.2026.R02.Chinese.Grand.Prix.Teds.Sprint.Notebook.SkyF1HD.1080P.mkv'
+		self.assertFalse(livetv_f1_search._match(notebook, chinese_sprint))
+		self.assertEqual(f1_pack_files.matching_files([{'filename': notebook}], chinese_sprint, 'weekend'), [])
 
 	def test_named_multi_episodes_match_bahrain_not_their_episode_number(self):
 		fixture = {'date': '2026-10-04', 'race_name': 'Bahrain Grand Prix in Malaysia', 'race_round': 16, 'aliases': ['Bahrain', 'Sepang', 'Malaysia']}

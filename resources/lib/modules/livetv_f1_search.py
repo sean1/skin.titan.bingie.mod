@@ -4,7 +4,9 @@ import re
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from html import unescape
 from http.client import HTTPException
+from pathlib import Path
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
@@ -44,6 +46,7 @@ _DAILY_PRACTICE_LABEL = rf'(thursday|friday|saturday)\s+({_PRACTICE_ORDINAL})\s+
 _DAILY_PRACTICE_SLOT = re.compile(rf'\b{_DAILY_PRACTICE_LABEL}\b')
 _DAILY_PRACTICE_WEEKDAYS = {3: 'THURSDAY', 4: 'FRIDAY', 5: 'SATURDAY'}
 _DAILY_PRACTICE_SLOTS = {f'FP_SLOT_{day}_{ordinal}' for day in _DAILY_PRACTICE_WEEKDAYS.values() for ordinal in ('FIRST', 'SECOND')}
+_AGGREGATE_PRACTICE_DAY = re.compile(rf'\b{_WEEKDAY}\s+{_PRACTICE_LABEL}\b(?!\s+(?:0?[1-4]|one|two|three|four)\b)')
 _PRACTICE_2003_LABELS = {
 	'FP_THURSDAY': rf'thursday\s+(?:{_PRACTICE_LABEL}|fp\s*0?[1-4]|0?[1-4]\s*practice)',
 	'FP_FRIDAY': rf'friday\s+(?:{_PRACTICE_LABEL}|fp\s*0?[1-4]|0?[1-4]\s*practice)',
@@ -73,9 +76,10 @@ _PACK_EXTRAS = re.compile(
 	rf'\b(?:(?:pre|pos|post|(?:antes|depois)\s+d[ao])\s+(?:corrida|{_PORTUGUESE_PRACTICE}|{_PORTUGUESE_QUALIFYING})|corrida(?:\s+sprint)?\s+em\s+\d{{1,3}}|analises?|melhores\s+momentos|resumos?|resultados?\s+d[ao]\s+(?:corrida|{_PORTUGUESE_PRACTICE}|{_PORTUGUESE_QUALIFYING}))\b|'
 	rf'\b(?:pre|post)\s*{_WEEKDAY}(?:\s+(?:{_DAY_PERIOD}))?\s+qual(?:ifying|ification|i)?\b|'
 	rf'\b(?:pre|post)\s*{_DAILY_PRACTICE_LABEL}\b|'
+	rf'\b(?:pre|post)\s*(?:thursday|friday|saturday)\s+{_PRACTICE_LABEL}\b|'
 	rf'\b(?:pre|post)\s*(?:{"|".join(_PRACTICE_2003_LABELS.values())})\b|'
 	r'\b(?:highlights?|recaps?|previews?|interviews?|analysis|review|documentary|drive to survive|onboard|on board|build\s*up|press\s+conferences?|paddock\s+uncut|season\s+launch|the\s+f\s*1\s+show|samples?|resumen(?:es)?|previ[ao]s?|entrevistas?|analisis|sestrihy?)\b'
-	r'|\b(?:ted\s*s\s+(?:(?:qualifying|race)\s+)?notebook|ruedas?\s+de\s+prensa)\b'
+	r'|\b(?:ted\s*s\s+(?:(?:qualifying|race|sprint)\s+)?notebook|ruedas?\s+de\s+prensa)\b'
 	r'|^(?:pre|post)\s+(?:f\s*1|formula\s*(?:1|one))\b'
 	rf'|\b(?:pre|post)\s*(?:race|qualifying|qualification|quali|qual|(?:free\s*)?practice|0?[1-4]\s*practice|sprint|shootout|fp\s*0?[1-4]|s?q\s*0?[123]|(?:first|second|third|1st|2nd|3rd)\s+qual(?:ifying|ification|i)?|{_WARM_UP_LABEL}|{_FAMILIARISATION_LABEL}|show)\b'
 	rf'|\b(?:pre|post|(?:antes|despues)\s+de(?:l|\s+l(?:a|os))?)\s*(?:{_SPANISH_PRACTICE}|{_SPANISH_QUALIFYING}|carrera|{_CZECH_RACE})\b'
@@ -83,9 +87,10 @@ _PACK_EXTRAS = re.compile(
 	rf'|\b(?:(?:race|sprint|qualifying|shootout)\s+in\s+\d{{1,3}}|race\s+(?:starts?|radio|reports?|summar(?:y|ies))|starting\s+grid|grid\s+walk|(?:{_WARM_UP_LABEL}|formation|parade)\s+laps?)\b')
 _SUPPORT_SERIES = re.compile(r'\b(?:f\s*1\s*academy|formula\s*(?:1|one)\s*academy|f\s*[234]|formula\s*[234]|formula\s+(?:two|three|four)|gp\s*[23])\b')
 _PACK_REJECT = re.compile(_PACK_EXTRAS.pattern + '|' + _SUPPORT_SERIES.pattern)
-_FILE_REJECT = re.compile(_PACK_REJECT.pattern + r'|\bsprint\s+(?:weekend|pack|sessions?)\b|\b(?:complete|full)\s+(?:race\s+)?(?:weekend|season)\b|\b(?:weekend|season)\s+(?:pack|collection)\b')
+_FILE_REJECT = re.compile(_PACK_REJECT.pattern + r'|\b(?:data\s*channel|driver\s*tracker)\b'
+	r'|\bsprint\s+(?:weekend|pack|sessions?)\b|\b(?:complete|full)\s+(?:race\s+)?(?:weekend|season)\b|\b(?:weekend|season)\s+(?:pack|collection)\b')
 _QUALIFYING = rf'(?:qualifying|qualification|quali|qual|{_SPANISH_QUALIFYING}|{_FRENCH_QUALIFYING}|{_PORTUGUESE_QUALIFYING})'
-_SPRINT_QUALIFYING = re.compile(rf'\bsprint\s+(?:race\s+)?(?:{_QUALIFYING}|shootout)\b(?:\s+(?:(?:session|stage|part)\s+)?(?:(?:sq|q)\s*)?0?([123])\b)?')
+_SPRINT_QUALIFYING = re.compile(rf'\bsprint\s+(?:race\s+)?(?:{_QUALIFYING}|qualify|shootout)\b(?:\s+(?:(?:session|stage|part)\s+)?(?:(?:sq|q)\s*)?0?([123])\b)?')
 _SPRINT_WEEKEND_INVENTORY = re.compile(r'\b(?:free\s+)?practice(?:\s+1)?\s*[,.]\s*sprint\s+(?:qualifying|qualification|shootout)\s*[,.]\s*sprint(?:\s+race)?\s*[,.]\s*(?:qualifying|qualification)\s*[,.]\s*race\b')
 _WEEKEND_STAGE = re.compile(r'(?:^|/)\s*stage\s+(\d{1,3})\s*(?=/|$)')
 _WEEKDAY_QUALIFYING = re.compile(rf'\b(?:{_WEEKDAY}(?:\s+({_DAY_PERIOD}))?\s+and\s+)?{_WEEKDAY}(?:\s+({_DAY_PERIOD}))?\s+{_QUALIFYING}\b(?:\s+(?:practice\s+)?({_DAY_PERIOD})\b)?')
@@ -169,6 +174,12 @@ def _session_matches(codes, fixture):
 		weekday = _DAILY_PRACTICE_WEEKDAYS.get(fixture.get('practice_weekday'))
 		ordinal = 'FIRST' if code in ('FP1', 'FP3') else 'SECOND'
 		return bool(weekday) and codes == {f'FP_SLOT_{weekday}_{ordinal}'}
+	if fixture.get('aggregate_daily_practice') is True:
+		weekday = _DAILY_PRACTICE_WEEKDAYS.get(fixture.get('practice_weekday'))
+		if not weekday or code not in ('FP1', 'FP2'): return False
+		day = {'FP_DAY_' + weekday}
+		pair = {'FP1', 'FP2'} if code == 'FP1' else {'FP3', 'FP4'}
+		return codes in (day, pair, day | pair)
 	if code in ('FP2', 'FP3') and _fixture_year(fixture) == '2003' and fixture.get('practice_format_2003') == 'combined': return False
 	weekdays = codes.intersection(_QUALIFYING_WEEKDAYS)
 	period = fixture.get('qualifying_period')
@@ -238,7 +249,7 @@ def _session_codes(normalized_text: str, *, season: str = '') -> set[str]:
 		codes.update('QUAL_' + day.upper() for day in re.findall(rf'\b{_WEEKDAY}\b', normalized_text))
 	normalized_text = _NUMBERED_QUALIFYING.sub(' ', normalized_text)
 	normalized_text = _WEEKDAY_QUALIFYING.sub(' ', normalized_text)
-	if season in ('2000', '2001', '2002'):
+	if '1998' <= season <= '2002':
 		for day, ordinal in _DAILY_PRACTICE_SLOT.findall(normalized_text):
 			codes.add('FP_SLOT_' + day.upper() + ('_FIRST' if ordinal in ('first', '1st') else '_SECOND'))
 		normalized_text = _DAILY_PRACTICE_SLOT.sub(' ', normalized_text)
@@ -266,6 +277,9 @@ def _session_codes(normalized_text: str, *, season: str = '') -> set[str]:
 
 
 def _codes_for_fixture(text, fixture, year):
+	if fixture.get('aggregate_daily_practice') is True:
+		days = {'FP_DAY_' + day.upper() for day in re.findall(rf'\b{_WEEKDAY}\b', text)}
+		return _session_codes(_AGGREGATE_PRACTICE_DAY.sub(' ', text), season=year) | days
 	codes = _session_codes(text, season=year)
 	if fixture.get('qualifying_portion') and codes.intersection(_QUALIFYING_WEEKDAYS.keys() | {'QUAL', 'Q1', 'Q2', 'Q3'}):
 		days = {'QUAL_' + day.upper() for day in re.findall(rf'\b{_WEEKDAY}\b', text)}
@@ -395,7 +409,9 @@ def _event_matches(text, fixture, folder_rounds=(), *, require_name=False):
 
 
 def _explicit_rounds(text):
-	return [int(value) for value in re.findall(r'\b(?:round|rd|r)\s*(\d{1,3})\b', text)]
+	rounds = re.findall(r'\b(?:round|rd|r)\s*(\d{1,3})\b', text)
+	rounds += re.findall(r'\b(?:f\s*1|formula\s*(?:1|one))\s+(?:19|20)\d{2}\s+(\d{1,2})gp\b', text)
+	return [int(value) for value in rounds]
 
 
 def _round_numbers(text):
@@ -457,7 +473,7 @@ def pack_type(name, fixture):
 	rounds = _round_numbers(text)
 	event_named = bool(fixture.get('round_aliases')) and event_name_matches(text, fixture)
 	if not selected or not _rounds_agree(rounds, fixture, require_known=True, event_named=event_named): return ''
-	codes = _session_codes(session_text, season=year)
+	codes = _codes_for_fixture(session_text, fixture, year) if fixture.get('aggregate_daily_practice') is True else _session_codes(session_text, season=year)
 	if 'FAM' in codes and not _qatar_familiarisation(fixture): return ''
 	if code == 'TT' and 'TT' in codes:
 		return 'unlabelled' if codes <= {'TT', 'QUAL'} and event_name_matches(text, fixture) else ''
@@ -479,11 +495,24 @@ def pack_type(name, fixture):
 	return ''
 
 
+def _archive_rows(year, event_id):
+	try:
+		with Path(__file__).with_name('f1_pack_manifests.json').open(encoding='utf-8') as source:
+			rows = json.load(source).get(year, {}).get(event_id, [])
+	except (OSError, ValueError, TypeError, AttributeError, RecursionError): return {}
+	if not isinstance(rows, list): return {}
+	return {row['info_hash']: row for row in rows if isinstance(row, dict) and isinstance(row.get('info_hash'), str) and _HASH.fullmatch(row['info_hash'])
+		and row['info_hash'] != '0' * 40 and _text(row.get('name')) and isinstance(row.get('files'), list) and row['files']
+		and all(isinstance(filename, str) and 0 < len(filename) <= 2000 and '\x00' not in filename for filename in row['files'])}
+
+
 def search(fixture, status=None):
 	"""Search the public index; return candidate hashes matching the supplied session."""
 	if not isinstance(fixture, dict): return []
 	year = _fixture_year(fixture)
 	if not year: return []
+	archived = _archive_rows(year, fixture.get('event_id')) if isinstance(fixture.get('event_id'), str) else {}
+	archived = {info_hash: row for info_hash, row in archived.items() if pack_type(row['name'], fixture)}
 	aliases = fixture.get('aliases') if isinstance(fixture.get('aliases'), list) else []
 	others = fixture.get('other_event_aliases') if isinstance(fixture.get('other_event_aliases'), list) else []
 	other_names = _other_names(others)
@@ -511,7 +540,7 @@ def search(fixture, status=None):
 		jobs.extend(('piratebay', query) for query in ('Formula 1 ' + primary, full_query, short_query))
 		jobs.extend((('knaben_archive' if int(year) < current_year else 'knaben', full_query), ('knaben', short_query), ('blackhole', full_query), ('blackhole', short_query)))
 		session = {'FP1': 'practice 1', 'FP2': 'practice 2', 'FP3': 'practice 3', 'FP4': 'practice 4', 'FAM': 'familiarisation', 'SS': 'sprint qualifying', 'SR': 'sprint', 'QUAL': 'qualifying', 'Q1': 'qualifying 1', 'Q2': 'qualifying 2', 'Q3': 'qualifying 3', 'WU': 'warm up', 'RACE': 'race'}.get(code)
-		if fixture.get('qualifying_practice') or fixture.get('split_daily_practice') is True: session = fixture['session_label'].lower()
+		if fixture.get('qualifying_practice') or fixture.get('split_daily_practice') or fixture.get('aggregate_daily_practice'): session = fixture['session_label'].lower()
 		if session: jobs.append(('piratebay', full_query + ' ' + session))
 		if fixture.get('qualifying_portion'):
 			qualifying_query = 'Formula 1 ' + year + ' ' + _text(fixture.get('race_name') or fixture.get('event')) + ' qualifying'
@@ -524,7 +553,7 @@ def search(fixture, status=None):
 		if code in ('Q1', 'Q2') and fixture.get('split_qualifying') is True: jobs.append(('piratebay', full_query + ' qualifying'))
 		if code in ('FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'Q3', 'WU'): jobs.append(('piratebay', short_query + ' ' + code.lower()))
 		if fixture.get('qualifying_practice'): jobs.append(('torrentdownload', short_query + ' ' + session))
-		if fixture.get('split_daily_practice') is True: jobs.append(('knaben_archive', full_query + ' ' + session))
+		if fixture.get('split_daily_practice') or fixture.get('aggregate_daily_practice'): jobs.append(('knaben_archive', full_query + ' ' + session))
 		if code in ('FP4', 'WU') and int(year) <= 2005: jobs.append(('torrentdownload', full_query + ' ' + session))
 		if code in ('FAM', 'SS') and _qatar_familiarisation(fixture):
 			jobs.extend((source, full_query + ' familiarisation') for source in ('knaben', 'torrentdownload'))
@@ -575,20 +604,24 @@ def search(fixture, status=None):
 	with ThreadPoolExecutor(max_workers=min(18, len(jobs))) as executor:
 		batches = list(executor.map(fetch, jobs))
 	successes = sum(batch is not None for batch, _ in batches)
-	if status is not None and (successes < len(batches) or any(degraded for _, degraded in batches)): status.append('partial' if successes else 'unavailable')
-	if not successes: raise SearchUnavailable('Formula 1 search is unavailable')
-	rows = [row for batch, _ in batches if batch is not None for row in batch]
+	if status is not None and (successes < len(batches) or any(degraded for _, degraded in batches)): status.append('partial' if successes or archived else 'unavailable')
+	if not successes and not archived: raise SearchUnavailable('Formula 1 search is unavailable')
+	rows = [*archived.values(), *(row for batch, _ in batches if batch is not None for row in batch)]
 	detail_paths = {str(row.get('info_hash') or '').lower(): row['detail_path'] for row in rows if isinstance(row, dict) and row.get('source') == 'torrentdownload' and row.get('detail_path')}
 	results, seen, unlabelled = [], set(), {}
 	for row in rows:
 		if not isinstance(row, dict): continue
 		name, info_hash = row.get('name'), str(row.get('info_hash') or '').lower()
-		if not _HASH.fullmatch(info_hash) or info_hash == '0' * 40 or info_hash in seen: continue
+		if not isinstance(name, str) or not _HASH.fullmatch(info_hash) or info_hash == '0' * 40 or info_hash in seen: continue
+		if info_hash in archived and row is not archived[info_hash]: continue
+		name = unescape(name).strip()
 		pack = pack_type(name, fixture)
 		if not pack and not _match(name, fixture): continue
 		try: size = max(0, int(row.get('size') or 0))
 		except (ValueError, TypeError, OverflowError): size = 0
 		candidate = {'name': name, 'hash': info_hash, 'magnet': 'magnet:?xt=urn:btih:%s&dn=%s' % (info_hash, quote(name)), 'size': size, 'source': row.get('source', 'piratebay'), 'pack': pack}
+		if info_hash in archived:
+			candidate.update(source='archive', manifest_files=row['files'])
 		if pack and info_hash in detail_paths: candidate['detail_path'] = detail_paths[info_hash]
 		if pack == 'unlabelled':
 			unlabelled.setdefault(info_hash, candidate)

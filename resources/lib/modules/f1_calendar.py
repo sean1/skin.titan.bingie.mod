@@ -37,6 +37,7 @@ def _calendar_aliases(entry):
 	result = [alias for alias in aliases if 4 <= len(alias) <= 100 and alias not in _GENERIC_ALIASES and re.search(r'[a-z]', alias)]
 	circuit_name = _normal(circuit.get('circuitName'))
 	if circuit.get('circuitId') == 'spa': result.append('spa')
+	if circuit.get('circuitId') == 'rodriguez' and _normal(entry.get('raceName')) == 'mexico city grand prix': result.append('mexican grand prix')
 	if circuit_name == 'circuit de spa francorchamps': result.append('spa francorchamps')
 	if circuit_name == 'circuit of the americas': result.append('cota')
 	return list(dict.fromkeys(result))

@@ -5,7 +5,7 @@ from modules import livetv_f1_search as f1_search
 
 _DIMENSIONS = re.compile(r'\b(?:640|720|1280|1366|1440|1600|1920|2048|2560|3840|4096|7680)\s*x\s*(?:360|480|540|576|720|768|900|1080|1088|1440|2160|4320)\b')
 _F1 = re.compile(r'\b(?:f\s*1|formula\s*(?:1|one))\b(?!\s*academy\b)')
-_SKY_PRACTICE = re.compile(r'\b(?:grand prix|gp)\s+practice\s+sky sports f\s*1\b')
+_SKY_PRACTICE = re.compile(r'\b(?:grand prix|gp)\s+practice\s+(?:sky\s+sports\s+f\s*1|sky\s*f\s*1\s*(?:hd|uhd))\b')
 _QUALIFYING_DAYS = {'Q1', 'Q2', 'Q3'}
 _QUALIFYING_PHASES = {'SQ1', 'SQ2', 'SQ3'}
 _SATURDAY_PRACTICE_SLOTS = {'FP_SATURDAY_FIRST', 'FP_SATURDAY_SECOND'}
@@ -28,6 +28,7 @@ def _path_rounds(text, folder_rounds):
 def _folder_conflicts(folders, filename, fixture, *, season, require_exact_session=False):
 	code = fixture['session_code']
 	scoped_codes = f1_search._QUALIFYING_WEEKDAYS.keys() | f1_search._DAILY_PRACTICE_SLOTS | f1_search._PRACTICE_2003_PATTERNS.keys()
+	if fixture.get('aggregate_daily_practice') is True: scoped_codes.update(('FP_DAY_THURSDAY', 'FP_DAY_FRIDAY', 'FP_DAY_SATURDAY', 'FP_DAY_SUNDAY'))
 	for index, part in enumerate(folders):
 		folder = f1_search._text(part)
 		session_text = f1_search._session_text(part)

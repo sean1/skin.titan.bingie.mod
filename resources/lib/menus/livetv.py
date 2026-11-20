@@ -24,10 +24,10 @@ import xbmcgui
 import xbmcplugin
 from modules import kodi_utils as ku
 from modules.livetv_catalog import get as _catalog_get
-from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact
+from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact, _usable_streams
 from modules.livetv_vpn_relay import open_url as _vpn_open, register as _vpn_register
 from modules.livetv_vpn import failure_message as _vpn_failure_message
-from modules.livetv_vpn import request_connection as _request_vpn, wait_for_connection as _wait_for_vpn
+from modules.livetv_vpn import report_catalog_problem, request_connection as _request_vpn, wait_for_connection as _wait_for_vpn
 from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
 from modules import livetv_soccer_logos as _soccer_logos
@@ -796,11 +796,27 @@ def _request(account, action, *, _deadline=None, _on_timing=None, _vpn_opener=No
 
 def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=None, on_timing=None, notify_stale=True, _deadline=None, **params):
 	on_stale = (lambda: _error(_vpn_failure_message() or 'Showing saved channels; check the VPN or provider connection.')) if notify_stale else None
-	fetch = _request if _deadline is None and on_timing is None else lambda account, action, **options: _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
+	full_live_catalog = action == 'get_live_streams' and not params
+	degraded = False
+
+	def fetch(account, action, **options):
+		nonlocal degraded
+		if not full_live_catalog: return _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
+		started = time.monotonic()
+		degraded = False
+		try: data = _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
+		except (OSError, HTTPException, ValueError, TypeError):
+			degraded = _deadline is None or _deadline - started >= 1
+			raise
+		degraded = time.monotonic() - started >= 15 or not _usable_streams(data)
+		return data
+
 	deadline_option = {} if _deadline is None else {'_deadline': _deadline}
 	if on_source: deadline_option['on_source'] = on_source
 	if on_timing: deadline_option['on_timing'] = on_timing
-	return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
+	try: return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
+	finally:
+		if degraded: report_catalog_problem()
 
 
 def _browse_catalog(account, action, *, status=None, retry=False, _saved=None, **params):

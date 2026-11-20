@@ -16,6 +16,7 @@ import os
 import re
 import stat
 import tempfile
+import time
 import urllib.error
 import urllib.request
 
@@ -27,6 +28,7 @@ _RELAY_PORT = 10997
 _CONFIG = 'mullvad-wireguard.conf'
 _PENDING = 'mullvad-pending.json'
 _BINDING = 'mullvad-device-binding.json'
+_SPEED_ATTEMPT = 'relay-speed-last-attempt'
 _LOCK = 'mullvad-provision.lock'
 
 
@@ -297,6 +299,32 @@ def _lock_file(directory):
 	path = os.path.join(directory, _LOCK)
 	fd = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
 	return os.fdopen(fd, 'r+')
+
+
+def record_speed_attempt(private_directory, minimum_interval=0):
+	"""Record a VPN speed attempt if its per-device cooldown has elapsed."""
+	try:
+		if not 0 <= minimum_interval < float('inf'):
+			return False
+		info = os.lstat(private_directory)
+		if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077:
+			return False
+		path = os.path.join(private_directory, _SPEED_ATTEMPT)
+		with _lock_file(private_directory) as lock:
+			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+			try:
+				info = os.lstat(path)
+			except FileNotFoundError:
+				pass
+			else:
+				if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077:
+					return False
+				if minimum_interval and time.time() - info.st_mtime < minimum_interval:
+					return False
+			_private_write(path, '')
+			return True
+	except (OSError, ValueError, TypeError):
+		return False
 
 
 def _read_json_file(path):

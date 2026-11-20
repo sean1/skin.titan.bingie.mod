@@ -148,13 +148,15 @@ def is_faster(candidate, current):
 	"""Prefer wider coverage, or clearly quicker results for the same providers."""
 	if len(candidate) != len(current): return candidate.keys() > current.keys()
 	if not current or candidate.keys() != current.keys(): return False
-	saved = median(current.values()) - median(candidate.values())
-	if saved < max(1, 0.2 * median(current.values())): return False
+	current_median, current_slowest = median(current.values()), max(current.values())
+	median_saved = current_median - median(candidate.values())
+	slowest_saved = current_slowest - max(candidate.values())
+	if median_saved < max(1, 0.2 * current_median) and slowest_saved < max(1, 0.2 * current_slowest): return False
 	return all(candidate[key] <= value + max(1, 0.2 * value) for key, value in current.items())
 
 
 def best_relay(results, baseline):
 	"""Pick the best measured improvement over a shared baseline."""
 	eligible = ((relay, timings) for relay, timings in results if is_faster(timings, baseline))
-	winner = min(eligible, key=lambda item: (-len(item[1]), median(item[1].values()), max(item[1].values())), default=None)
+	winner = min(eligible, key=lambda item: (-len(item[1]), max(item[1].values()), median(item[1].values())), default=None)
 	return winner[0] if winner is not None else None

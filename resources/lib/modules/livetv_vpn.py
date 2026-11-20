@@ -373,7 +373,9 @@ class VPNManager:
 					raise
 				finally:
 					if can_resume and not switched and not self._stop.is_set():
-						if _signature(config) != signature or library.Start(os.fsencode(config), password.encode('ascii'), port) != 0:
+						try: unchanged = _signature(config) == signature
+						except (OSError, VPNUnavailable): unchanged = False
+						if not unchanged or library.Start(os.fsencode(config), password.encode('ascii'), port) != 0:
 							raise VPNUnavailable('IPTV VPN could not resume after testing')
 						ku.clear_property(_SPEED_PAUSE_PROPERTY)
 		if switched: return switched
@@ -446,7 +448,7 @@ class VPNManager:
 					try: verified = _verify_exit(port, password, speed_switch[1]['hostname']) if speed_switch else _verify_exit(port, password)
 					except Exception: verified = False
 					if verified: break
-					if _requested_at() > handled_request: break
+					if not applying_speed and _requested_at() > handled_request: break
 					if self._stop.wait(_CHECK_SECONDS): break
 				if not verified or self._stop.is_set():
 					connection_failed = not self._stop.is_set()
@@ -487,7 +489,11 @@ class VPNManager:
 								handled_request = requested
 								revoked_signature = signature
 					speed_requested = _speed_requested_at()
-					if not failures and signature != revoked_signature and not replaced and speed_requested > seen_speed and not ku.get_visibility('Player.HasMedia'):
+					if signature == revoked_signature and speed_requested > seen_speed:
+						seen_speed = speed_requested
+						ku.clear_property(_SPEED_REQUEST_PROPERTY)
+						_speed_result('Connect to Live TV before testing VPN servers.')
+					if not failures and not replaced and speed_requested > seen_speed and not ku.get_visibility('Player.HasMedia'):
 						seen_speed = speed_requested
 						ku.clear_property(_SPEED_REQUEST_PROPERTY)
 						try: speed_switch = self._compare_speed(private, library, config, signature, port, password)
@@ -496,7 +502,9 @@ class VPNManager:
 							reconnect = True
 							break
 						except Exception: _speed_result('Unable to complete the VPN server test.')
-						if speed_switch: break
+						if speed_switch:
+							started = False
+							break
 					retry_seconds = _CHECK_SECONDS if pending_check or (failures and requested > handled_request) else _HEALTH_SECONDS
 					self._wait_for_check(retry_seconds, seen_request, seen_speed if not failures else None)
 					if self._stop.is_set(): break

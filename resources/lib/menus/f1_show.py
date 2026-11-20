@@ -14,7 +14,7 @@ from modules.livetv_timezone import get_timezone
 
 
 _SEASON_PROPERTY = 'BingieF1.Season'
-_SCHEDULE_PROPERTY = 'BingieF1.SeasonSchedule.14'
+_SCHEDULE_PROPERTY = 'BingieF1.SeasonSchedule.16'
 _ARCHIVE_PROPERTY = 'BingieF1.EventArchive.2'
 _SCHEDULE_LIMIT = 256 * 1024
 _ARCHIVE_ORDER = {code: index for index, code in enumerate(('PQ', 'FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'Q3', 'QUAL', 'TT', 'WU', 'RACE'))}

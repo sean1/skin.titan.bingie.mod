@@ -35,7 +35,7 @@ class F1ReplayMatchingTests(unittest.TestCase):
 		knaben_search.assert_any_call('F1 2026 fp3', include_dead=True)
 
 	def test_2002_monaco_practice_uses_day_and_position(self):
-		fixture = {'race_name': 'Monaco Grand Prix', 'race_round': 7, 'practice_format_2002': True}
+		fixture = {'race_name': 'Monaco Grand Prix', 'race_round': 7, 'split_daily_practice': True}
 		for number, slot in enumerate(('Thursday First', 'Thursday Second', 'Saturday First', 'Saturday Second'), 1):
 			weekday = 3 if number <= 2 else 5
 			date = '2002-05-23' if weekday == 3 else '2002-05-25'
@@ -51,6 +51,36 @@ class F1ReplayMatchingTests(unittest.TestCase):
 				self.assertFalse(livetv_f1_search._match(f'{title} and {other} Practice', selected))
 				files = [{'filename': f'{slot} Free Practice/{title}.mkv'}]
 				self.assertEqual(f1_pack_files.matching_files(files, selected, 'weekend'), files)
+
+	def test_2001_belgium_second_saturday_practice_keeps_its_identity(self):
+		fixture = {'date': '2001-09-01', 'race_name': 'Belgian Grand Prix', 'race_round': 14, 'session_code': 'FP4', 'split_daily_practice': True, 'practice_weekday': 5}
+		title = 'Formula 1 2001 Belgian Grand Prix Saturday Second Free Practice'
+		self.assertTrue(livetv_f1_search._match(title, fixture))
+		self.assertFalse(livetv_f1_search._match(title.replace('Second', 'First'), fixture))
+
+	def test_2013_australian_qualifying_editions_stay_separate(self):
+		fixture = {'date': '2013-03-16', 'race_name': 'Australian Grand Prix', 'race_round': 1, 'session_code': 'QUAL'}
+		base = 'Formula 1 2013 Australian Grand Prix'
+		listings = {
+			'full': [f'{base} Qualifying'],
+			'q1': [f'{base}-Qualifying-Q1-Only', f'{base} Saturday Qualifying'],
+			'q2-q3': [f'{base}-Qualifying-Q2-and-Q3', f'{base} Qualifying - Q2 & Q3 -', f'{base} Sunday Qualifying', f'{base} Qualifying Sunday'],
+		}
+		for portion, titles in listings.items():
+			selected = dict(fixture, qualifying_portion=portion)
+			for listing_portion, candidates in listings.items():
+				for title in candidates:
+					with self.subTest(portion=portion, title=title):
+						self.assertEqual(livetv_f1_search._match(title, selected), portion == listing_portion)
+						self.assertFalse(livetv_f1_search._match(title.replace('Australian', 'Malaysian'), selected))
+			self.assertFalse(livetv_f1_search._match(f'{base} Qualifying Q2', selected))
+			self.assertFalse(livetv_f1_search._match(f'{base} Qualifying Q2 and Q3 Highlights', selected))
+			self.assertFalse(livetv_f1_search._match(f'{base} Qualifying Q1 Only Sunday', selected))
+			self.assertFalse(livetv_f1_search._match(f'{base} Qualifying Q2 and Q3 Saturday', selected))
+			self.assertFalse(livetv_f1_search._match(f'{base} Saturday Qualifying Sunday', selected))
+		files = [{'filename': 'Q2 and Q3/Qualifying Q2 and Q3.mp4'}]
+		self.assertEqual(f1_pack_files.matching_files(files, dict(fixture, qualifying_portion='q2-q3'), 'weekend'), files)
+		self.assertEqual(f1_pack_files.matching_files(files, dict(fixture, qualifying_portion='q1'), 'weekend'), [])
 
 	def test_canadian_manifest_bare_practice_requires_single_practice_and_exact_round(self):
 		practice = '03.F1.2026.R05.Canadian.Grand.Prix.Practice.Sky.Sports.F1.UHD.2160p.mkv'

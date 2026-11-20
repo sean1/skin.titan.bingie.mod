@@ -40,10 +40,10 @@ _PRACTICE_LABEL = r'(?:free\s*)?practice(?:\s*session)?'
 _FIRST_PRACTICE = r'(?:first|1st)'
 _SECOND_PRACTICE = r'(?:second|2nd)'
 _PRACTICE_ORDINAL = rf'(?:{_FIRST_PRACTICE}|{_SECOND_PRACTICE})'
-_PRACTICE_2002_LABEL = rf'(thursday|friday|saturday)\s+({_PRACTICE_ORDINAL})\s+{_PRACTICE_LABEL}'
-_PRACTICE_2002_SLOT = re.compile(rf'\b{_PRACTICE_2002_LABEL}\b')
-_PRACTICE_2002_WEEKDAYS = {3: 'THURSDAY', 4: 'FRIDAY', 5: 'SATURDAY'}
-_PRACTICE_2002_SLOTS = {f'FP_2002_{day}_{ordinal}' for day in _PRACTICE_2002_WEEKDAYS.values() for ordinal in ('FIRST', 'SECOND')}
+_DAILY_PRACTICE_LABEL = rf'(thursday|friday|saturday)\s+({_PRACTICE_ORDINAL})\s+{_PRACTICE_LABEL}'
+_DAILY_PRACTICE_SLOT = re.compile(rf'\b{_DAILY_PRACTICE_LABEL}\b')
+_DAILY_PRACTICE_WEEKDAYS = {3: 'THURSDAY', 4: 'FRIDAY', 5: 'SATURDAY'}
+_DAILY_PRACTICE_SLOTS = {f'FP_SLOT_{day}_{ordinal}' for day in _DAILY_PRACTICE_WEEKDAYS.values() for ordinal in ('FIRST', 'SECOND')}
 _PRACTICE_2003_LABELS = {
 	'FP_THURSDAY': rf'thursday\s+(?:{_PRACTICE_LABEL}|fp\s*0?[1-4]|0?[1-4]\s*practice)',
 	'FP_FRIDAY': rf'friday\s+(?:{_PRACTICE_LABEL}|fp\s*0?[1-4]|0?[1-4]\s*practice)',
@@ -72,7 +72,7 @@ _PACK_EXTRAS = re.compile(
 	rf'\b(?:no\s+qualif(?:ying|ication)|temps\s+forts|resumes?|debrief(?:ing)?|avant\s+course|apres\s+course|(?:avant|apres)\s+(?:la\s+course|les\s+{_FRENCH_QUALIFYING})|course\s+en\s+\d{{1,3}}|{_FRENCH_QUALIFYING}\s+(?:du\s+)?sprint)\b|'
 	rf'\b(?:(?:pre|pos|post|(?:antes|depois)\s+d[ao])\s+(?:corrida|{_PORTUGUESE_PRACTICE}|{_PORTUGUESE_QUALIFYING})|corrida(?:\s+sprint)?\s+em\s+\d{{1,3}}|analises?|melhores\s+momentos|resumos?|resultados?\s+d[ao]\s+(?:corrida|{_PORTUGUESE_PRACTICE}|{_PORTUGUESE_QUALIFYING}))\b|'
 	rf'\b(?:pre|post)\s*{_WEEKDAY}(?:\s+(?:{_DAY_PERIOD}))?\s+qual(?:ifying|ification|i)?\b|'
-	rf'\b(?:pre|post)\s*{_PRACTICE_2002_LABEL}\b|'
+	rf'\b(?:pre|post)\s*{_DAILY_PRACTICE_LABEL}\b|'
 	rf'\b(?:pre|post)\s*(?:{"|".join(_PRACTICE_2003_LABELS.values())})\b|'
 	r'\b(?:highlights?|recaps?|previews?|interviews?|analysis|review|documentary|drive to survive|onboard|on board|build\s*up|press\s+conferences?|paddock\s+uncut|season\s+launch|the\s+f\s*1\s+show|samples?|resumen(?:es)?|previ[ao]s?|entrevistas?|analisis|sestrihy?)\b'
 	r'|\b(?:ted\s*s\s+(?:(?:qualifying|race)\s+)?notebook|ruedas?\s+de\s+prensa)\b'
@@ -151,6 +151,10 @@ def _practice_2003_matches(markers, codes, fixture):
 
 def _session_matches(codes, fixture):
 	code = fixture.get('session_code')
+	if code == 'QUAL' and (portion := fixture.get('qualifying_portion')):
+		if portion == 'q1': return codes in ({'Q1'}, {'QUAL_SATURDAY'}, {'QUAL_SATURDAY', 'Q1'})
+		if portion == 'q2-q3': return codes in ({'Q2', 'Q3'}, {'QUAL_SUNDAY'}, {'QUAL_SUNDAY', 'Q2', 'Q3'})
+		return codes == {'QUAL'}
 	if code == 'TT':
 		identity = fixture.get('indy_trial_day')
 		weekdays = {marker for marker in codes if marker.startswith('TT_WEEKDAY_')}
@@ -161,10 +165,10 @@ def _session_matches(codes, fixture):
 		return 'TT' in codes and bool(markers) and markers <= valid and (not weekdays or weekdays == {weekday})
 	practice_slots = codes.intersection(_PRACTICE_2003_PATTERNS)
 	if practice_slots: return _practice_2003_matches(practice_slots, codes, fixture)
-	if fixture.get('practice_format_2002') is True:
-		weekday = _PRACTICE_2002_WEEKDAYS.get(fixture.get('practice_weekday'))
+	if fixture.get('split_daily_practice') is True and code in _PRACTICE_PATTERNS:
+		weekday = _DAILY_PRACTICE_WEEKDAYS.get(fixture.get('practice_weekday'))
 		ordinal = 'FIRST' if code in ('FP1', 'FP3') else 'SECOND'
-		return bool(weekday) and codes == {f'FP_2002_{weekday}_{ordinal}'}
+		return bool(weekday) and codes == {f'FP_SLOT_{weekday}_{ordinal}'}
 	if code in ('FP2', 'FP3') and _fixture_year(fixture) == '2003' and fixture.get('practice_format_2003') == 'combined': return False
 	weekdays = codes.intersection(_QUALIFYING_WEEKDAYS)
 	period = fixture.get('qualifying_period')
@@ -234,10 +238,10 @@ def _session_codes(normalized_text: str, *, season: str = '') -> set[str]:
 		codes.update('QUAL_' + day.upper() for day in re.findall(rf'\b{_WEEKDAY}\b', normalized_text))
 	normalized_text = _NUMBERED_QUALIFYING.sub(' ', normalized_text)
 	normalized_text = _WEEKDAY_QUALIFYING.sub(' ', normalized_text)
-	if season == '2002':
-		for day, ordinal in _PRACTICE_2002_SLOT.findall(normalized_text):
-			codes.add('FP_2002_' + day.upper() + ('_FIRST' if ordinal in ('first', '1st') else '_SECOND'))
-		normalized_text = _PRACTICE_2002_SLOT.sub(' ', normalized_text)
+	if season in ('2000', '2001', '2002'):
+		for day, ordinal in _DAILY_PRACTICE_SLOT.findall(normalized_text):
+			codes.add('FP_SLOT_' + day.upper() + ('_FIRST' if ordinal in ('first', '1st') else '_SECOND'))
+		normalized_text = _DAILY_PRACTICE_SLOT.sub(' ', normalized_text)
 		if _PRACTICE_ORDINAL_UNSCOPED.search(normalized_text): codes.add('FP_ORDINAL_UNSCOPED')
 	if season == '2003':
 		codes.update(code for code, pattern in _PRACTICE_2003_PATTERNS.items() if pattern.search(normalized_text))
@@ -258,6 +262,14 @@ def _session_codes(normalized_text: str, *, season: str = '') -> set[str]:
 		if _INDY_TRIAL_RANGE.search(trial_text): codes.add('TT_RANGE')
 		codes.update('TT_WEEKDAY_' + value for value in _INDY_WEEKDAY.findall(trial_text))
 		codes.update('TT_DATE_' + value for value in _indy_dates(trial_text))
+	return codes
+
+
+def _codes_for_fixture(text, fixture, year):
+	codes = _session_codes(text, season=year)
+	if fixture.get('qualifying_portion') and codes.intersection(_QUALIFYING_WEEKDAYS.keys() | {'QUAL', 'Q1', 'Q2', 'Q3'}):
+		days = {'QUAL_' + day.upper() for day in re.findall(rf'\b{_WEEKDAY}\b', text)}
+		if days: return (codes - {'QUAL'}) | days
 	return codes
 
 
@@ -413,7 +425,8 @@ def _match(name, fixture):
 	if _conflicting_year(text, year) or _indy_race_date_conflicts(text, fixture): return False
 	event_named = bool(fixture.get('round_aliases')) and event_name_matches(text, fixture)
 	if not _rounds_agree(_round_numbers(text), fixture, event_named=event_named): return False
-	return _session_matches(_session_codes(session_text, season=year), fixture) and _event_matches(text, fixture, require_name=code == 'PQ' and year == '1965')
+	needs_name = fixture.get('qualifying_portion') in ('q1', 'q2-q3') or code == 'PQ' and year == '1965'
+	return _session_matches(_codes_for_fixture(session_text, fixture, year), fixture) and _event_matches(text, fixture, require_name=needs_name)
 
 
 def pack_type(name, fixture):
@@ -498,8 +511,11 @@ def search(fixture, status=None):
 		jobs.extend(('piratebay', query) for query in ('Formula 1 ' + primary, full_query, short_query))
 		jobs.extend((('knaben_archive' if int(year) < current_year else 'knaben', full_query), ('knaben', short_query), ('blackhole', full_query), ('blackhole', short_query)))
 		session = {'FP1': 'practice 1', 'FP2': 'practice 2', 'FP3': 'practice 3', 'FP4': 'practice 4', 'FAM': 'familiarisation', 'SS': 'sprint qualifying', 'SR': 'sprint', 'QUAL': 'qualifying', 'Q1': 'qualifying 1', 'Q2': 'qualifying 2', 'Q3': 'qualifying 3', 'WU': 'warm up', 'RACE': 'race'}.get(code)
-		if fixture.get('qualifying_practice') or fixture.get('practice_format_2002') is True: session = fixture['session_label'].lower()
+		if fixture.get('qualifying_practice') or fixture.get('split_daily_practice') is True: session = fixture['session_label'].lower()
 		if session: jobs.append(('piratebay', full_query + ' ' + session))
+		if fixture.get('qualifying_portion'):
+			qualifying_query = 'Formula 1 ' + year + ' ' + _text(fixture.get('race_name') or fixture.get('event')) + ' qualifying'
+			jobs.extend((source, qualifying_query) for source in ('knaben_archive', 'torrentdownload'))
 		if code == 'FP1' and fixture.get('single_practice') is True: jobs.append(('piratebay', full_query + ' free practice'))
 		if code == 'PQ' and _fixture_session_allowed(fixture):
 			jobs.extend((('piratebay', full_query + ' pre-qualifying'), ('torrentdownload', full_query + ' prequalifying')))
@@ -508,7 +524,7 @@ def search(fixture, status=None):
 		if code in ('Q1', 'Q2') and fixture.get('split_qualifying') is True: jobs.append(('piratebay', full_query + ' qualifying'))
 		if code in ('FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'Q3', 'WU'): jobs.append(('piratebay', short_query + ' ' + code.lower()))
 		if fixture.get('qualifying_practice'): jobs.append(('torrentdownload', short_query + ' ' + session))
-		if fixture.get('practice_format_2002') is True: jobs.append(('knaben_archive', full_query + ' ' + session))
+		if fixture.get('split_daily_practice') is True: jobs.append(('knaben_archive', full_query + ' ' + session))
 		if code in ('FP4', 'WU') and int(year) <= 2005: jobs.append(('torrentdownload', full_query + ' ' + session))
 		if code in ('FAM', 'SS') and _qatar_familiarisation(fixture):
 			jobs.extend((source, full_query + ' familiarisation') for source in ('knaben', 'torrentdownload'))

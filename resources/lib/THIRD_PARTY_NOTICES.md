@@ -26,14 +26,24 @@ Contemporary reports also supply qualifying practice sessions for Britain in [19
 
 Qualifying in [Japan 2010](https://www.suzukacircuit.jp/eng/result_s/2010/f1/1010_f1_q.html) and [Austin 2015](https://www.formula1.com/en/latest/article/qualifying-postponed-until-sunday-morning-in-storm-swept-austin.5jSYeIam5qQqDUrtIaFKiV) moved to Sunday. [Force India's report](https://au.motorsport.com/f1/news/japanese-gp-force-india-saturday-report/2509968/) confirms the 10:00 local start at Suzuka.
 
+At the [2013 Australian Grand Prix](https://press.pirelli.com/2013-australian-grand-prix---qualifying/), Q1 took place on Saturday and rain pushed Q2 and Q3 to Sunday morning.
+
 For Japan 2004, the [FIA's revised timetable](https://www.racecar.com/news/8175/motorsport/qualifying-postponed-due-to-typhoon) and [Toyota's race report](https://toyotagazooracing.com/archive/ms/en/F1archive/season/gp2004/17_japan/04_jpn_05.html) distinguish the two Sunday qualifying sessions and the Friday practices.
 
 Contemporary [Associated Press](https://dailyiowan.lib.uiowa.edu/DI/1955/di1955-05-21.pdf) and [United Press](https://oregonnews.uoregon.edu/lccn/sn97071090/1955-05-23/ed-1/seq-9/ocr/) reports establish the four 1955 Indianapolis 500 time-trial days. The [Speedway's four-lap records](https://www.indianapolismotorspeedway.com/events/indy500/history/historical-stats/race-stats/records/four-lap-qualification-records) corroborate the May 15 runs.
 
 The Indianapolis Motor Speedway's four-lap records and the contemporary [May 21 race coverage](https://manchesterhistory.org/News/Manchester%20Evening%20Hearld_1956-05-21.pdf) confirm May 19 and 20 for the 1956 Indianapolis 500. An [Associated Press report](https://oregonnews.uoregon.edu/lccn/sn96088460/1956-05-29/ed-1/seq-7.pdf) confirms the shortened May 27 session and the rain cancellations for May 26 and the proposed May 28 makeup.
 
+For the 1957 Indianapolis 500, [United Press](https://oregonnews.uoregon.edu/lccn/sn90051770/1957-05-20/ed-1/seq-7/ocr/) reported that Pole Day ran on May 18 and rain canceled May 19. The [Associated Press](https://gateway.okhistory.org/ark:/67531/metadc2112012/m1/7/) covered May 25 and the final session on May 26, when nine cars were bumped.
+
+For the 1959 Indianapolis 500, the [Speedway's qualifying records](https://www.indianapolismotorspeedway.com/events/indy500/history/historical-stats/race-stats/records/one-lap-qualification-records) confirm May 16. Contemporary coverage confirms [May 17](https://oregonnews.uoregon.edu/lccn/sn99063813/1959-05-18/ed-1/seq-11.pdf), [May 23](https://oregonnews.uoregon.edu/lccn/sn97071090/1959-05-24/ed-1/seq-9.pdf) and [May 24](https://oregonnews.uoregon.edu/lccn/sn97071090/1959-05-25/ed-1/seq-8/ocr/), when two cars were bumped by faster qualifiers.
+
 Contemporary [Autosport](https://porschecarshistory.com/wp-content/old/lib/magazines/autosport/1960/AS1960.06.17.pdf) and [United Press International](https://oregonnews.uoregon.edu/lccn/sn97071090/1960-05-23/ed-1/seq-9.pdf) reports establish the four 1960 Indianapolis 500 time-trial days. Drivers started qualifying attempts between showers on May 21, but none completed a run that day.
 
 Toyota's contemporary team timetables and session reports supply practice and qualifying dates for [2006](https://toyotagazooracing.com/archive/ms/public/en/gp/), [2007](https://toyotagazooracing.com/archive/ms/public/en/gp2007/), [2008](https://toyotagazooracing.com/archive/ms/public/en/gp2008/), [Australia 2009](https://toyotagazooracing.com/archive/ms/en/F1archive/season/gp2009/01_australia/index.html) and [Malaysia 2009](https://toyotagazooracing.com/archive/ms/en/F1archive/season/gp2009/02_malaysia/index.html).
 
 Toyota's contemporary reports supply session dates for all races in [2002](https://toyotagazooracing.com/archive/ms/en/F1archive/season/gp2002/) and [2004](https://toyotagazooracing.com/archive/ms/en/F1archive/season/gp2004/). Contemporary Atlas F1 practice reports distinguish individual practice periods, including Australia in [2002](https://www.atlasf1.com/news/2002/mar/report.php/id/6552/.html) and [2004](https://www.atlasf1.com/news/2004/mar/report.php/id/12667/.html).
+
+Contemporary Atlas F1 reports supply local session dates for the [2001 season](https://www.atlasf1.com/news/2001/mar/), including the [cancellation of the first Saturday practice in Belgium](https://www.atlasf1.com/news/2001/sep/report.php/id/5412/.html).
+
+Contemporary [Atlas F1 reports](https://www.atlasf1.com/news/2000/mar/) and [NewsOnF1 timing tables](https://www.newsonf1.com/2000/sched.htm) establish the dates and distinguish the four physical practice sessions at each race in 2000.

@@ -27,6 +27,7 @@ def _path_rounds(text, folder_rounds):
 
 def _folder_conflicts(folders, filename, fixture, *, season, require_exact_session=False):
 	code = fixture['session_code']
+	scoped_codes = f1_search._QUALIFYING_WEEKDAYS.keys() | f1_search._DAILY_PRACTICE_SLOTS | f1_search._PRACTICE_2003_PATTERNS.keys()
 	for index, part in enumerate(folders):
 		folder = f1_search._text(part)
 		session_text = f1_search._session_text(part)
@@ -35,11 +36,11 @@ def _folder_conflicts(folders, filename, fixture, *, season, require_exact_sessi
 		if f1_search._SUPPORT_SERIES.search(folder):
 			if not collection or not _F1.search(folder): return True
 			if not _F1.search(filename) and not any(_F1.search(f1_search._text(part)) for part in folders[1:]): return True
-		codes = f1_search._session_codes(session_text, season=season)
+		codes = f1_search._codes_for_fixture(session_text, fixture, season)
 		if code == 'TT' and 'TT' in codes and not codes <= {'TT', 'QUAL'}:
 			if not f1_search._session_matches(codes, fixture): return True
 			continue
-		if 'PQ' in codes or codes.intersection(f1_search._QUALIFYING_WEEKDAYS.keys() | f1_search._PRACTICE_2002_SLOTS | f1_search._PRACTICE_2003_PATTERNS.keys()):
+		if 'PQ' in codes or codes.intersection(scoped_codes) or fixture.get('qualifying_portion') and codes.intersection(_QUALIFYING_DAYS):
 			if not f1_search._session_matches(codes, fixture): return True
 			continue
 		numbered = codes.intersection(_QUALIFYING_DAYS | _QUALIFYING_PHASES | {'QUALIFYING_PAIR'})
@@ -89,7 +90,7 @@ def matching_files(files, fixture, pack_type):
 		session_text = f1_search._session_text(basename)
 		if not text or not filename or f1_search._recording_rejected(session_text, f1_search._FILE_REJECT, code=code, season=year): continue
 		if f1_search._indy_race_date_conflicts(session_text, fixture): continue
-		codes = f1_search._session_codes(session_text, season=year)
+		codes = f1_search._codes_for_fixture(session_text, fixture, year)
 		if not codes and fixture.get('single_practice') is True and _SKY_PRACTICE.search(session_text) and f1_search._explicit_rounds(session_text) and f1_search.event_name_matches(session_text, fixture):
 			codes = {'FREE_PRACTICE'}
 		if not _file_session_matches(codes, parts[:-1], fixture, year): continue

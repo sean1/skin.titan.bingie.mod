@@ -21,6 +21,7 @@ import urllib.request
 
 
 _API = 'https://api.mullvad.net'
+_DEVICE_LIMIT = 5
 _RELAY = 'ca-tor-wg-207'
 _RELAY_PORT = 10997
 _CONFIG = 'mullvad-wireguard.conf'
@@ -266,94 +267,248 @@ def _remove_pending(path):
 		pass
 
 
-def ensure_config(private_directory, account_path, native_library):
-	"""Return a private config path, registering at most one key per install.
+def _authenticated(account):
+	opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+	try:
+		response = _request(opener, '/auth/v1/webtoken', method='POST', body={'account_number': account})
+	except urllib.error.HTTPError as error:
+		if _api_error_code(error) == 'INVALID_ACCOUNT':
+			raise AccountError('Mullvad account was rejected') from None
+		raise ProvisionError('Mullvad account could not be checked; retry later') from None
+	token = response.get('access_token') if isinstance(response, dict) else None
+	if not isinstance(token, str) or not token.strip():
+		raise ProvisionError('Mullvad account could not be checked; retry later')
+	return opener, token
 
-	A posting-stage journal preserves the key across ambiguous responses. Later
-	calls look up that same key and retry it, never generating a replacement key.
-	"""
+
+def _lock_file(directory):
+	path = os.path.join(directory, _LOCK)
+	fd = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
+	return os.fdopen(fd, 'r+')
+
+
+def _read_json_file(path):
+	try:
+		with open(path, 'r', encoding='utf-8') as handle:
+			value = json.load(handle)
+		return value if isinstance(value, dict) else {}
+	except (OSError, ValueError):
+		return {}
+
+
+def _config_matches(path, expected_signature):
+	try:
+		info = os.lstat(path)
+		return (stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and not stat.S_IMODE(info.st_mode) & 0o077
+			and expected_signature == (info.st_dev, info.st_ino, info.st_mtime_ns, info.st_size))
+	except OSError:
+		return False
+
+
+def _save_binding(path, account, public_key):
+	salt = os.urandom(16).hex()
+	binding = {'version': 1, 'salt': salt, 'account_fingerprint': _fingerprint(account, salt), 'device_key': _key_digest(public_key)}
+	_private_write(path, json.dumps(binding, sort_keys=True))
+
+
+def _binding_matches(path, account, public_key):
+	binding = _read_json_file(path)
+	salt = binding.get('salt')
+	return (binding.get('version') == 1 and isinstance(salt, str) and re.fullmatch('[0-9a-f]{32}', salt) is not None
+		and binding.get('account_fingerprint') == _fingerprint(account, salt) and binding.get('device_key') == _key_digest(public_key))
+
+
+def _confirmed_devices(opener, token):
+	devices = _request(opener, '/accounts/v1/devices', token=token)
+	if not isinstance(devices, list) or any(not isinstance(item, dict) or not isinstance(item.get('id'), str) or not item['id'] or not _key(item.get('pubkey')) for item in devices):
+		raise ProvisionError('Mullvad device list is unavailable')
+	keys = {_key_digest(item['pubkey']) for item in devices}
+	if len(keys) != len(devices) or len({item['id'] for item in devices}) != len(devices):
+		raise ProvisionError('Mullvad device list is unavailable')
+	return keys
+
+
+def record_config_binding(private_directory, account_path, native_library, expected_signature):
+	"""Bind a working legacy configuration only after Mullvad identifies its key."""
+	try:
+		config_path = os.path.join(private_directory, _CONFIG)
+		binding_path = os.path.join(private_directory, _BINDING)
+		with _lock_file(private_directory) as lock:
+			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+			if not _config_matches(config_path, expected_signature):
+				return False
+			private_key = _config_key(config_path)
+			if not private_key:
+				return False
+			account = _account(account_path)
+			public_key = _public_key(native_library, private_key)
+			if _binding_matches(binding_path, account, public_key):
+				return True
+			opener, token = _authenticated(account)
+			if _key_digest(public_key) not in _confirmed_devices(opener, token) or not _config_matches(config_path, expected_signature):
+				return False
+			_save_binding(binding_path, account, public_key)
+			return True
+	except ProvisionError:
+		raise
+	except (OSError, ValueError, TypeError, KeyError, AttributeError):
+		raise ProvisionError('Mullvad device could not be checked; retry later') from None
+
+
+def _prepare_registration(account, native_library, relay, replaces=None):
+	private_key, public_key = _generate_keys(native_library)
+	salt = os.urandom(16).hex()
+	state = {'version': 1, 'stage': 'prepared', 'private_key': private_key, 'public_key': public_key, 'salt': salt, 'account_fingerprint': _fingerprint(account, salt), 'relay': relay}
+	if replaces:
+		state['replaces'] = replaces
+	return state
+
+
+def _finish_registration(config_path, pending_path, binding_path, account, opener, token, state, config=None, expected_signature=None):
+	if state['stage'] == 'prepared':
+		# Persist before POST. Future attempts first query this same key.
+		state['stage'] = 'posting'
+		_save_pending(pending_path, state)
+	if state['stage'] == 'posting':
+		device = _registered_device(opener, token, state['public_key'])
+		if not device:
+			# Mullvad's own wg-tools reuses the saved key, looking it up
+			# before creating it. Keep our journal on every error: a prior
+			# request may have committed despite a lost response.
+			try:
+				device = _request(opener, '/accounts/v1/devices', method='POST', body={'pubkey': state['public_key'], 'hijack_dns': False}, token=token)
+			except urllib.error.HTTPError as error:
+				code = _api_error_code(error)
+				if code in ('PUBKEY_IN_USE', 'MAX_DEVICES_REACHED'):
+					device = _registered_device(opener, token, state['public_key'])
+					if not device and code == 'MAX_DEVICES_REACHED':
+						raise DeviceLimitError('Mullvad account has no free device slots') from None
+					if not device:
+						raise RegistrationPendingError('Mullvad device registration is pending; retry later') from None
+				elif code == 'INVALID_ACCOUNT':
+					raise AccountError('Mullvad account was rejected') from None
+				else:
+					raise RegistrationPendingError('Mullvad device registration is pending; retry later') from None
+			except (OSError, urllib.error.URLError):
+				raise RegistrationPendingError('Mullvad device registration is pending; retry later') from None
+		if not isinstance(device, dict) or device.get('pubkey') != state['public_key']:
+			raise RegistrationPendingError('Mullvad device registration is pending; retry later')
+		state['address'] = _device_address(device)
+		state['stage'] = 'registered'
+		_save_pending(pending_path, state)
+	relay = state['relay']
+	if not isinstance(relay, dict) or not _key(relay.get('public_key')) or str(ipaddress.IPv4Address(relay['host'])) != relay['host'] or not 1 <= int(relay['port']) <= 65535:
+		raise ProvisionError('Pending Mullvad configuration needs manual recovery')
+	address = str(ipaddress.IPv4Interface(state['address']))
+	if config is None:
+		text = ('[Interface]\nPrivateKey = {private}\nAddress = {address}\nDNS = 10.64.0.1\n\n[Peer]\nPublicKey = {public}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {host}:{port}\n').format(
+			private=state['private_key'], address=address, public=relay['public_key'], host=relay['host'], port=relay['port'])
+	else:
+		config['Interface']['PrivateKey'] = state['private_key']
+		config['Interface']['Address'] = address
+		buffer = io.StringIO()
+		config.write(buffer)
+		text = buffer.getvalue()
+		if not _config_matches(config_path, expected_signature):
+			raise ProvisionError('Mullvad configuration changed during recovery')
+	_private_write(config_path, text)
+	_save_binding(binding_path, account, state['public_key'])
+	_remove_pending(pending_path)
+	return config_path
+
+
+def ensure_config(private_directory, account_path, native_library, *, allow_registration=True):
+	"""Reuse an existing configuration or provision a new installation when allowed."""
 	try:
 		os.makedirs(private_directory, mode=0o700, exist_ok=True)
 		config_path = os.path.join(private_directory, _CONFIG)
 		pending_path = os.path.join(private_directory, _PENDING)
-		lock_path = os.path.join(private_directory, _LOCK)
-		lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
-		with os.fdopen(lock_fd, 'r+') as lock:
+		binding_path = os.path.join(private_directory, _BINDING)
+		with _lock_file(private_directory) as lock:
 			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+			config = None
 			if os.path.exists(config_path):
-				existing_key = _config_key(config_path)
-				if not existing_key:
+				config = _read_config(config_path)
+				if config is None:
 					raise ProvisionError('Existing Mullvad configuration needs manual recovery')
-				# If a crash occurred after the config was saved, remove only a
-				# pending record for exactly the same private key.
-				if os.path.exists(pending_path):
+				private_key = config['Interface']['PrivateKey'].strip()
+				pending = _read_json_file(pending_path)
+				if pending.get('private_key') == private_key and pending.get('stage') == 'registered':
 					try:
-						with open(pending_path, 'r', encoding='utf-8') as handle:
-							pending = json.load(handle)
-						if pending.get('private_key') == existing_key:
-							_remove_pending(pending_path)
-					except (OSError, ValueError, AttributeError):
+						account = _account(account_path)
+						state = _load_pending(pending_path, account)
+						_save_binding(binding_path, account, state['public_key'])
+						_remove_pending(pending_path)
+					except (OSError, ProvisionError):
 						pass
 				return config_path
+			if not allow_registration:
+				return None
 			account = _account(account_path)
-			opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
-			try:
-				token = _request(opener, '/auth/v1/webtoken', method='POST', body={'account_number': account})['access_token']
-			except urllib.error.HTTPError as error:
-				if _api_error_code(error) == 'INVALID_ACCOUNT':
-					raise AccountError('Mullvad account was rejected') from None
-				raise ProvisionError('Mullvad account could not be checked; retry later') from None
 			if os.path.exists(pending_path):
 				state = _load_pending(pending_path, account)
+				if state.get('replaces'):
+					raise ProvisionError('Pending Mullvad replacement needs its original configuration')
 			else:
-				relay = _relay(opener)
-				private_key, public_key = _generate_keys(native_library)
-				salt = os.urandom(16).hex()
-				state = {'version': 1, 'stage': 'prepared', 'private_key': private_key, 'public_key': public_key, 'salt': salt, 'account_fingerprint': _fingerprint(account, salt), 'relay': relay}
+				state = None
+			opener, token = _authenticated(account)
+			if state is None:
+				state = _prepare_registration(account, native_library, _relay(opener))
 				_save_pending(pending_path, state)
-			if state['stage'] == 'prepared':
-				# Persist before POST. Future attempts first query this same key.
-				state['stage'] = 'posting'
-				_save_pending(pending_path, state)
-			if state['stage'] == 'posting':
-				device = _registered_device(opener, token, state['public_key'])
-				if not device:
-					# Mullvad's own wg-tools reuses the saved key, looking it up
-					# before creating it. Keep our journal on every error: a prior
-					# request may have committed despite a lost response.
-					try:
-						device = _request(opener, '/accounts/v1/devices', method='POST', body={'pubkey': state['public_key'], 'hijack_dns': False}, token=token)
-					except urllib.error.HTTPError as error:
-						code = _api_error_code(error)
-						if code in ('PUBKEY_IN_USE', 'MAX_DEVICES_REACHED'):
-							device = _registered_device(opener, token, state['public_key'])
-							if not device and code == 'MAX_DEVICES_REACHED':
-								raise DeviceLimitError('Mullvad account has no free device slots') from None
-							if not device:
-								raise RegistrationPendingError('Mullvad device registration is pending; retry later') from None
-						elif code == 'INVALID_ACCOUNT':
-							raise AccountError('Mullvad account was rejected') from None
-						else:
-							raise RegistrationPendingError('Mullvad device registration is pending; retry later') from None
-					except (OSError, urllib.error.URLError):
-						raise RegistrationPendingError('Mullvad device registration is pending; retry later') from None
-				if not isinstance(device, dict) or device.get('pubkey') != state['public_key']:
-					raise RegistrationPendingError('Mullvad device registration is pending; retry later')
-				state['address'] = _device_address(device)
-				state['stage'] = 'registered'
-				_save_pending(pending_path, state)
-			relay = state['relay']
-			if not isinstance(relay, dict) or not _key(relay.get('public_key')) or str(ipaddress.IPv4Address(relay['host'])) != relay['host'] or not 1 <= int(relay['port']) <= 65535:
-				raise ProvisionError('Pending Mullvad configuration needs manual recovery')
-			address = str(ipaddress.IPv4Interface(state['address']))
-			config = ('[Interface]\nPrivateKey = {private}\nAddress = {address}\nDNS = 10.64.0.1\n\n[Peer]\nPublicKey = {public}\nAllowedIPs = 0.0.0.0/0\nEndpoint = {host}:{port}\n').format(private=state['private_key'], address=address, public=relay['public_key'], host=relay['host'], port=relay['port'])
-			_private_write(config_path, config)
-			_remove_pending(pending_path)
-			return config_path
+			return _finish_registration(config_path, pending_path, binding_path, account, opener, token, state)
 	except ProvisionError:
 		raise
-	except (OSError, ValueError, TypeError, KeyError, AttributeError, urllib.error.URLError):
+	except (OSError, ValueError, TypeError, KeyError, AttributeError):
 		raise ProvisionError('Mullvad setup could not be completed; retry later') from None
+
+
+def recover_revoked_config(private_directory, account_path, native_library, expected_signature):
+	"""Replace a registration only after its known Mullvad account omits the current key."""
+	try:
+		config_path = os.path.join(private_directory, _CONFIG)
+		pending_path = os.path.join(private_directory, _PENDING)
+		binding_path = os.path.join(private_directory, _BINDING)
+		with _lock_file(private_directory) as lock:
+			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+			if not _config_matches(config_path, expected_signature):
+				return False
+			config = _read_config(config_path)
+			if config is None:
+				return False
+			private_key = config['Interface']['PrivateKey'].strip()
+			account = _account(account_path)
+			public_key = _public_key(native_library, private_key)
+			if not _binding_matches(binding_path, account, public_key):
+				return False
+			opener, token = _authenticated(account)
+			devices = _confirmed_devices(opener, token)
+			if _key_digest(public_key) in devices or not _config_matches(config_path, expected_signature):
+				return False
+			replaces = _key_digest(private_key)
+			if os.path.exists(pending_path):
+				state = _load_pending(pending_path, account)
+				if state.get('replaces') != replaces:
+					raise ProvisionError('Pending Mullvad registration needs manual recovery')
+				if _key_digest(state['public_key']) not in devices:
+					if len(devices) >= _DEVICE_LIMIT:
+						raise DeviceLimitError('Mullvad account has no free device slots')
+					if state['stage'] == 'registered':
+						state['stage'] = 'posting'
+						_save_pending(pending_path, state)
+			else:
+				if len(devices) >= _DEVICE_LIMIT:
+					raise DeviceLimitError('Mullvad account has no free device slots')
+				peer = config['Peer']
+				host, port = peer['Endpoint'].rsplit(':', 1)
+				relay = {'host': host, 'port': int(port), 'public_key': peer['PublicKey'].strip()}
+				state = _prepare_registration(account, native_library, relay, replaces=replaces)
+				_save_pending(pending_path, state)
+			_finish_registration(config_path, pending_path, binding_path, account, opener, token, state, config, expected_signature)
+			return True
+	except ProvisionError:
+		raise
+	except (OSError, ValueError, TypeError, KeyError, AttributeError):
+		raise ProvisionError('Mullvad device could not be checked; retry later') from None
 
 
 def rotate_relay(private_directory):
@@ -364,8 +519,11 @@ def rotate_relay(private_directory):
 		lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
 		with os.fdopen(lock_fd, 'r+') as lock:
 			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-			if not _config_key(config_path):
+			private_key = _config_key(config_path)
+			if not private_key:
 				raise ProvisionError('Existing Mullvad configuration needs manual recovery')
+			if _read_json_file(os.path.join(private_directory, _PENDING)).get('replaces') == _key_digest(private_key):
+				return config_path
 			parser = configparser.ConfigParser(interpolation=None, strict=True)
 			with open(config_path, 'r', encoding='utf-8') as handle:
 				parser.read_file(handle)

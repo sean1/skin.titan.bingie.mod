@@ -174,6 +174,7 @@ def _fresh_cache_conflicts(request):
 def prepare(params):
 	"""Return (state, choices) without performing any provider requests."""
 	from menus import livetv
+	from modules.livetv_vpn import request_connection
 	try: alive = 0 <= time.time() - float(ku.get_property(_HEARTBEAT)) < 30
 	except (TypeError, ValueError): alive = False
 	if not alive: return 'unavailable', []
@@ -201,6 +202,8 @@ def prepare(params):
 		if _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': identity}): return 'unavailable', []
 		if valid and request.get('query') == query and request.get('accounts') == accounts and request.get('fixture_identity') and request['fixture_identity'] != identity: return 'unavailable', []
 	retry_current = bool(params.get('retry') and params.get('retry') == request.get('id'))
+	if retry_current and (params.get('early_retry') != 'true' or ku.get_property(_EARLY_ACK) != request['id']):
+		request_connection()
 	if retry_current and params.get('early_retry') == 'true' and valid and request.get('query') == query and request.get('accounts') == accounts:
 		current = _read(_RESULT)
 		if ku.get_property(_EARLY_ACK) == request['id'] or (current.get('id') == request['id'] and _current_choices(current.get('choices'))[0]):
@@ -230,6 +233,8 @@ def prepare(params):
 		if isinstance(token, str) and token.startswith('o'):
 			seed = _overview_handoff(token, query, accounts)
 			if not seed or _fresh_cache_conflicts({'query': query, 'accounts': accounts, 'fixture_identity': seed['fixture_identity']}): return 'unavailable', []
+		if not request.get('id') or request.get('query') != query:
+			request_connection()
 		request = {'id': uuid.uuid4().hex, 'created': time.time(), 'query': query, 'accounts': accounts, 'handoff': params.get('handoff', ''), 'fixture_identity': expected_identity or _retention_identity(query, accounts)}
 		_timing('request', request['created'])
 		seed = None if params.get('retry') else _handoff(params, query, accounts)
@@ -467,9 +472,11 @@ class FeedSelection:
 		observed_identity = ''
 		try:
 			from menus import livetv
+			from modules.livetv_vpn import wait_for_connection
 			if livetv._feed_accounts_fingerprint() != request['accounts']: raise ValueError('Account changed')
 			account = livetv._sports_primary()
 			if not account: raise ValueError('Account unavailable')
+			wait_for_connection()
 			query = request['query']
 			sport = query['sport']
 			key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])

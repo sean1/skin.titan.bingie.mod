@@ -25,6 +25,8 @@ def _read(key):
 def prepare(query, token):
 	request = _read(_REQUEST)
 	if request.get('query') != query or request.get('token') != token or not request.get('id'):
+		from modules.livetv_vpn import request_connection
+		request_connection()
 		request = {'id': uuid.uuid4().hex, 'query': query, 'token': token}
 		ku.set_property(_REQUEST, json.dumps(request, ensure_ascii=False))
 	result = _read(_RESULT)
@@ -39,11 +41,13 @@ def _visible(request):
 
 def _work(request, queue):
 	from menus import livetv
+	from modules.livetv_vpn import wait_for_connection
 	account = livetv._load()
 	accounts = livetv._sports_accounts(account) if account else []
 	if not accounts:
 		queue.put({'id': request['id'], 'rows': [], 'complete': True, 'unavailable': True, 'error': True})
 		return
+	wait_for_connection()
 	deadline = time.monotonic() + livetv._SPORTS_SEARCH_SECONDS
 
 	def fetch(entry):

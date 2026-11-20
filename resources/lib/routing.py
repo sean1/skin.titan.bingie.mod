@@ -1,6 +1,7 @@
 from modules import kodi_utils
 
 POV_ROUTES = {
+	'livetv.connect': lambda p: _import('modules.livetv_vpn', 'request_connection')(),
 	'livetv.browse': lambda p: _import('menus.livetv', 'browse')(p),
 	'livetv.search': lambda p: _import('menus.livetv', 'search')(p),
 	'livetv.search_results': lambda p: _import('menus.livetv', 'search_results')(p),

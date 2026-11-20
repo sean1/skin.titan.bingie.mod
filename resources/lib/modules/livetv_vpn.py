@@ -11,6 +11,7 @@ import socket
 import stat
 import tempfile
 import threading
+from time import monotonic
 
 from modules import kodi_utils as ku
 
@@ -22,12 +23,17 @@ _RETRY_SECONDS = 20
 _CHECK_SECONDS = 5
 _HEALTH_SECONDS = 60
 _HEALTH_FAILURE_LIMIT = 3
+_REQUEST_SECONDS = 60
+_ACCOUNT_CHECK_INTERVAL = 15
+_BINDING_RETRY_SECONDS = 5 * 60
 _STATUS_PROPERTY = 'BingieLiveTVVPNStatus'
+_REQUEST_PROPERTY = 'BingieLiveTVVPNRequest'
 _FAILURE_MESSAGES = {
 	'account': 'Mullvad account setup is invalid. Check the bundled account number.',
 	'device_limit': 'Mullvad has no free device slots. Remove an unused device from your Mullvad account, then retry.',
 	'rejected': 'Mullvad rejected registration. Check the account and available device slots.',
 	'pending': 'Mullvad registration needs recovery. Check the device list and retry later.',
+	'connecting': 'Connecting to the Live TV VPN. Try again in a moment.',
 }
 _library_lock = threading.Lock()
 _loaded_library = None
@@ -62,9 +68,41 @@ def failure_message():
 	except Exception: return ''
 
 
+def request_connection():
+	"""Allow one registration attempt in response to a Live TV action."""
+	ku.set_property(_REQUEST_PROPERTY, str(monotonic()))
+
+
+def _requested_at():
+	try:
+		requested = float(ku.get_property(_REQUEST_PROPERTY))
+		return requested if 0 <= monotonic() - requested < _REQUEST_SECONDS else 0.0
+	except (ValueError, TypeError): return 0.0
+
+
+def wait_for_connection(seconds=4):
+	"""Give an explicit Live TV action a short, abortable wait for the relay."""
+	from modules.livetv_vpn_relay import _descriptor
+	deadline = monotonic() + seconds
+	while True:
+		try:
+			port, _ = _descriptor()
+			with socket.create_connection(('127.0.0.1', port), timeout=0.1): return True
+		except (OSError, ValueError, TypeError, AttributeError): pass
+		remaining = deadline - monotonic()
+		if remaining <= 0 or ku.monitor.waitForAbort(min(0.1, remaining)): return False
+
+
 def _set_failure(code=''):
 	try: ku.set_property(_STATUS_PROPERTY, code if code in _FAILURE_MESSAGES else '')
 	except Exception: pass
+
+
+def _set_provision_failure(provision, error):
+	if isinstance(error, provision.AccountError): _set_failure('account')
+	elif isinstance(error, provision.DeviceLimitError): _set_failure('device_limit')
+	elif isinstance(error, provision.RegistrationPendingError): _set_failure('pending')
+	else: _set_failure()
 
 
 def _secure_directory():
@@ -214,31 +252,49 @@ class VPNManager:
 				self._thread = None
 				self._state = 'VPN stopped'
 
+	def _wait_for_check(self, seconds, seen_request):
+		deadline = monotonic() + seconds
+		while not self._stop.is_set() and _requested_at() <= seen_request:
+			remaining = deadline - monotonic()
+			if remaining <= 0 or self._stop.wait(min(1, remaining)): break
+
 	def _run(self):
+		from modules import livetv_vpn_provision, livetv_vpn_relay
 		connection_failures = 0
+		handled_request = seen_request = checked_request = account_check_after = 0.0
+		binding_signature, binding_retry = None, 0.0
+		revoked_signature = None
 		while not self._stop.is_set():
 			library = None
 			relay = None
 			started = False
 			connection_failed = False
 			stopped = True
+			replaced = False
+			signature = None
 			try:
-				from modules import livetv_vpn_provision, livetv_vpn_relay
 				private = _secure_directory()
 				library = _library()
 				account_path = os.path.join(ku.translate_path(ku.addon_path), *_ACCOUNT_REL)
-				try: config = livetv_vpn_provision.ensure_config(private, account_path, library)
+				requested = _requested_at()
+				seen_request = max(seen_request, requested)
+				try:
+					config = livetv_vpn_provision.ensure_config(private, account_path, library, allow_registration=False)
+					if not config:
+						if requested <= handled_request or self._stop.is_set():
+							self._wait_for_check(_RETRY_SECONDS, seen_request)
+							continue
+						handled_request = requested
+						_set_failure('connecting')
+						config = livetv_vpn_provision.ensure_config(private, account_path, library)
 				except livetv_vpn_provision.ProvisionError as error:
-					if isinstance(error, livetv_vpn_provision.AccountError): _set_failure('account')
-					elif isinstance(error, livetv_vpn_provision.DeviceLimitError): _set_failure('device_limit')
-					elif isinstance(error, livetv_vpn_provision.RegistrationPendingError): _set_failure('pending')
-					else: _set_failure()
+					_set_provision_failure(livetv_vpn_provision, error)
 					raise
-				_set_failure()
 				if self._stop.is_set(): break
 				private_real = os.path.realpath(private)
 				if os.path.commonpath((private_real, os.path.realpath(config))) != private_real: raise VPNUnavailable('VPN configuration unavailable')
 				signature = _signature(config)
+				if signature == revoked_signature: raise VPNUnavailable('Live TV Mullvad registration was removed')
 				port = _unused_port()
 				password = secrets.token_urlsafe(32)
 				result = library.Start(os.fsencode(config), password.encode('ascii'), port)
@@ -253,16 +309,48 @@ class VPNManager:
 					try: verified = _verify_exit(port, password)
 					except Exception: verified = False
 					if verified: break
+					if _requested_at() > handled_request: break
 					if self._stop.wait(_CHECK_SECONDS): break
 				if not verified or self._stop.is_set():
 					connection_failed = not self._stop.is_set()
 					raise VPNUnavailable('IPTV VPN is unavailable')
 				relay = livetv_vpn_relay.Relay(port, password, descriptor_path())
 				relay.start()
+				_set_failure()
 				self._set_state('IPTV VPN connected')
-				failures = 0
-				while not self._stop.wait(_HEALTH_SECONDS):
+				connection_failures = failures = 0
+				while not self._stop.is_set():
+					if replaced:
+						if not ku.get_visibility('Player.HasMedia') or self._stop.wait(_CHECK_SECONDS): break
+						continue
+					if signature != binding_signature and monotonic() >= binding_retry:
+						binding_retry = monotonic() + _BINDING_RETRY_SECONDS
+						try:
+							if livetv_vpn_provision.record_config_binding(private, account_path, library, signature): binding_signature = signature
+						except livetv_vpn_provision.ProvisionError: pass
+					requested = _requested_at()
+					pending_check = requested > max(handled_request, checked_request)
+					if not replaced and not failures and pending_check and signature == binding_signature and monotonic() >= account_check_after and not ku.get_visibility('Player.HasMedia'):
+						checked_request = requested
+						account_check_after = monotonic() + _ACCOUNT_CHECK_INTERVAL
+						try:
+							replaced = livetv_vpn_provision.recover_revoked_config(private, account_path, library, signature)
+							revoked_signature = None
+							_set_failure('connecting' if replaced else '')
+							if replaced:
+								handled_request = requested
+								continue
+						except livetv_vpn_provision.ProvisionError as error:
+							_set_provision_failure(livetv_vpn_provision, error)
+							if isinstance(error, (livetv_vpn_provision.DeviceLimitError, livetv_vpn_provision.RegistrationPendingError)):
+								handled_request = requested
+								revoked_signature = signature
+					retry_seconds = _CHECK_SECONDS if pending_check or (failures and requested > handled_request) else _HEALTH_SECONDS
+					self._wait_for_check(retry_seconds, seen_request)
+					if self._stop.is_set(): break
 					if _signature(config) != signature: break
+					requested = _requested_at()
+					seen_request = max(seen_request, requested)
 					try: healthy = relay.thread is not None and relay.thread.is_alive() and library.Status() in (1, 2) and _verify_exit(port, password)
 					except Exception: healthy = False
 					if healthy: connection_failures = 0
@@ -280,11 +368,27 @@ class VPNManager:
 					try:
 						if library.Stop() != 0: stopped = False; self._set_state('IPTV VPN unavailable')
 					except Exception: stopped = False; self._set_state('IPTV VPN unavailable')
-			if connection_failed and not self._stop.is_set():
+			if replaced and stopped:
+				continue
+			if connection_failed or (signature is not None and signature == revoked_signature):
 				connection_failures += 1
-				if connection_failures >= 3 and stopped:
+				requested = _requested_at()
+				seen_request = max(seen_request, requested)
+				if stopped and not self._stop.is_set() and requested > handled_request:
+					handled_request = requested
+					_set_failure('connecting')
+					try:
+						if livetv_vpn_provision.recover_revoked_config(private, account_path, library, signature) or signature == revoked_signature:
+							revoked_signature = None
+							connection_failures = 0
+							continue
+						_set_failure()
+					except livetv_vpn_provision.ProvisionError as error:
+						_set_provision_failure(livetv_vpn_provision, error)
+						if isinstance(error, (livetv_vpn_provision.DeviceLimitError, livetv_vpn_provision.RegistrationPendingError)): revoked_signature = signature
+				if connection_failures >= 3 and stopped and not self._stop.is_set() and signature != revoked_signature:
 					try:
 						livetv_vpn_provision.rotate_relay(private)
 						connection_failures = 0
 					except Exception: self._set_state('IPTV VPN unavailable')
-			if not self._stop.is_set(): self._stop.wait(_RETRY_SECONDS)
+			self._wait_for_check(_RETRY_SECONDS, seen_request)

@@ -27,6 +27,7 @@ from modules.livetv_catalog import get as _catalog_get
 from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact
 from modules.livetv_vpn_relay import open_url as _vpn_open, register as _vpn_register
 from modules.livetv_vpn import failure_message as _vpn_failure_message
+from modules.livetv_vpn import request_connection as _request_vpn, wait_for_connection as _wait_for_vpn
 from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
 from modules import livetv_soccer_logos as _soccer_logos
@@ -804,6 +805,7 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=
 
 def _browse_catalog(account, action, *, status=None, retry=False, _saved=None, **params):
 	if retry:
+		_wait_for_vpn()
 		def on_status(created, stale):
 			if stale and status is not None: status.append('Showing saved channels · refresh unavailable')
 		return _catalog(account, action, force_refresh=True, on_status=on_status, **params)
@@ -818,6 +820,7 @@ def _browse_catalog(account, action, *, status=None, retry=False, _saved=None, *
 			if status is not None: status.append('Showing saved channels · refresh unavailable' if refresh_status(account, action, params) == 'unavailable' else 'Showing saved channels')
 			request(account, action, params)
 		return items
+	_wait_for_vpn()
 	return _catalog(account, action, **params)
 
 
@@ -859,6 +862,7 @@ def browse(params):
 		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
 		_finish(False)
 		return
+	_request_vpn()
 	_item('Search providers', {'mode': 'livetv.search', 'isFolder': 'false'}, False, None, False)
 	try:
 		status = []
@@ -873,7 +877,7 @@ def browse(params):
 			if not isinstance(category, dict) or not category.get('category_id'): continue
 			_item(str(category.get('category_name') or 'Other'), {'mode': 'livetv.channels', 'category': str(category['category_id'])})
 	except (OSError, HTTPException, ValueError, TypeError):
-		_error('Could not load Live TV categories. Check the VPN and account details, then try again.')
+		_item((_vpn_failure_message() or 'Live TV categories unavailable') + ' Select to retry.', {'mode': 'livetv.browse', 'retry': 'true'}, True, None, False)
 	_finish()
 
 
@@ -891,6 +895,7 @@ def channels(params):
 		_error('No Live TV account is available. Add a valid private account file to the BINGIE package.')
 		_finish(False)
 		return
+	_request_vpn()
 	try:
 		category = params.get('category', '')
 		status = []
@@ -910,9 +915,7 @@ def channels(params):
 		_browse_items(rows)
 		if has_next: _item('Next page', {**page_params, 'page': str(page + 1)})
 	except (OSError, HTTPException, ValueError, TypeError):
-		_error('Could not load channels. Check the VPN and account details, then try again.')
-		_finish(False)
-		return
+		_item((_vpn_failure_message() or 'Live TV channels unavailable') + ' Select to retry.', dict(params, mode='livetv.channels', retry='true'), True, None, False)
 	_finish()
 
 
@@ -954,6 +957,7 @@ def news(params):
 		return
 	if params.get('action') == 'refresh':
 		if channel:
+			_request_vpn()
 			query = {'mode': 'livetv.news', 'channel': channel, 'reload': str(time.time_ns())}
 			xbmc.executebuiltin('Container.Update(%s,replace)' % ku.build_url(query))
 		return
@@ -1206,7 +1210,7 @@ def search_results(params):
 	if not result.get('complete'):
 		_item('Searching providers…', {}, False, None, False)
 	if result.get('unavailable'):
-		label = 'Some providers are unavailable — select to retry' if result.get('has_streams') or not result.get('complete') else 'Providers unavailable — check VPN and account, then select to retry'
+		label = _vpn_failure_message() or ('Some providers are unavailable — select to retry' if result.get('has_streams') or not result.get('complete') else 'Providers unavailable — check VPN and account, then select to retry')
 		_item(label, {'mode': 'livetv.search_results', 'query': query, 'search_id': uuid.uuid4().hex}, True, None, False)
 	if result.get('stale'):
 		_item('Some results are from saved channels', {}, False, None, False)
@@ -1952,6 +1956,7 @@ def soccer(params):
 	if sport != 'all': ku.clear_property('LiveTV.Sports.OverviewStatus')
 	ku.set_property('LiveTV.Sport.Title', 'LIVE SPORTS' if sport == 'all' else 'LIVE ' + ('FORMULA 1' if sport == 'f1' else sport.upper()))
 	action = params.get('action', '')
+	if action == 'refresh': _request_vpn()
 	if sport == 'all':
 		from modules import livetv_sports_overview as overview
 		if action == 'refresh':
@@ -2139,7 +2144,7 @@ def match_feeds(params):
 			if state == 'slow': waiting_row('Still finding feeds… — select to retry', early_retry=True)
 			elif state == 'retry_queued': _item('Retry queued — waiting for current search…', {}, False, playable=False)
 			elif state == 'loading': _item('Finding feeds…', {}, False, playable=False)
-			else: waiting_row('Feeds unavailable — select to retry; if needed, refresh the event', preserve_handoff=True)
+			else: waiting_row(_vpn_failure_message() or 'Feeds unavailable — select to retry; if needed, refresh the event', preserve_handoff=True)
 			_finish()
 			return
 		choices = [(ref, feed) for ref, feed, _ in result]
@@ -2203,6 +2208,8 @@ def play(params):
 		_error('This channel cannot be played. Check your Live TV account.')
 		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 		return
+	_request_vpn()
+	_wait_for_vpn()
 	failover = _cached_failover(params) if params.get('sport') else None
 	if not failover: failover = {'id': reference, 'alternatives': [], 'feeds': [{'id': reference, 'name': 'Feed 1'}], 'token': uuid.uuid4().hex}
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)

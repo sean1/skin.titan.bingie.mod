@@ -89,10 +89,12 @@ class NewsRefresh:
 
 	def _scan(self, channel, request, snapshot):
 		from menus import livetv
+		from modules.livetv_vpn import wait_for_connection
 		accounts = livetv._sports_accounts(livetv._load())
 		if livetv._feed_accounts_fingerprint() != request['accounts'] or not accounts:
 			self.results.put((channel, {'id': request['id'], 'accounts': request['accounts'], 'created': time.time(), 'complete': True, 'failed': True, 'feeds': []}))
 			return
+		wait_for_connection()
 		aliases = livetv._NEWS_CHANNELS[channel]
 		previous = snapshot.get('feeds', []) if isinstance(snapshot.get('feeds'), list) else []
 		provider_times = snapshot.get('provider_times', {}) if isinstance(snapshot.get('provider_times'), dict) else {}

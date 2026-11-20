@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+	<defaultcontrol always="true">7</defaultcontrol>
+	<controls>
+		<control type="image">
+			<width>1920</width>
+			<height>1080</height>
+			<texture colordiffuse="CCFFFFFF">black.png</texture>
+		</control>
+		<control type="group">
+			<left>48</left>
+			<top>80</top>
+			<control type="image">
+				<width>1824</width>
+				<height>920</height>
+				<texture colordiffuse="FF191919">white.png</texture>
+			</control>
+			<control type="label" id="1">
+				<left>28</left>
+				<top>16</top>
+				<width>1768</width>
+				<height>52</height>
+				<font>Bold38</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<aligny>center</aligny>
+			</control>
+			<control type="image">
+				<left>20</left>
+				<top>80</top>
+				<width>1784</width>
+				<height>742</height>
+				<texture colordiffuse="FF0D0D0D">white.png</texture>
+			</control>
+			<control type="textbox" id="5">
+				<left>32</left>
+				<top>92</top>
+				<width>1740</width>
+				<height>718</height>
+				<font>Reg16</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<align>left</align>
+				<pagecontrol>60</pagecontrol>
+			</control>
+			<control type="scrollbar" id="60">
+				<left>1781</left>
+				<top>92</top>
+				<width>11</width>
+				<height>718</height>
+				<texturesliderbackground colordiffuse="FF302F2F">white.png</texturesliderbackground>
+				<texturesliderbar colordiffuse="FF555556">white.png</texturesliderbar>
+				<texturesliderbarfocus colordiffuse="FFCCCCCC">white.png</texturesliderbarfocus>
+				<onleft>7</onleft>
+				<onright>7</onright>
+				<showonepage>false</showonepage>
+				<orientation>vertical</orientation>
+			</control>
+			<control type="button" id="7">
+				<left>20</left>
+				<top>835</top>
+				<width>220</width>
+				<height>62</height>
+				<label>$LOCALIZE[222]</label>
+				<font>Reg28</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<focusedcolor>FF191919</focusedcolor>
+				<align>center</align>
+				<aligny>center</aligny>
+				<texturefocus>white.png</texturefocus>
+				<texturenofocus colordiffuse="FF302F2F">white.png</texturenofocus>
+				<onleft>60</onleft>
+				<onright>60</onright>
+				<onup>60</onup>
+				<ondown>60</ondown>
+			</control>
+		</control>
+	</controls>
+</window>

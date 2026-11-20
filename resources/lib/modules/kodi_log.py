@@ -2,10 +2,31 @@ import os
 import re
 
 from modules import kodi_utils as ku
+from windows import BaseDialog, open_window
 
 
 _MAX_BYTES = 256 * 1024
 _ENTRY_START = re.compile(r'(?m)(?=^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)')
+
+
+class KodiLogViewer(BaseDialog):
+	def __init__(self, *args, heading, text):
+		super().__init__(*args)
+		self.heading = heading
+		self.text = text
+
+	def onInit(self):
+		self.getControl(1).setLabel(self.heading)
+		self.getControl(5).setText(self.text)
+
+	def onAction(self, action):
+		if action in self.closing_actions: self.close()
+
+	def onClick(self, control_id):
+		if control_id == 7: self.close()
+
+	def run(self):
+		self.doModal()
 
 
 def show(session=None):
@@ -40,4 +61,4 @@ def show(session=None):
 		heading += ' (newest first)'
 	if start:
 		body = 'Showing the most recent log entries.\n\n' + body
-	return ku.show_text(heading, text=body)
+	return open_window(('modules.kodi_log', 'KodiLogViewer'), 'kodi_log.xml', heading=heading, text=body)

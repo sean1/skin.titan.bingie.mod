@@ -64,6 +64,7 @@ class SportsOverview:
 		self.snapshots = {}
 		self.snapshot_started = {}
 		self.deferred = set()
+		self.soccer_boundaries = set()
 
 	def tick(self, active, now):
 		from menus import livetv
@@ -79,12 +80,14 @@ class SportsOverview:
 			self.active = True
 			self.due = set(SPORTS)
 			self.next_refresh = _next_refresh(time.time())
+			self.soccer_boundaries.clear()
 		accounts = livetv._feed_accounts_fingerprint()
 		if accounts != self.accounts:
 			self.accounts = accounts
 			self.generation += 1
 			self.due = set(SPORTS)
 			self.next_refresh = _next_refresh(time.time())
+			self.soccer_boundaries.clear()
 			ku.clear_property('LiveTV.Sports.OverviewEmpty')
 			for sport in SPORTS:
 				try:
@@ -109,6 +112,15 @@ class SportsOverview:
 			if result_accounts == accounts and generation == self.generation:
 				ku.set_property(PREFIX + sport, encoded)
 				self.pending_refresh.add(sport)
+				if sport == 'soccer':
+					fixtures = json.loads(encoded).get('fixtures', [])
+					starts = [kickoff for state, kickoff in (livetv._schedule_state(fixture, wall) for fixture in fixtures if isinstance(fixture, dict)) if state == 'Upcoming']
+					grace = livetv._sportapi_service.SCHEDULE_GRACE_SECONDS
+					self.soccer_boundaries = {boundary for start in starts for boundary in (start, start + grace) if boundary > wall}
+		if self.soccer_boundaries and wall >= min(self.soccer_boundaries):
+			self.soccer_boundaries = {boundary for boundary in self.soccer_boundaries if boundary > wall}
+			self.pending_refresh.add('soccer')
+			self.due.add('soccer')
 		for sport in tuple(self.deferred):
 			if not ku.get_visibility('Control.HasFocus(%d)' % ROW_IDS[sport]):
 				self.deferred.discard(sport)
@@ -135,7 +147,7 @@ class SportsOverview:
 				except (TypeError, ValueError): data = {}
 				if not data or data.get('accounts') != accounts or data.get('matching'): loading = True
 				if data.get('accounts') == accounts and (data.get('unavailable') or data.get('schedule_unavailable')): unavailable = True
-				if data.get('accounts') == accounts and any(livetv._schedule_state(fixture, time.time())[0] == 'Live' for fixture in data.get('fixtures', []) if isinstance(fixture, dict)): events = True
+				if data.get('accounts') == accounts and any(livetv._schedule_state(fixture, wall, live_at_kickoff=sport == 'soccer')[0] == 'Live' for fixture in data.get('fixtures', []) if isinstance(fixture, dict)): events = True
 			status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable else '') if part)
 			ku.set_property('LiveTV.Sports.OverviewEmpty', 'true' if not loading and not unavailable and not events else '')
 			ku.set_property('LiveTV.Sports.OverviewStatus', status)

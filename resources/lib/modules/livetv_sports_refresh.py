@@ -111,8 +111,9 @@ class SportsRefresh:
 		except (TypeError, ValueError): starts = []
 		if not isinstance(starts, list): starts = []
 		starts = [start for start in starts if isinstance(start, (int, float)) and not isinstance(start, bool) and math.isfinite(start)]
-		self.start_checks = {start: checked for start, checked in self.start_checks.items() if start in starts and wall - start <= _START_WINDOW}
-		due = [start for start in starts if 0 <= wall - start <= _START_WINDOW and (start not in self.start_checks or now - self.start_checks[start] >= _START_RETRY)]
+		start_window = _START_WINDOW + _START_RETRY if sport == 'soccer' else _START_WINDOW
+		self.start_checks = {start: checked for start, checked in self.start_checks.items() if start in starts and wall - start <= start_window}
+		due = [start for start in starts if 0 <= wall - start <= start_window and (start not in self.start_checks or now - self.start_checks[start] >= _START_RETRY)]
 		if self.next_schedule_check - wall > _SCHEDULE_INTERVAL: self.next_schedule_check = progress.next_half_hour(wall)
 		schedule_due = wall >= self.next_schedule_check
 		live_due = progress.has_live(sport) and now >= self.next_live_check

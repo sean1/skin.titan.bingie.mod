@@ -76,7 +76,7 @@ def _selection(snapshot, query):
 	sport = query['sport']
 	key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
 	matching = [row for row in snapshot['fixtures'] if isinstance(row, dict) and _fixture_key(sport, row) == key]
-	if len(matching) != 1 or matching[0].get('status') not in livetv._fixture_service.LIVE_STATUSES or not livetv._fixture_focus_identity(sport, matching[0]): return []
+	if len(matching) != 1 or not livetv._fixture_can_select_feeds(sport, matching[0]) or not livetv._fixture_focus_identity(sport, matching[0]): return []
 	groups = progress._filter_guide_groups(progress._groups_from_json(snapshot['groups']), time.time())
 	return [[ref, feed, livetv._unique_match(groups, ref, str(feed.get('name') or ''))] for ref, feed in groups.get(key, {}).items()]
 
@@ -127,12 +127,12 @@ def _snapshot_identity(query, fixtures):
 	sport = query['sport']
 	key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
 	matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
-	if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: return ''
+	if len(matches) != 1 or not livetv._fixture_can_select_feeds(sport, matches[0]): return ''
 	return livetv._fixture_focus_identity(sport, matches[0])
 
 
 def _retention_identity(query, accounts):
-	"""Identify a unique live event only while its newest fixture source is fresh."""
+	"""Identify a unique selectable event while its newest fixture source is fresh."""
 	try:
 		sport = query['sport']
 		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
@@ -476,7 +476,7 @@ class FeedSelection:
 			def observe_fixtures(fixtures):
 				nonlocal observed_identity
 				matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
-				if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES: raise ValueError('Fixture unavailable')
+				if len(matches) != 1 or not livetv._fixture_can_select_feeds(sport, matches[0]): raise ValueError('Fixture unavailable')
 				identity = livetv._fixture_focus_identity(sport, matches[0])
 				observed_identity = identity
 				if not identity or (request.get('fixture_identity') and request['fixture_identity'] != identity): raise ValueError('Fixture changed')
@@ -552,7 +552,7 @@ class FeedSelection:
 			if not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or not time.time() < expires: raise ValueError('Stale fixtures')
 			key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
 			matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
-			if len(matches) != 1 or matches[0].get('status') not in livetv._fixture_service.LIVE_STATUSES or livetv._fixture_focus_identity(sport, matches[0]) != request.get('fixture_identity') or not _request_current(request): raise ValueError('Fixture changed')
+			if len(matches) != 1 or not livetv._fixture_can_select_feeds(sport, matches[0]) or livetv._fixture_focus_identity(sport, matches[0]) != request.get('fixture_identity') or not _request_current(request): raise ValueError('Fixture changed')
 		except Exception: expires = 0
 		self.validations.put((request['id'], request.get('validation_token'), expires))
 

@@ -84,6 +84,44 @@ func GenerateKeyPair(privateKey *C.char, privateLen C.size_t, publicKey *C.char,
 	return 0
 }
 
+// PublicKeyFromPrivate derives the WireGuard public key from a NUL-terminated
+// base64 private key. Both buffers must hold at least 45 bytes and be disjoint.
+// It returns 0 on success, 1 for invalid input, and 4 on internal failure.
+//
+//export PublicKeyFromPrivate
+func PublicKeyFromPrivate(privateKey *C.char, privateLen C.size_t, publicKey *C.char, publicLen C.size_t) (result C.int) {
+	defer func() {
+		if recover() != nil {
+			result = 4
+		}
+	}()
+	if privateKey == nil || publicKey == nil || privateLen < 45 || publicLen < 45 {
+		return 1
+	}
+	privateAddress, publicAddress := uintptr(unsafe.Pointer(privateKey)), uintptr(unsafe.Pointer(publicKey))
+	if (privateAddress <= publicAddress && publicAddress-privateAddress < uintptr(privateLen)) || (publicAddress < privateAddress && privateAddress-publicAddress < uintptr(publicLen)) {
+		return 1
+	}
+	privateBuffer := unsafe.Slice((*byte)(unsafe.Pointer(privateKey)), 45)
+	publicBuffer := unsafe.Slice((*byte)(unsafe.Pointer(publicKey)), 45)
+	clear(publicBuffer)
+	if privateBuffer[44] != 0 {
+		return 1
+	}
+	var privateBytes [32]byte
+	defer clear(privateBytes[:])
+	count, err := base64.StdEncoding.Strict().Decode(privateBytes[:], privateBuffer[:44])
+	if err != nil || count != len(privateBytes) {
+		return 1
+	}
+	key, err := ecdh.X25519().NewPrivateKey(privateBytes[:])
+	if err != nil {
+		return 4
+	}
+	base64.StdEncoding.Encode(publicBuffer[:44], key.PublicKey().Bytes())
+	return 0
+}
+
 // startDevice owns and closes every resource allocated before a successful start.
 func startDevice(conf *wireproxy.DeviceConfig) (result *device.Device, network *netstack.Net, err error) {
 	tun, network, err := netstack.CreateNetTUN(conf.Endpoint, conf.DNS, conf.MTU)

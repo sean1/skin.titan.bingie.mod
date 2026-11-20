@@ -21,6 +21,7 @@ CACHE_FILE = 'sportapi-live.json'
 FRESH_SECONDS = 300
 MAX_UPDATE_AGE = 900
 UPCOMING_SECONDS = 24 * 3600
+SCHEDULE_GRACE_SECONDS = 15 * 60
 CACHE_VERSION = 5
 DAILY_LIMIT = 350
 MONTHLY_LIMIT = 12000
@@ -114,7 +115,7 @@ def _current(item, now, lookahead=0):
 		start = datetime.fromisoformat(item['date'].replace('Z', '+00:00'))
 		if start.utcoffset() is None: return False
 		difference = start.timestamp() - now
-		if item.get('status') == 'Scheduled': return 0 < difference <= UPCOMING_SECONDS + lookahead
+		if item.get('status') == 'Scheduled': return -SCHEDULE_GRACE_SECONDS <= difference <= UPCOMING_SECONDS + lookahead
 		return item.get('status') == 'LIVE' and -8 * 3600 <= difference <= 300 and _recent(item.get('updated_at'), now)
 	except (KeyError, AttributeError, ValueError, TypeError, OverflowError, OSError): return False
 
@@ -150,7 +151,7 @@ def _fixture_expiry(items, now, expiry):
 			start = datetime.fromisoformat(item['date'].replace('Z', '+00:00'))
 			if start.utcoffset() is None: continue
 			start = start.timestamp()
-			if item.get('status') == 'Scheduled': boundaries = (start - UPCOMING_SECONDS, start)
+			if item.get('status') == 'Scheduled': boundaries = (start - UPCOMING_SECONDS, start, start + SCHEDULE_GRACE_SECONDS)
 			elif item.get('status') == 'LIVE':
 				updated = datetime.fromisoformat(item['updated_at'].replace('Z', '+00:00'))
 				if updated.utcoffset() is None: continue

@@ -14,6 +14,7 @@ import ipaddress
 import json
 import os
 import re
+import stat
 import tempfile
 import urllib.error
 import urllib.request
@@ -24,6 +25,7 @@ _RELAY = 'ca-tor-wg-207'
 _RELAY_PORT = 10997
 _CONFIG = 'mullvad-wireguard.conf'
 _PENDING = 'mullvad-pending.json'
+_BINDING = 'mullvad-device-binding.json'
 _LOCK = 'mullvad-provision.lock'
 
 
@@ -97,6 +99,10 @@ def _fingerprint(account, salt):
 	return hashlib.sha256((salt + account).encode('ascii')).hexdigest()
 
 
+def _key_digest(key):
+	return hashlib.sha256(base64.b64decode(key, validate=True)).hexdigest()
+
+
 def _private_write(path, content):
 	"""Replace a private file atomically and persist the directory entry."""
 	directory = os.path.dirname(path)
@@ -142,8 +148,8 @@ def _load_pending(path, account):
 		raise ProvisionError('Pending Mullvad registration needs manual recovery') from None
 
 
-def _config_key(path):
-	"""Return the key only for a structurally valid existing configuration."""
+def _read_config(path):
+	"""Read a structurally valid existing configuration."""
 	try:
 		parser = configparser.ConfigParser(interpolation=None, strict=True)
 		with open(path, 'r', encoding='utf-8') as handle:
@@ -159,9 +165,14 @@ def _config_key(path):
 		ipaddress.ip_address(host)
 		if not _key(private_key) or not _key(public_key) or '0.0.0.0/0' not in allowed or not 1 <= int(port) <= 65535:
 			raise ValueError
-		return private_key
+		return parser
 	except (OSError, UnicodeError, ValueError, KeyError, configparser.Error):
 		return None
+
+
+def _config_key(path):
+	config = _read_config(path)
+	return config['Interface']['PrivateKey'].strip() if config is not None else None
 
 
 def _generate_keys(native_library):
@@ -181,6 +192,24 @@ def _generate_keys(native_library):
 		return private_key, public_key
 	except (AttributeError, UnicodeError, TypeError, ValueError):
 		raise ProvisionError('Unable to generate a Mullvad device key') from None
+	finally:
+		ctypes.memset(ctypes.addressof(private_buffer), 0, len(private_buffer))
+
+
+def _public_key(native_library, private_key):
+	private_buffer = ctypes.create_string_buffer(private_key.encode('ascii'))
+	public_buffer = ctypes.create_string_buffer(45)
+	try:
+		function = native_library.PublicKeyFromPrivate
+		function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+		function.restype = ctypes.c_int
+		status = function(ctypes.addressof(private_buffer), ctypes.sizeof(private_buffer), ctypes.addressof(public_buffer), ctypes.sizeof(public_buffer))
+		key = public_buffer.value.decode('ascii')
+		if status != 0 or not _key(key):
+			raise ValueError
+		return key
+	except (AttributeError, UnicodeError, TypeError, ValueError):
+		raise ProvisionError('Unable to identify the current Mullvad device') from None
 	finally:
 		ctypes.memset(ctypes.addressof(private_buffer), 0, len(private_buffer))
 

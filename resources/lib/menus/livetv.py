@@ -376,7 +376,14 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 		else: ku.set_property('LiveTV.Sports.CatalogUnavailable', '')
 		if on_status: ku.set_property('LiveTV.Soccer.Status', '')
 		return {}, []
-	if not any(isinstance(fixture, dict) and fixture.get('status') in _fixture_service.LIVE_STATUSES for fixture in fixtures):
+	target_fixtures = []
+	if selected_fixture is not None:
+		from modules.livetv_feed_selection import _fixture_key
+		try: target_fixtures = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == selected_fixture]
+		except (KeyError, TypeError, ValueError): target_fixtures = []
+		if sport == 'f1' or len(target_fixtures) != 1 or not _fixture_can_select_feeds(sport, target_fixtures[0]): target_fixtures = []
+	upcoming_picker = sport == 'soccer' and picker_priority and bool(target_fixtures) and target_fixtures[0].get('status') == 'Scheduled'
+	if not upcoming_picker and not any(isinstance(fixture, dict) and fixture.get('status') in _fixture_service.LIVE_STATUSES for fixture in fixtures):
 		if prefetch_pool:
 			prefetch_canceled.set()
 			prefetch_pool.shutdown(wait=False, cancel_futures=True)
@@ -407,13 +414,7 @@ def _sports_catalog_groups(primary, sport, reload='', on_status=None, fixtures=N
 	def direct_groups(streams):
 		if sport == 'f1': return _f1.fixture_groups(streams, fixtures, live_only=True)
 		if sport in ('hockey', 'football', 'basketball', 'tennis'): return _sports.fixture_groups(streams, sport, fixtures, live_only=True)
-		return _soccer_fixture_groups(streams, fixtures, live_only=True)
-	target_fixtures = []
-	if selected_fixture is not None:
-		from modules.livetv_feed_selection import _fixture_key
-		try: target_fixtures = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == selected_fixture]
-		except (KeyError, TypeError, ValueError): target_fixtures = []
-		if sport == 'f1' or len(target_fixtures) != 1 or target_fixtures[0].get('status') not in _fixture_service.LIVE_STATUSES: target_fixtures = []
+		return _soccer_fixture_groups(streams, fixtures, live_only=not upcoming_picker)
 	def selected_groups(streams):
 		if not target_fixtures or sport == 'f1': return {}
 		fixture = target_fixtures[0]
@@ -1121,15 +1122,21 @@ def _live_start(fixture):
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError, OSError): return float('inf')
 
 
-def _schedule_state(fixture, now):
+def _schedule_state(fixture, now, *, live_at_kickoff=False):
 	if fixture.get('status') in _fixture_service.LIVE_STATUSES: return 'Live', 0
 	if fixture.get('status') != 'Scheduled': return '', 0
 	try:
 		start = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 		if start.utcoffset() is None: return '', 0
 		kickoff = start.timestamp()
-		return ('Upcoming', kickoff) if -15 * 60 <= kickoff - now <= 24 * 3600 else ('', 0)
+		if live_at_kickoff and 0 <= now - kickoff < _sportapi_service.SCHEDULE_GRACE_SECONDS: return 'Live', kickoff
+		if live_at_kickoff and now - kickoff >= _sportapi_service.SCHEDULE_GRACE_SECONDS: return '', 0
+		return ('Upcoming', kickoff) if -_sportapi_service.SCHEDULE_GRACE_SECONDS <= kickoff - now <= 24 * 3600 else ('', 0)
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError, OSError): return '', 0
+
+
+def _fixture_can_select_feeds(sport, fixture):
+	return fixture.get('status') in _fixture_service.LIVE_STATUSES or (sport == 'soccer' and _schedule_state(fixture, time.time())[0] == 'Upcoming')
 
 
 def _fixtures_agree(first, second):
@@ -1846,8 +1853,9 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 
 def _sports_overview_entries(sport, fixtures, held_identity=''):
 	entries = []
+	now = time.time()
 	for fixture in fixtures:
-		state, kickoff = _schedule_state(fixture, time.time())
+		state, kickoff = _schedule_state(fixture, now, live_at_kickoff=sport == 'soccer')
 		if held_identity and _fixture_focus_identity(sport, fixture) == held_identity: state = 'Held'
 		if not state: continue
 		if sport == 'f1': key = fixture['id']
@@ -2045,13 +2053,13 @@ def soccer(params):
 			match_league = matched['league']
 			if league != 'All' and league != match_league: continue
 			title = '%s vs %s' % (matched['home'], matched['away']) if matched else ' vs '.join(event)
-			state, kickoff = _schedule_state(matched, now)
+			state, kickoff = _schedule_state(matched, now, live_at_kickoff=True)
 			if not state: continue
 			rows.append((title, match_league, event, scope, matched, state, kickoff))
 		for title, match_league, event, scope, matched, state, kickoff in sorted(rows, key=lambda row: (row[5] != 'Live', _live_start(row[4]) if row[5] == 'Live' else row[6], row[1].casefold(), row[0].casefold())):
 			identity = _fixture_focus_identity('soccer', matched)
-			available = not cached and state == 'Live' and bool(identity) and (event, scope) not in duplicate_keys
-			feed_label = cache_status if cached else 'Event unavailable' if state == 'Live' and not available else ''
+			available = not cached and bool(identity) and (event, scope) not in duplicate_keys
+			feed_label = cache_status if cached else 'Event unavailable' if not available else ''
 			label = '%s — %s%s' % (match_league, title, ' — ' + feed_label if feed_label else '')
 			team_properties = {}
 			for side in ('home', 'away'):

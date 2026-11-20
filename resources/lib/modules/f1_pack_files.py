@@ -7,6 +7,7 @@ _DIMENSIONS = re.compile(r'\b(?:640|720|1280|1366|1440|1600|1920|2048|2560|3840|
 _F1 = re.compile(r'\b(?:f\s*1|formula\s*(?:1|one))\b(?!\s*academy\b)')
 _QUALIFYING_DAYS = {'Q1', 'Q2'}
 _QUALIFYING_PHASES = {'Q3', 'SQ1', 'SQ2', 'SQ3'}
+_SATURDAY_PRACTICE_SLOTS = {'FP_SATURDAY_FIRST', 'FP_SATURDAY_SECOND'}
 
 
 def _round_agrees(text, fixture, year, round_numbers, *, event_named=False):
@@ -27,13 +28,14 @@ def _folder_conflicts(folders, filename, fixture, *, season, require_exact_sessi
 	code = fixture['session_code']
 	for index, part in enumerate(folders):
 		folder = f1_search._text(part)
-		if f1_search._recording_rejected(folder, f1_search._PACK_EXTRAS, code=code, season=season): return True
+		session_text = f1_search._session_text(part)
+		if f1_search._recording_rejected(session_text, f1_search._PACK_EXTRAS, code=code, season=season): return True
 		collection = index == 0 and re.search(r'\b(?:season|weekend|pack|collection)\b', folder)
 		if f1_search._SUPPORT_SERIES.search(folder):
 			if not collection or not _F1.search(folder): return True
 			if not _F1.search(filename) and not any(_F1.search(f1_search._text(part)) for part in folders[1:]): return True
-		codes = f1_search._session_codes(f1_search._session_text(part), season=season)
-		if codes.intersection(f1_search._QUALIFYING_WEEKDAYS):
+		codes = f1_search._session_codes(session_text, season=season)
+		if 'PQ' in codes or codes.intersection(f1_search._QUALIFYING_WEEKDAYS) or codes.intersection(f1_search._PRACTICE_2003_SATURDAY):
 			if not f1_search._session_matches(codes, fixture): return True
 			continue
 		numbered = codes.intersection(_QUALIFYING_DAYS | _QUALIFYING_PHASES | {'QUALIFYING_PAIR'})
@@ -49,6 +51,16 @@ def _folder_conflicts(folders, filename, fixture, *, season, require_exact_sessi
 	return False
 
 
+def _file_session_matches(codes, folders, fixture, year):
+	if f1_search._session_matches(codes, fixture): return True
+	code = fixture['session_code']
+	if year != '2003' or code not in ('FP2', 'FP3') or codes not in ({code}, {'FREE_PRACTICE'}): return False
+	for part in folders:
+		folder_codes = f1_search._session_codes(f1_search._session_text(part), season=year)
+		if len(folder_codes) == 1 and folder_codes & _SATURDAY_PRACTICE_SLOTS and f1_search._session_matches(folder_codes, fixture): return True
+	return False
+
+
 def matching_files(files, fixture, pack_type):
 	"""Return original file records only when race and session are unambiguous.
 
@@ -58,7 +70,7 @@ def matching_files(files, fixture, pack_type):
 	if not isinstance(files, list) or not isinstance(fixture, dict) or pack_type not in ('weekend', 'season'): return []
 	date, code = fixture.get('date', ''), fixture.get('session_code')
 	if not isinstance(date, str) or not re.match(r'^\d{4}-', date) or code not in f1_search._SESSIONS: return []
-	year, matched = date[:4], []
+	year, matched = f1_search._fixture_year(fixture), []
 	if not f1_search._fixture_session_allowed(fixture): return []
 	for item in files:
 		if not isinstance(item, dict): continue
@@ -68,14 +80,15 @@ def matching_files(files, fixture, pack_type):
 		if not parts: continue
 		basename = parts[-1]
 		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(basename)
-		if not text or not filename or f1_search._recording_rejected(filename, f1_search._FILE_REJECT, code=code, season=year): continue
-		if not f1_search._session_matches(f1_search._session_codes(f1_search._session_text(basename), season=year), fixture): continue
+		session_text = f1_search._session_text(basename)
+		if not text or not filename or f1_search._recording_rejected(session_text, f1_search._FILE_REJECT, code=code, season=year): continue
+		if not _file_session_matches(f1_search._session_codes(session_text, season=year), parts[:-1], fixture, year): continue
 		if _folder_conflicts(parts[:-1], filename, fixture, season=year): continue
 		folder_rounds = _folder_rounds(parts[:-1], year)
 		event_named = pack_type == 'weekend' or (bool(fixture.get('round_aliases')) and f1_search.event_name_matches(text, fixture))
 		if not _round_agrees(text, fixture, year, _path_rounds(text, folder_rounds), event_named=event_named): continue
 		if pack_type == 'season':
-			if not f1_search._event_matches(text, fixture, folder_rounds=folder_rounds): continue
+			if not f1_search._event_matches(text, fixture, folder_rounds=folder_rounds, require_name=year != date[:4]): continue
 		elif f1_search._event_conflicts(text, fixture): continue
 		matched.append(item)
 	return matched
@@ -90,7 +103,7 @@ def unconfirmed_race_files(files, fixture, pack_type):
 	if not isinstance(files, list) or not isinstance(fixture, dict) or pack_type != 'season' or fixture.get('session_code') != 'RACE': return []
 	date, round_number = fixture.get('date', ''), fixture.get('race_round')
 	if not isinstance(date, str) or not re.match(r'^\d{4}-', date) or not isinstance(round_number, int) or isinstance(round_number, bool) or not 1 <= round_number <= 99: return []
-	year, matched = date[:4], []
+	year, matched = f1_search._fixture_year(fixture), []
 	aliases = fixture.get('aliases') if isinstance(fixture.get('aliases'), list) else []
 	others = fixture.get('other_event_aliases') if isinstance(fixture.get('other_event_aliases'), list) else []
 	other_names = f1_search._other_names(others)
@@ -102,9 +115,9 @@ def unconfirmed_race_files(files, fixture, pack_type):
 		parts = [part for part in re.split(r'[/\\]', path) if part]
 		if not parts: continue
 		text, filename = _DIMENSIONS.sub(' ', f1_search._text(path)), f1_search._text(parts[-1])
-		if not text or not filename or f1_search._recording_rejected(text, f1_search._PACK_EXTRAS, code='RACE', season=year): continue
+		if not text or not filename or f1_search._recording_rejected(f1_search._session_text(path), f1_search._PACK_EXTRAS, code='RACE', season=year): continue
 		if f1_search._recording_rejected(filename, f1_search._FILE_REJECT, code='RACE', season=year): continue
-		if re.search(r'\b(?:practice|fp(?:\s*0?[1-4])?|qualifying|quali|qual|sprint|shootout|warm\s*ups?|wu|familiari[sz]ation|s?q\s*[123])\b', text): continue
+		if re.search(r'\b(?:practice|fp(?:\s*0?[1-4])?|qualif(?:y(?:ing)?|ication)|quali|qual|sprint|shootout|warm\s*ups?|wu|familiari[sz]ation|s?q\s*[123])\b', text): continue
 		if not re.search(r'\b(?:grand\s+prix|gp)\b', filename): continue
 		if not any(f1_search._contains_race(filename, name) for name in unique_names): continue
 		if f1_search._session_codes(filename, season=year): continue

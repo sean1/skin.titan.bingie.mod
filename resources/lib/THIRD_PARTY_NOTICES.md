@@ -11,3 +11,7 @@ These pure-Python packages are bundled so the add-on does not require separately
 | urllib3 | 2.2.3 | MIT | https://github.com/urllib3/urllib3 |
 
 The package metadata and full license texts are retained in each adjacent `*.dist-info` directory.
+
+## Historical Formula 1 classifications
+
+`modules/f1_archive_sessions.json` is adapted from data by the F1DB contributors in [F1DB v2026.20.0](https://github.com/f1db/f1db/releases/tag/v2026.20.0) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The inventory keeps positive timing or lap evidence from individual session classifications and maps race identities to BINGIE’s existing calendar. It omits aggregate qualifying when the format had separate sessions. Historical reports corroborate separate pre-qualifying sessions and supply dates where available, including the [1965 South African Grand Prix](https://www.motorsportmagazine.com/archive/article/february-1965/28/11th-south-african/).

@@ -38,7 +38,7 @@ def _enrich(fixture, fixtures):
 	weekend = [row for row in fixtures if row['event_id'] == event_id]
 	if code == 'FP1' and fixture['date'][:4] >= '2023' and sorted(row['session_code'] for row in weekend) == ['FP1', 'QUAL', 'RACE', 'SR', 'SS']:
 		fixture['single_practice'] = True
-	if code in ('Q1', 'Q2'):
+	if code in ('Q1', 'Q2') and not fixture.get('qualifying_practice'):
 		split = [row for row in weekend if row['session_code'] in ('Q1', 'Q2')]
 		if len(split) == 1:
 			from menus.f1_show import _event_archive_sessions

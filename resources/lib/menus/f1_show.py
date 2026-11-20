@@ -14,11 +14,11 @@ from modules.livetv_timezone import get_timezone
 
 
 _SEASON_PROPERTY = 'BingieF1.Season'
-_SCHEDULE_PROPERTY = 'BingieF1.SeasonSchedule.5'
+_SCHEDULE_PROPERTY = 'BingieF1.SeasonSchedule.9'
 _ARCHIVE_PROPERTY = 'BingieF1.EventArchive.1'
 _SCHEDULE_LIMIT = 256 * 1024
-_ARCHIVE_ORDER = {code: index for index, code in enumerate(('PQ', 'FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'QUAL', 'WU', 'RACE'))}
-_ARCHIVE_ORDER_2003 = {code: index for index, code in enumerate(('FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'WU', 'Q2', 'QUAL', 'RACE'))}
+_ARCHIVE_ORDER = {code: index for index, code in enumerate(('PQ', 'FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'Q3', 'QUAL', 'WU', 'RACE'))}
+_ARCHIVE_ORDER_2003 = {code: index for index, code in enumerate(('FP1', 'Q1', 'FP2', 'FP3', 'WU', 'Q2', 'QUAL', 'RACE'))}
 
 
 def _year(value):
@@ -174,7 +174,8 @@ def events(params):
 			elif all(row['status'] == 'Finished' and datetime.fromisoformat(row['date'].replace('Z', '+00:00')) <= now for row in group):
 				status, reference = 'FINISHED', next((row for row in reversed(group) if not row.get('archive_undated')), group[-1])
 			else: status, reference = 'CHECKING', first
-			card_date = datetime.fromisoformat(reference['date'].replace('Z', '+00:00')).astimezone(get_timezone('America/Vancouver')).strftime('%d %b')
+			card_day = datetime.fromisoformat(reference['calendar_day']) if reference.get('date_only') else datetime.fromisoformat(reference['date'].replace('Z', '+00:00')).astimezone(get_timezone('America/Vancouver'))
+			card_date = card_day.strftime('%d %b')
 			props = {'F1.Event': first['event'], 'F1.EventId': first['event_id'], 'F1.EventKey': quote(first['event_id'], safe=''), 'F1.Year': str(year), 'F1.When': _when(reference), 'F1.ShortWhen': _when(reference, short=True), 'F1.CardWhen': card_date, 'F1.Status': status}
 			livetv._item(first['event'], {'mode': 'livetv.f1_show_sessions', 'year': str(year), 'event_id': first['event_id']}, True, playable=False, extra_properties=props)
 		livetv._finish()
@@ -216,8 +217,8 @@ def sessions(params):
 		identities = Counter((row.get('event_id'), row.get('id')) for row in fixtures)
 		live_counts = Counter(row.get('id') for row in live)
 		order = _ARCHIVE_ORDER_2003 if year == 2003 else _ARCHIVE_ORDER
-		undated = any(row.get('archive_undated') for row in selected)
-		for fixture in sorted(selected, key=lambda row: (order.get(row['session_code'], len(order)) if undated else 0, row['date'])):
+		use_order = year == 2003 or any(row.get('archive_undated') for row in selected)
+		for fixture in sorted(selected, key=lambda row: (order.get(row['session_code'], len(order)) if use_order else 0, row['date'], order.get(row['session_code'], len(order)))):
 			status = fixture.get('status')
 			when = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 			event, title = fixture['event'], fixture['session_label']

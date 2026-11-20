@@ -5,8 +5,8 @@ from modules import livetv_f1_search as f1_search
 
 _DIMENSIONS = re.compile(r'\b(?:640|720|1280|1366|1440|1600|1920|2048|2560|3840|4096|7680)\s*x\s*(?:360|480|540|576|720|768|900|1080|1088|1440|2160|4320)\b')
 _F1 = re.compile(r'\b(?:f\s*1|formula\s*(?:1|one))\b(?!\s*academy\b)')
-_QUALIFYING_DAYS = {'Q1', 'Q2'}
-_QUALIFYING_PHASES = {'Q3', 'SQ1', 'SQ2', 'SQ3'}
+_QUALIFYING_DAYS = {'Q1', 'Q2', 'Q3'}
+_QUALIFYING_PHASES = {'SQ1', 'SQ2', 'SQ3'}
 _SATURDAY_PRACTICE_SLOTS = {'FP_SATURDAY_FIRST', 'FP_SATURDAY_SECOND'}
 
 
@@ -35,16 +35,17 @@ def _folder_conflicts(folders, filename, fixture, *, season, require_exact_sessi
 			if not collection or not _F1.search(folder): return True
 			if not _F1.search(filename) and not any(_F1.search(f1_search._text(part)) for part in folders[1:]): return True
 		codes = f1_search._session_codes(session_text, season=season)
-		if 'PQ' in codes or codes.intersection(f1_search._QUALIFYING_WEEKDAYS) or codes.intersection(f1_search._PRACTICE_2003_SATURDAY):
+		if 'PQ' in codes or codes.intersection(f1_search._QUALIFYING_WEEKDAYS) or codes.intersection(f1_search._PRACTICE_2003_PATTERNS):
 			if not f1_search._session_matches(codes, fixture): return True
 			continue
 		numbered = codes.intersection(_QUALIFYING_DAYS | _QUALIFYING_PHASES | {'QUALIFYING_PAIR'})
 		if code in ('QUAL', 'SS') and numbered: return True
 		if code in _QUALIFYING_DAYS and numbered.intersection(_QUALIFYING_PHASES): return True
+		if code in _QUALIFYING_DAYS and 'Q3' in numbered and not fixture.get('qualifying_practice'): return True
 		if code in _QUALIFYING_DAYS and re.fullmatch(f1_search._QUALIFYING, folder): continue
 		if collection and not numbered: continue
 		if code in ('FP1', 'FP2', 'FP3', 'FP4') and codes == {'FREE_PRACTICE'}: continue
-		if codes.intersection({'FAM', 'FREE_PRACTICE', 'QUALIFYING_PAIR'}) or _QUALIFYING_DAYS <= codes:
+		if codes.intersection({'FAM', 'FREE_PRACTICE', 'QUALIFYING_PAIR'}) or len(codes.intersection(_QUALIFYING_DAYS)) > 1:
 			if not f1_search._session_matches(codes, fixture): return True
 			continue
 		if codes and (code not in codes or (require_exact_session and codes != {code})): return True
@@ -65,7 +66,8 @@ def matching_files(files, fixture, pack_type):
 	"""Return original file records only when race and session are unambiguous.
 
 	Weekend pack titles have already established the race. Season packs must
-	identify the race in each path; every file must identify its own session.
+	identify the race in each path. A 2003 Saturday practice file may identify
+	its practice slot through an explicit parent folder.
 	"""
 	if not isinstance(files, list) or not isinstance(fixture, dict) or pack_type not in ('weekend', 'season'): return []
 	date, code = fixture.get('date', ''), fixture.get('session_code')
@@ -125,7 +127,9 @@ def unconfirmed_race_files(files, fixture, pack_type):
 		if not years or any(found != year for found in years): continue
 		folder_rounds = _folder_rounds(parts[:-1], year)
 		round_numbers = _path_rounds(text, folder_rounds)
-		if not round_numbers or not _round_agrees(text, fixture, year, round_numbers, event_named=True): continue
+		episode_rounds = re.findall(rf'\bs{year}e(\d{{1,3}})\b', filename)
+		if episode_rounds and (len(episode_rounds) != 1 or int(episode_rounds[0]) != round_number): continue
+		if not (round_numbers or episode_rounds) or not _round_agrees(text, fixture, year, round_numbers, event_named=True): continue
 		if not f1_search._event_matches(text, fixture, folder_rounds=folder_rounds): continue
 		if not _folder_conflicts(parts[:-1], filename, fixture, season=year, require_exact_session=True): matched.append({**item, '_f1_unconfirmed': True})
 	return matched

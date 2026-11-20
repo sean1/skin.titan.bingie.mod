@@ -1,6 +1,7 @@
 """Match discovered Formula 1 torrents to enabled debrid services."""
 
 from concurrent.futures import ThreadPoolExecutor
+from http.client import HTTPException
 from itertools import islice, zip_longest
 from threading import Thread
 
@@ -43,25 +44,40 @@ def cached_candidates(candidates):
 def cached_pack_candidates(candidates, fixture):
 	if not candidates: return []
 	providers = enabled_providers()
+	if not providers: return []
 	labelled = [candidate for candidate in candidates if candidate['pack'] != 'unlabelled']
-	if 'torbox' not in providers: return cached_candidates(labelled)
-	from modules import f1_pack_files
+	from modules import f1_pack_files, f1_torrentdownload
 	from modules.source_utils import supported_video_extensions
-	api = debrid.import_debrid('torbox')
-	if not api: return cached_candidates(labelled)
 	groups = [[candidate for candidate in candidates if candidate['pack'] == kind] for kind in ('weekend', 'season', 'unlabelled')]
-	probe = list(islice((candidate for batch in zip_longest(*groups) for candidate in batch if candidate is not None), 25))
-	try: cached_files = api.cached_torrent_files([candidate['hash'] for candidate in probe])
-	except Exception: cached_files = {}
+	ordered = [candidate for batch in zip_longest(*groups) for candidate in batch if candidate is not None]
 	extensions = tuple(supported_video_extensions())
+
+	def has_session(candidate, names):
+		files = [{'filename': name} for name in names if name.lower().endswith(extensions)]
+		pack = 'season' if candidate['pack'] == 'season' else 'weekend'
+		return bool(f1_pack_files.matching_files(files, fixture, pack))
+
+	api = debrid.import_debrid('torbox') if 'torbox' in providers else None
+	probe = ordered[:25] if api else []
+	try: cached_files = api.cached_torrent_files([candidate['hash'] for candidate in probe]) if probe else {}
+	except Exception: cached_files = {}
 	results, confirmed = [], set()
 	for candidate in probe:
-		files = [{'filename': name} for name in cached_files.get(candidate['hash'], []) if name.lower().endswith(extensions)]
-		pack = 'season' if candidate['pack'] == 'season' else 'weekend'
-		if f1_pack_files.matching_files(files, fixture, pack):
+		if has_session(candidate, cached_files.get(candidate['hash'], [])):
 			confirmed.add(candidate['hash'])
 			results.extend({**candidate, 'debrid': provider, 'availability': 'cached' if provider == 'torbox' else 'unknown', 'session_verified': True} for provider in providers)
-	return results + cached_candidates([candidate for candidate in labelled if candidate['hash'] not in confirmed])
+	public = []
+	eligible = [candidate for candidate in ordered if candidate['hash'] not in confirmed and candidate.get('detail_path')]
+	public_groups = ([candidate for candidate in eligible if candidate['pack'] == 'unlabelled'], [candidate for candidate in eligible if candidate['pack'] != 'unlabelled'])
+	public_probe = (candidate for batch in zip_longest(*public_groups) for candidate in batch if candidate is not None)
+	for index, candidate in enumerate(islice(public_probe, 3)):
+		if index == 2 and public: break
+		try: filenames = f1_torrentdownload.manifest_files(candidate['hash'], candidate['detail_path'])
+		except (OSError, HTTPException, ValueError): continue
+		if has_session(candidate, filenames):
+			public.append({**candidate, 'session_verified': True})
+			confirmed.add(candidate['hash'])
+	return results + cached_candidates(public + [candidate for candidate in labelled if candidate['hash'] not in confirmed])
 
 
 def prepare(candidate):

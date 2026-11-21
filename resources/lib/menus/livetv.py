@@ -28,7 +28,7 @@ from modules.livetv_catalog import get as _catalog_get
 from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact, _usable_streams
 from modules.livetv_vpn_relay import open_url as _vpn_open, register as _vpn_register
 from modules.livetv_vpn import failure_message as _vpn_failure_message
-from modules.livetv_vpn import report_catalog_problem, request_connection as _request_vpn, wait_for_connection as _wait_for_vpn
+from modules.livetv_vpn import report_catalog_access_problem, report_catalog_problem, request_connection as _request_vpn, wait_for_connection as _wait_for_vpn
 from modules import livetv_fixtures as _fixture_service
 from modules import livetv_sportapi as _sportapi_service
 from modules import livetv_soccer_logos as _soccer_logos
@@ -854,6 +854,12 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=
 		except (OSError, HTTPException, ValueError, TypeError) as error:
 			enough_time = _deadline is None or _deadline - started >= 1
 			degraded = full_live_catalog and enough_time
+			if isinstance(error, HTTPError):
+				upstream = error.headers is None or not error.headers.get('X-Bingie-Relay-Error')
+				if upstream and error.code in (403, 502, 503, 504, 511):
+					if enough_time and not options: report_catalog_access_problem(account.get('id') or 'primary', action, started)
+					degraded = False
+				elif not upstream or 400 <= error.code < 500 and error.code != 408: degraded = False
 			if enough_time or not (isinstance(error, TimeoutError) and str(error) == 'Live TV catalog timed out'):
 				timed_out = isinstance(error, TimeoutError) or (isinstance(error, HTTPError) and error.code in (408, 504)) or (isinstance(error, URLError) and isinstance(error.reason, TimeoutError))
 				problem = 'Catalog timed out' if timed_out else 'Invalid catalog response' if isinstance(error, (ValueError, TypeError)) else 'Catalog request failed'

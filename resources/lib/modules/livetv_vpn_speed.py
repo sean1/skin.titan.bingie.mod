@@ -66,7 +66,7 @@ def _collect(jobs, work, deadline, cancel):
 		pool.shutdown(wait=False, cancel_futures=True)
 
 
-def shortlist_relays(relays, current_host, *, limit=2, cancel=None):
+def shortlist_relays(relays, current_host, *, limit=2, cancel=None, preferred_hostname=None):
 	"""Shortlist eligible alternatives by response reliability, then median latency."""
 	if limit <= 0 or (cancel and cancel()): return []
 	eligible = {}
@@ -75,6 +75,7 @@ def shortlist_relays(relays, current_host, *, limit=2, cancel=None):
 		except (KeyError, TypeError, ValueError): continue
 		if host != current_host: eligible.setdefault(host, relay)
 	if not eligible: return []
+	preferred = [host for host, relay in eligible.items() if relay.get('hostname') == preferred_hostname] if preferred_hostname else []
 	cities = {}
 	host_cities = {}
 	for host, relay in eligible.items():
@@ -82,7 +83,7 @@ def shortlist_relays(relays, current_host, *, limit=2, cancel=None):
 		city = parts[1] if len(parts) > 1 else ''
 		host_cities[host] = city
 		cities.setdefault(city, host)
-	hosts = list(dict.fromkeys([*cities.values(), *eligible]))[:_PING_LIMIT]
+	hosts = list(dict.fromkeys([*preferred, *cities.values(), *eligible]))[:_PING_LIMIT]
 	jobs = {host: (host,) for host in hosts}
 	samples = dict(_collect(jobs, _ping, monotonic() + _PING_TIMEOUT + 1, cancel))
 	method = 'ICMP'
@@ -103,10 +104,11 @@ def shortlist_relays(relays, current_host, *, limit=2, cancel=None):
 			city = host_cities[host]
 			if city and host in samples and samples[host][0] >= 2: diverse.setdefault(city, host)
 		ranked = list(dict.fromkeys([*diverse.values(), *ranked]))
+	if preferred: ranked = list(dict.fromkeys([*preferred, *ranked]))
 	return [dict(eligible[host], ping_ms=samples[host][1] if host in samples else None, ping_method=method) for host in ranked[:limit]]
 
 
-def _measure_catalog(account, relay_descriptor_path, deadline):
+def _measure_catalog(account, action, relay_descriptor_path, deadline):
 	from menus import livetv
 	from modules import livetv_vpn_relay
 
@@ -117,26 +119,32 @@ def _measure_catalog(account, relay_descriptor_path, deadline):
 			yield response
 			if response.length not in (None, 0): raise OSError('Incomplete Live TV catalog')
 
-	catalog = livetv._request(account, 'get_live_streams', _deadline=deadline, _vpn_opener=open_catalog)
+	catalog = livetv._request(account, action, _deadline=deadline, _vpn_opener=open_catalog)
 	if not isinstance(catalog, list) or not catalog or len(catalog) > MAX_ENTRIES: return False
-	for stream in catalog:
-		if not isinstance(stream, dict): continue
-		stream_id, name = stream.get('stream_id'), stream.get('name')
-		if type(stream_id) in (int, str) and str(stream_id).isdecimal() and isinstance(name, str) and name.strip(): return True
+	id_field, name_field = ('category_id', 'category_name') if action == 'get_live_categories' else ('stream_id', 'name')
+	for entry in catalog:
+		if not isinstance(entry, dict): continue
+		identity, name = entry.get(id_field), entry.get(name_field)
+		if type(identity) in (int, str) and str(identity).isdecimal() and isinstance(name, str) and name.strip(): return True
 	return False
 
 
-def measure_exit(accounts, relay_descriptor_path, *, timeout=35, cancel=None):
-	"""Measure full playable catalogs through the supplied relay under one wall deadline."""
+def measure_exit(accounts, relay_descriptor_path, *, timeout=35, cancel=None, repair=None):
+	"""Measure playable catalogs, using provider/action keys when checking a repair."""
 	if not relay_descriptor_path or (cancel and cancel()): return {}
 	deadline = monotonic() + min(45, max(0, timeout))
-	jobs = {identity: (account, relay_descriptor_path, deadline) for identity, account in accounts}
+	jobs = {(identity, 'get_live_streams') if repair is not None else identity: (account, 'get_live_streams') for identity, account in accounts}
+	if repair is not None:
+		identity, action = repair
+		full_catalog = jobs.get((identity, 'get_live_streams'))
+		if action == 'get_live_categories' and full_catalog:
+			jobs[repair] = (full_catalog[0], action)
 	if not jobs or monotonic() >= deadline: return {}
 
-	def measure(account, descriptor, deadline):
+	def measure(account, action):
 		started = monotonic()
 		if started >= deadline or (cancel and cancel()): return None
-		if not _measure_catalog(account, descriptor, deadline): return None
+		if not _measure_catalog(account, action, relay_descriptor_path, deadline): return None
 		finished = monotonic()
 		if finished <= deadline: return finished - started
 
@@ -155,8 +163,8 @@ def is_faster(candidate, current):
 	return all(candidate[key] <= value + max(1, 0.2 * value) for key, value in current.items())
 
 
-def best_relay(results, baseline):
+def best_relay(results, baseline, *, preferred_hostname=None):
 	"""Pick the best measured improvement over a shared baseline."""
 	eligible = ((relay, timings) for relay, timings in results if is_faster(timings, baseline))
-	winner = min(eligible, key=lambda item: (-len(item[1]), max(item[1].values()), median(item[1].values())), default=None)
+	winner = min(eligible, key=lambda item: (-len(item[1]), bool(preferred_hostname and item[0]['hostname'] != preferred_hostname), max(item[1].values()), median(item[1].values())), default=None)
 	return winner[0] if winner is not None else None

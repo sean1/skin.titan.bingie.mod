@@ -24,6 +24,7 @@ import urllib.request
 _API = 'https://api.mullvad.net'
 _DEVICE_LIMIT = 5
 _RELAY_HOSTNAME = re.compile(r'nl-ams-wg-[0-9]+')
+_PREFERRED_RELAY_HOSTNAME = 'nl-ams-wg-301'
 _RELAY_PORT = 10997
 _CONFIG = 'mullvad-wireguard.conf'
 _PENDING = 'mullvad-pending.json'
@@ -241,6 +242,10 @@ def _relays(opener):
 def _listed_relay(candidates, peer):
 	if not isinstance(peer, dict): return None
 	return next((relay for relay in candidates if all(relay[field] == peer.get(field) for field in ('host', 'port', 'public_key'))), None)
+
+
+def _preferred_relay(candidates):
+	return next((relay for relay in candidates if relay['hostname'] == _PREFERRED_RELAY_HOSTNAME), candidates[0])
 
 
 def relay_candidates():
@@ -494,10 +499,10 @@ def ensure_config(private_directory, account_path, native_library, *, allow_regi
 			opener, token = _authenticated(account)
 			candidates = _relays(opener)
 			if state is None:
-				state = _prepare_registration(account, native_library, candidates[0])
+				state = _prepare_registration(account, native_library, _preferred_relay(candidates))
 				_save_pending(pending_path, state)
 			elif not _listed_relay(candidates, state.get('relay')):
-				state['relay'] = candidates[0]
+				state['relay'] = _preferred_relay(candidates)
 				_save_pending(pending_path, state)
 			return _finish_registration(config_path, pending_path, binding_path, account, opener, token, state)
 	except ProvisionError:
@@ -582,7 +587,7 @@ def ensure_amsterdam_relay(private_directory, expected_signature):
 			config = _read_config(config_path)
 			if config is None: raise ProvisionError('Existing Mullvad configuration needs manual recovery')
 			current = _listed_relay(candidates, _config_relay(config))
-			selected = current or candidates[0]
+			selected = current or _preferred_relay(candidates)
 			updated = None if current else _set_config_relay(config, selected)
 			if not _config_matches(config_path, expected_signature): raise ProvisionError('Mullvad configuration changed; retry later')
 			signature = expected_signature if updated is None else _private_write(config_path, updated)

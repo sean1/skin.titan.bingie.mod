@@ -260,8 +260,8 @@ def _unused_port():
 		return reserved.getsockname()[1]
 
 
-def _verify_exit(port, password, hostname=None):
-	"""Verify Mullvad over the CONNECT-only proxy without any direct fallback."""
+def _verify_exit(port, password, hostname):
+	"""Verify the expected Mullvad peer over the CONNECT-only proxy."""
 	credentials = base64.b64encode(('bingie:' + password).encode('ascii')).decode('ascii')
 	connection = http.client.HTTPSConnection('127.0.0.1', port, timeout=8)
 	connection.set_tunnel('am.i.mullvad.net', 443, headers={'Proxy-Authorization': 'Basic ' + credentials})
@@ -272,7 +272,7 @@ def _verify_exit(port, password, hostname=None):
 		payload = response.read(16385)
 		if len(payload) > 16384: return False
 		data = json.loads(payload)
-		return data.get('mullvad_exit_ip') is True and (hostname is None or data.get('mullvad_exit_ip_hostname') == hostname)
+		return data.get('mullvad_exit_ip') is True and data.get('mullvad_exit_ip_hostname') == hostname
 	finally:
 		connection.close()
 
@@ -375,7 +375,11 @@ class VPNManager:
 			finish('No VPN server comparison is available.')
 			return None
 		relays = livetv_vpn_provision.relay_candidates()
-		current_name = next((peer['hostname'] for peer in relays if peer['host'] == current['host'] and peer['public_key'] == current['public_key']), 'current server')
+		current = livetv_vpn_provision._listed_relay(relays, current)
+		if not current:
+			finish('No VPN server comparison is available.')
+			return None
+		current_name = current['hostname']
 		alternates = [peer for peer in relays if peer['public_key'] != current['public_key']]
 		candidates = livetv_vpn_speed.shortlist_relays(alternates, current['host'], limit=_SPEED_CANDIDATES, cancel=cancelled)
 		if not candidates:
@@ -425,6 +429,9 @@ class VPNManager:
 						except (OSError, VPNUnavailable): unchanged = False
 						if not unchanged or library.Start(os.fsencode(config), password.encode('ascii'), port) != 0:
 							raise VPNUnavailable('IPTV VPN could not resume after testing')
+						try: verified = _verify_exit(port, password, current_name) and _signature(config) == signature
+						except Exception: verified = False
+						if not verified: raise VPNUnavailable('IPTV VPN could not resume after testing')
 						ku.clear_property(_SPEED_PAUSE_PROPERTY)
 		if switched: return switched
 		if cancelled(): finish('VPN server test cancelled.')
@@ -442,6 +449,7 @@ class VPNManager:
 		seen_speed = 0.0
 		seen_catalog_problems = 0.0
 		speed_switch = None
+		approved_relay = None
 		if speed_test_status().startswith((_SPEED_TESTING, _SPEED_AUTO_TESTING)): ku.clear_property(_SPEED_STATUS_PROPERTY)
 		while not self._stop.is_set():
 			applying_speed = speed_switch is not None
@@ -478,7 +486,10 @@ class VPNManager:
 				if self._stop.is_set(): break
 				private_real = os.path.realpath(private)
 				if os.path.commonpath((private_real, os.path.realpath(config))) != private_real: raise VPNUnavailable('VPN configuration unavailable')
-				signature = _signature(config)
+				configured_signature = _signature(config)
+				if not approved_relay or approved_relay[0] != configured_signature:
+					approved_relay = livetv_vpn_provision.ensure_amsterdam_relay(private, configured_signature)
+				signature, exit_hostname = approved_relay
 				if speed_switch and signature != speed_switch[2]:
 					_speed_result('VPN configuration changed. Test result was not applied.', automatic=bool(speed_switch[3]))
 					speed_switch = None
@@ -497,7 +508,7 @@ class VPNManager:
 				for _ in range(3):
 					if self._stop.is_set(): break
 					if activation_idle and not _automatic_speed_idle(activation_idle): break
-					try: verified = _verify_exit(port, password, speed_switch[1]['hostname']) if speed_switch else _verify_exit(port, password)
+					try: verified = _verify_exit(port, password, exit_hostname)
 					except Exception: verified = False
 					if verified: break
 					if not applying_speed and _requested_at() > handled_request: break
@@ -506,6 +517,7 @@ class VPNManager:
 				if not verified or self._stop.is_set():
 					connection_failed = not self._stop.is_set()
 					raise VPNUnavailable('IPTV VPN is unavailable')
+				if _signature(config) != signature: raise VPNUnavailable('IPTV VPN configuration changed')
 				relay = livetv_vpn_relay.Relay(port, password, descriptor_path())
 				relay.start()
 				ku.clear_property(_SPEED_PAUSE_PROPERTY)
@@ -575,7 +587,7 @@ class VPNManager:
 					if _signature(config) != signature: break
 					requested = _requested_at()
 					seen_request = max(seen_request, requested)
-					try: healthy = relay.thread is not None and relay.thread.is_alive() and library.Status() in (1, 2) and _verify_exit(port, password)
+					try: healthy = relay.thread is not None and relay.thread.is_alive() and library.Status() in (1, 2) and _verify_exit(port, password, exit_hostname)
 					except Exception: healthy = False
 					if healthy: connection_failures = 0
 					failures = 0 if healthy else failures + 1

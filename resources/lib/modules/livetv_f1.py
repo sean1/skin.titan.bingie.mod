@@ -15,6 +15,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
+from modules.f1_calendar import circuit_locality
 from modules.livetv_sports import non_live_title
 
 _CACHE = None
@@ -50,6 +51,8 @@ _SESSION_PATTERNS = {
 	'RACE': re.compile(r'(?<!sprint )\brace\b', re.I),
 }
 _REJECT = re.compile(r'\b(?:archive|on[ -]demand)\b', re.I)
+_GRAND_PRIX = r'(?:grand prix|gp)'
+_OTHER_SERIES = re.compile(r'\b(?:nascar|indy[ -]*car|moto[ -]*gp|formula[ -]+e|(?:formula|f)[ -]*(?:[234]|1[ -]+academy))\b')
 _LABEL_DATE = re.compile(r'\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*(?:\s+(\d{4}))?\b', re.I)
 _MONTH_FIRST = re.compile(r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:,?\s+(\d{4}))?\b', re.I)
 _NUMERIC_DATE = re.compile(r'\b\d{1,4}[-/]\d{1,2}[-/]\d{1,4}\b')
@@ -537,14 +540,29 @@ def _weekends(events, now, *, known_sessions=None):
 	return fixtures
 
 
+def _short_event_match(name, locality, session):
+	place = re.escape(locality)
+	name, named = re.subn(r'(?<!\w)' + place + r'\s+' + _GRAND_PRIX + r'(?!\w)', '', name)
+	if _OTHER_SERIES.search(name) or re.search(r'\b' + _GRAND_PRIX + r'\b', name): return False
+	return bool(named or re.search(r'(?:^|[|:,–—]|\s-\s)\s*' + place + r'\s*:\s*' + session.pattern, name))
+
+
 def fixture_groups(streams, fixtures, live_only=False):
 	"""Return session-id to stream-id mappings for unambiguous event feeds."""
 	if not isinstance(streams, list) or not isinstance(fixtures, list): return {}
-	owners = {}
+	owners, short_owners = {}, {}
 	for fixture in fixtures:
 		if not isinstance(fixture, dict): continue
-		for alias in fixture.get('aliases', [fixture.get('event', '')]):
-			if isinstance(alias, str) and len(alias.strip()) >= 4: owners.setdefault(_normal(alias), set()).add(fixture.get('event_id', fixture.get('event')))
+		event = fixture.get('event', '')
+		owner = fixture.get('event_id', fixture.get('event'))
+		titles = fixture.get('event_names') or [event]
+		for alias in fixture.get('aliases', [event]):
+			if not isinstance(alias, str) or len(alias.strip()) < 4: continue
+			owners.setdefault(_normal(alias), set()).add(owner)
+			locality = circuit_locality(alias)
+			if locality and re.search(r'[a-z]', locality) and any(re.search(r'(?<!\w)' + re.escape(locality) + r'\s+' + _GRAND_PRIX + r'$', _normal(title)) for title in titles if isinstance(title, str)):
+				short_owners.setdefault(locality, set()).add(owner)
+	patterns = {alias: re.compile(r'(?<!\w)' + re.escape(alias) + r'(?!\w)') for alias in owners}
 	result = {}
 	for stream in streams:
 		if not isinstance(stream, dict): continue
@@ -552,6 +570,10 @@ def fixture_groups(streams, fixtures, live_only=False):
 		if not identity.isdecimal() or not isinstance(name, str) or non_live_title(name) or _REJECT.search(name): continue
 		codes = [code for code, pattern in _SESSION_PATTERNS.items() if pattern.search(name)]
 		if len(codes) != 1: continue
+		normal_name = _normal(name)
+		matched_aliases = {alias for alias, pattern in patterns.items() if pattern.search(normal_name)}
+		short_matches = {owner for locality, matches in short_owners.items() if _short_event_match(normal_name, locality, _SESSION_PATTERNS[codes[0]]) for owner in matches | owners.get(locality, set())}
+		if short_matches: short_matches.update(owner for alias in matched_aliases for owner in owners[alias])
 		candidates = []
 		for fixture in fixtures:
 			if not isinstance(fixture, dict) or fixture.get('session_code') != codes[0]: continue
@@ -562,8 +584,7 @@ def fixture_groups(streams, fixtures, live_only=False):
 			if re.search(r'\b(?:next|upcoming)\b', name, re.I) and fixture.get('status') != 'Scheduled': continue
 			if re.search(r'\blive\b', name, re.I) and fixture.get('status') != 'LIVE': continue
 			if not _date_agrees(name, fixture.get('date', '')): continue
-			normal_name = _normal(name)
-			aliases = fixture.get('aliases', [event])
-			if any(isinstance(alias, str) and len(alias.strip()) >= 4 and owners.get(_normal(alias)) == {fixture.get('event_id', event)} and re.search(r'(?<!\w)' + re.escape(_normal(alias)).replace(r'\ ', r'\s+') + r'(?!\w)', normal_name) for alias in aliases): candidates.append(session_id)
+			owner = {fixture.get('event_id', event)}
+			if short_matches == owner or any(isinstance(alias, str) and len(alias.strip()) >= 4 and _normal(alias) in matched_aliases and owners[_normal(alias)] == owner for alias in fixture.get('aliases', [event])): candidates.append(session_id)
 		if len(candidates) == 1: result.setdefault(candidates[0], {}).setdefault(identity, stream)
 	return result

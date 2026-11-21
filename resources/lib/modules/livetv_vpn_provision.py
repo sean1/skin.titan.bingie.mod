@@ -23,7 +23,7 @@ import urllib.request
 
 _API = 'https://api.mullvad.net'
 _DEVICE_LIMIT = 5
-_RELAY = 'ca-tor-wg-207'
+_RELAY_HOSTNAME = re.compile(r'nl-ams-wg-[0-9]+')
 _RELAY_PORT = 10997
 _CONFIG = 'mullvad-wireguard.conf'
 _PENDING = 'mullvad-pending.json'
@@ -223,28 +223,28 @@ def _relays(opener):
 	relays = _request(opener, '/www/relays/all')
 	if not isinstance(relays, list):
 		raise ProvisionError('Mullvad relay list is unavailable')
-	candidates = [item for item in relays if isinstance(item, dict) and item.get('type') == 'wireguard' and item.get('active') is True and item.get('country_code') == 'ca']
-	candidates.sort(key=lambda item: (item.get('hostname') != _RELAY, str(item.get('hostname') or '')))
+	candidates = [item for item in relays if isinstance(item, dict) and item.get('type') == 'wireguard' and item.get('active') is True and item.get('country_code') == 'nl']
 	result = []
 	for item in candidates:
 		try:
 			address = str(ipaddress.IPv4Address(item['ipv4_addr_in']))
 			hostname = item.get('hostname')
-			if _key(item.get('pubkey')) and isinstance(hostname, str) and re.fullmatch(r'ca-[a-z]{3}-wg-[0-9]+', hostname):
+			if _key(item.get('pubkey')) and isinstance(hostname, str) and _RELAY_HOSTNAME.fullmatch(hostname):
 				result.append({'hostname': hostname, 'host': address, 'public_key': item['pubkey'], 'port': _RELAY_PORT})
 		except (ValueError, KeyError, TypeError):
 			continue
 	if not result:
-		raise ProvisionError('No Canadian Mullvad relay is available')
-	return result
+		raise ProvisionError('No Amsterdam Mullvad relay is available')
+	return sorted(result, key=lambda relay: relay['hostname'])
 
 
-def _relay(opener):
-	return _relays(opener)[0]
+def _listed_relay(candidates, peer):
+	if not isinstance(peer, dict): return None
+	return next((relay for relay in candidates if all(relay[field] == peer.get(field) for field in ('host', 'port', 'public_key'))), None)
 
 
 def relay_candidates():
-	"""Return the active Canadian WireGuard peers without accessing an account."""
+	"""Return the active Amsterdam WireGuard peers without accessing an account."""
 	try:
 		opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
 		return _relays(opener)
@@ -492,8 +492,12 @@ def ensure_config(private_directory, account_path, native_library, *, allow_regi
 			else:
 				state = None
 			opener, token = _authenticated(account)
+			candidates = _relays(opener)
 			if state is None:
-				state = _prepare_registration(account, native_library, _relay(opener))
+				state = _prepare_registration(account, native_library, candidates[0])
+				_save_pending(pending_path, state)
+			elif not _listed_relay(candidates, state.get('relay')):
+				state['relay'] = candidates[0]
 				_save_pending(pending_path, state)
 			return _finish_registration(config_path, pending_path, binding_path, account, opener, token, state)
 	except ProvisionError:
@@ -525,22 +529,24 @@ def recover_revoked_config(private_directory, account_path, native_library, expe
 			if _key_digest(public_key) in devices or not _config_matches(config_path, expected_signature):
 				return False
 			replaces = _key_digest(private_key)
+			relay = _config_relay(config)
 			if os.path.exists(pending_path):
 				state = _load_pending(pending_path, account)
 				if state.get('replaces') != replaces:
 					raise ProvisionError('Pending Mullvad registration needs manual recovery')
+				changed = state.get('relay') != relay
+				state['relay'] = relay
 				if _key_digest(state['public_key']) not in devices:
 					if len(devices) >= _DEVICE_LIMIT:
 						raise DeviceLimitError('Mullvad account has no free device slots')
 					if state['stage'] == 'registered':
 						state['stage'] = 'posting'
-						_save_pending(pending_path, state)
+						changed = True
+				if changed:
+					_save_pending(pending_path, state)
 			else:
 				if len(devices) >= _DEVICE_LIMIT:
 					raise DeviceLimitError('Mullvad account has no free device slots')
-				peer = config['Peer']
-				host, port = peer['Endpoint'].rsplit(':', 1)
-				relay = {'host': host, 'port': int(port), 'public_key': peer['PublicKey'].strip()}
 				state = _prepare_registration(account, native_library, relay, replaces=replaces)
 				_save_pending(pending_path, state)
 			_finish_registration(config_path, pending_path, binding_path, account, opener, token, state, config, expected_signature)
@@ -549,6 +555,40 @@ def recover_revoked_config(private_directory, account_path, native_library, expe
 		raise
 	except (OSError, ValueError, TypeError, KeyError, AttributeError):
 		raise ProvisionError('Mullvad device could not be checked; retry later') from None
+
+
+def _config_relay(config):
+	peer = config['Peer']
+	host, port = peer['Endpoint'].rsplit(':', 1)
+	return {'host': host, 'port': int(port), 'public_key': peer['PublicKey'].strip()}
+
+
+def _set_config_relay(config, relay):
+	config['Peer']['PublicKey'] = relay['public_key']
+	config['Peer']['Endpoint'] = '%s:%d' % (relay['host'], relay['port'])
+	buffer = io.StringIO()
+	config.write(buffer)
+	return buffer.getvalue()
+
+
+def ensure_amsterdam_relay(private_directory, expected_signature):
+	"""Keep a listed Amsterdam peer or migrate only the peer of an existing configuration."""
+	try:
+		config_path = os.path.join(private_directory, _CONFIG)
+		candidates = relay_candidates()
+		with _lock_file(private_directory) as lock:
+			fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+			if not _config_matches(config_path, expected_signature): raise ProvisionError('Mullvad configuration changed; retry later')
+			config = _read_config(config_path)
+			if config is None: raise ProvisionError('Existing Mullvad configuration needs manual recovery')
+			current = _listed_relay(candidates, _config_relay(config))
+			selected = current or candidates[0]
+			updated = None if current else _set_config_relay(config, selected)
+			if not _config_matches(config_path, expected_signature): raise ProvisionError('Mullvad configuration changed; retry later')
+			signature = expected_signature if updated is None else _private_write(config_path, updated)
+			return signature, selected['hostname']
+	except (OSError, ValueError, TypeError, KeyError, configparser.Error):
+		raise ProvisionError('Amsterdam Mullvad relay could not be selected; retry later') from None
 
 
 def current_relay(private_directory, expected_signature):
@@ -562,9 +602,7 @@ def current_relay(private_directory, expected_signature):
 			config = _read_config(config_path)
 			if config is None or not _config_matches(config_path, expected_signature):
 				return None
-			peer = config['Peer']
-			host, port = peer['Endpoint'].rsplit(':', 1)
-			return {'host': host, 'port': int(port), 'public_key': peer['PublicKey'].strip()}
+			return _config_relay(config)
 	except OSError:
 		return None
 
@@ -572,7 +610,8 @@ def current_relay(private_directory, expected_signature):
 def _write_relay(private_directory, relay, expected_signature, target_path=None):
 	try:
 		host, port, key = relay['host'], relay['port'], relay['public_key']
-		if str(ipaddress.IPv4Address(host)) != host or type(port) is not int or not 1 <= port <= 65535 or not _key(key):
+		hostname = relay.get('hostname')
+		if not isinstance(hostname, str) or not _RELAY_HOSTNAME.fullmatch(hostname) or str(ipaddress.IPv4Address(host)) != host or type(port) is not int or not 1 <= port <= 65535 or not _key(key):
 			raise ValueError
 		config_path = os.path.join(private_directory, _CONFIG)
 		with _lock_file(private_directory) as lock:
@@ -593,13 +632,10 @@ def _write_relay(private_directory, relay, expected_signature, target_path=None)
 				info = os.lstat(os.path.dirname(target_path))
 				if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077 or os.path.lexists(target_path):
 					raise ProvisionError('Private Mullvad test configuration path is unavailable')
-			peer['PublicKey'] = key
-			peer['Endpoint'] = '%s:%d' % (host, port)
-			buffer = io.StringIO()
-			config.write(buffer)
+			updated = _set_config_relay(config, relay)
 			if not _config_matches(config_path, expected_signature):
 				return False
-			signature = _private_write(config_path if target_path is None else target_path, buffer.getvalue())
+			signature = _private_write(config_path if target_path is None else target_path, updated)
 			return signature if target_path is None else True
 	except ProvisionError:
 		raise
@@ -624,7 +660,7 @@ def select_relay(private_directory, relay, expected_signature):
 
 
 def rotate_relay(private_directory):
-	"""Select another active Canadian relay without registering a new device."""
+	"""Select another active Amsterdam relay without registering a new device."""
 	try:
 		config_path = os.path.join(private_directory, _CONFIG)
 		lock_path = os.path.join(private_directory, _LOCK)
@@ -646,12 +682,8 @@ def rotate_relay(private_directory):
 			current = next((index for index, relay in enumerate(candidates) if relay['host'] == old_host and relay['public_key'] == old_key), -1)
 			relay = next((candidates[(current + offset) % len(candidates)] for offset in range(1, len(candidates) + 1) if candidates[(current + offset) % len(candidates)]['host'] != old_host or candidates[(current + offset) % len(candidates)]['public_key'] != old_key), None)
 			if not relay:
-				raise ProvisionError('No alternate Canadian Mullvad relay is available')
-			parser['Peer']['PublicKey'] = relay['public_key']
-			parser['Peer']['Endpoint'] = '%s:%s' % (relay['host'], relay['port'])
-			config = io.StringIO()
-			parser.write(config)
-			_private_write(config_path, config.getvalue())
+				raise ProvisionError('No alternate Amsterdam Mullvad relay is available')
+			_private_write(config_path, _set_config_relay(parser, relay))
 			return config_path
 	except ProvisionError:
 		raise

@@ -18,6 +18,7 @@ _WINDOW_SECONDS = WINDOW_DAYS * 24 * 60 * 60
 _DATABASE = 'livetv-provider-health.db'
 _SCOPES = ('provider', 'shared', 'unknown')
 _KINDS = ('playback', 'refresh', 'vpn', 'relay')
+_VPN_REASONS = {'ready': '', 'start_failed': 'VPN connection failed', 'interrupted': 'VPN health check failed', 'recovered': 'VPN connection restored'}
 _KEY = re.compile(r'[0-9a-f]{64}\Z')
 _SCHEMA = '''CREATE TABLE IF NOT EXISTS events (
 	occurred REAL NOT NULL, provider TEXT NOT NULL, kind TEXT NOT NULL, reason TEXT NOT NULL, scope TEXT NOT NULL, channel TEXT NOT NULL,
@@ -74,6 +75,13 @@ def record_playback(provider_id, *, started, startup_seconds=None, watched_secon
 	_record(provider_id, 'playback', reason, scope, channel, recovered, outcome, started, startup, _seconds(watched_seconds), _seconds(buffer_seconds))
 
 
+def record_vpn(outcome, *, reason='', seconds=None, kind='vpn'):
+	if outcome not in _VPN_REASONS or kind not in ('vpn', 'relay'): return
+	detail = '' if outcome == 'ready' else safe_label(reason) or _VPN_REASONS[outcome]
+	elapsed = _seconds(seconds) if seconds is not None else None
+	_record('', kind, detail, 'shared', '', outcome == 'recovered', outcome, startup=elapsed)
+
+
 def recent():
 	try:
 		path = _path()
@@ -117,3 +125,23 @@ def summarize(events):
 				stats['unclear'] += event['scope'] == 'unknown'
 			stats['recoveries'] += event['kind'] == 'playback' and event['recovered']
 	return providers
+
+
+def summarize_vpn(events):
+	stats = {'starts': 0, 'failed': 0, 'startup': [], 'dropouts': 0, 'relay_stops': 0, 'recovered': 0, 'recovery': [], 'latest_issue': None}
+	for event in events:
+		kind, outcome, reason, seconds = event['kind'], event['outcome'], event['reason'], event['startup']
+		if kind not in ('vpn', 'relay'): continue
+		if outcome == 'ready':
+			stats['starts'] += 1
+			if seconds is not None: stats['startup'].append(seconds)
+		elif outcome == 'recovered':
+			stats['recovered'] += 1
+			if seconds is not None: stats['recovery'].append(seconds)
+		else:
+			if outcome == 'start_failed': stats['failed'] += 1
+			elif outcome == 'interrupted' or reason in ('VPN health check failed', 'Relay stopped running'):
+				stats['relay_stops' if kind == 'relay' else 'dropouts'] += 1
+			else: continue
+			if stats['latest_issue'] is None: stats['latest_issue'] = event
+	return stats

@@ -617,14 +617,35 @@ def _provider_expiry_text(account):
 	return f'Last known expiry {expiry:%b} {expiry.day}, {expiry.year}'
 
 
+def _vpn_duration(seconds):
+	return f'{seconds:.1f} s' if seconds < 60 else f'{seconds / 60:.1f} min'
+
+
+def _vpn_summary_lines(events):
+	stats = provider_health.summarize_vpn(events)
+	attempts = stats['starts'] + stats['failed']
+	if not (attempts or stats['dropouts'] or stats['relay_stops'] or stats['recovered']): return ['No VPN reliability data yet.']
+	lines = []
+	if attempts: lines.append(f"VPN and relay ready on {stats['starts']}/{attempts} connection attempts")
+	if stats['startup']: lines.append(f"{_vpn_duration(median(stats['startup']))} typical time to connect")
+	lines.append(f"Detected interruptions · VPN {stats['dropouts']} · relay {stats['relay_stops']}")
+	if stats['recovered']: lines.append(f"Observed recoveries · {stats['recovered']}")
+	if stats['recovery']: lines.append(f"{_vpn_duration(median(stats['recovery']))} typical recovery time after detection")
+	if event := stats['latest_issue']:
+		occurred = datetime.fromtimestamp(event['occurred'])
+		lines.append(f"Latest issue: {occurred:%b %d %H:%M} · {event['reason']}")
+	return lines
+
+
 def _provider_summary(accounts, labels, events):
 	stats = provider_health.summarize(events or [])
 	lines = ['Playback and refresh observations on this Kodi device.']
 	if events is None: lines.append('Reliability history is currently unavailable.')
 	elif not events: lines.append('No activity recorded in the last 30 days.')
 	else:
-		shared = sum(event['scope'] == 'shared' for event in events)
+		shared = sum(event['scope'] == 'shared' and not event['recovered'] and bool(provider_health.issue_reason(event)) for event in events)
 		if shared: lines.append(f'Shared Live TV issues: {shared} · See issue history')
+	if events is not None: lines.extend(('', '[B]VPN and relay[/B]', *_vpn_summary_lines(events)))
 	for identity, account in accounts:
 		lines.extend(('', f'[B]{labels[identity]}[/B] · {_provider_expiry_text(account)}'))
 		provider = stats.get(provider_health.provider_key(identity, account))
@@ -656,9 +677,12 @@ def _provider_issue_history(events, providers):
 		occurred = datetime.fromtimestamp(event['occurred'])
 		provider = providers.get(event['provider'], 'Previously configured provider' if event['provider'] else '')
 		scope = {'provider': '', 'shared': 'Shared issue', 'unknown': 'Cause unclear'}[event['scope']]
-		parts = [occurred.strftime('%H:%M'), provider, event['channel'], event['kind'].capitalize(), reason, scope]
+		kind = 'VPN' if event['kind'] == 'vpn' else event['kind'].capitalize()
+		vpn_recovery = kind in ('VPN', 'Relay') and event['outcome'] == 'recovered'
+		parts = [occurred.strftime('%H:%M'), provider, event['channel'], kind, reason, scope if not vpn_recovery else '']
 		if event['buffered'] >= 2: parts.append(f"{event['buffered']:.0f} s buffering")
-		if event['recovered']: parts.append('Recovered')
+		if vpn_recovery and event['startup'] is not None: parts.append(f"{_vpn_duration(event['startup'])} after detection")
+		elif event['recovered'] and not vpn_recovery: parts.append('Recovered')
 		days.setdefault(occurred.date().isoformat(), []).append(' · '.join(part for part in parts if part))
 	if not days:
 		ku.dialog.textviewer('Issue history', 'No issues recorded in the last 30 days.')

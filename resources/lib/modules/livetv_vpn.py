@@ -207,6 +207,13 @@ def _set_provision_failure(provision, error):
 	else: _set_failure()
 
 
+def _record_reliability(outcome, *, reason='', seconds=None, kind='vpn'):
+	try:
+		from modules import livetv_provider_health
+		livetv_provider_health.record_vpn(outcome, reason=reason, seconds=seconds, kind=kind)
+	except Exception: pass
+
+
 def _secure_directory():
 	path = private_directory()
 	os.makedirs(path, mode=0o700, exist_ok=True)
@@ -505,9 +512,17 @@ class VPNManager:
 		seen_catalog_problems = 0.0
 		speed_switch = None
 		approved_relay = None
+		outage_started = None
+		planned_reconnect = False
 		if speed_test_status().startswith((_SPEED_TESTING, _SPEED_AUTO_TESTING)): ku.clear_property(_SPEED_STATUS_PROPERTY)
 		while not self._stop.is_set():
 			applying_speed = speed_switch is not None
+			planned = applying_speed or planned_reconnect
+			planned_reconnect = False
+			attempt_started = monotonic()
+			attempted = outage_started is not None
+			startup_reason = 'VPN setup could not be completed'
+			ready = False
 			reconnect = False
 			library = None
 			relay = None
@@ -522,6 +537,8 @@ class VPNManager:
 				account_path = os.path.join(ku.translate_path(ku.addon_path), *_ACCOUNT_REL)
 				requested = _requested_at()
 				seen_request = max(seen_request, requested)
+				attempted = attempted or requested > handled_request
+				startup_reason = 'VPN configuration unavailable'
 				try:
 					config = livetv_vpn_provision.ensure_config(private, account_path, library, allow_registration=False)
 					if not config:
@@ -539,6 +556,7 @@ class VPNManager:
 					_set_provision_failure(livetv_vpn_provision, error)
 					raise
 				if self._stop.is_set(): break
+				attempted = True
 				private_real = os.path.realpath(private)
 				if os.path.commonpath((private_real, os.path.realpath(config))) != private_real: raise VPNUnavailable('VPN configuration unavailable')
 				configured_signature = _signature(config)
@@ -551,6 +569,7 @@ class VPNManager:
 				if signature == revoked_signature: raise VPNUnavailable('Live TV Mullvad registration was removed')
 				activation_idle = speed_switch[3] if speed_switch else 0
 				if activation_idle and not _automatic_speed_idle(activation_idle): raise VPNUnavailable('Automatic VPN test cancelled')
+				startup_reason = 'VPN tunnel could not start'
 				port = _unused_port()
 				password = secrets.token_urlsafe(32)
 				result = library.Start(os.fsencode(config), password.encode('ascii'), port)
@@ -559,6 +578,7 @@ class VPNManager:
 					raise VPNUnavailable('IPTV VPN could not start')
 				started = True
 				self._set_state('Connecting IPTV VPN')
+				startup_reason = 'VPN exit could not be verified'
 				verified = False
 				for _ in range(3):
 					if self._stop.is_set(): break
@@ -572,7 +592,10 @@ class VPNManager:
 				if not verified or self._stop.is_set():
 					connection_failed = not self._stop.is_set()
 					raise VPNUnavailable('IPTV VPN is unavailable')
-				if _signature(config) != signature: raise VPNUnavailable('IPTV VPN configuration changed')
+				if _signature(config) != signature:
+					planned_reconnect = True
+					raise VPNUnavailable('IPTV VPN configuration changed')
+				startup_reason = 'Relay could not start'
 				relay = livetv_vpn_relay.Relay(port, password, descriptor_path())
 				relay_started_at = monotonic()
 				handled_catalog_access = {}
@@ -580,6 +603,13 @@ class VPNManager:
 				ku.clear_property(_SPEED_PAUSE_PROPERTY)
 				_set_failure()
 				self._set_state('IPTV VPN connected')
+				ready = True
+				if not self._stop.is_set():
+					now = monotonic()
+					if not planned: _record_reliability('ready', seconds=now - attempt_started)
+					if outage_started is not None:
+						_record_reliability('recovered', seconds=now - outage_started)
+						outage_started = None
 				if speed_switch:
 					_speed_result('Live TV VPN switched to %s.' % speed_switch[1]['hostname'], automatic=bool(activation_idle))
 					speed_switch = None
@@ -645,7 +675,9 @@ class VPNManager:
 					retry_seconds = _CHECK_SECONDS if pending_check or (failures and requested > handled_request) else _HEALTH_SECONDS
 					self._wait_for_check(retry_seconds, seen_request, seen_speed if not failures else None)
 					if self._stop.is_set(): break
-					if _signature(config) != signature: break
+					if _signature(config) != signature:
+						planned_reconnect = True
+						break
 					requested = _requested_at()
 					seen_request = max(seen_request, requested)
 					relay_running = None
@@ -658,14 +690,23 @@ class VPNManager:
 					failures = 0 if healthy else failures + 1
 					if failures >= _HEALTH_FAILURE_LIMIT:
 						connection_failed = True
-						try:
-							from modules import livetv_provider_health as provider_health
+						if not self._stop.is_set():
+							outage_started = monotonic()
 							kind, reason = ('relay', 'Relay stopped running') if relay_running is False else ('vpn', 'VPN health check failed')
-							provider_health.record_issue(kind, reason, scope='shared')
-						except Exception: pass
+							_record_reliability('interrupted', reason=reason, kind=kind)
 						raise VPNUnavailable('IPTV VPN is unavailable')
 			except Exception:
 				self._set_state('IPTV VPN unavailable')
+				if not self._stop.is_set():
+					if ready and outage_started is None and not (replaced or reconnect or speed_switch or planned_reconnect):
+						outage_started = monotonic()
+						_record_reliability('interrupted', reason='VPN stopped unexpectedly')
+					elif not ready and not planned and not planned_reconnect:
+						try:
+							if attempted or _requested_at() > handled_request:
+								kind = 'relay' if startup_reason == 'Relay could not start' else 'vpn'
+								_record_reliability('start_failed', reason=startup_reason, kind=kind)
+						except Exception: pass
 			finally:
 				if relay is not None:
 					try: relay.close()
@@ -675,18 +716,23 @@ class VPNManager:
 						if library.Stop() != 0: stopped = False; self._set_state('IPTV VPN unavailable')
 					except Exception: stopped = False; self._set_state('IPTV VPN unavailable')
 			if speed_switch and stopped:
-				if not applying_speed and not self._stop.is_set(): continue
+				if not applying_speed and not self._stop.is_set():
+					planned_reconnect = True
+					continue
 				old, _, tested_signature, activation_idle = speed_switch
 				speed_switch = None
 				try: restored = livetv_vpn_provision.select_relay(private, old, tested_signature)
 				except livetv_vpn_provision.ProvisionError: restored = False
 				_speed_result('Could not activate the tested VPN server. Restoring the previous server.' if restored else 'Could not activate the tested VPN server.', automatic=bool(activation_idle))
-				if restored: continue
+				if restored:
+					planned_reconnect = True
+					continue
 			if _speed_requested_at() > seen_speed:
 				seen_speed = _speed_requested_at()
 				ku.clear_property(_SPEED_REQUEST_PROPERTY)
 				_speed_result('Connect to Live TV before testing VPN servers.')
 			if (replaced or reconnect) and stopped:
+				planned_reconnect = True
 				continue
 			if connection_failed or (signature is not None and signature == revoked_signature):
 				connection_failures += 1

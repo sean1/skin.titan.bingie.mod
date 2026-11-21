@@ -45,14 +45,11 @@ def season(params):
 
 
 def _live_snapshot():
-	"""Use the same fresh fixture snapshot as the live-feed picker."""
+	"""Read the saved Formula 1 fixtures without starting a request."""
 	try:
-		from modules import livetv_sports_progress
-		state, fixtures, _ = livetv_sports_progress.load_fixtures('f1')
-		if state != 'ready' or not isinstance(fixtures, list): return []
-		result = livetv_sports_progress._read(livetv_sports_progress._FIXTURE_RESULT)
-		if result.get('fixtures') != fixtures or not livetv_sports_progress._current_primary_fixtures(result): return []
-		return [row for row in fixtures if isinstance(row, dict)]
+		from modules import livetv_sports_progress as progress
+		cached = progress._cached_fixtures('f1', livetv._feed_accounts_fingerprint(), require_fresh_source=True)
+		return [row for row in cached[0] if isinstance(row, dict)] if cached is not None else []
 	except (OSError, HTTPException, ValueError, TypeError, AttributeError): return []
 
 

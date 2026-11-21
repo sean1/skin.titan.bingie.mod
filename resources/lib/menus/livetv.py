@@ -1789,7 +1789,7 @@ def _f1_dashboard(account, reload, force_refresh=False, url_refresh=False):
 			_finish()
 			return
 		cached = state in ('cached', 'cached_unavailable')
-		if not cached: livetv_sports_progress.fixture_reload()
+		if not cached: livetv_sports_progress.fixture_reload('f1')
 		cache_status = 'Refresh failed' if state == 'cached_unavailable' else 'Updating fixtures…'
 		ku.set_property('LiveTV.Soccer.FixtureStatus', cache_status if cached else 'Sessions updated')
 		for fixture in sorted(fixtures, key=lambda row: row['date']):
@@ -1878,7 +1878,7 @@ def _sports_dashboard(account, sport, reload, force_refresh=False, url_refresh=F
 			_finish()
 			return
 		cached = state in ('cached', 'cached_unavailable')
-		if not cached: livetv_sports_progress.fixture_reload()
+		if not cached: livetv_sports_progress.fixture_reload(sport)
 		cache_status = 'Refresh failed' if state == 'cached_unavailable' else 'Updating fixtures…'
 		ku.set_property('LiveTV.Soccer.FixtureStatus', cache_status if cached else 'Live fixtures updated')
 		now = time.time()
@@ -2043,12 +2043,15 @@ def sports_overview_row(params):
 def soccer(params):
 	sport = params.get('sport', 'soccer')
 	if sport not in ('all', 'soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'): sport = 'soccer'
+	action = params.get('action', '')
+	if not action and ku.get_property('LiveTV.Sport') != sport:
+		from modules import livetv_sports_progress
+		livetv_sports_progress.cancel_fixtures(sport)
 	ku.set_property('LiveTV.Sport', sport)
 	if sport == 'f1' and not ku.get_property('BingieF1.Season'):
 		ku.set_property('BingieF1.Season', str(datetime.now(timezone.utc).year))
 	if sport != 'all': ku.clear_property('LiveTV.Sports.OverviewStatus')
 	ku.set_property('LiveTV.Sport.Title', 'LIVE SPORTS' if sport == 'all' else 'LIVE ' + ('FORMULA 1' if sport == 'f1' else sport.upper()))
-	action = params.get('action', '')
 	if action == 'refresh': _request_vpn()
 	if sport == 'all':
 		from modules import livetv_sports_overview as overview
@@ -2121,7 +2124,7 @@ def soccer(params):
 			xbmc.executebuiltin('Container.Refresh')
 			return
 		cached = state in ('cached', 'cached_unavailable', 'partial')
-		if not cached: livetv_sports_progress.fixture_reload()
+		if not cached: livetv_sports_progress.fixture_reload('soccer')
 		cache_status = 'Refresh failed' if state == 'cached_unavailable' else 'Updating fixtures…'
 		ku.set_property('LiveTV.Soccer.FixtureStatus', cache_status if cached else status_text)
 		matches = {}

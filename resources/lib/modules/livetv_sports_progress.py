@@ -4,6 +4,7 @@ import math
 import time
 import uuid
 from datetime import datetime
+from hashlib import sha256
 from queue import Empty, SimpleQueue
 from threading import Thread
 from urllib.parse import parse_qs, urlsplit
@@ -24,6 +25,7 @@ _FIXTURE_ACK = 'LiveTV.Sports.Fixtures.Acknowledged'
 _FIXTURE_CACHE = 'LiveTV.Sports.Fixtures.Cache.'
 _RESULT_LIMIT = 4 * 1024 * 1024
 _MAX_AGE = 15 * 60
+_PAGE_ENTRY_GRACE = 5
 
 
 def _read(name):
@@ -76,13 +78,17 @@ def url_refresh_requested(sport):
 	return request.get('sport') != sport or not request.get('url_refresh')
 
 
-def _cached_fixtures(sport, accounts):
+def _cached_fixtures(sport, accounts, require_fresh_source=False):
 	if sport not in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'): return None
 	cache = _read(_FIXTURE_CACHE + sport)
 	try:
 		captured, expires = cache['captured'], cache['expires']
 		if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) for value in (captured, expires)): return None
-		if cache.get('accounts') != accounts or not captured <= time.time() < expires: return None
+		now = time.time()
+		if cache.get('accounts') != accounts or not captured <= now < expires: return None
+		if require_fresh_source:
+			source_expires = cache.get('source_expires')
+			if not isinstance(source_expires, (int, float)) or isinstance(source_expires, bool) or not math.isfinite(source_expires) or now >= source_expires: return None
 		if not isinstance(cache.get('fixtures'), list): return None
 		if sport == 'soccer' and (not isinstance(cache.get('auxiliary'), dict) or not isinstance(cache['auxiliary'].get('sport_fixtures'), list) or not isinstance(cache['auxiliary'].get('status_text'), str) or cache['auxiliary']['status_text'].startswith('Live fixtures unavailable')): return None
 		return cache['fixtures'], cache.get('auxiliary')
@@ -136,7 +142,11 @@ def request_background(sport, reload):
 	request = _read(_FIXTURE_REQUEST)
 	if request.get('sport') == sport and request.get('id') and (_read(_FIXTURE_RESULT).get('id') != request['id'] or ku.get_property(_FIXTURE_ACK) != request['id']): return False
 	from menus import livetv
-	updated = {'id': uuid.uuid4().hex, 'sport': sport, 'accounts': livetv._feed_accounts_fingerprint(), 'created': time.time(), 'reload': reload, 'url_refresh': request.get('url_refresh', False), 'background': True}
+	updated = {
+		'id': uuid.uuid4().hex, 'sport': sport, 'accounts': livetv._feed_accounts_fingerprint(), 'created': time.time(),
+		'reload': reload, 'url_refresh': request.get('url_refresh', False), 'background': True, 'entered': True
+	}
+	if not _owns_fixture_request(sport, request.get('id')): return False
 	ku.clear_property(_FIXTURE_RESULT)
 	ku.set_property(_FIXTURE_REQUEST, json.dumps(updated, separators=(',', ':')))
 	return True
@@ -148,13 +158,18 @@ def load_fixtures(sport, force_refresh=False, reload='', url_refresh=False):
 	from menus import livetv
 	accounts = livetv._feed_accounts_fingerprint()
 	request = _read(_FIXTURE_REQUEST)
-	try: valid = request.get('sport') == sport and request.get('accounts') == accounts and 0 <= time.time() - request['created'] < _MAX_AGE
+	path = _video_path()
+	entered = _is_sport_page(path, sport)
+	try: valid = entered and request.get('sport') == sport and request.get('accounts') == accounts and 0 <= time.time() - request['created'] < _MAX_AGE
 	except (KeyError, TypeError): valid = False
 	if force_refresh or not valid:
 		ku.clear_property(_HAS_LIVE)
 		ku.clear_property(_NEXT_START)
 		ku.clear_property(_STARTS)
-		request = {'id': uuid.uuid4().hex, 'sport': sport, 'accounts': accounts, 'created': time.time(), 'reload': reload, 'url_refresh': url_refresh}
+		request = {
+			'id': uuid.uuid4().hex, 'sport': sport, 'accounts': accounts, 'created': time.time(), 'reload': reload, 'url_refresh': url_refresh,
+			'entered': entered, 'origin': _path_fingerprint(path)
+		}
 		ku.clear_property(_FIXTURE_RESULT)
 		ku.set_property(_FIXTURE_REQUEST, json.dumps(request, separators=(',', ':')))
 		cached = None if force_refresh else _cached_fixtures(sport, accounts)
@@ -165,25 +180,41 @@ def load_fixtures(sport, force_refresh=False, reload='', url_refresh=False):
 		cached = None if request.get('reload') in ('refresh', 'schedule') and not request.get('background') else _cached_fixtures(sport, accounts)
 		return ('cached', cached[0], cached[1]) if cached is not None else ('pending', None, None)
 	if _fixtures_unavailable(sport, result):
-		if request.pop('reload', ''): ku.set_property(_FIXTURE_REQUEST, json.dumps(request, separators=(',', ':')))
-		ku.set_property(_FIXTURE_ACK, request['id'])
+		_acknowledge(request['id'], request['id'])
 		cached = _cached_fixtures(sport, accounts)
 		if cached is None and _current_primary_fixtures(result): cached = result['fixtures'], result.get('auxiliary')
 		return ('cached_unavailable', cached[0], cached[1]) if cached is not None else ('unavailable', None, None)
 	if result.get('complete') is False:
 		if not _current_primary_fixtures(result): return 'pending', None, None
-		ku.set_property(_FIXTURE_ACK, _fixture_revision(result))
+		_acknowledge(request['id'], _fixture_revision(result))
 		return 'partial', result['fixtures'], result.get('auxiliary')
 	return 'ready', result['fixtures'], result.get('auxiliary')
 
 
-def fixture_reload():
-	"""Consume the refresh intent once the fixture snapshot is ready."""
+def _acknowledge(request_id, revision):
+	if _read(_FIXTURE_REQUEST).get('id') == request_id: ku.set_property(_FIXTURE_ACK, revision)
+
+
+def fixture_reload(sport):
+	"""Acknowledge the completed fixture snapshot loaded by a sports page."""
 	request = _read(_FIXTURE_REQUEST)
-	reload = request.pop('reload', '')
-	if reload: ku.set_property(_FIXTURE_REQUEST, json.dumps(request, separators=(',', ':')))
-	if request.get('id'): ku.set_property(_FIXTURE_ACK, request['id'])
-	return reload
+	request_id = request.get('id')
+	if not request_id or request.get('sport') != sport: return
+	result = _read(_FIXTURE_RESULT)
+	if result.get('id') != request_id or result.get('complete') is False or _fixtures_unavailable(sport, result): return
+	_acknowledge(request_id, request_id)
+
+
+def _cancel_fixture_request(request_id):
+	if _read(_FIXTURE_REQUEST).get('id') != request_id: return
+	if _read(_FIXTURE_RESULT).get('id') == request_id: ku.clear_property(_FIXTURE_RESULT)
+	if _read(_FIXTURE_REQUEST).get('id') == request_id: ku.clear_property(_FIXTURE_REQUEST)
+
+
+def cancel_fixtures(next_sport):
+	"""Drop the old page's fixture request when switching sports."""
+	request = _read(_FIXTURE_REQUEST)
+	if request.get('id') and request.get('sport') != next_sport: _cancel_fixture_request(request['id'])
 
 
 def _set_schedule_timers(sport, fixtures):
@@ -205,12 +236,26 @@ def has_live(sport):
 	return ku.get_property(_HAS_LIVE) == sport
 
 
-def _current(sport):
-	if not ku.get_visibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.soccer)'): return False
-	if ku.get_property('LiveTV.Sport') != sport: return False
-	path = ku.get_infolabel('Container.FolderPath')
+def _video_path():
+	return ku.get_infolabel('Container.FolderPath') if ku.get_visibility('Window.IsActive(Videos)') else ''
+
+
+def _path_fingerprint(path):
+	return sha256(path.encode()).hexdigest()
+
+
+def _is_sport_page(path, sport):
+	if not path.startswith('plugin://skin.titan.bingie.lite/'): return False
 	query = parse_qs(urlsplit(path).query)
-	return query.get('mode') == ['livetv.soccer'] and query.get('sport', ['soccer']) == [sport]
+	return query.get('mode') == ['livetv.soccer'] and query.get('sport', ['soccer']) == [sport] and 'action' not in query
+
+
+def _current(sport):
+	return ku.get_property('LiveTV.Sport') == sport and _is_sport_page(_video_path(), sport)
+
+
+def _owns_fixture_request(sport, request_id):
+	return _current(sport) and _read(_FIXTURE_REQUEST).get('id') == request_id
 
 
 class SportsProgress:
@@ -255,7 +300,17 @@ class SportsProgress:
 	def _fixture_tick(self):
 		request = _read(_FIXTURE_REQUEST)
 		request_id = request.get('id', '')
-		visible = bool(request_id and _current(request.get('sport')))
+		sport = request.get('sport')
+		path = _video_path()
+		visible = bool(request_id and _is_sport_page(path, sport) and ku.get_property('LiveTV.Sport') == sport)
+		if visible:
+			self.fixture_seen = request_id
+		elif request_id:
+			created = request.get('created', 0)
+			entering = not request.get('entered') and self.fixture_seen != request_id and _path_fingerprint(path) == request.get('origin') and isinstance(created, (int, float)) and 0 <= time.time() - created < _PAGE_ENTRY_GRACE
+			transition = ku.get_visibility('Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel) | Window.IsActive(fullscreenvideo) | Window.IsActive(visualisation)')
+			if entering or transition: return
+			_cancel_fixture_request(request_id)
 		while True:
 			try: result_id, encoded = self.fixture_results.get_nowait()
 			except Empty: break
@@ -263,28 +318,25 @@ class SportsProgress:
 				from menus import livetv
 				if request.get('accounts') != livetv._feed_accounts_fingerprint(): continue
 				result = json.loads(encoded)
-				sport = request.get('sport')
 				if result.get('complete') is False:
 					if not _current_primary_fixtures(result) or _cached_fixtures(sport, request.get('accounts')) is not None: continue
 				elif result.get('unavailable') and sport == 'soccer':
 					previous = _read(_FIXTURE_RESULT)
 					if previous.get('id') == request_id and previous.get('complete') is False and _current_primary_fixtures(previous):
 						encoded = json.dumps(dict(previous, complete=True, unavailable=True), ensure_ascii=False, separators=(',', ':'))
-				elif not _fixtures_unavailable(sport, result) and sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'):
+				unavailable = _fixtures_unavailable(sport, result)
+				cache_data = ''
+				if result.get('complete') is not False and not unavailable and sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1'):
 					captured = result.get('captured')
 					if isinstance(captured, (int, float)) and not isinstance(captured, bool) and math.isfinite(captured):
 						cache = {'captured': captured, 'expires': next_half_hour(captured), 'source_expires': result.get('expires'), 'accounts': request.get('accounts'), 'fixtures': result['fixtures'], 'auxiliary': result.get('auxiliary')}
 						data = json.dumps(cache, ensure_ascii=False, separators=(',', ':'))
-						if cache['expires'] > time.time() and len(data.encode('utf-8')) <= _RESULT_LIMIT: ku.set_property(_FIXTURE_CACHE + request['sport'], data)
-				if not _fixtures_unavailable(sport, result): _set_schedule_timers(sport, result['fixtures'])
+						if cache['expires'] > time.time() and len(data.encode('utf-8')) <= _RESULT_LIMIT: cache_data = data
+				if not _owns_fixture_request(sport, request_id): continue
+				if cache_data: ku.set_property(_FIXTURE_CACHE + sport, cache_data)
+				if not unavailable: _set_schedule_timers(sport, result['fixtures'])
 				ku.set_property(_FIXTURE_RESULT, encoded)
-		if not visible:
-			if request_id and self.fixture_seen == request_id and not ku.get_visibility('Player.HasMedia | Container.IsUpdating | System.HasActiveModalDialog | Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)') and _read(_FIXTURE_REQUEST).get('id') == request_id:
-				ku.clear_property(_FIXTURE_REQUEST)
-				ku.clear_property(_FIXTURE_RESULT)
-				self.fixture_seen = ''
-			return
-		self.fixture_seen = request_id
+		if not visible or not _owns_fixture_request(sport, request_id): return
 		result = _read(_FIXTURE_RESULT)
 		if result.get('id') == request_id:
 			revision = _fixture_revision(result)

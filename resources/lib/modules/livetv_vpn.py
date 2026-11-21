@@ -648,12 +648,21 @@ class VPNManager:
 					if _signature(config) != signature: break
 					requested = _requested_at()
 					seen_request = max(seen_request, requested)
-					try: healthy = relay.thread is not None and relay.thread.is_alive() and library.Status() in (1, 2) and _verify_exit(port, password, exit_hostname)
+					relay_running = None
+					try:
+						thread = relay.thread
+						relay_running = thread is not None and thread.is_alive()
+						healthy = relay_running and library.Status() in (1, 2) and _verify_exit(port, password, exit_hostname)
 					except Exception: healthy = False
 					if healthy: connection_failures = 0
 					failures = 0 if healthy else failures + 1
 					if failures >= _HEALTH_FAILURE_LIMIT:
 						connection_failed = True
+						try:
+							from modules import livetv_provider_health as provider_health
+							kind, reason = ('relay', 'Relay stopped running') if relay_running is False else ('vpn', 'VPN health check failed')
+							provider_health.record_issue(kind, reason, scope='shared')
+						except Exception: pass
 						raise VPNUnavailable('IPTV VPN is unavailable')
 			except Exception:
 				self._set_state('IPTV VPN unavailable')

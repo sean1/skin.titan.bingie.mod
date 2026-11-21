@@ -8,9 +8,9 @@ from threading import Timer
 from time import monotonic, time
 from urllib.parse import parse_qs, quote, urlsplit
 
-from modules.livetv_vpn_relay import cancel, default_descriptor_path, initial_response_failed, register
+from modules.livetv_vpn_relay import cancel, default_descriptor_path, initial_response_failed, playback_issue, register
 
-from modules import kodi_utils as ku, livetv_feed_health
+from modules import kodi_utils as ku, livetv_feed_health, livetv_provider_health as provider_health
 
 PROPERTY = 'BingieLiveTVFailover'
 SWITCH_REQUEST = 'BingieLiveTVSwitchRequest'
@@ -25,6 +25,11 @@ PICKER_ACTIVE = 'BingieLiveTVSwitchPicker'
 PICKER_BACK = 'BingieLiveTVSwitchPickerBack'
 SESSION_OPEN_TIMEOUT = 30.0
 OPENING_STOP_GRACE = 0.35
+_BUFFER_MIN_SECONDS = 2.0
+_MAX_SAMPLE_GAP = 2.0
+_RECENT_BUFFER_SECONDS = 10.0
+_RECOVERY_WATCH_SECONDS = 5.0
+_ERROR_END_WINDOW = 2.0
 
 
 def _current_evidence(data):
@@ -90,8 +95,50 @@ class LiveTVFailover(ku.xbmc_player):
 		self.stop_during_open = False
 		self.stop_interrupt = None
 
-	def _clear(self, keep_stop=False):
+	def _begin_observation(self, session):
+		provider = session['provider_keys'].get(session['id'])
+		if provider:
+			session['observation'] = {'provider': provider, 'startup': None, 'sampled_at': None, 'state': '', 'watched': 0.0, 'buffered': 0.0, 'pending_buffer': 0.0, 'last_buffer': None}
+
+	def _finish_observation(self, outcome='', reason='', scope='unknown'):
+		if not self.session: return
+		observation = self.session.pop('observation', None)
+		if not observation: return
+		startup = observation['startup']
+		provider_health.record_playback(observation['provider'], started=startup is not None, startup_seconds=startup, watched_seconds=observation['watched'],
+			buffer_seconds=observation['buffered'], outcome=outcome or ('completed' if startup is not None else 'cancelled'), reason=reason, scope=scope, channel=self.session['channel'])
+
+	def _sample_observation(self, session, caching):
+		observation = session.get('observation')
+		if not observation or observation['sampled_at'] is None: return
+		now = self.clock()
+		paused = observation.get('paused') or ku.get_visibility('Player.Seeking | [Player.Paused + !Player.Caching]')
+		state = '' if paused else 'buffering' if caching else 'watching'
+		elapsed = now - observation['sampled_at']
+		previous = observation['state']
+		if 0 < elapsed <= _MAX_SAMPLE_GAP:
+			if previous == 'watching': observation['watched'] += elapsed
+			if previous == 'buffering':
+				pending = observation['pending_buffer']
+				observation['pending_buffer'] += elapsed
+				if observation['pending_buffer'] >= _BUFFER_MIN_SECONDS:
+					observation['buffered'] += elapsed if pending >= _BUFFER_MIN_SECONDS else observation['pending_buffer']
+					observation['last_buffer'] = now
+		else: observation['pending_buffer'] = 0.0
+		if state != 'buffering': observation['pending_buffer'] = 0.0
+		observation.update(state=state, sampled_at=now)
+		candidate = session.get('peer_candidate')
+		if candidate:
+			provider, switched_at = candidate
+			if observation['buffered'] or now - switched_at > SESSION_OPEN_TIMEOUT:
+				session.pop('peer_candidate', None)
+			elif state == 'watching' and observation['watched'] >= _RECOVERY_WATCH_SECONDS:
+				session.pop('peer_candidate', None)
+				provider_health.record_issue('playback', 'Same event played after switching providers', provider_id=provider, channel=session['channel'], recovered=True)
+
+	def _clear(self, keep_stop=False, outcome=''):
 		if self.session:
+			self._finish_observation(outcome)
 			if ku.get_property(OPENING) in self.session.get('urls', {}).values(): ku.clear_property(OPENING)
 			self.ignored_token = self.session['token']
 			try:
@@ -118,7 +165,7 @@ class LiveTVFailover(ku.xbmc_player):
 			except (OSError, HTTPException, ValueError, TypeError): pass
 		self.stop_relay_url = ''
 		ku.clear_property(STOP_ACK)
-		self._clear()
+		self._clear(outcome='shutdown')
 
 	def _prune_expired(self):
 		if not self.session:
@@ -141,6 +188,7 @@ class LiveTVFailover(ku.xbmc_player):
 			if not isinstance(token, str) or not token or token == self.ignored_token: return
 			if self.session and token == self.session['token']: return
 			if not _current_evidence(data):
+				self._finish_observation()
 				self.session = {'token': token}
 				self._clear()
 				return
@@ -153,6 +201,7 @@ class LiveTVFailover(ku.xbmc_player):
 			raw_feeds = data.get('feeds', []) if isinstance(data.get('feeds', []), list) else []
 			blocked = {feed.get('id') for feed in raw_feeds if isinstance(feed, dict) and valid(feed.get('id')) and not _current_evidence(feed)}
 			if stream_id in blocked:
+				self._finish_observation()
 				self.session = {'token': token}
 				self._clear()
 				return
@@ -162,13 +211,18 @@ class LiveTVFailover(ku.xbmc_player):
 			from menus.livetv import _load
 			account = _load()
 			if not account and ':' not in stream_id: return
+			provider_keys, bases = {}, {}
 			def base_for(value):
-				if ':' in value:
+				if value in bases: return bases[value]
+				identity, separator, _ = value.partition(':')
+				if separator:
 					from menus.livetv import _account_for_feed
-					entry = _account_for_feed(value.split(':', 1)[0])
-				else: entry = account
+					entry = _account_for_feed(identity)
+				else: identity, entry = 'primary', account
 				if not entry: return None
-				return '%s/live/%s/%s/' % (entry['server'], quote(entry['username'], safe=''), quote(entry['password'], safe=''))
+				provider_keys[value] = provider_health.provider_key(identity, entry)
+				bases[value] = '%s/live/%s/%s/' % (entry['server'], quote(entry['username'], safe=''), quote(entry['password'], safe=''))
+				return bases[value]
 			base = base_for(stream_id)
 			if not base: return
 			ids = [value for value in ids if base_for(value)]
@@ -187,8 +241,12 @@ class LiveTVFailover(ku.xbmc_player):
 			urls = {stream_id: playback_url} if isinstance(playback_url, str) and re.fullmatch(r'http://127\.0\.0\.1:[0-9]{1,5}/r/[A-Za-z0-9_-]{32,}/resource(?:\.[A-Za-z0-9]{1,8})?', playback_url) else {}
 			requested_at = data.get('requested_at')
 			opening_at = requested_at if isinstance(requested_at, (float, int)) and now - SESSION_OPEN_TIMEOUT <= requested_at <= now else now
-			self.session = {'token': token, 'id': stream_id, 'feeds': feeds, 'bases': {value: base_for(value) for value in allowed}, 'accounts': _feed_accounts_fingerprint(),
-				'urls': urls, 'active': False, 'switching': False, 'opening_at': opening_at, 'saw_opening': False}
+			channel = data.get('channel')
+			self._finish_observation()
+			self.session = {'token': token, 'id': stream_id, 'feeds': feeds, 'bases': {value: bases[value] for value in allowed}, 'accounts': _feed_accounts_fingerprint(), 'provider_keys': provider_keys,
+				'channel': channel[:160] if isinstance(channel, str) else '', 'matched': data.get('matched') is True, 'urls': urls, 'active': False, 'switching': False,
+				'opening_at': opening_at, 'saw_opening': False}
+			self._begin_observation(self.session)
 			if 'expires' in data: self.session['expires'] = data['expires']
 			self.event = None
 			self._prune_expired()
@@ -278,17 +336,39 @@ class LiveTVFailover(ku.xbmc_player):
 		session['switching'] = False
 		session.pop('restore', None)
 		session.pop('outgoing', None)
+		now = self.clock()
+		session['active_at'] = now
+		observation = session.get('observation')
+		if observation:
+			observation.update(startup=max(0.0, now - session['opening_at']), sampled_at=now, state='watching')
 		livetv_feed_health.record(session['accounts'], session['id'], True)
 		if session.pop('restoring', False):
 			ku.dialog.notification('Live TV', 'Could not switch feed. Previous feed restored.')
 
 	def onPlayBackError(self):
-		if self.session: self.event = ('error', self.session['token'], self.session['id'], self.session['switching'])
+		session = self.session
+		if not session: return
+		self.event = ('error', session['token'], session['id'], session['switching'])
+		if session.get('active') and not session['switching']:
+			expected = session.get('urls', {}).get(session['id'])
+			if expected and self._playing_file() in ('', expected): session['playback_error_at'] = self.clock()
 
 	def onPlayBackStopped(self):
 		if self.session: self.event = ('stop', self.session['token'], self.session['id'], self.session['switching'])
 
 	onPlayBackEnded = onPlayBackStopped
+
+	def onPlayBackPaused(self):
+		self._mark_paused(True)
+
+	def onPlayBackResumed(self):
+		self._mark_paused(False)
+
+	def _mark_paused(self, paused):
+		session = self.session
+		if not session or not session['active'] or self._playing_file() != session.get('urls', {}).get(session['id']): return
+		observation = session.get('observation')
+		if observation: observation['paused'] = paused
 
 	def _publish_choices(self):
 		session = self.session
@@ -351,6 +431,14 @@ class LiveTVFailover(ku.xbmc_player):
 			if not ku.get_property(STOP_REQUEST): ku.dialog.notification('Live TV', 'Could not switch feed.')
 			return False
 		session['urls'].pop(previous_id, None)
+		observation = session.get('observation')
+		session.pop('peer_candidate', None)
+		selected_provider = session['provider_keys'].get(selected)
+		if session['matched'] and selected_provider and observation and observation['last_buffer'] is not None:
+			now = self.clock()
+			if now - observation['last_buffer'] <= _RECENT_BUFFER_SECONDS and selected_provider != observation['provider']:
+				session['peer_candidate'] = (observation['provider'], now)
+		self._finish_observation('switched')
 		session['restore'] = previous_id
 		session['outgoing'] = outgoing
 		if self._open_feed(selected, url): return True
@@ -360,6 +448,8 @@ class LiveTVFailover(ku.xbmc_player):
 		session = self.session
 		if not self._session_is_current(session): return False
 		session.update(id=feed_id, active=False, switching=True, opening_at=self.clock(), saw_opening=False)
+		session.pop('playback_error_at', None)
+		self._begin_observation(session)
 		self.event = None
 		if ku.get_property(STOP_REQUEST): return False
 		self._publish_choices()
@@ -369,15 +459,22 @@ class LiveTVFailover(ku.xbmc_player):
 			item.setMimeType('video/mp2t')
 			item.setContentLookup(False)
 			self.play(url, item)
-		except Exception: return False
+		except Exception:
+			self._finish_observation('start_failed', 'Kodi could not open the feed', 'shared')
+			return False
 		return True
 
-	def _failed_open(self, record=True, dismiss_error=False):
+	def _failed_open(self, record=True, dismiss_error=False, reason=''):
 		session = self.session
 		if ku.get_property(STOP_REQUEST) or not self._session_is_current(session): return False
 		feed_id = session['id']
 		if record: livetv_feed_health.record(session['accounts'], feed_id, False)
 		url = session.get('urls', {}).pop(feed_id, '')
+		if reason:
+			scope, detail = playback_issue(url, session['opening_at']) or ('unknown', reason)
+			self._finish_observation('start_failed', detail, scope)
+		else: self._finish_observation('cancelled')
+		session.pop('peer_candidate', None)
 		if url:
 			if ku.get_property(OPENING) == url: ku.clear_property(OPENING)
 			try: cancel(url)
@@ -463,7 +560,7 @@ class LiveTVFailover(ku.xbmc_player):
 			if url and not queued:
 				try: cancel(url)
 				except (OSError, HTTPException, ValueError, TypeError): pass
-			self._clear(keep_stop=queued)
+			self._clear(keep_stop=queued, outcome='completed' if session['active'] else 'cancelled')
 			return queued
 		if not self._prune_expired(): return False
 		if not self._session_is_current(session):
@@ -485,21 +582,31 @@ class LiveTVFailover(ku.xbmc_player):
 				# A stop callback may refer to the outgoing player while Kodi queues the replacement.
 				ended = own_event and not busy and session['saw_opening'] and elapsed >= 1.0
 				if failed_response or failed_dialog or ended or (not busy and elapsed >= SESSION_OPEN_TIMEOUT):
-					return self._failed_open(dismiss_error=bool(session['switching'] and failed_dialog))
-		elif own_event:
+					if failed_response: reason = 'Stream did not respond during startup'
+					elif failed_dialog or (ended and event[0] == 'error'): reason = 'Kodi reported a playback error during startup'
+					elif ended: reason = ''
+					else: reason = 'Playback startup timed out'
+					return self._failed_open(dismiss_error=bool(session['switching'] and failed_dialog), reason=reason)
+		elif own_event and not event[3]:
 			# Kodi also reports a stop for the outgoing player during a requested switch.
-			if not event[3] and event[0] == 'stop' and playing == expected:
+			if event[0] == 'stop' and playing == expected:
 				# A delayed outgoing callback can arrive after the new feed starts.
 				# Discard queued switches until Kodi confirms whether playback stopped.
 				ku.clear_property(SWITCH_REQUEST)
 				return True
-			if not event[3] and (event[0] == 'stop' or not playing):
-				self._clear()
-				return False
 		if playing and playing != expected and (session['active'] or (session.get('outgoing') and playing != session['outgoing'])):
 			self._clear()
 			return False
 		if not playing and session['active']:
+			error_at = session.get('playback_error_at')
+			now = self.clock()
+			active_at = session['active_at']
+			if error_at is not None and now - error_at <= _ERROR_END_WINDOW:
+				detail = playback_issue(expected, max(active_at, now - _RECENT_BUFFER_SECONDS)) or ('unknown', 'Kodi reported a playback error')
+			else: detail = playback_issue(expected, max(active_at, now - _ERROR_END_WINDOW), terminal_only=True)
+			if detail:
+				scope, reason = detail
+				self._finish_observation('dropped', reason, scope)
 			self._clear()
 			return False
 		if playing == expected and not session['active'] and not session['switching'] and ku.get_visibility('Window.IsActive(fullscreenvideo) + Player.HasVideo'):
@@ -507,7 +614,9 @@ class LiveTVFailover(ku.xbmc_player):
 				if self.isPlayingVideo(): self.onAVStarted(False)
 			except Exception: pass
 		self._publish_choices()
-		caching = bool((session['active'] and ku.get_visibility('Player.Caching')) or ku.get_property(SWITCH_REQUEST) or ku.get_property(LOADING_SWITCH))
+		player_caching = session['active'] and ku.get_visibility('Player.Caching')
+		if session['active'] and playing == expected and not ku.get_property(LOADING_SWITCH): self._sample_observation(session, player_caching)
+		caching = bool(player_caching or ku.get_property(SWITCH_REQUEST) or ku.get_property(LOADING_SWITCH))
 		can_focus = ku.get_visibility('Window.IsActive(fullscreenvideo)') and not ku.get_visibility('Window.IsVisible(videoosd)')
 		if caching and not self.caching and can_focus: ku.xbmc.executebuiltin('SetFocus(9902)')
 		self.caching = bool(caching and (self.caching or can_focus))

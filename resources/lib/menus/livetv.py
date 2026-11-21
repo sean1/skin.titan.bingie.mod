@@ -17,16 +17,18 @@ import zlib
 from datetime import datetime, timezone
 from functools import lru_cache
 from http.client import HTTPException
+from statistics import median
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlencode, urlsplit
+from urllib.parse import quote, unquote, urlencode, urlsplit
 
 import xbmc
 import xbmcgui
 import xbmcplugin
 from modules import kodi_utils as ku
+from modules import livetv_provider_health as provider_health
 from modules.livetv_catalog import get as _catalog_get
 from modules.livetv_catalog import _icon as _catalog_icon, _redact as _catalog_redact, _usable_streams
-from modules.livetv_vpn_relay import open_url as _vpn_open, register as _vpn_register
+from modules.livetv_vpn_relay import RelayUnavailable, open_url as _vpn_open, register as _vpn_register
 from modules.livetv_vpn import failure_message as _vpn_failure_message
 from modules.livetv_vpn import report_catalog_access_problem, report_catalog_problem, request_connection as _request_vpn, wait_for_connection as _wait_for_vpn
 from modules import livetv_fixtures as _fixture_service
@@ -94,6 +96,7 @@ def _play_params(stream_id, name, sport=''):
 	if sport in ('soccer', 'hockey', 'football', 'basketball', 'tennis', 'f1', 'news'):
 		params.update({'name': name, 'sport': sport})
 	elif _soccer_event(name): params['name'] = name
+	else: params['channel'] = provider_health.safe_label(name)
 	return params
 
 
@@ -614,11 +617,66 @@ def _provider_expiry_text(account):
 	return f'Last known expiry {expiry:%b} {expiry.day}, {expiry.year}'
 
 
+def _provider_summary(accounts, labels, events):
+	stats = provider_health.summarize(events or [])
+	lines = ['Playback and refresh observations on this Kodi device.']
+	if events is None: lines.append('Reliability history is currently unavailable.')
+	elif not events: lines.append('No activity recorded in the last 30 days.')
+	else:
+		shared = sum(event['scope'] == 'shared' for event in events)
+		if shared: lines.append(f'Shared Live TV issues: {shared} · See issue history')
+	for identity, account in accounts:
+		lines.extend(('', f'[B]{labels[identity]}[/B] · {_provider_expiry_text(account)}'))
+		provider = stats.get(provider_health.provider_key(identity, account))
+		if provider and provider['attempts']:
+			attempts, watched = provider['attempts'], provider['watched']
+			lines.append(f"{provider['starts']}/{attempts} started · {watched / 60:.1f} min watched · {provider['drops']} playback drops")
+			if attempts < 5: lines.append('Too little playback data for a reliable comparison.')
+			if provider['measured']: lines.append(f"{provider['buffered'] * 60 / provider['measured']:.1f} min buffering per hour watched")
+			if provider['startup']: lines.append(f"{median(provider['startup']):.1f} s typical time to start")
+			if provider['recoveries']: lines.append(f"{provider['recoveries']} same-event switches restored playback")
+			if provider['channels']: lines.append('Most watched: ' + ', '.join(label for label, _ in provider['channels'].most_common(3)))
+		else: lines.append('No playback data yet.')
+		if provider and provider['issues']:
+			reason, count = provider['issues'].most_common(1)[0]
+			lines.append(f'Most observed issue: {reason} ({count})')
+			if provider['unclear']: lines.append(f"Issues with an unclear cause: {provider['unclear']}")
+	if not accounts: lines.append('No IPTV providers are configured.')
+	ku.dialog.textviewer('30-day reliability summary', '\n'.join(lines))
+
+
+def _provider_issue_history(events, providers):
+	if events is None:
+		ku.dialog.textviewer('Issue history', 'Reliability history is currently unavailable.')
+		return
+	days = {}
+	for event in events:
+		reason = provider_health.issue_reason(event)
+		if not reason: continue
+		occurred = datetime.fromtimestamp(event['occurred'])
+		provider = providers.get(event['provider'], 'Previously configured provider' if event['provider'] else '')
+		scope = {'provider': '', 'shared': 'Shared issue', 'unknown': 'Cause unclear'}[event['scope']]
+		parts = [occurred.strftime('%H:%M'), provider, event['channel'], event['kind'].capitalize(), reason, scope]
+		if event['buffered'] >= 2: parts.append(f"{event['buffered']:.0f} s buffering")
+		if event['recovered']: parts.append('Recovered')
+		days.setdefault(occurred.date().isoformat(), []).append(' · '.join(part for part in parts if part))
+	if not days:
+		ku.dialog.textviewer('Issue history', 'No issues recorded in the last 30 days.')
+		return
+	dates = list(days)
+	while (choice := ku.dialog.select('Issue history · last 30 days', [f'{date} · {len(days[date])} entries' for date in dates])) >= 0:
+		date = dates[choice]
+		ku.dialog.textviewer(f'Issue history · {date}', '\n\n'.join(days[date]))
+
+
 def show_providers():
 	accounts = _sports_accounts(_load())
-	providers = _provider_labels(accounts, show_seller=False)
-	lines = [f'{providers[identity]} · {_provider_expiry_text(account)}' for identity, account in accounts]
-	ku.dialog.textviewer('IPTV Providers', '\n'.join(lines) or 'No IPTV providers are configured.')
+	labels = _provider_labels(accounts, show_seller=False)
+	providers = {provider_health.provider_key(identity, account): labels[identity] for identity, account in accounts}
+	while (choice := ku.dialog.select('IPTV Providers', ['30-day reliability summary', 'Issue history'])) >= 0:
+		events = provider_health.recent()
+		if choice == 0: _provider_summary(accounts, labels, events)
+		elif choice == 1: _provider_issue_history(events, providers)
 
 
 def _bundled_credentials_path():
@@ -839,17 +897,25 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=
 	degraded = False
 	first_problem = problem = ''
 	recovered = False
+	source = ''
+	first_issue = issue = None
+
+	def catalog_source(value):
+		nonlocal source
+		source = value
+		if on_source: on_source(value)
 
 	def on_stale():
 		vpn_message = _vpn_failure_message()
 		if vpn_message or not (problem or first_problem): _error(vpn_message or 'Showing saved channels; check the VPN or provider connection.')
 
 	def fetch(account, action, **options):
-		nonlocal degraded, first_problem, problem, recovered
+		nonlocal degraded, first_problem, problem, recovered, first_issue, issue
 		if not catalog_action: return _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
 		started = time.monotonic()
 		degraded = False
 		problem = ''
+		issue = None
 		try: data = _request(account, action, _deadline=_deadline, _on_timing=on_timing, **options)
 		except (OSError, HTTPException, ValueError, TypeError) as error:
 			enough_time = _deadline is None or _deadline - started >= 1
@@ -863,6 +929,10 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=
 			if enough_time or not (isinstance(error, TimeoutError) and str(error) == 'Live TV catalog timed out'):
 				timed_out = isinstance(error, TimeoutError) or (isinstance(error, HTTPError) and error.code in (408, 504)) or (isinstance(error, URLError) and isinstance(error.reason, TimeoutError))
 				problem = 'Catalog timed out' if timed_out else 'Invalid catalog response' if isinstance(error, (ValueError, TypeError)) else 'Catalog request failed'
+				if isinstance(error, RelayUnavailable): issue = ('shared', 'Relay unavailable')
+				elif isinstance(error, HTTPError) and upstream and 400 <= error.code < 600: issue = ('provider', 'Upstream catalog HTTP %d' % error.code)
+				elif isinstance(error, HTTPError) and not upstream and error.code == 404: issue = ('shared', 'Relay request unavailable')
+				else: issue = ('unknown', problem)
 			raise
 		elapsed = time.monotonic() - started
 		if not isinstance(data, list): problem = 'Invalid catalog response'
@@ -872,14 +942,28 @@ def _catalog(account, action, *, force_refresh=False, on_status=None, on_source=
 		degraded = full_live_catalog and bool(problem)
 		recovered = bool(first_problem and not problem)
 		if not first_problem: first_problem = problem
+		if problem:
+			issue = ('unknown', 'Slow catalog') if problem.startswith('Slow catalog') else ('provider', problem)
+			if first_issue is None: first_issue = issue
 		return data
 
 	deadline_option = {} if _deadline is None else {'_deadline': _deadline}
-	if on_source: deadline_option['on_source'] = on_source
+	if catalog_action or on_source: deadline_option['on_source'] = catalog_source
 	if on_timing: deadline_option['on_timing'] = on_timing
 	try: return _catalog_get(account, action, fetch, ku.translate_path(ku.profile_path), on_stale=on_stale if notify_stale else None, on_status=on_status, force_refresh=force_refresh, **deadline_option, **params)
 	finally:
 		if degraded: report_catalog_problem()
+		observation = issue or first_issue
+		if observation:
+			try:
+				from modules import livetv_provider_health as provider_health
+				scope, reason = observation
+				identity = next((identity for identity, value in _sports_accounts(_load()) if all(account.get(key) == value.get(key) for key in ('id', 'server', 'username', 'password'))), None)
+				if identity is not None:
+					provider_id = provider_health.provider_key(identity, account)
+					if source == 'stale': reason += ' · showing saved channels'
+					provider_health.record_issue('refresh', reason, scope=scope, provider_id=provider_id, recovered=issue is None and source == 'network')
+			except Exception: pass
 		message = problem or (first_problem + ' · retry succeeded' if recovered else first_problem)
 		if message:
 			try:
@@ -2315,10 +2399,20 @@ def play(params):
 	_request_vpn()
 	_wait_for_vpn()
 	failover = _cached_failover(params) if params.get('sport') else None
+	matched = bool(failover)
 	if not failover: failover = {'id': reference, 'alternatives': [], 'feeds': [{'id': reference, 'name': 'Feed 1'}], 'token': uuid.uuid4().hex}
+	raw_channel = params.get('name') or params.get('channel') or ''
+	channel = provider_health.safe_label(raw_channel)
+	if channel:
+		secrets = tuple(str(entry.get(key) or '').casefold() for _, entry in _sports_accounts(_load()) for key in ('username', 'password'))
+		for label in (raw_channel.casefold(), unquote(raw_channel).casefold(), channel.casefold()):
+			if _catalog_redact(label, secrets) != label:
+				channel = ''
+				break
 	url = '%s/live/%s/%s/%s.ts' % (account['server'], quote(account['username'], safe=''), quote(account['password'], safe=''), stream_id)
 	try: url = _vpn_register(url)
 	except (OSError, HTTPException, ValueError, TypeError):
+		provider_health.record_issue('playback', 'Live TV relay could not open the feed', scope='shared', provider_id=provider_health.provider_key(provider or 'primary', account), channel=channel)
 		_error(_vpn_failure_message() or 'Live TV VPN unavailable. Check the VPN connection and try again.')
 		xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 		return
@@ -2328,5 +2422,7 @@ def play(params):
 	if failover:
 		failover['playback_url'] = url
 		failover['requested_at'] = time.monotonic()
+		failover['channel'] = channel
+		failover['matched'] = matched
 		xbmcgui.Window(10000).setProperty(_FAILOVER_PROPERTY, json.dumps(failover))
 	xbmcplugin.setResolvedUrl(_handle(), True, item)

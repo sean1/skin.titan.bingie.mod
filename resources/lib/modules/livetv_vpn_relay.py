@@ -13,6 +13,7 @@ import socket
 import tempfile
 import threading
 import time
+from urllib.error import URLError
 from urllib.parse import urljoin, urlsplit
 from urllib.request import ProxyHandler, Request, build_opener
 
@@ -29,6 +30,11 @@ _INITIAL_RESULTS = collections.OrderedDict()
 _INITIAL_RESULTS_LOCK = threading.Lock()
 _INITIAL_RESULT_TTL = 60
 _INITIAL_RESULT_LIMIT = 256
+_PLAYBACK_ISSUES = collections.OrderedDict()
+
+
+class RelayUnavailable(OSError):
+	"""The local IPTV relay could not accept a request."""
 
 
 def _initial_begin(root, started):
@@ -45,17 +51,45 @@ def _initial_finish(root, started, outcome):
 			_INITIAL_RESULTS[root] = (started, time.monotonic() if outcome in ('failed', 'timeout') else None)
 
 
-def initial_response_failed(url, since):
-	"""Return whether this local playback capability recently failed to open."""
+def _playback_root(url):
 	try:
 		parsed = urlsplit(url)
 		match = re.fullmatch(r'/r/([A-Za-z0-9_-]{32,})/resource(?:\.[A-Za-z0-9]{1,8})?', parsed.path)
-		if parsed.scheme != 'http' or parsed.hostname != '127.0.0.1' or not parsed.port or parsed.query or parsed.fragment or not match or not isinstance(since, (int, float)): return False
-		with _INITIAL_RESULTS_LOCK: entry = _INITIAL_RESULTS.get(match.group(1))
+		if parsed.scheme == 'http' and parsed.hostname == '127.0.0.1' and parsed.port and not parsed.query and not parsed.fragment and match: return match.group(1)
+	except (TypeError, ValueError, OverflowError): pass
+
+
+def initial_response_failed(url, since):
+	"""Return whether this local playback capability recently failed to open."""
+	try:
+		root = _playback_root(url)
+		if not root or not isinstance(since, (int, float)): return False
+		with _INITIAL_RESULTS_LOCK: entry = _INITIAL_RESULTS.get(root)
 		if not entry or entry[1] is None: return False
 		now = time.monotonic()
 		return since <= entry[1] <= now and now - entry[1] < _INITIAL_RESULT_TTL
 	except (TypeError, ValueError, OverflowError): return False
+
+
+def _record_playback_issue(root, scope, reason, *, terminal=False):
+	if not root: return
+	with _INITIAL_RESULTS_LOCK:
+		entry = (time.monotonic(), scope, reason)
+		previous_terminal = _PLAYBACK_ISSUES.get(root, (None, None))[1]
+		_PLAYBACK_ISSUES[root] = (entry, entry if terminal else previous_terminal)
+		_PLAYBACK_ISSUES.move_to_end(root)
+		while len(_PLAYBACK_ISSUES) > _INITIAL_RESULT_LIMIT: _PLAYBACK_ISSUES.popitem(last=False)
+
+
+def playback_issue(url, since, *, terminal_only=False):
+	"""Return recent, classified relay evidence for this playback capability."""
+	root = _playback_root(url)
+	if not root or not isinstance(since, (int, float)): return None
+	with _INITIAL_RESULTS_LOCK: entry = _PLAYBACK_ISSUES.get(root, (None, None))[1 if terminal_only else 0]
+	if entry:
+		when, scope, reason = entry
+		now = time.monotonic()
+		if since <= when <= now and now - when < _INITIAL_RESULT_TTL: return scope, reason
 
 
 class _Server(ThreadingHTTPServer):
@@ -159,7 +193,8 @@ def _descriptor(path=None):
 def register(url, descriptor_path=None, data_request=False):
 	"""Register a remote IPTV URL and return a local opaque capability URL."""
 	parsed = _url(url)
-	port, secret = _descriptor(descriptor_path)
+	try: port, secret = _descriptor(descriptor_path)
+	except (OSError, ValueError, TypeError, AttributeError) as error: raise RelayUnavailable('IPTV VPN relay is unavailable') from error
 	if parsed.scheme.lower() == 'http' and parsed.hostname == '127.0.0.1' and parsed.port == port and not parsed.query and not parsed.fragment and re.fullmatch(r'/r/[A-Za-z0-9_-]{32,}/resource(?:\.[A-Za-z0-9]{1,8})?', parsed.path): return url
 	conn = http.client.HTTPConnection('127.0.0.1', port, timeout=10)
 	try:
@@ -171,6 +206,7 @@ def register(url, descriptor_path=None, data_request=False):
 		path = json.loads(data.decode('utf-8')).get('path')
 		if not isinstance(path, str) or not re.fullmatch(r'/r/[A-Za-z0-9_-]{32,}/resource(?:\.[A-Za-z0-9]{1,8})?', path): raise OSError('Invalid IPTV VPN relay response')
 		return 'http://127.0.0.1:%d%s' % (port, path)
+	except (OSError, http.client.HTTPException, ValueError, TypeError, AttributeError) as error: raise RelayUnavailable('IPTV VPN relay is unavailable') from error
 	finally: conn.close()
 
 
@@ -192,13 +228,17 @@ def cancel(url, descriptor_path=None):
 def open_url(url, headers=None, timeout=20, descriptor_path=None):
 	"""Open an IPTV URL through the VPN; never use environment proxy settings."""
 	local = register(url, descriptor_path, data_request=True)
-	port, secret = _descriptor(descriptor_path)
-	if urlsplit(local).port != port: raise OSError('IPTV VPN relay changed')
+	try: port, secret = _descriptor(descriptor_path)
+	except (OSError, http.client.HTTPException, ValueError, TypeError, AttributeError) as error: raise RelayUnavailable('IPTV VPN relay is unavailable') from error
+	if urlsplit(local).port != port: raise RelayUnavailable('IPTV VPN relay changed')
 	request_headers = dict(headers or {})
 	request_headers['X-Bingie-Timeout'] = str(max(1, min(120, float(timeout))))
 	request_headers['X-Bingie-Data-Request'] = secret
 	request = Request(local, headers=request_headers)
-	return build_opener(ProxyHandler({})).open(request, timeout=timeout)
+	try: return build_opener(ProxyHandler({})).open(request, timeout=timeout)
+	except URLError as error:
+		if isinstance(error.reason, ConnectionRefusedError): raise RelayUnavailable('IPTV VPN relay is unavailable') from error
+		raise
 
 
 class Relay:
@@ -435,6 +475,7 @@ class Relay:
 				trace_phase = 'setup'
 				trace_outcome = 'complete'
 				trace_root = trace_request = trace_active = 0
+				terminal = False
 				try:
 					match = re.fullmatch(r'/r/([A-Za-z0-9_-]{32,})/resource(?:\.[A-Za-z0-9]{1,8})?', self.path)
 					data_request = hmac.compare_digest(self.headers.get('X-Bingie-Data-Request', ''), owner.secret)
@@ -451,6 +492,7 @@ class Relay:
 							trace_active = sum(len(handlers) for handlers in owner.active.values())
 					if trace_request: _trace_relay('start request=%d root=%d method=%s range=%s active=%d' % (trace_request, trace_root, method, bool(self.headers.get('Range')), trace_active))
 					if not url: return self._error(404)
+					terminal = bool(root and root == match.group(1))
 					with owner.lock:
 						known_transport = method == 'HEAD' and not data_request and not self.headers.get('Range') and root == match.group(1) and root in owner.items and owner.namespaces.get(root) == 'playback' and root in owner.transport_roots
 					if known_transport:
@@ -478,13 +520,16 @@ class Relay:
 					try: timeout = max(1, min(120, float(self.headers.get('X-Bingie-Timeout', '30'))))
 					except ValueError: timeout = 30
 					connection, response, effective_url = owner._open(url, method, dict(self.headers), timeout=timeout, data_request=data_request, handler=self if not data_request else None)
+					if method == 'GET' and 400 <= response.status < 600: _record_playback_issue(root, 'provider', 'Upstream HTTP %d' % response.status, terminal=terminal)
 					content_type = (response.getheader('Content-Type') or '').lower()
 					if trace_request:
 						trace_length = response.getheader('Content-Length') or ''
 						trace_length = int(trace_length) if trace_length.isdecimal() and len(trace_length) <= 20 else -1
 						trace_type = 'transport' if 'mp2t' in content_type else 'playlist' if 'mpegurl' in content_type else 'other'
 						_trace_relay('response request=%d root=%d status=%d length=%d transfer=%s type=%s' % (trace_request, trace_root, response.status, trace_length, bool(response.getheader('Transfer-Encoding')), trace_type))
-					if not data_request and ('dash+xml' in content_type or urlsplit(effective_url).path.lower().endswith('.mpd')): return self._error(502)
+					if not data_request and ('dash+xml' in content_type or urlsplit(effective_url).path.lower().endswith('.mpd')):
+						if method == 'GET' and response.status < 400: _record_playback_issue(root, 'shared', 'Relay could not handle this stream', terminal=terminal)
+						return self._error(502)
 					if response.status == 206: return self._error(502)
 					encoding = (response.getheader('Content-Encoding') or 'identity').strip().lower()
 					if not data_request and encoding not in ('', 'identity') and response.status < 400: return self._error(502)
@@ -557,6 +602,8 @@ class Relay:
 								chunk = read_chunk(min(65536, remaining) if remaining is not None else 65536)
 								if not chunk:
 									trace_outcome = 'eof'
+									if root and response.status < 400 and not self.cancelled and (remaining or response.length):
+										_record_playback_issue(root, 'unknown', 'Stream response ended early', terminal=terminal)
 									break
 								trace_last = time.monotonic()
 								trace_bytes += len(chunk)
@@ -565,10 +612,15 @@ class Relay:
 								if remaining is not None: remaining -= len(chunk)
 				except Exception as exc:
 					trace_outcome = 'timeout' if isinstance(exc, TimeoutError) else 'error'
+					if root and trace_phase == 'read' and response.status < 400 and not self.cancelled and isinstance(exc, (OSError, http.client.HTTPException)):
+						detail = 'Stream read timed out' if trace_outcome == 'timeout' else 'Stream read failed'
+						_record_playback_issue(root, 'unknown', detail, terminal=terminal)
 					if not sent:
 						try: self._error(504 if data_request and trace_outcome == 'timeout' else 502)
 						except OSError: pass
 				finally:
+					if root and method == 'GET' and trace_phase != 'write' and owner.stopping.is_set() and not self.cancelled and trace_outcome in ('eof', 'timeout', 'error'):
+						_record_playback_issue(root, 'shared', 'Relay unavailable', terminal=True)
 					if trace_started is not None:
 						try:
 							now = time.monotonic()

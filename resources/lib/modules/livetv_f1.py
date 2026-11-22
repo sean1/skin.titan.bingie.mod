@@ -15,7 +15,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-from modules.f1_calendar import circuit_locality
+from modules.f1_calendar import _normal as _normal_title, circuit_locality
 from modules.livetv_sports import non_live_title
 
 _CACHE = None
@@ -52,6 +52,13 @@ _SESSION_PATTERNS = {
 }
 _REJECT = re.compile(r'\b(?:archive|on[ -]demand)\b', re.I)
 _GRAND_PRIX = r'(?:grand prix|gp)'
+_PRE_SHOW = r'pre ?race(?: show| coverage)?|(?:race )?build ?up|grid walk'
+_POST_SHOW = r'post ?race(?: show| coverage)?|(?:the )?che(?:qu|ck)ered flag'
+_BROADCAST_SHOW_PATTERNS = {
+	'pre': r'(?:' + _PRE_SHOW + '|' + _GRAND_PRIX + r' sunday)',
+	'post': r'(?:' + _POST_SHOW + ')',
+}
+_SHOW_LABEL = re.compile(r'\b(?:' + _PRE_SHOW + '|' + _POST_SHOW + r')\b')
 _OTHER_SERIES = re.compile(r'\b(?:nascar|indy[ -]*car|moto[ -]*gp|formula[ -]+e|(?:formula|f)[ -]*(?:[234]|1[ -]+academy))\b')
 _LABEL_DATE = re.compile(r'\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*(?:\s+(\d{4}))?\b', re.I)
 _MONTH_FIRST = re.compile(r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})(?:,?\s+(\d{4}))?\b', re.I)
@@ -251,6 +258,14 @@ def get_schedule(cache_dir=None, with_expiry=False):
 	entry = (time.monotonic(), [])
 	_CACHE = entry
 	return ([], time.time() + max(0, 30 - (time.monotonic() - entry[0]))) if with_expiry else []
+
+
+def get_picker_schedule(session_id):
+	"""Find the selected session even when it falls after the next weekend."""
+	fixtures, expires = get_schedule(with_expiry=True)
+	if any(row['id'] == session_id for row in fixtures): return fixtures, expires
+	fixtures = get_show_schedule(datetime.now(timezone.utc).year)
+	return fixtures, time.time() + 30
 
 
 def get_show_schedule(year):
@@ -547,7 +562,7 @@ def _short_event_match(name, locality, session):
 	return bool(named or re.search(r'(?:^|[|:,–—]|\s-\s)\s*' + place + r'\s*:\s*' + session.pattern, name))
 
 
-def fixture_groups(streams, fixtures, live_only=False):
+def fixture_groups(streams, fixtures, live_only=False, *, scheduled_session=''):
 	"""Return session-id to stream-id mappings for unambiguous event feeds."""
 	if not isinstance(streams, list) or not isinstance(fixtures, list): return {}
 	owners, short_owners = {}, {}
@@ -569,7 +584,7 @@ def fixture_groups(streams, fixtures, live_only=False):
 		identity, name = str(stream.get('stream_id') or ''), stream.get('name')
 		if not identity.isdecimal() or not isinstance(name, str) or non_live_title(name) or _REJECT.search(name): continue
 		codes = [code for code, pattern in _SESSION_PATTERNS.items() if pattern.search(name)]
-		if len(codes) != 1: continue
+		if len(codes) != 1 or _SHOW_LABEL.search(_normal_title(name)): continue
 		normal_name = _normal(name)
 		matched_aliases = {alias for alias, pattern in patterns.items() if pattern.search(normal_name)}
 		short_matches = {owner for locality, matches in short_owners.items() if _short_event_match(normal_name, locality, _SESSION_PATTERNS[codes[0]]) for owner in matches | owners.get(locality, set())}
@@ -582,9 +597,9 @@ def fixture_groups(streams, fixtures, live_only=False):
 			event, session_id = fixture.get('event'), fixture.get('id')
 			if not isinstance(event, str) or not event.strip() or not isinstance(session_id, str) or not session_id: continue
 			if re.search(r'\b(?:next|upcoming)\b', name, re.I) and fixture.get('status') != 'Scheduled': continue
-			if re.search(r'\blive\b', name, re.I) and fixture.get('status') != 'LIVE': continue
+			if re.search(r'\blive\b', name, re.I) and fixture.get('status') != 'LIVE' and not (scheduled_session and fixture.get('status') == 'Scheduled'): continue
 			if not _date_agrees(name, fixture.get('date', '')): continue
 			owner = {fixture.get('event_id', event)}
 			if short_matches == owner or any(isinstance(alias, str) and len(alias.strip()) >= 4 and _normal(alias) in matched_aliases and owners[_normal(alias)] == owner for alias in fixture.get('aliases', [event])): candidates.append(session_id)
-		if len(candidates) == 1: result.setdefault(candidates[0], {}).setdefault(identity, stream)
+		if len(candidates) == 1 and (not scheduled_session or candidates[0] == scheduled_session): result.setdefault(candidates[0], {}).setdefault(identity, stream)
 	return result

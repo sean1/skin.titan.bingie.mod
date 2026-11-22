@@ -26,7 +26,7 @@
         <include>BingieF1Show</include>
 
         <control type="label">
-            <visible>String.Contains(Container.FolderPath,mode=livetv.match_feeds)</visible>
+            <visible>String.Contains(Container.FolderPath,mode=livetv.match_feeds) | String.Contains(Container.FolderPath,mode=livetv.f1_broadcast_feeds)</visible>
             <left>138</left><top>35</top><width>1600</width><height>58</height><font>Bold36</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.FeedSelection.Title)]</label><scroll>true</scroll>
         </control>
 
@@ -47,7 +47,7 @@
                 <include content="BingieSportsOverviewRow"><param name="id" value="9504" /><param name="sport" value="basketball" /><param name="title" value="Basketball" /> <param name="up1" value="9503" /> <param name="up2" value="9502" /> <param name="up3" value="9501" /> <param name="up4" value="9506" /> <param name="up5" value="9505" /> <param name="down1" value="9505" /> <param name="down2" value="9506" /> <param name="down3" value="9501" /> <param name="down4" value="9502" /> <param name="down5" value="9503" /></include>
                 <include content="BingieSportsOverviewRow"><param name="id" value="9505" /><param name="sport" value="tennis" /><param name="title" value="Tennis" /> <param name="up1" value="9504" /> <param name="up2" value="9503" /> <param name="up3" value="9502" /> <param name="up4" value="9501" /> <param name="up5" value="9506" /> <param name="down1" value="9506" /> <param name="down2" value="9501" /> <param name="down3" value="9502" /> <param name="down4" value="9503" /> <param name="down5" value="9504" /></include>
                 <include content="BingieSportsOverviewRow"><param name="id" value="9506" /><param name="sport" value="f1" /><param name="title" value="Formula 1" /> <param name="up1" value="9505" /> <param name="up2" value="9504" /> <param name="up3" value="9503" /> <param name="up4" value="9502" /> <param name="up5" value="9501" /> <param name="down1" value="9501" /> <param name="down2" value="9502" /> <param name="down3" value="9503" /> <param name="down4" value="9504" /> <param name="down5" value="9505" /></include>
-                <control type="button" id="9507"><width>1668</width><height>80</height><font>Reg24</font><textcolor>ffdddddd</textcolor><focusedcolor>ffffffff</focusedcolor><label>No live sports events</label><visible>String.IsEqual(Window(Home).Property(LiveTV.Sports.OverviewEmpty),true)</visible><onleft>SetProperty(ShowViewSubMenu,show,Home)</onleft><onleft>9002</onleft><onclick>SetProperty(ShowViewSubMenu,show,Home)</onclick><onclick>SetFocus(9002)</onclick></control>
+                <control type="button" id="9507"><width>1668</width><height>80</height><font>Reg24</font><textcolor>ffdddddd</textcolor><focusedcolor>ffffffff</focusedcolor><label>No live or upcoming sports events</label><visible>String.IsEqual(Window(Home).Property(LiveTV.Sports.OverviewEmpty),true)</visible><onleft>SetProperty(ShowViewSubMenu,show,Home)</onleft><onleft>9002</onleft><onclick>SetProperty(ShowViewSubMenu,show,Home)</onclick><onclick>SetFocus(9002)</onclick></control>
             </control>
         </control>
 

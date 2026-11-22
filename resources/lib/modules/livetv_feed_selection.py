@@ -325,7 +325,7 @@ def _schedule_snapshot(sport, accounts, key):
 			if value.get('accounts') != accounts or value.get('held_identity') or not isinstance(value.get('fixtures'), list): return
 			if any(not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) for v in (created, expires)): return
 			if not 0 <= now - created < _HANDOFF_SECONDS or not now < expires: return
-			if partial and not any(isinstance(row, dict) and _fixture_key(sport, row) == key for row in value['fixtures']): return
+			if (partial or sport == 'f1') and not any(isinstance(row, dict) and _fixture_key(sport, row) == key for row in value['fixtures']): return
 			candidates.append((created, value['fixtures']))
 		except (KeyError, TypeError, ValueError, AttributeError, OverflowError): return
 	value = _read(overview.PREFIX + sport)
@@ -523,6 +523,7 @@ class FeedSelection:
 					last_saved = any(stale for _, stale in statuses)
 					publish(groups, False, partial_unavailable, last_saved)
 				fixtures = _schedule_snapshot(sport, request['accounts'], key)
+				if sport == 'f1' and fixtures is None: fixtures, _ = livetv._f1.get_picker_schedule(key)
 				if fixtures is not None: observe_fixtures(fixtures)
 				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=fixtures, overlap_catalogs=False, status_sink=unavailable.append, notify_stale=False, picker_priority=True, selected_fixture=key,
 					on_partial=publish_partial, on_fixtures=observe_fixtures)
@@ -550,7 +551,7 @@ class FeedSelection:
 			sport = query['sport']
 			if sport == 'soccer':
 				(fixtures, _, _, _), expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True)
-			elif sport == 'f1': fixtures, expires = livetv._f1.get_schedule(with_expiry=True)
+			elif sport == 'f1': fixtures, expires = livetv._f1.get_picker_schedule(query['session'])
 			elif sport in ('hockey', 'football', 'basketball', 'tennis'):
 				profile = ku.translate_path(getattr(ku, 'profile_path', ''))
 				service = livetv._tennis_fixtures_service if sport == 'tennis' else livetv._american_fixtures

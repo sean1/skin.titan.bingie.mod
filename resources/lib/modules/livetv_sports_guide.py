@@ -11,6 +11,7 @@ from modules.livetv_vpn_relay import open_url
 
 
 _RENEW_SECONDS = 110 * 60
+_GUIDE_HORIZON = 2 * 3600
 _CACHE_LIMIT = 16 * 1024 * 1024
 _DEADLINE_SECONDS = 180
 _DOWNLOAD_SLOTS = BoundedSemaphore(2)
@@ -29,16 +30,29 @@ class _CancelableFile:
 		return getattr(self.source, name)
 
 
-def _fresh(path, key, now):
+def _read(path, key, now, max_age):
 	try:
-		if not 0 < os.path.getsize(path) <= _CACHE_LIMIT: return False
+		if not 0 < os.path.getsize(path) <= _CACHE_LIMIT: return None
 		with open(path, encoding='utf-8') as source: data = json.load(source)
 		created = data.get('created')
-		return data.get('key') == key and data.get('sports_format') == 2 and isinstance(created, (int, float)) and not isinstance(created, bool) and 0 <= now - created < _RENEW_SECONDS and isinstance(data.get('programmes'), dict)
-	except (OSError, ValueError, TypeError, AttributeError): return False
+		if data.get('key') == key and data.get('sports_format') == 2 and isinstance(created, (int, float)) and not isinstance(created, bool) and 0 <= now - created < max_age and isinstance(data.get('programmes'), dict):
+			return data
+	except (OSError, ValueError, TypeError, AttributeError, RecursionError): pass
+	return None
 
 
-def refresh(canceled, on_update, permissive=False):
+def _fresh(path, key, now, covers_until=0, include_f1=False):
+	data = _read(path, key, now, _RENEW_SECONDS)
+	return bool(data and covers_until < data['created'] + _GUIDE_HORIZON and (not include_f1 or data.get('includes_f1') is True))
+
+
+def read_strict(account, now):
+	from menus import livetv
+	key = hashlib.sha256(livetv._guide_url(account).encode('utf-8')).hexdigest()
+	return _read(livetv._sports_guide_cache_path(account), key, now, livetv._GUIDE_FRESH_SECONDS)
+
+
+def refresh(canceled, on_update, permissive=False, covers_until=0, include_f1=False):
 	"""Refresh a separate sports programme snapshot for each enabled provider."""
 	from menus import livetv
 	from modules import kodi_utils as ku
@@ -56,7 +70,7 @@ def refresh(canceled, on_update, permissive=False):
 			url = livetv._guide_url(account)
 			key = hashlib.sha256(url.encode('utf-8')).hexdigest()
 			path = livetv._sports_guide_cache_path(account, permissive)
-			if _fresh(path, key, time.time()): return True
+			if _fresh(path, key, time.time(), covers_until, include_f1): return True
 			deadline = time.monotonic() + _DEADLINE_SECONDS
 			with tempfile.TemporaryFile(mode='w+b', dir=profile) as raw:
 				with open_url(url, headers={'User-Agent': 'BINGIE Live TV', 'Accept-Encoding': 'identity'}, timeout=10) as response:
@@ -69,16 +83,16 @@ def refresh(canceled, on_update, permissive=False):
 						if size > livetv._GUIDE_DOWNLOAD_LIMIT: raise ValueError('Sports guide too large')
 						raw.write(chunk)
 				created = time.time()
-				programmes = livetv._parse_raw_guide(_CancelableFile(raw, canceled, deadline), created, None, sports_window=True, require_zone=not permissive)
+				programmes = livetv._parse_raw_guide(_CancelableFile(raw, canceled, deadline), created, None, sports_window=True, require_zone=not permissive, include_f1=include_f1)
 			if canceled.is_set() or time.monotonic() >= deadline: return
-			encoded = json.dumps({'key': key, 'created': created, 'sports_format': 2, 'programmes': programmes}, separators=(',', ':')).encode('utf-8')
+			encoded = json.dumps({'key': key, 'created': created, 'sports_format': 2, 'includes_f1': include_f1, 'programmes': programmes}, separators=(',', ':')).encode('utf-8')
 			if len(encoded) > _CACHE_LIMIT: return False
 			fd, temporary = tempfile.mkstemp(prefix='.livetv-sports-guide-', dir=profile)
 			try:
 				with os.fdopen(fd, 'wb') as output: output.write(encoded)
 				with _WRITE_LOCK:
 					if canceled.is_set(): return False
-					if _fresh(path, key, time.time()): return True
+					if _fresh(path, key, time.time(), covers_until, include_f1): return True
 					os.replace(temporary, path)
 			finally:
 				if os.path.exists(temporary): os.unlink(temporary)

@@ -7,6 +7,8 @@ from http.client import HTTPException
 from urllib.parse import quote
 
 import xbmc
+import xbmcgui
+import xbmcplugin
 
 from menus import livetv
 from modules import kodi_utils as ku, livetv_f1
@@ -19,6 +21,7 @@ _ARCHIVE_PROPERTY = 'BingieF1.EventArchive.2'
 _SCHEDULE_LIMIT = 256 * 1024
 _ARCHIVE_ORDER = {code: index for index, code in enumerate(('PQ', 'FP1', 'FP2', 'FP3', 'FP4', 'Q1', 'Q2', 'Q3', 'QUAL', 'TT', 'WU', 'RACE'))}
 _ARCHIVE_ORDER_2003 = {code: index for index, code in enumerate(('FP1', 'Q1', 'FP2', 'FP3', 'WU', 'Q2', 'QUAL', 'RACE'))}
+_BROADCAST_TITLES = {'pre': 'Pre-Race Show', 'post': 'Post-Race Show'}
 
 
 def _year(value):
@@ -92,9 +95,15 @@ def _group_order(group, year, now):
 	dates = [(row, datetime.fromisoformat(row['date'].replace('Z', '+00:00'))) for row in group]
 	if year == now.year:
 		if any(row.get('status') == 'LIVE' for row, _ in dates): return 0, 0
-		upcoming = [when.timestamp() for row, when in dates if row.get('status') == 'Scheduled' and when >= now]
-		if upcoming: return 1, min(upcoming)
-	return 2, -max(when.timestamp() for _, when in dates)
+		pending = [when.timestamp() for row, when in dates if _started_pending(row, when, now)]
+		if pending: return 1, -max(pending)
+		upcoming = [when.timestamp() for row, when in dates if row.get('status') == 'Scheduled' and when > now]
+		if upcoming: return 2, min(upcoming)
+	return 3, -max(when.timestamp() for _, when in dates)
+
+
+def _started_pending(fixture, when, now):
+	return fixture['status'] == 'Scheduled' and when <= now
 
 
 def _event_archive_sessions(year, fixtures, event_id):
@@ -139,6 +148,90 @@ def _message(text, event_id='', year=''):
 	livetv._item(text, {}, False, playable=False, extra_properties={'F1.Event': '', 'F1.EventId': event_id, 'F1.Year': str(year), 'F1.Session': text, 'F1.When': '', 'F1.ShortWhen': '', 'F1.CardWhen': '', 'F1.Status': '', 'F1.Action': '', 'F1.Description': ''})
 
 
+def _broadcast_race(year, fixtures, event_id, now):
+	if year != now.year: return None
+	races = [row for row in fixtures if row['event_id'] == event_id and row['session_code'] == 'RACE']
+	return races[0] if len(races) == 1 else None
+
+
+def _broadcast_item(race, year, now, show):
+	from modules import livetv_f1_prerace
+	try:
+		coverage = livetv_f1_prerace.coverage(race, now=now.timestamp(), show=show)
+		if not coverage: return
+		identity = livetv._fixture_focus_identity('f1', race)
+		if not identity: return
+		starts_at = datetime.fromtimestamp(coverage['start'], timezone.utc)
+		status = coverage['status']
+	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError): return
+	title = _BROADCAST_TITLES[show]
+	when = {'date': starts_at.isoformat()}
+	description = 'Choose a feed for this show.' if status == 'LIVE' else 'See the channels scheduled to carry this show.'
+	query = {'mode': 'livetv.f1_broadcast_feeds', 'show': show, 'year': str(year), 'event_id': race['event_id'], 'session_id': race['id'], 'fixture_identity': identity}
+	properties = {'F1.Event': race['event'], 'F1.EventId': race['event_id'], 'F1.Year': str(year), 'F1.Session': title, 'F1.When': _when(when), 'F1.ShortWhen': _when(when, short=True),
+		'F1.Status': status, 'F1.Action': 'feeds', 'F1.Description': description}
+	livetv._item(race['event'] + ' — ' + title, query, True, playable=False, extra_properties=properties)
+
+
+def _broadcast_selection(params, show, *, legacy=False):
+	from modules import livetv_f1_prerace
+	try:
+		now = datetime.now(timezone.utc)
+		year = _year(params.get('year', ''))
+		event_id, session_id, identity = params.get('event_id', ''), params.get('session_id', ''), params.get('fixture_identity', '')
+		if show not in _BROADCAST_TITLES or year != now.year or not event_id or not session_id or not (legacy or identity): return None
+		race = _broadcast_race(year, _season_schedule(year), event_id, now)
+		if not race or race['id'] != session_id or (identity and livetv._fixture_focus_identity('f1', race) != identity): return None
+		accounts = livetv._feed_accounts_fingerprint()
+		if 'fixture_accounts' in params and params['fixture_accounts'] != accounts: return None
+		coverage = livetv_f1_prerace.coverage(race, request=False, show=show)
+		if not coverage or (legacy and coverage['status'] != 'LIVE') or livetv._feed_accounts_fingerprint() != accounts: return None
+		choices = {}
+		for feed in coverage['feeds']:
+			choices.setdefault(feed['id'], {'name': feed['name'], '_guide_match': True, '_guide_until': feed['until']})
+		if choices: return race, accounts, list(choices.items())
+	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError): return None
+	return None
+
+
+def broadcast_feeds(params):
+	show = params.get('show', '')
+	if show not in ('pre', 'post'): return livetv._finish(False)
+	title = _BROADCAST_TITLES[show]
+	selection = _broadcast_selection(params, show)
+	if selection:
+		race, accounts, choices = selection
+		ku.set_property('LiveTV.FeedSelection.Title', race['event'] + ' — ' + title)
+		context = {'mode': f'livetv.f1_{show}race_play', 'year': params.get('year', ''), 'event_id': race['event_id'], 'session_id': race['id'],
+			'fixture_identity': params['fixture_identity'], 'fixture_accounts': accounts}
+		livetv._feed_items(choices, 'f1', playback_context=context)
+	else:
+		ku.set_property('LiveTV.FeedSelection.Title', title)
+		livetv._item('No matching feeds are currently available', {}, False, playable=False)
+	livetv._finish()
+
+
+def play_broadcast(params, show):
+	ref = params.get('feed_id', '')
+	legacy = not any(key in params for key in ('feed_id', 'fixture_identity', 'fixture_accounts'))
+	selection = _broadcast_selection(params, show, legacy=legacy) if legacy or (isinstance(ref, str) and ref and params.get('fixture_accounts')) else None
+	if selection:
+		_, accounts, choices = selection
+		ref = choices[0][0] if legacy else ref
+		feed = dict(choices).get(ref)
+		if feed:
+			try:
+				matches = {}
+				labels = livetv._provider_labels(livetv._sports_accounts(livetv._load()))
+				playback = livetv._matched_play_params(ref, feed['name'], 'f1', choices, matches, labels)
+				livetv._save_feed_matches(matches, expected_accounts=accounts)
+				playback['fixture_expiry'] = str(feed['_guide_until'])
+				if livetv._feed_accounts_fingerprint() == accounts: return livetv.play(playback)
+			except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError): pass
+	livetv._error(f'The channel for the {_BROADCAST_TITLES[show].lower()} is no longer available.')
+	xbmcplugin.setResolvedUrl(livetv._handle(), False, xbmcgui.ListItem())
+
+
 def events(params):
 	"""List one selectable card per race in the chosen season."""
 	year = ''
@@ -162,13 +255,17 @@ def events(params):
 			first = group[0]
 			def is_confirmed_live(row):
 				identity = livetv._fixture_focus_identity('f1', row)
-				return bool(row['status'] == 'LIVE' and identity and fixture_counts[row['id']] == 1 and live_counts[row['id']] == 1 and any(item.get('status') == 'LIVE' and item.get('id') == row['id'] and livetv._fixture_focus_identity('f1', item) == identity for item in live))
-			confirmed_live = [row for row in group if is_confirmed_live(row)]
-			upcoming = [row for row in group if row['status'] == 'Scheduled' and datetime.fromisoformat(row['date'].replace('Z', '+00:00')) >= now]
-			if confirmed_live: status, reference = 'LIVE', confirmed_live[0]
-			elif any(row['status'] == 'LIVE' for row in group): status, reference = 'CHECKING', first
+				return bool(identity and fixture_counts[row['id']] == 1 and live_counts[row['id']] == 1 and any(item.get('status') == 'LIVE' and item.get('id') == row['id'] and livetv._fixture_focus_identity('f1', item) == identity for item in live))
+			reported_live = [row for row in group if row['status'] == 'LIVE']
+			confirmed_live = next((row for row in reported_live if is_confirmed_live(row)), None)
+			dated = [(row, datetime.fromisoformat(row['date'].replace('Z', '+00:00'))) for row in group]
+			pending = [(row, when) for row, when in dated if _started_pending(row, when, now)]
+			upcoming = [row for row, when in dated if row['status'] == 'Scheduled' and when > now]
+			if confirmed_live: status, reference = 'LIVE', confirmed_live
+			elif reported_live: status, reference = 'CHECKING', reported_live[0]
+			elif pending: status, reference = 'CHECKING', max(pending, key=lambda item: item[1])[0]
 			elif upcoming: status, reference = 'UPCOMING', upcoming[0]
-			elif all(row['status'] == 'Finished' and datetime.fromisoformat(row['date'].replace('Z', '+00:00')) <= now for row in group):
+			elif all(row['status'] == 'Finished' and when <= now for row, when in dated):
 				status, reference = 'FINISHED', next((row for row in reversed(group) if not row.get('archive_undated')), group[-1])
 			else: status, reference = 'CHECKING', first
 			card_day = datetime.fromisoformat(reference['calendar_day']) if reference.get('date_only') else datetime.fromisoformat(reference['date'].replace('Z', '+00:00')).astimezone(get_timezone('America/Vancouver'))
@@ -209,6 +306,7 @@ def sessions(params):
 			selected += archive
 			fixtures = fixtures + archive
 		now = datetime.now(timezone.utc)
+		race = _broadcast_race(year, selected, event_id, now)
 		live = _live_snapshot() if any(row.get('status') == 'LIVE' for row in selected) else []
 		fixture_counts = Counter(row.get('id') for row in fixtures)
 		identities = Counter((row.get('event_id'), row.get('id')) for row in fixtures)
@@ -216,6 +314,7 @@ def sessions(params):
 		order = _ARCHIVE_ORDER_2003 if year == 2003 else _ARCHIVE_ORDER
 		use_order = year == 2003 or any(row.get('archive_undated') for row in selected)
 		for fixture in sorted(selected, key=lambda row: (order.get(row['session_code'], len(order)) if use_order else 0, row['date'], order.get(row['session_code'], len(order)))):
+			if fixture is race: _broadcast_item(race, year, now, 'pre')
 			status = fixture.get('status')
 			when = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 			event, title = fixture['event'], fixture['session_label']
@@ -228,19 +327,22 @@ def sessions(params):
 					description = 'Search for a replay of this session.'
 				else:
 					status, description = 'UNAVAILABLE', 'Replay search is unavailable because schedule entries are ambiguous.'
-			elif status == 'Scheduled':
-				status, description = 'UPCOMING', 'Replay search is available after this session finishes.'
-			elif status == 'LIVE':
-				status, description = 'CHECKING', 'Live feeds are unavailable while the schedule is being checked.'
-				matching = [row for row in live if row.get('id') == fixture['id'] and row.get('status') == 'LIVE' and livetv._fixture_focus_identity('f1', row) == identity]
-				if identity and fixture_counts[fixture['id']] == 1 and live_counts[fixture['id']] == 1 and len(matching) == 1:
-					status, action = 'LIVE', 'live'
+			elif status in ('Scheduled', 'LIVE'):
+				selectable = identity and fixture_counts[fixture['id']] == 1 and not (fixture.get('date_only') or fixture.get('archive_schedule'))
+				if status == 'LIVE':
+					confirmed = selectable and live_counts[fixture['id']] == 1 and any(row.get('id') == fixture['id'] and row.get('status') == 'LIVE' and livetv._fixture_focus_identity('f1', row) == identity for row in live)
+					status = 'LIVE' if confirmed else 'CHECKING'
+				else: status = 'CHECKING' if _started_pending(fixture, when, now) else 'UPCOMING'
+				if selectable:
+					action = 'feeds'
 					query = {'mode': 'livetv.match_feeds', 'sport': 'f1', 'session': fixture['id'], 'fixture_identity': identity, 'display_title': event + ' — ' + title}
-					description = 'Find live feeds for this session.'
+					description = 'Find feeds for this session.'
+				else: description = 'Feeds are unavailable because the session could not be identified.'
 			else:
 				status, description = 'UNAVAILABLE', 'Session information is unavailable.'
 			properties = {'F1.Event': event, 'F1.EventId': event_id, 'F1.Year': str(year), 'F1.Session': title, 'F1.When': _when(fixture), 'F1.ShortWhen': _when(fixture, short=True), 'F1.Status': status, 'F1.Action': action, 'F1.Description': description}
 			livetv._item(event + ' — ' + title, query, bool(action), playable=False, extra_properties=properties)
+			if fixture is race: _broadcast_item(race, year, now, 'post')
 		livetv._finish()
 	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError):
 		_message('Could not load sessions. Reopen Formula 1 to retry.', event_id if isinstance(event_id, str) else '', year)

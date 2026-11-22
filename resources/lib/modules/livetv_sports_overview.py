@@ -147,7 +147,7 @@ class SportsOverview:
 				except (TypeError, ValueError): data = {}
 				if not data or data.get('accounts') != accounts or data.get('matching'): loading = True
 				if data.get('accounts') == accounts and (data.get('unavailable') or data.get('schedule_unavailable')): unavailable = True
-				if data.get('accounts') == accounts and any(livetv._schedule_state(fixture, wall, live_at_kickoff=sport == 'soccer')[0] == 'Live' for fixture in data.get('fixtures', []) if isinstance(fixture, dict)): events = True
+				if data.get('accounts') == accounts and any(livetv._schedule_state(fixture, wall, live_at_kickoff=sport == 'soccer')[0] for fixture in data.get('fixtures', []) if isinstance(fixture, dict)): events = True
 			status = ' · '.join(part for part in ('Updating sports information…' if loading else '', 'Some sports unavailable' if unavailable else '') if part)
 			ku.set_property('LiveTV.Sports.OverviewEmpty', 'true' if not loading and not unavailable and not events else '')
 			ku.set_property('LiveTV.Sports.OverviewStatus', status)
@@ -169,7 +169,7 @@ class SportsOverview:
 					if identity:
 						try:
 							data = json.loads(encoded or '{}')
-							entries = [entry for entry in livetv._sports_overview_entries(sport, data.get('fixtures', [])) if entry[0] == 'Live']
+							entries = livetv._sports_overview_entries(sport, data.get('fixtures', []))
 							position = int(ku.get_infolabel('Container(%d).CurrentItem' % control)) - 1
 							if position < 0: continue
 							if not any(livetv._fixture_focus_identity(sport, entry[2]) == identity for entry in entries):

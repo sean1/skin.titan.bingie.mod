@@ -18,7 +18,7 @@ _EARLY_RETRY = 'LiveTV.FeedSelection.EarlyRetry'
 _EARLY_ACK = 'LiveTV.FeedSelection.EarlyRetryAcknowledged'
 _GUIDE = 'LiveTV.FeedSelection.Guide'
 _GUIDE_RETRY = 'LiveTV.FeedSelection.GuideRetry'
-_FIELDS = ('sport', 'home', 'away', 'scope', 'session')
+_FIELDS = ('sport', 'home', 'away', 'scope', 'session', 'event_id', 'year')
 _MAX_AGE = 15 * 60
 _MAX_RESULT = 4 * 1024 * 1024
 _SLOW_SECONDS = 30
@@ -68,6 +68,26 @@ def _fixture_key(sport, row):
 	if sport == 'f1': return row['id']
 	if sport == 'soccer': return livetv._soccer_fixture_key(row)
 	return (tuple(' '.join(row[side]['name'].casefold().split()) for side in ('home', 'away')), str(row.get('league') or ''))
+
+
+def _event_id(query):
+	return query.get('event_id', '') if query.get('sport') == 'f1' else ''
+
+
+def _event_identity(fixtures, event_id):
+	from menus import livetv
+	identities = sorted(identity for row in fixtures if isinstance(row, dict) and row.get('event_id') == event_id and not (row.get('date_only') or row.get('archive_schedule'))
+		if (identity := livetv._fixture_focus_identity('f1', row)))
+	return hashlib.sha256(json.dumps([event_id, identities], separators=(',', ':')).encode('utf-8')).hexdigest() if identities else ''
+
+
+def _query_snapshot(query, accounts):
+	if _event_id(query):
+		from menus import f1_show
+		return f1_show._cached_season_schedule(f1_show._year(query['year']))
+	sport = query['sport']
+	key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
+	return _schedule_snapshot(sport, accounts, key)
 
 
 def _selection(snapshot, query):
@@ -124,6 +144,7 @@ def _handoff(params, query, accounts):
 def _snapshot_identity(query, fixtures):
 	from menus import livetv
 	if fixtures is None: return ''
+	if _event_id(query): return _event_identity(fixtures, _event_id(query)) if livetv._f1_event_feed_fixtures(fixtures, _event_id(query)) else ''
 	sport = query['sport']
 	key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
 	matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
@@ -133,10 +154,7 @@ def _snapshot_identity(query, fixtures):
 
 def _retention_identity(query, accounts):
 	"""Identify a unique selectable event while its newest fixture source is fresh."""
-	try:
-		sport = query['sport']
-		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
-		return _snapshot_identity(query, _schedule_snapshot(sport, accounts, key))
+	try: return _snapshot_identity(query, _query_snapshot(query, accounts))
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return ''
 
 
@@ -163,9 +181,7 @@ def _retainable(request):
 def _fresh_cache_conflicts(request):
 	try:
 		query, accounts = request['query'], request['accounts']
-		sport = query['sport']
-		key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
-		fixtures = _schedule_snapshot(sport, accounts, key)
+		fixtures = _query_snapshot(query, accounts)
 		if fixtures is None: return False
 		return _snapshot_identity(query, fixtures) != request.get('fixture_identity')
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return True
@@ -277,7 +293,7 @@ def prepare(params):
 	return 'unavailable', []
 
 
-def order_choices(choices):
+def order_choices(choices, *, by_session=False):
 	"""Keep shown rows in place, disabling removed feeds until the picker is left."""
 	request_id = _read(_REQUEST).get('id', '')
 	if not request_id: return choices
@@ -285,10 +301,11 @@ def order_choices(choices):
 	previous = _read(_ORDER)
 	order = previous.get('refs', []) if previous.get('id') == request_id else []
 	if not isinstance(order, list): order = []
+	if by_session: order = [tuple(ref) for ref in order if isinstance(ref, list) and len(ref) == 2 and all(isinstance(part, str) for part in ref)]
 	refs = []
 	seen = set()
 	for ref in order + [ref for ref, _ in choices]:
-		if isinstance(ref, str) and ref not in seen:
+		if isinstance(ref, tuple if by_session else str) and ref not in seen:
 			refs.append(ref)
 			seen.add(ref)
 	ku.set_property(_ORDER, json.dumps({'id': request_id, 'refs': refs}, ensure_ascii=False, separators=(',', ':')))
@@ -310,9 +327,11 @@ def is_slow():
 
 
 def _visible(request):
-	if not ku.get_visibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.match_feeds)'): return False
+	selected = request.get('query', {})
+	mode = 'livetv.f1_event_feeds' if _event_id(selected) else 'livetv.match_feeds'
+	if not ku.get_visibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=%s)' % mode): return False
 	query = parse_qs(urlsplit(ku.get_infolabel('Container.FolderPath')).query, keep_blank_values=True)
-	return query.get('mode') == ['livetv.match_feeds'] and all(query.get(key, ['']) == [request.get('query', {}).get(key, '')] for key in _FIELDS)
+	return query.get('mode') == [mode] and all(query.get(key, ['']) == [selected.get(key, '')] for key in _FIELDS)
 
 
 def _schedule_snapshot(sport, accounts, key):
@@ -441,11 +460,12 @@ class FeedSelection:
 				if not isinstance(choices, list):
 					self.guide_match_failed = True
 					continue
-				refs = {choice[0] for choice in choices if isinstance(choice, list) and len(choice) >= 2 and isinstance(choice[0], str)}
+				refs = {(choice[0], choice[1].get('_session')) for choice in _current_choices(choices)[0] if isinstance(choice[0], str)}
 				for choice in _current_choices(current.get('choices'))[0]:
-					if len(choice) < 2 or not isinstance(choice[0], str) or choice[0] in refs or choice[1].get('_guide_match'): continue
+					ref = (choice[0], choice[1].get('_session'))
+					if not isinstance(choice[0], str) or ref in refs or choice[1].get('_guide_match'): continue
 					choices.append([choice[0], choice[1], False])
-					refs.add(choice[0])
+					refs.add(ref)
 				result['revision'] = int(current.get('revision', 0)) + 1
 				ku.set_property(_RESULT, json.dumps(result, ensure_ascii=False, separators=(',', ':')))
 				self.guide_match_failed = False
@@ -479,12 +499,11 @@ class FeedSelection:
 			wait_for_connection()
 			query = request['query']
 			sport = query['sport']
+			event_id = _event_id(query)
 			key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
 			def observe_fixtures(fixtures):
 				nonlocal observed_identity
-				matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
-				if len(matches) != 1 or not livetv._fixture_can_select_feeds(sport, matches[0]): raise ValueError('Fixture unavailable')
-				identity = livetv._fixture_focus_identity(sport, matches[0])
+				identity = _snapshot_identity(query, fixtures)
 				observed_identity = identity
 				if not identity or (request.get('fixture_identity') and request['fixture_identity'] != identity): raise ValueError('Fixture changed')
 			secrets = [str(account.get(field) or '') for _, account in livetv._sports_accounts(livetv._load()) for field in ('username', 'password')]
@@ -492,12 +511,15 @@ class FeedSelection:
 				nonlocal revision, last_choices, last_fresh, timed_choices
 				fresh_saved = saved
 				choices = []
-				for ref, feed in groups.get(key, {}).items():
-					name, stream_id = str(feed.get('name') or ''), feed.get('stream_id')
-					if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(stream_id), name)): raise ValueError('Unsafe feed')
-					item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
-					item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
-					choices.append([ref, item, complete and not unavailable and livetv._unique_match(groups, ref, name)])
+				selected_groups = groups.items() if event_id else ((key, groups.get(key, {})),)
+				for fixture_key, feeds in selected_groups:
+					for ref, feed in feeds.items():
+						name, stream_id = str(feed.get('name') or ''), feed.get('stream_id')
+						if any(livetv._catalog_redact(value, secrets) != value for value in (str(ref), str(stream_id), name)): raise ValueError('Unsafe feed')
+						item = {field: feed[field] for field in ('stream_id', '_provider', '_primary', '_guide_match', '_guide_until') if field in feed}
+						item.update({'name': name, 'stream_icon': livetv._catalog_icon(feed.get('stream_icon'), secrets)})
+						if event_id: item['_session'] = fixture_key
+						choices.append([ref, item, complete and not unavailable and livetv._unique_match(groups, ref, name)])
 				last_fresh = list(choices)
 				using_seed = False
 				if not complete or unavailable:
@@ -522,10 +544,14 @@ class FeedSelection:
 					nonlocal last_saved
 					last_saved = any(stale for _, stale in statuses)
 					publish(groups, False, partial_unavailable, last_saved)
-				fixtures = _schedule_snapshot(sport, request['accounts'], key)
-				if sport == 'f1' and fixtures is None: fixtures, _ = livetv._f1.get_picker_schedule(key)
+				fixtures = _query_snapshot(query, request['accounts'])
+				if event_id and fixtures is None:
+					from menus import f1_show
+					fixtures = f1_show._season_schedule(f1_show._year(query['year']))
+				elif sport == 'f1' and fixtures is None: fixtures, _ = livetv._f1.get_picker_schedule(key)
 				if fixtures is not None: observe_fixtures(fixtures)
-				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=fixtures, overlap_catalogs=False, status_sink=unavailable.append, notify_stale=False, picker_priority=True, selected_fixture=key,
+				scope = {'selected_event': event_id} if event_id else {'selected_fixture': key}
+				groups, _ = livetv._sports_catalog_groups(account, sport, fixtures=fixtures, overlap_catalogs=False, status_sink=unavailable.append, notify_stale=False, picker_priority=True, **scope,
 					on_partial=publish_partial, on_fixtures=observe_fixtures)
 			else:
 				groups = livetv._soccer_groups(livetv._catalog(account, 'get_live_streams', notify_stale=False))
@@ -549,7 +575,11 @@ class FeedSelection:
 			if not _request_current(request): raise ValueError('Account changed')
 			query = request['query']
 			sport = query['sport']
-			if sport == 'soccer':
+			if _event_id(query):
+				from menus import f1_show
+				fixtures = livetv._f1.get_show_schedule(f1_show._year(query['year']))
+				expires = time.time() + 30
+			elif sport == 'soccer':
 				(fixtures, _, _, _), expires = livetv._live_soccer_fixtures(include_upcoming=True, with_expiry=True)
 			elif sport == 'f1': fixtures, expires = livetv._f1.get_picker_schedule(query['session'])
 			elif sport in ('hockey', 'football', 'basketball', 'tennis'):
@@ -558,9 +588,8 @@ class FeedSelection:
 				fixtures, expires = service.get_schedule(cache_dir=profile or None, with_expiry=True) if sport == 'tennis' else service.get_schedule(sport, cache_dir=profile or None, with_expiry=True)
 			else: raise ValueError('Unknown sport')
 			if not isinstance(expires, (int, float)) or isinstance(expires, bool) or not math.isfinite(expires) or not time.time() < expires: raise ValueError('Stale fixtures')
-			key = query['session'] if sport == 'f1' else ((query['home'], query['away']), query['scope'])
-			matches = [fixture for fixture in fixtures if isinstance(fixture, dict) and _fixture_key(sport, fixture) == key]
-			if len(matches) != 1 or not livetv._fixture_can_select_feeds(sport, matches[0]) or livetv._fixture_focus_identity(sport, matches[0]) != request.get('fixture_identity') or not _request_current(request): raise ValueError('Fixture changed')
+			identity = _snapshot_identity(query, fixtures)
+			if not identity or identity != request.get('fixture_identity') or not _request_current(request): raise ValueError('Fixture changed')
 		except Exception: expires = 0
 		self.validations.put((request['id'], request.get('validation_token'), expires))
 

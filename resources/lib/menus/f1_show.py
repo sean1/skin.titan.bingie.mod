@@ -69,11 +69,11 @@ def _valid_schedule(fixtures):
 	return True
 
 
-def _season_schedule(year):
-	"""Share a bounded, short-lived public schedule across widget invocations."""
+def _cached_season_schedule(year):
 	now = time.time()
-	ttl = 30 if year == datetime.now(timezone.utc).year else 24 * 60 * 60
-	revision = ku.get_property('LiveTV.Sports.Fixtures.Acknowledged') if year == datetime.now(timezone.utc).year else ''
+	current = year == datetime.now(timezone.utc).year
+	ttl = 30 if current else 24 * 60 * 60
+	revision = ku.get_property('LiveTV.Sports.Fixtures.Acknowledged') if current else ''
 	try:
 		raw = ku.get_property(_SCHEDULE_PROPERTY)
 		if len(raw) > _SCHEDULE_LIMIT: raise ValueError('Schedule cache too large')
@@ -81,6 +81,15 @@ def _season_schedule(year):
 		created = cached.get('created')
 		if cached.get('year') == year and cached.get('revision') == revision and isinstance(created, (int, float)) and not isinstance(created, bool) and 0 <= now - created < ttl and cached.get('fixtures') and _valid_schedule(cached['fixtures']): return cached['fixtures']
 	except (ValueError, TypeError, AttributeError, RecursionError): pass
+	return None
+
+
+def _season_schedule(year):
+	"""Share a bounded, short-lived public schedule across widget invocations."""
+	cached = _cached_season_schedule(year)
+	if cached is not None: return cached
+	now = time.time()
+	revision = ku.get_property('LiveTV.Sports.Fixtures.Acknowledged') if year == datetime.now(timezone.utc).year else ''
 	fixtures = livetv_f1.get_show_schedule(year)
 	if not _valid_schedule(fixtures): raise ValueError('Invalid Formula 1 schedule')
 	if not fixtures: return fixtures
@@ -125,7 +134,7 @@ def _event_archive_sessions(year, fixtures, event_id):
 	except (ValueError, TypeError, KeyError, AttributeError, RuntimeError, RecursionError): pass
 	rows = livetv_f1.get_archive_event_sessions(year, fixtures, event_id)
 	if rows is None: return prior or []
-	if not _valid_schedule(rows): return prior or []
+	if not _valid_schedule(rows) or any(row['event_id'] != event_id or row.get('archive_undated') is not True for row in rows): return prior or []
 	entries = dict(list(entries.items())[-31:])
 	entries[event_id] = {'identity': identity, 'created': now, 'rows': rows}
 	try:
@@ -142,6 +151,26 @@ def _when(fixture, short=False):
 		return day.strftime('%a %d %b' if short else '%a %d %b %Y')
 	when = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
 	return when.astimezone(get_timezone('America/Vancouver')).strftime('%a %H:%M' if short else '%a %d %b %Y · %H:%M')
+
+
+def event_schedule(params):
+	"""Load the selected Grand Prix and its season schedule for the feed finder."""
+	year = _year(params.get('year', ''))
+	event_id = params.get('event_id', '')
+	if not isinstance(event_id, str) or not 0 < len(event_id) <= 300: raise ValueError('Invalid Formula 1 event')
+	fixtures = _season_schedule(year)
+	selected = [row for row in fixtures if row['event_id'] == event_id]
+	if selected:
+		archive = _event_archive_sessions(year, fixtures, event_id)
+		fixtures = fixtures + archive
+		selected += archive
+	return year, event_id, fixtures, _ordered_sessions(year, selected)
+
+
+def _ordered_sessions(year, selected):
+	order = _ARCHIVE_ORDER_2003 if year == 2003 else _ARCHIVE_ORDER
+	use_order = year == 2003 or any(row.get('archive_undated') for row in selected)
+	return sorted(selected, key=lambda row: (order.get(row['session_code'], len(order)) if use_order else 0, row['date'], order.get(row['session_code'], len(order))))
 
 
 def _message(text, event_id='', year=''):
@@ -173,6 +202,13 @@ def _broadcast_item(race, year, now, show):
 	livetv._item(race['event'] + ' — ' + title, query, True, playable=False, extra_properties=properties)
 
 
+def _broadcast_choices(coverage):
+	choices = {}
+	for feed in coverage['feeds']:
+		choices.setdefault(feed['id'], {'name': feed['name'], '_guide_match': True, '_guide_until': feed['until']})
+	return list(choices.items())
+
+
 def _broadcast_selection(params, show, *, legacy=False):
 	from modules import livetv_f1_prerace
 	try:
@@ -184,12 +220,10 @@ def _broadcast_selection(params, show, *, legacy=False):
 		if not race or race['id'] != session_id or (identity and livetv._fixture_focus_identity('f1', race) != identity): return None
 		accounts = livetv._feed_accounts_fingerprint()
 		if 'fixture_accounts' in params and params['fixture_accounts'] != accounts: return None
-		coverage = livetv_f1_prerace.coverage(race, request=False, show=show)
+		coverage = livetv_f1_prerace.coverage(race, request=False, show=show, all_feeds=not legacy)
 		if not coverage or (legacy and coverage['status'] != 'LIVE') or livetv._feed_accounts_fingerprint() != accounts: return None
-		choices = {}
-		for feed in coverage['feeds']:
-			choices.setdefault(feed['id'], {'name': feed['name'], '_guide_match': True, '_guide_until': feed['until']})
-		if choices: return race, accounts, list(choices.items())
+		choices = _broadcast_choices(coverage)
+		if choices: return race, accounts, choices
 	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError): return None
 	return None
 
@@ -208,6 +242,69 @@ def broadcast_feeds(params):
 	else:
 		ku.set_property('LiveTV.FeedSelection.Title', title)
 		livetv._item('No matching feeds are currently available', {}, False, playable=False)
+	livetv._finish()
+
+
+def event_broadcast_items(race, year, now, show):
+	if not race: return 0
+	from modules import livetv_f1_prerace
+	identity = livetv._fixture_focus_identity('f1', race)
+	if not identity: return 0
+	accounts = livetv._feed_accounts_fingerprint()
+	coverage = livetv_f1_prerace.coverage(race, now=now.timestamp(), year=year, show=show, all_feeds=True)
+	if not coverage or accounts != livetv._feed_accounts_fingerprint(): return 0
+	choices = _broadcast_choices(coverage)
+	context = {'mode': f'livetv.f1_{show}race_play', 'year': str(year), 'event_id': race['event_id'], 'session_id': race['id'], 'fixture_identity': identity, 'fixture_accounts': accounts}
+	livetv._feed_items(choices, 'f1', playback_context=context, label_prefix=_BROADCAST_TITLES[show])
+	return len(choices)
+
+
+def event_feeds(params):
+	"""Show the selected Grand Prix's matching feeds and replay searches together."""
+	from modules import livetv_feed_selection
+	ku.set_property('LiveTV.FeedSelection.Title', 'Formula 1 feeds')
+	try:
+		year, event_id, fixtures, selected = event_schedule(params)
+		if not selected:
+			livetv._item('No feeds or replays found for this Grand Prix', {}, False, playable=False)
+			livetv._finish()
+			return
+		ku.set_property('LiveTV.FeedSelection.Title', selected[0]['event'])
+		now = datetime.now(timezone.utc)
+		race = _broadcast_race(year, selected, event_id, now)
+		identity = livetv_feed_selection._event_identity(fixtures, event_id)
+		eligible = {row['id'] for row in livetv._f1_event_feed_fixtures(fixtures, event_id)}
+		lookup = bool(identity and eligible and livetv._sports_primary())
+		state, results = livetv_feed_selection.prepare(dict(params, sport='f1', year=str(year), event_id=event_id, fixture_identity=identity)) if lookup else ('', [])
+		unique = {(feed['_session'], ref): valid for ref, feed, valid in results if feed.get('_session') in eligible}
+		choices = [((feed['_session'], ref), feed) for ref, feed, _ in results if feed.get('_session') in eligible]
+		if lookup: choices = livetv_feed_selection.order_choices(choices, by_session=True)
+		matches = {}
+		for (session, ref), feed in choices:
+			if session in eligible: matches.setdefault(session, []).append((ref, feed))
+		identities = Counter((row['event_id'], row['id']) for row in selected)
+		count = 0
+		for fixture in selected:
+			if fixture is race: count += event_broadcast_items(race, year, now, 'pre')
+			session = fixture['id']
+			rows = matches.get(session, [])
+			if rows:
+				livetv._feed_items(rows, 'f1', {ref: unique.get((session, ref), False) for ref, _ in rows}, label_prefix=fixture['session_label'])
+				count += sum(not stream.get('_unavailable') for _, stream in rows)
+			elif fixture['status'] == 'Finished' and identities[(event_id, session)] == 1 and datetime.fromisoformat(fixture['date'].replace('Z', '+00:00')) <= now:
+				replay = {'mode': 'livetv.f1_replay_search', 'year': str(year), 'event_id': event_id, 'session_id': session}
+				livetv._item(f"{fixture['session_label']} · Search replays", replay, True, playable=False)
+				count += 1
+			if fixture is race: count += event_broadcast_items(race, year, now, 'post')
+		guide_state = livetv_feed_selection.guide_state() if lookup else ''
+		if state in ('loading', 'retry_queued', 'partial', 'partial_saved') or guide_state == 'searching': livetv._item('Finding feeds…', {}, False, playable=False)
+		elif state in ('slow', 'unavailable', 'partial_unavailable', 'partial_saved_unavailable') or guide_state == 'failed':
+			retry = {'mode': 'livetv.f1_event_feeds', 'sport': 'f1', 'year': str(year), 'event_id': event_id, 'retry': livetv_feed_selection.retry_request()}
+			if state == 'slow': retry['early_retry'] = 'true'
+			livetv._item(livetv._vpn_failure_message() or 'Feeds unavailable — select to retry', retry)
+		elif not count: livetv._item('No matching feeds are currently available', {}, False, playable=False)
+	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError):
+		livetv._item('Could not load Grand Prix feeds. Reopen the card to retry.', {}, False, playable=False)
 	livetv._finish()
 
 
@@ -271,7 +368,7 @@ def events(params):
 			card_day = datetime.fromisoformat(reference['calendar_day']) if reference.get('date_only') else datetime.fromisoformat(reference['date'].replace('Z', '+00:00')).astimezone(get_timezone('America/Vancouver'))
 			card_date = card_day.strftime('%d %b')
 			props = {'F1.Event': first['event'], 'F1.EventId': first['event_id'], 'F1.EventKey': quote(first['event_id'], safe=''), 'F1.Year': str(year), 'F1.When': _when(reference), 'F1.ShortWhen': _when(reference, short=True), 'F1.CardWhen': card_date, 'F1.Status': status}
-			livetv._item(first['event'], {'mode': 'livetv.f1_show_sessions', 'year': str(year), 'event_id': first['event_id']}, True, playable=False, extra_properties=props)
+			livetv._item(first['event'], {'mode': 'livetv.f1_event_feeds', 'sport': 'f1', 'year': str(year), 'event_id': first['event_id']}, True, playable=False, extra_properties=props)
 		livetv._finish()
 	except (OSError, HTTPException, ValueError, TypeError, KeyError, OverflowError):
 		_message('Could not load races. Reopen Formula 1 to retry.', year=year)
@@ -311,9 +408,7 @@ def sessions(params):
 		fixture_counts = Counter(row.get('id') for row in fixtures)
 		identities = Counter((row.get('event_id'), row.get('id')) for row in fixtures)
 		live_counts = Counter(row.get('id') for row in live)
-		order = _ARCHIVE_ORDER_2003 if year == 2003 else _ARCHIVE_ORDER
-		use_order = year == 2003 or any(row.get('archive_undated') for row in selected)
-		for fixture in sorted(selected, key=lambda row: (order.get(row['session_code'], len(order)) if use_order else 0, row['date'], order.get(row['session_code'], len(order)))):
+		for fixture in _ordered_sessions(year, selected):
 			if fixture is race: _broadcast_item(race, year, now, 'pre')
 			status = fixture.get('status')
 			when = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))

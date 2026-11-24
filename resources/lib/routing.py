@@ -14,6 +14,7 @@ POV_ROUTES = {
 	'livetv.f1_history': lambda p: _import('menus.livetv', 'f1_history')(p),
 	'livetv.f1_history_sessions': lambda p: _import('menus.livetv', 'f1_history_sessions')(p),
 	'livetv.f1_show_sessions': lambda p: _import('menus.f1_show', 'sessions')(p),
+	'livetv.f1_event_feeds': lambda p: _import('menus.f1_show', 'event_feeds')(p),
 	'livetv.f1_broadcast_feeds': lambda p: _import('menus.f1_show', 'broadcast_feeds')(p),
 	'livetv.f1_prerace_play': lambda p: _import('menus.f1_show', 'play_broadcast')(p, 'pre'),
 	'livetv.f1_postrace_play': lambda p: _import('menus.f1_show', 'play_broadcast')(p, 'post'),

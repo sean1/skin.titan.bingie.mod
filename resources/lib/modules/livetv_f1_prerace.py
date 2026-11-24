@@ -9,6 +9,7 @@ from datetime import datetime
 from http.client import HTTPException
 from queue import Empty, SimpleQueue
 from threading import Event, Thread
+from urllib.parse import parse_qs, urlsplit
 
 from modules import kodi_utils as ku, livetv_f1, livetv_sports_guide
 from modules.f1_calendar import _normal
@@ -66,7 +67,7 @@ def _race(race, now):
 	except (AttributeError, KeyError, TypeError, ValueError, OverflowError): return None
 
 
-def _available(rows, now, show, can_mark_live=True):
+def _available(rows, now, show, can_mark_live=True, *, all_feeds=False):
 	feeds = []
 	for row in rows if isinstance(rows, list) else []:
 		try:
@@ -75,24 +76,35 @@ def _available(rows, now, show, can_mark_live=True):
 				if now < until and row['start'] < row['until']: feeds.append(dict(row, until=until))
 		except (AttributeError, KeyError, TypeError, OverflowError): continue
 	active = [feed for feed in feeds if can_mark_live and feed['start'] <= now]
-	feeds = active or feeds
+	if not all_feeds: feeds = active or feeds
 	if feeds: return {'start': min(feed['start'] for feed in feeds), 'status': 'LIVE' if active else 'UPCOMING', 'feeds': feeds}
 	return None
 
 
-def coverage(race, *, now=None, request=True, show='pre'):
+def coverage(race, *, now=None, request=True, year=None, show='pre', all_feeds=False):
 	"""Read provider-backed coverage and optionally ask the service to refresh it."""
 	from menus import livetv
 	now = time.time() if now is None else now
 	selected = _race(race, now)
 	if selected is None or show not in _SHOW_TITLES: return None
 	selected['accounts'] = livetv._feed_accounts_fingerprint()
-	if request and selected['event_id'] == ku.get_infolabel(_FOCUSED_EVENT) and _read(_REQUEST) != selected:
+	if request and (year == selected['year'] or selected['event_id'] == ku.get_infolabel(_FOCUSED_EVENT)) and _read(_REQUEST) != selected:
 		ku.set_property(_REQUEST, json.dumps(selected, separators=(',', ':')))
 	if selected['start'] - now > _LOOKAHEAD: return None
 	if show == 'pre' and (race['status'] != 'Scheduled' or now >= selected['start']): return None
 	result = _read(_RESULT)
-	return _available(result.get('feeds'), now, show, can_mark_live=show == 'pre' or race['status'] == 'Finished') if result.get('race') == selected else None
+	return _available(result.get('feeds'), now, show, can_mark_live=show == 'pre' or race['status'] == 'Finished', all_feeds=all_feeds) if result.get('race') == selected else None
+
+
+def event_picker_selection():
+	if not ku.get_visibility('Window.IsActive(Videos) + String.Contains(Container.FolderPath,mode=livetv.f1_event_feeds)'): return None
+	try:
+		query = parse_qs(urlsplit(ku.get_infolabel('Container.FolderPath')).query)
+		event_ids, years = query.get('event_id', []), query.get('year', [])
+		if query.get('mode') == ['livetv.f1_event_feeds'] and query.get('sport') == ['f1'] and len(event_ids) == len(years) == 1 and re.fullmatch(r'[0-9]{4}', years[0]):
+			return event_ids[0], int(years[0])
+	except (ValueError, TypeError): pass
+	return None
 
 
 def _named_race(title, venues):
@@ -201,35 +213,45 @@ class PreRaceRefresh:
 		self.canceled = Event()
 		self.race = None
 		self.cards = []
+		self.refresh_event = None
 		self.next_scan = self.next_guide = 0
 
 	def close(self):
 		self.canceled.set()
 
-	def tick(self, visible):
+	def tick(self, visible, picker_event=None):
 		now, clock = time.time(), time.monotonic()
 		selected = _read(_REQUEST) if visible else None
-		if selected and (selected.get('event_id') != ku.get_infolabel(_FOCUSED_EVENT) or not _number(selected.get('start')) or not -_AFTER_RACE_START < selected['start'] - now <= _LOOKAHEAD): selected = None
+		if selected:
+			focused = (selected.get('event_id'), selected.get('year')) == picker_event if picker_event else selected.get('event_id') == ku.get_infolabel(_FOCUSED_EVENT)
+			if not focused or not _number(selected.get('start')) or not -_AFTER_RACE_START < selected['start'] - now <= _LOOKAHEAD: selected = None
 		if selected != self.race:
 			self.close()
 			self.canceled = Event()
 			self.race = selected
+			self.refresh_event = None
 			self.next_scan = self.next_guide = 0
 		while True:
 			try: race, canceled, feeds = self.results.get_nowait()
 			except Empty: break
 			if race == selected and canceled is self.canceled:
 				ku.set_property(_RESULT, json.dumps({'race': race, 'feeds': feeds}, ensure_ascii=False, separators=(',', ':')))
-		if not visible: return
+		if not visible:
+			self.refresh_event = None
+			return
 		result = _read(_RESULT)
 		feeds = result.get('feeds') if selected and result.get('race') == selected else None
 		cards = []
 		for show in _SHOW_TITLES:
-			available = _available(feeds, now, show)
-			if available: cards.append((selected['identity'], show, available['start'], available['status']))
+			available = _available(feeds, now, show, all_feeds=bool(picker_event))
+			if available: cards.append((selected['identity'], show, available['status'], [(row['id'], row['name'], row['start'], row['until']) for row in available['feeds']]))
 		if cards != self.cards:
 			self.cards = cards
 			ku.set_property(_REVISION, uuid.uuid4().hex)
+			self.refresh_event = picker_event
+		if self.refresh_event and picker_event == self.refresh_event and ku.get_visibility('System.IdleTime(2) + !Container.IsUpdating + !System.HasActiveModalDialog + !Window.IsVisible(busydialog) + !Window.IsVisible(busydialognocancel)'):
+			self.refresh_event = None
+			ku.execute_builtin('Container.Refresh')
 		if not selected or clock < self.next_scan or (self.worker and self.worker.is_alive()): return
 		refresh_guide = clock >= self.next_guide
 		if refresh_guide: self.next_guide = clock + _GUIDE_RETRY

@@ -26,7 +26,7 @@
         <include>BingieF1Show</include>
 
         <control type="label">
-            <visible>String.Contains(Container.FolderPath,mode=livetv.match_feeds) | String.Contains(Container.FolderPath,mode=livetv.f1_broadcast_feeds)</visible>
+            <visible>String.Contains(Container.FolderPath,mode=livetv.match_feeds) | String.Contains(Container.FolderPath,mode=livetv.f1_broadcast_feeds) | String.Contains(Container.FolderPath,mode=livetv.f1_event_feeds)</visible>
             <left>138</left><top>35</top><width>1600</width><height>58</height><font>Bold36</font><textcolor>ffffffff</textcolor><label>$INFO[Window(Home).Property(LiveTV.FeedSelection.Title)]</label><scroll>true</scroll>
         </control>
 

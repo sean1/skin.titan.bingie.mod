@@ -562,9 +562,10 @@ def _short_event_match(name, locality, session):
 	return bool(named or re.search(r'(?:^|[|:,–—]|\s-\s)\s*' + place + r'\s*:\s*' + session.pattern, name))
 
 
-def fixture_groups(streams, fixtures, live_only=False, *, scheduled_session=''):
+def fixture_groups(streams, fixtures, live_only=False, *, scheduled_session=None, selected_sessions=None):
 	"""Return session-id to stream-id mappings for unambiguous event feeds."""
 	if not isinstance(streams, list) or not isinstance(fixtures, list): return {}
+	allow_scheduled = bool(scheduled_session or selected_sessions)
 	owners, short_owners = {}, {}
 	for fixture in fixtures:
 		if not isinstance(fixture, dict): continue
@@ -597,9 +598,17 @@ def fixture_groups(streams, fixtures, live_only=False, *, scheduled_session=''):
 			event, session_id = fixture.get('event'), fixture.get('id')
 			if not isinstance(event, str) or not event.strip() or not isinstance(session_id, str) or not session_id: continue
 			if re.search(r'\b(?:next|upcoming)\b', name, re.I) and fixture.get('status') != 'Scheduled': continue
-			if re.search(r'\blive\b', name, re.I) and fixture.get('status') != 'LIVE' and not (scheduled_session and fixture.get('status') == 'Scheduled'): continue
+			if re.search(r'\blive\b', name, re.I) and fixture.get('status') != 'LIVE' and not (allow_scheduled and fixture.get('status') == 'Scheduled'): continue
 			if not _date_agrees(name, fixture.get('date', '')): continue
 			owner = {fixture.get('event_id', event)}
 			if short_matches == owner or any(isinstance(alias, str) and len(alias.strip()) >= 4 and _normal(alias) in matched_aliases and owners[_normal(alias)] == owner for alias in fixture.get('aliases', [event])): candidates.append(session_id)
 		if len(candidates) == 1 and (not scheduled_session or candidates[0] == scheduled_session): result.setdefault(candidates[0], {}).setdefault(identity, stream)
+	if selected_sessions is not None:
+		counts = Counter(identity for feeds in result.values() for identity in feeds)
+		selected = {}
+		for key, feeds in result.items():
+			if key not in selected_sessions: continue
+			unique = {identity: feed for identity, feed in feeds.items() if counts[identity] == 1}
+			if unique: selected[key] = unique
+		return selected
 	return result

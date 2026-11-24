@@ -9,7 +9,7 @@ from modules import kodi_utils as ku
 from modules import livetv_sports_progress as progress
 from modules.livetv_sports_overview import SportsOverview, SPORTS, PREFIX, _load as _load_overview
 from modules.livetv_feed_selection import FeedSelection
-from modules.livetv_f1_prerace import PreRaceRefresh
+from modules.livetv_f1_prerace import PreRaceRefresh, event_picker_selection
 from modules.livetv_search import LiveTVSearch
 from modules.livetv_browse_refresh import BrowseRefresh
 
@@ -92,7 +92,8 @@ class SportsRefresh:
 		now = monotonic()
 		self._warm_tick(now)
 		sport = ku.get_property('LiveTV.Sport')
-		self.pre_race.tick(visible and sport == 'f1' and not ku.get_visibility('Player.HasMedia'))
+		picker_event = event_picker_selection()
+		self.pre_race.tick((bool(picker_event) or (visible and sport == 'f1')) and not ku.get_visibility('Player.HasMedia'), picker_event)
 		self.overview.tick(visible and sport == 'all' and progress._current('all'), now)
 		if sport == 'all' and visible: return
 		if not visible:
